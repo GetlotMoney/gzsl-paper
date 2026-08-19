@@ -7,7 +7,7 @@ repository: GetlotMoney/gzsl-paper
 framework: FRAMEWORK-V1
 branch: framework/v1
 tag: v1
-status: code_bootstrap_under_review
+status: code_bootstrap_passed_pending_baseline
 evaluation_protocol: test_selected_inductive_gzsl
 ```
 

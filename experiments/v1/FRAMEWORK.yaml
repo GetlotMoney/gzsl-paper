@@ -6,7 +6,7 @@ framework_tag: v1
 source_ref: model/v5-template-v2
 source_commit: fb4b29b04087640890a532f105cb527d3a8c461b
 derived_from_framework: none
-status: code_bootstrap_under_review
+status: code_bootstrap_passed_pending_baseline
 evaluation_protocol: test_selected_inductive_gzsl
 modules:
   - frozen CLIP ViT-L/14@336 feature input

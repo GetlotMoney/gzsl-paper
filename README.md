@@ -4,9 +4,9 @@
 
 ## 当前框架
 
-- 正式框架目标：`FRAMEWORK-V1`
-- 待审核后创建的 Git 分支：`framework/v1`
-- 待审核后创建的冻结 Tag：`v1`
+- 正式框架：`FRAMEWORK-V1`
+- 冻结 Git 分支：`framework/v1`
+- 冻结 Tag：`v1`
 - 代码来源：旧 GTPJ 的 `model/v5-template-v2@fb4b29b04087640890a532f105cb527d3a8c461b`
 - 迁移方式：只复制必要代码，不迁移旧 Git 历史、旧实验或旧账本
 
