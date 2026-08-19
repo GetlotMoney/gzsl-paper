@@ -1,0 +1,15 @@
+# 数据与运行产物只保存在本地/Warehouse。
+data/
+.runtime/
+outputs/
+runs/
+train_log/
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+__pycache__/
+.pytest_cache/
+*.pyc
+.idea/
+.vscode/

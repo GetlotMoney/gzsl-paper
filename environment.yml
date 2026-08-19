@@ -1,0 +1,19 @@
+name: dvsr_gpu
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pytorch
+  - torchvision
+  - pytorch-cuda
+  - numpy
+  - scipy
+  - pyyaml
+  - pillow
+  - tqdm
+  - h5py
+  - pip
+  - pip:
+      - git+https://github.com/openai/CLIP.git

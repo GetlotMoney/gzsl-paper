@@ -1,0 +1,22 @@
+schema_version: gzsl-paper.source.v1
+migration_type: clean_snapshot_without_git_history
+source_repository: GetlotMoney/GTPJ
+source_ref: model/v5-template-v2
+source_commit: fb4b29b04087640890a532f105cb527d3a8c461b
+target_framework: FRAMEWORK-V1
+preserved_semantics:
+  - model/MyModel.py model architecture
+  - seen-image-only gradient training
+  - per-epoch official GZSL evaluation
+  - official test H model selection
+excluded_history:
+  - old framework versions and tags
+  - old experiment ledgers and results
+  - old workflow and review packages
+  - checkpoints, caches, data and logs
+renamed_runtime_files:
+  train_GTPJ_CUB.py: train.py
+  tools/v5_cub_data.py: tools/cub_data.py
+  tools/v5_evaluation.py: tools/evaluation.py
+  tools/v5_runtime.py: tools/runtime.py
+  config/GTPJ_cub_gzsl.yaml: config/v1.yaml
