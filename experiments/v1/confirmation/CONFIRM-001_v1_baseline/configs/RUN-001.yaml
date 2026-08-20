@@ -1,0 +1,74 @@
+dataset:
+  value: CUB
+num_class:
+  value: 200
+dim_f_clip:
+  value: 768
+device:
+  value: cuda:0
+batch_size:
+  value: 64
+random_seed:
+  value: 5
+text_source:
+  value: gpt55
+pse_heads:
+  value: 4
+pse_dropout:
+  value: 0.5
+pse_inner_ratio:
+  value: 0.35
+pse_outer_ratio:
+  value: 0.65
+tf_common_dim:
+  value: 512
+tf_heads:
+  value: 4
+tf_dropout:
+  value: 0.1
+weight_s2v:
+  value: 0.5
+local_weight:
+  value: 0.2
+fgvd_select_k:
+  value: 32
+score_mode:
+  value: add
+lambda_consist:
+  value: 0.05
+consist_temp:
+  value: 2.0
+consist_dynamic_gamma:
+  value: 0.1
+lambda_topo_pearson:
+  value: 0.1
+icsa_ratio:
+  value: 0.008
+icsa_hidden:
+  value: 48
+lambda_bmdd:
+  value: 0.05
+msdn_temp:
+  value: 2.0
+sgmp_topk:
+  value: 8
+sgmp_hidden:
+  value: 512
+lambda_mpp:
+  value: 0.05
+lambda_neg:
+  value: 0.01
+sgmp_neg_margin:
+  value: 0.2
+lr_stages:
+  value:
+  - lr: 0.001
+    epochs: 20
+    eta_min: 1e-5
+  - lr: 0.0001
+    epochs: 20
+    eta_min: 1e-6
+  - lr: 1.0e-05
+    epochs: 10
+    eta_min: 1e-7
+

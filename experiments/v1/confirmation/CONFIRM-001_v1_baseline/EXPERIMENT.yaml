@@ -1,0 +1,33 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V1-CONFIRM-001
+slug: v1_baseline
+kind: confirmation
+framework_id: FRAMEWORK-V1
+framework_ref: v1
+base_commit: 7d842e5c0e5554409eedb3097fea5130a848c9e4
+code_commit: 7d842e5c0e5554409eedb3097fea5130a848c9e4
+research_question: 在真实 CUB 标准划分和冻结 feature cache 上，FRAMEWORK-V1 的首个正式基线 U/S/H/ZS 是多少？
+status: ready_to_run
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+dataset:
+  name: CUB
+  train_split: trainval_loc
+  train_samples: 7057
+  seen_classes: 150
+  test_seen_samples: 1764
+  unseen_classes: 50
+  test_unseen_samples: 2967
+server:
+  ssh_host: lab4090
+  repository: /data/lby/projects/cv_project/gzsl-paper
+  data_entry: /data/lby/projects/cv_project/gzsl-paper/data
+  output_root: /data/lby/projects/cv_project/GZSL_Warehouse/runs/v1/CONFIRM-001_v1_baseline
+runs:
+  - run_id: RUN-001
+    condition: v1_default
+    seed: 5
+    config_ref: experiments/v1/confirmation/CONFIRM-001_v1_baseline/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/runs/v1/CONFIRM-001_v1_baseline/RUN-001
+
