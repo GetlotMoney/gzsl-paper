@@ -6,8 +6,11 @@ framework_tag: v1
 source_ref: model/v5-template-v2
 source_commit: fb4b29b04087640890a532f105cb527d3a8c461b
 derived_from_framework: none
-status: code_bootstrap_passed_pending_baseline
+status: baseline_completed_with_runtime_device_fix
 evaluation_protocol: test_selected_inductive_gzsl
+baseline_experiment: V1-CONFIRM-001
+baseline_code_commit: f8dd7c72465686cfe4aea8a0f37f658e1176386a
+baseline_H: 74.2468
 modules:
   - frozen CLIP ViT-L/14@336 feature input
   - PSE text prototype adapter

@@ -7,7 +7,7 @@ repository: GetlotMoney/gzsl-paper
 framework: FRAMEWORK-V1
 branch: framework/v1
 tag: v1
-status: code_bootstrap_passed_pending_baseline
+status: baseline_completed_with_runtime_device_fix
 evaluation_protocol: test_selected_inductive_gzsl
 ```
 
@@ -15,7 +15,7 @@ V1 来源于 `model/v5-template-v2@fb4b29b04087640890a532f105cb527d3a8c461b` 的
 
 ## 当前待办
 
-1. 在服务器挂载 CUB/xlsa17 数据与冻结 feature cache。
-2. 按 V1 固定配置完成首个基线 RUN。
-3. 将首个 U/S/H/ZS 回填到 `experiments/v1/BASELINE.md`。
-4. 后续创新从 `V1-INNOVATION-001` 开始编号。
+1. 首个真实基线已由 `V1-CONFIRM-001 / RUN-002` 完成：`U=72.3584%`、`S=76.2365%`、`H=74.2468%`、`ZS=81.4479%`。
+2. 基线实际代码包含一个不改变模型与评估语义的 CUDA device validation 修复，准确提交为 `f8dd7c72465686cfe4aea8a0f37f658e1176386a`。
+3. 下一目标是在相同数据和评估口径下达到 `H >= 77.2468%`。
+4. 后续创新从 `V1-INNOVATION-001` 开始编号，并绑定本仓库 Idea 与论文证据。

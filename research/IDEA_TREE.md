@@ -9,19 +9,20 @@ baseline_code_commit: 7d842e5c0e5554409eedb3097fea5130a848c9e4
 evaluation_protocol: test_selected_inductive_gzsl
 primary_metric: H
 target_improvement_percentage_points: 3.00
-baseline_status: pending_first_run
-baseline_H: null
-target_H: null
+baseline_status: completed_with_runtime_device_fix
+baseline_H: 74.2468
+target_H: 77.2468
 ```
 
-这里的 `3.00` 表示 H 提高 3.00 个百分点，例如 `70.00 → 73.00`，不是相对增长 3%。只有 `V1-CONFIRM-001` 完成并取得真实基线后，才能填写 `baseline_H` 和 `target_H`。
+这里的 `3.00` 表示 H 提高 3.00 个百分点，不是相对增长 3%。当前真实基线为 `74.2468%`，目标为 `H >= 77.2468%`。
 
 ## 当前树
 
 ```text
 GZSL-H-PLUS-3PP
-└─ pending_baseline
-   └─ 等待 V1-CONFIRM-001 的真实 U/S/H/ZS 与 best epoch
+└─ baseline_completed
+   ├─ V1-CONFIRM-001 / RUN-002：H=74.2468%
+   └─ innovation_target：H>=77.2468%
 ```
 
 ## 节点规则
