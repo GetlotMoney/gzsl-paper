@@ -3,6 +3,7 @@ framework_id: FRAMEWORK-V1
 framework_ref: v1
 framework_branch: framework/v1
 framework_tag: v1
+framework_diagram: experiments/v1/framework_diagram.html
 source_ref: model/v5-template-v2
 source_commit: fb4b29b04087640890a532f105cb527d3a8c461b
 derived_from_framework: none

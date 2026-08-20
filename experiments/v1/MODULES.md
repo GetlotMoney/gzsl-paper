@@ -1,5 +1,7 @@
 # FRAMEWORK-V1 模块
 
+完整 HTML 结构图：[`framework_diagram.html`](framework_diagram.html)。
+
 | Module | 中文作用 | 关闭时行为 |
 |---|---|---|
 | Frozen CLIP feature input | 提供冻结的 CLS 与 576 个 patch 特征 | V1 不训练 CLIP backbone |

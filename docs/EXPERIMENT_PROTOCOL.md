@@ -21,7 +21,7 @@ INNOVATION-001_example/
 ├─ EXPERIMENT.yaml
 ├─ module_source.md
 ├─ implementation.md
-├─ framework_diagram.md
+├─ framework_diagram.html
 ├─ configs/
 │  ├─ RUN-001.yaml
 │  └─ RUN-002.yaml
@@ -48,6 +48,14 @@ test_used_for_selection,log_uri,model_uri,decision
 - 只改变 learning rate、rank、gate、loss 权重、epoch、seed 或预注册开关：同一 Experiment 的新 RUN。
 - 改变模块公式、输入信息、forward、loss、seen/unseen 边界或评估语义：新建 Experiment。
 - 小规模参数选择可以留在 Innovation；模块成立后的系统性超参数搜索进入 Tune。
+
+## HTML 框架图规则
+
+- 每个 `FRAMEWORK-VX` 必须提供 `experiments/vX/framework_diagram.html`，并绑定该框架的准确 commit。
+- 任何改变 module、forward、loss、数据流、输入输出、seen/unseen 边界或评估语义的 Experiment，必须提供实验目录内的 `framework_diagram.html`，展示相对 base commit 的实际差异。
+- 参数、seed、epoch、纯文档和不改变计算语义的运行修复继续复用框架级 HTML 图，但必须在 `EXPERIMENT.yaml` 或 evidence 中链接该图并说明代码差异。
+- HTML 图至少包含：输入、关键模块、主要张量/数据流、训练 loss、最终 logits、U/S/H/ZS 出口、配置开关或固定参数、baseline-off 行为及协议边界。
+- 图必须是自包含 HTML，不依赖仓库外 CDN；修改后至少做一次浏览器打开检查。
 
 ## 推荐阶段
 
