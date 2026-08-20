@@ -101,6 +101,24 @@ def test_model_backward_smoke():
     assert all(torch.isfinite(grad).all() for grad in grads)
 
 
+def test_model_accepts_cuda_class_identity():
+    if not torch.cuda.is_available():
+        return
+    device = torch.device("cuda:0")
+    seen = torch.tensor([0, 2, 3, 5], device=device)
+    unseen = torch.tensor([1, 4], device=device)
+    model = GTPJ(
+        _config(),
+        seen,
+        unseen,
+        torch.randn(4, 16, device=device),
+        torch.randn(2, 16, device=device),
+        seen_sentence_embeds=torch.randn(4, 7, 16, device=device),
+    )
+    assert torch.equal(model.seenclass, seen)
+    assert torch.equal(model.unseenclass, unseen)
+
+
 class _ControlledModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -351,6 +369,9 @@ class V1ContractTest(unittest.TestCase):
 
     def test_backward(self):
         test_model_backward_smoke()
+
+    def test_cuda_class_identity(self):
+        test_model_accepts_cuda_class_identity()
 
     def test_identity(self):
         test_config_and_protocol_identity()

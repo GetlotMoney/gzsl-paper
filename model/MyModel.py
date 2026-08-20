@@ -307,7 +307,12 @@ class GTPJ(nn.Module):
         if torch.isin(seen_ids, unseen_ids).any():
             raise ValueError("seenclass and unseenclass must not overlap.")
         combined_ids = torch.cat([seen_ids, unseen_ids]).sort().values
-        if not torch.equal(combined_ids, torch.arange(self.nclass, dtype=torch.long)):
+        expected_ids = torch.arange(
+            self.nclass,
+            dtype=torch.long,
+            device=combined_ids.device,
+        )
+        if not torch.equal(combined_ids, expected_ids):
             raise ValueError("seenclass and unseenclass must cover every global class exactly once.")
         if tuple(seen_text_embeds.shape) != (seen_ids.numel(), self.dim_f):
             raise ValueError("seen_text_embeds must have shape [C_seen, D].")
