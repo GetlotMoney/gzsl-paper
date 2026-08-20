@@ -25,6 +25,14 @@
 - pre-run commit 只保存代码、配置和计划；post-run commit 只保存已经发生的结果。
 - GitHub 不保存数据、cache、checkpoint、原始大日志或密钥。
 
+## 研究知识
+
+- 新研究知识从本仓库重新建立；不迁移、不隐式复用旧 GTPJ 的论文笔记、idea tree、研究结论或编号。
+- 论文、证据、idea 与实验之间的最小闭环以 `research/README.md` 为唯一规则入口。
+- 外部论文需要重新核对原文并记录来源；旧聊天、旧笔记和 Agent 记忆不能直接作为证据。
+- 正式创新实验必须绑定一个本仓库 `idea_id`，并引用支撑该假设的 `evidence_refs`。
+- PDF 原件不提交 Git；仓库只保存来源、定位信息、必要摘要、文件 URI/哈希和研究判断。
+
 ## 训练与测试
 
 - 协议固定为 `test_selected_inductive_gzsl`。

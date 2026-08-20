@@ -38,3 +38,7 @@ conda run -n dvsr_gpu python train.py `
 - `data_fingerprints.json`
 
 实验结构和多 RUN 规则见 [docs/EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md)。
+
+## 研究闭环
+
+新论文、新证据和新 idea 从本仓库重新建立，不迁移旧 GTPJ 的研究知识。统一规则见 [research/README.md](research/README.md)。
