@@ -111,3 +111,10 @@ def test_cata_final_rescue_uses_three_initializations():
     assert config["attempt_id"] == "V2-TRY-024"
     assert config["centroid_alignment_mode"] == "contrastive"
     assert config["gate_initialization_ensemble"] == 3
+
+
+def test_purl_config_reweights_pseudo_unseen_risk():
+    config, _ = load_config(ROOT / "config/tries/v2_try_026_purl_seed7.yaml")
+    assert config["idea_id"] == "IDEA-009"
+    assert config["pseudo_unseen_ce_weight"] == 1.0
+    assert config["centroid_alignment_weight"] == 0.0

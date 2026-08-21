@@ -66,6 +66,7 @@ OPTIONAL_CONFIG_KEYS = {
     "parent_metrics_percent",
     "centroid_alignment_mode",
     "gate_initialization_ensemble",
+    "pseudo_unseen_ce_weight",
 }
 
 
@@ -119,6 +120,7 @@ def load_config(path: Path):
     raw.setdefault("parent_metrics_percent", None)
     raw.setdefault("centroid_alignment_mode", "pairwise")
     raw.setdefault("gate_initialization_ensemble", 1)
+    raw.setdefault("pseudo_unseen_ce_weight", 0.0)
     if raw["schema_version"] not in (
         "gzsl-paper.elpt.v1",
         "gzsl-paper.tst.v1",
@@ -126,6 +128,7 @@ def load_config(path: Path):
         "gzsl-paper.cata.v2",
         "gzsl-paper.cata.v3",
         "gzsl-paper.cata.v4",
+        "gzsl-paper.purl.v1",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -141,7 +144,8 @@ def load_config(path: Path):
         "V2-TRY-023",
         "V2-TRY-024",
     } and raw["idea_id"] == "IDEA-007"
-    if not (valid_elpt or valid_tst or valid_cata):
+    valid_purl = raw["attempt_id"] == "V2-TRY-026" and raw["idea_id"] == "IDEA-009"
+    if not (valid_elpt or valid_tst or valid_cata or valid_purl):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ELPT只接受FRAMEWORK-V2。")
@@ -213,6 +217,21 @@ def load_config(path: Path):
         expected_ensemble = 3 if raw["attempt_id"] == "V2-TRY-024" else 1
         if int(raw["gate_initialization_ensemble"]) != expected_ensemble:
             raise ValueError("CATA初始化ensemble与TRY身份不匹配。")
+    if valid_purl:
+        parent = raw["parent_metrics_percent"]
+        if (
+            raw["transport_mode"] != "tangent"
+            or float(raw["gate_max_step"]) != 1.5
+            or float(raw["pseudo_unseen_ce_weight"]) != 1.0
+            or float(raw["centroid_alignment_weight"]) != 0.0
+            or raw["gate_feature_mode"] != "summary"
+            or raw["gate_ensemble"] is not False
+            or int(raw["gate_initialization_ensemble"]) != 1
+            or not raw["fold_checkpoint_dir"]
+            or not isinstance(parent, dict)
+            or set(parent) != {"U", "S", "H", "ZS"}
+        ):
+            raise ValueError("PURL首次TRY身份不匹配。")
     return raw, sha256_file(path)
 
 
@@ -454,6 +473,13 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
                 competition = final_all.index_select(0, seenclasses.to(device))
                 logits = F.normalize(images, dim=-1) @ competition.T * package["scale"].to(device)
                 ce = F.cross_entropy(logits, targets)
+                pseudo_unseen_mask = torch.isin(
+                    tensors["train_labels"].long()[indices],
+                    package["pseudo_unseen"],
+                ).to(device)
+                pseudo_unseen_ce = F.cross_entropy(
+                    logits[pseudo_unseen_mask], targets[pseudo_unseen_mask]
+                )
                 topo = topology_loss(
                     base_all.index_select(0, seenclasses.to(device)), competition
                 )
@@ -468,6 +494,8 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
                     + float(config["topology_weight"]) * topo
                     + float(config["alpha_penalty"]) * alpha_regularization
                     + float(config["centroid_alignment_weight"]) * alignment
+                    + float(config["pseudo_unseen_ce_weight"])
+                    * pseudo_unseen_ce
                 )
                 if not torch.isfinite(loss):
                     raise FloatingPointError("ELPT gate loss非有限。")
@@ -541,6 +569,13 @@ def _train_gate_initialization_ensemble(
                     logits = F.normalize(images, dim=-1) @ competition.T
                     logits = logits * package["scale"].to(device)
                     ce = F.cross_entropy(logits, targets)
+                    pseudo_unseen_mask = torch.isin(
+                        tensors["train_labels"].long()[indices],
+                        package["pseudo_unseen"],
+                    ).to(device)
+                    pseudo_unseen_ce = F.cross_entropy(
+                        logits[pseudo_unseen_mask], targets[pseudo_unseen_mask]
+                    )
                     topo = topology_loss(
                         base_all.index_select(0, seenclasses.to(device)), competition
                     )
@@ -554,6 +589,8 @@ def _train_gate_initialization_ensemble(
                         + float(config["topology_weight"]) * topo
                         + float(config["alpha_penalty"]) * coefficient.square().mean()
                         + float(config["centroid_alignment_weight"]) * alignment
+                        + float(config["pseudo_unseen_ce_weight"])
+                        * pseudo_unseen_ce
                     )
                     optimizer.zero_grad(set_to_none=True)
                     loss.backward()
@@ -609,6 +646,13 @@ def _train_gate_ensemble(packages, tensors, config, device, seed, print_log):
                 competition = final_all.index_select(0, seenclasses.to(device))
                 logits = F.normalize(images, dim=-1) @ competition.T * package["scale"].to(device)
                 ce = F.cross_entropy(logits, targets)
+                pseudo_unseen_mask = torch.isin(
+                    tensors["train_labels"].long()[indices],
+                    package["pseudo_unseen"],
+                ).to(device)
+                pseudo_unseen_ce = F.cross_entropy(
+                    logits[pseudo_unseen_mask], targets[pseudo_unseen_mask]
+                )
                 topo = topology_loss(
                     base_all.index_select(0, seenclasses.to(device)), competition
                 )
@@ -622,6 +666,8 @@ def _train_gate_ensemble(packages, tensors, config, device, seed, print_log):
                         package["pseudo_unseen_centroids"].to(device),
                         config["centroid_alignment_mode"],
                     )
+                    + float(config["pseudo_unseen_ce_weight"])
+                    * pseudo_unseen_ce
                 )
                 optimizer.zero_grad(set_to_none=True)
                 loss.backward()
@@ -932,6 +978,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
                 config["centroid_alignment_weight"]
             ),
             "centroid_alignment_mode": config["centroid_alignment_mode"],
+            "pseudo_unseen_ce_weight": float(
+                config["pseudo_unseen_ce_weight"]
+            ),
             "parent_metrics_percent": config["parent_metrics_percent"],
             "delta_vs_parent_percent_points": parent_delta,
             "success": success,
