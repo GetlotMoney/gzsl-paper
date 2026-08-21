@@ -5,7 +5,7 @@ from pathlib import Path
 import torch
 
 from model.innovations.epc import EpisodicPriorCalibration
-from model.innovations.train_epc import load_config
+from model.innovations.train_epc import episodic_soft_harmonic_loss, load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,3 +40,21 @@ def test_epc_config_and_training_boundary():
     assert config["max_margin"] == 0.5
     source = (ROOT / "model/innovations/train_epc.py").read_text(encoding="utf-8")
     assert source.index("for epoch in range") < source.index("# official test严格在EPC训练结束后加载。")
+
+
+def test_soft_harmonic_objective_and_rescue_config():
+    logits = torch.tensor(
+        [[3.0, 0.0], [2.0, 0.0], [0.0, 3.0], [0.0, 2.0]],
+        requires_grad=True,
+    )
+    targets = torch.tensor([0, 0, 1, 1])
+    mask = torch.tensor([False, False, True, True])
+    loss, seen_soft, unseen_soft = episodic_soft_harmonic_loss(logits, targets, mask)
+    assert float(seen_soft.detach()) > 0.5 and float(unseen_soft.detach()) > 0.5
+    loss.backward()
+    assert torch.isfinite(logits.grad).all()
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_020_epc_rescue1_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-020"
+    assert config["objective"] == "soft_harmonic"

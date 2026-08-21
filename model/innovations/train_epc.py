@@ -49,6 +49,7 @@ CONFIG_KEYS = {
     "weight_decay",
     "max_margin",
 }
+CONFIG_KEYS_V2 = CONFIG_KEYS | {"objective"}
 
 
 class TeeStream:
@@ -69,15 +70,16 @@ def load_config(path: Path):
     path = path.resolve()
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    expected = CONFIG_KEYS_V2 if isinstance(config, dict) and config.get("schema_version") == "gzsl-paper.epc.v2" else CONFIG_KEYS
+    if not isinstance(config, dict) or actual != expected:
         raise ValueError(
-            f"EPC配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"EPC配置字段错误；缺少={sorted(expected-actual)}，"
+            f"多出={sorted(actual-expected)}。"
         )
-    if config["schema_version"] != "gzsl-paper.epc.v1":
+    if config["schema_version"] not in ("gzsl-paper.epc.v1", "gzsl-paper.epc.v2"):
         raise ValueError("EPC schema错误。")
     if (
-        config["attempt_id"] != "V2-TRY-019"
+        config["attempt_id"] not in ("V2-TRY-019", "V2-TRY-020")
         or config["idea_id"] != "IDEA-006"
         or config["framework_id"] != "FRAMEWORK-V2"
     ):
@@ -88,7 +90,18 @@ def load_config(path: Path):
         raise ValueError("EPC固定Adam lr=0.01且无weight decay。")
     if float(config["max_margin"]) != 0.5:
         raise ValueError("EPC固定边际范围[-0.5,0.5]。")
+    if config["attempt_id"] == "V2-TRY-020" and config.get("objective") != "soft_harmonic":
+        raise ValueError("EPC补救1必须使用soft_harmonic目标。")
     return config, sha256_file(path)
+
+
+def episodic_soft_harmonic_loss(logits, targets, pseudo_unseen_mask):
+    probability = logits.softmax(dim=-1)
+    correct = probability.gather(1, targets.unsqueeze(1)).squeeze(1)
+    unseen_soft = correct[pseudo_unseen_mask].mean()
+    seen_soft = correct[~pseudo_unseen_mask].mean()
+    soft_h = 2.0 * seen_soft * unseen_soft / (seen_soft + unseen_soft + 1e-12)
+    return 1.0 - soft_h, seen_soft, unseen_soft
 
 
 def _load_tst_gate(config, device):
@@ -251,7 +264,16 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
                     logits = F.normalize(images, dim=-1) @ fold_prototypes[fold_id].T
                     logits = logits * package["scale"].to(device)
                     logits = calibration(logits, seenclasses, package["pseudo_unseen"])
-                    loss = F.cross_entropy(logits, targets)
+                    if config.get("objective", "cross_entropy") == "soft_harmonic":
+                        pseudo_unseen_mask = torch.isin(
+                            tensors["train_labels"].long()[indices],
+                            package["pseudo_unseen"],
+                        ).to(device)
+                        loss, _, _ = episodic_soft_harmonic_loss(
+                            logits, targets, pseudo_unseen_mask
+                        )
+                    else:
+                        loss = F.cross_entropy(logits, targets)
                     optimizer.zero_grad(set_to_none=True)
                     loss.backward()
                     if not torch.isfinite(calibration.raw_margin.grad).all():
@@ -352,6 +374,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "candidate_metrics_percent": candidate_metrics,
             "delta_percent_points": delta,
             "learned_margin": margin,
+            "objective": config.get("objective", "cross_entropy"),
             "success": success,
             "calibration_model_sha256": sha256_file(
                 output_dir / "calibration_model.pth"
