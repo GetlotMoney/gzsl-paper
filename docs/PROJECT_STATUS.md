@@ -37,6 +37,8 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。V2当前正式单seed基线�
 
 固定10%保守unseen迁移在四seed均提升H，但它只在测试时生效，现降级为`test_time_observation`，不计入论文核心创新。
 
-下一件事是执行`V2-TRY-006`：用3折pseudo-unseen任务训练ELPT迁移gate。只有训练式权重通过seed7和四seed验证，IDEA-002才能重新标记`supported`。
+训练式ELPT已完成`V2-TRY-006`及全部3次方法级补救。最佳H达到`76.803085%`，但首次TRY的gate均值超过预注册上限；三个补救又持续出现gate饱和或S下降超过2个百分点，因此`IDEA-002`已标记`rejected`并强制止损。没有建立`V2-INNOVATION-002`。
+
+下一件事是以冻结V2基线为父条件执行`IDEA-003 / ICGR`：仅用seen训练图像学习图像条件三组路由，先运行seed7最小TRY。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

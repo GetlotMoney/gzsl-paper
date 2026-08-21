@@ -13,12 +13,12 @@ hypothesis: 将seen训练得到的共享Value变换直接用于unseen三组语�
 core_change: 仅在评估时对unseen原型应用共享Value重参数化，训练权重与seen原型保持不变。
 success_condition: H高于74.023182且U提高，S不出现严重下降。
 failure_condition: H不提升、U不提升或S下降导致H变差。
-status: revised
+status: rejected
 paper_core_innovation: false
-last_attempt: V2-TRY-005
-last_decision: promote
+last_attempt: V2-TRY-009
+last_decision: drop
 experiment_ref: V2-INNOVATION-001
-next_training_attempt: V2-TRY-006
+next_training_attempt: none
 ```
 
 ## TRY-001结果
@@ -54,3 +54,9 @@ next_training_attempt: V2-TRY-006
 ### V2-TRY-008 / 补救2
 
 增加完整top-5邻域输入后，指标仍为`H=76.010388%`，alpha mean=`0.249886`、std=`0.000053`，共享gate继续顶在上限。补救2未通过，进入最后一次补救3：三折独立gate并在推理时平均。
+
+### V2-TRY-009 / 补救3与止损
+
+三折独立gate并平均后，`U=78.845793%`、`S=73.371834%`、`H=76.010388%`、`ZS=83.562106%`，相对基线`ΔH=+1.987206`，但`S`下降`2.071208`个百分点，仍超过预注册的2个百分点上限；alpha mean=`0.249664`、std=`0.000126`，三个gate仍共同饱和在0.25附近。
+
+最终结论：ELPT已使用首次TRY和全部3次方法级补救，仍未通过预注册门槛，训练式IDEA-002标记为`rejected`并强制止损。固定10%四seed结果继续作为`test_time_observation`保留，不计为论文核心创新。

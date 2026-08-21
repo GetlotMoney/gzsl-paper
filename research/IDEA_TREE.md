@@ -31,7 +31,8 @@ V2-H-PLUS-3PP
    └─ paper_method_goal
       ├─ shared_research_question：待证据确定
       ├─ innovation_slot_1：IDEA-001 / TG-VPR-H1（supported，paper_core_innovation）
-      ├─ innovation_slot_2：IDEA-002 / ELPT训练式迁移（revised，等待V2-TRY-006）
+      ├─ rejected_branch：IDEA-002 / ELPT训练式迁移（rejected，已用尽3次补救）
+      ├─ innovation_slot_2：IDEA-003 / ICGR图像条件三组路由（下一候选）
       ├─ innovation_slot_3：待筛选与验证
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
