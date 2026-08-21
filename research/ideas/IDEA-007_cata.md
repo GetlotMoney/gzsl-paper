@@ -16,7 +16,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-023
+current_attempt: V2-TRY-024
 ```
 
 CATA只在三折pseudo-unseen类上使用视觉中心；这些类属于150个seen训练类。true-unseen图像不加载、不进入梯度。对齐权重为0时严格回到TST训练目标。
@@ -28,3 +28,7 @@ CATA只在三折pseudo-unseen类上使用视觉中心；这些类属于150个see
 ## V2-TRY-022结果
 
 单向中心对比得到`H=77.031094%`，已超过项目seed7目标`77.023182%`；但相对TST `ΔH=+0.046550`，比预注册创新门槛少`0.003450`，因此不直接通过。补救2把原型到中心的单向分类改为双向对比匹配，其他条件不变。
+
+## V2-TRY-023结果
+
+双向对比得到`H=77.009297%`、相对TST `ΔH=+0.024752`，弱于单向条件。最后一次补救回到单向中心对比，训练3个不同初始化的完整gate并平均步长，以降低优化方差；这是CATA最后一次方法预算。
