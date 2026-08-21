@@ -102,6 +102,15 @@ def test_try_config_is_frozen():
     assert config["gate_batch_half"] == 32
 
 
+def test_rescue_config_reuses_fold_checkpoints():
+    config, _ = load_config(
+        ROOT / "config" / "tries" / "v2_try_007_elpt_rescue1_seed7.yaml"
+    )
+    assert config["gate_max_alpha"] == 0.25
+    assert config["alpha_penalty"] == 0.01
+    assert config["fold_checkpoint_dir"].endswith("V2-TRY-006")
+
+
 class ELPTTest(unittest.TestCase):
     def test_equivalence(self):
         test_variable_150_path_is_bitwise_equal_to_v2()
@@ -120,6 +129,9 @@ class ELPTTest(unittest.TestCase):
 
     def test_config(self):
         test_try_config_is_frozen()
+
+    def test_rescue_config(self):
+        test_rescue_config_reuses_fold_checkpoints()
 
 
 if __name__ == "__main__":

@@ -47,7 +47,7 @@ REQUIRED_CONFIG_KEYS = {
     "gate_weight_decay",
     "topology_weight",
 }
-OPTIONAL_CONFIG_KEYS = {"gate_max_alpha", "alpha_penalty"}
+OPTIONAL_CONFIG_KEYS = {"gate_max_alpha", "alpha_penalty", "fold_checkpoint_dir"}
 
 
 class TeeStream:
@@ -91,6 +91,7 @@ def load_config(path: Path):
         )
     raw.setdefault("gate_max_alpha", 1.0)
     raw.setdefault("alpha_penalty", 0.0)
+    raw.setdefault("fold_checkpoint_dir", None)
     if raw["schema_version"] != "gzsl-paper.elpt.v1":
         raise ValueError("ELPT schema错误。")
     if raw["attempt_id"] not in {"V2-TRY-006", "V2-TRY-007"} or raw["idea_id"] != "IDEA-002":
@@ -113,6 +114,8 @@ def load_config(path: Path):
         float(raw["gate_max_alpha"]) != 0.25 or float(raw["alpha_penalty"]) != 0.01
     ):
         raise ValueError("TRY-007必须使用0.25上限和0.01 alpha约束。")
+    if raw["attempt_id"] == "V2-TRY-007" and not raw["fold_checkpoint_dir"]:
+        raise ValueError("TRY-007必须复用TRY-006 fold checkpoint。")
     return raw, sha256_file(path)
 
 
@@ -206,6 +209,34 @@ def _train_fold(
     }
     torch.save(checkpoint, output_dir / f"fold_{fold_id}.pth")
     return model
+
+
+def _load_fold_checkpoint(
+    fold_id,
+    pseudo_seen,
+    sentence_embeds,
+    train_features,
+    train_labels,
+    base_config,
+    device,
+    checkpoint_dir,
+):
+    path = Path(checkpoint_dir) / f"fold_{fold_id}.pth"
+    checkpoint = torch.load(path, map_location="cpu", weights_only=False)
+    if checkpoint.get("fold_id") != fold_id or checkpoint.get("pseudo_seen") != pseudo_seen.tolist():
+        raise ValueError(f"fold {fold_id} checkpoint身份不匹配。")
+    centroids = h1.visual_centroids(train_features, train_labels.long(), pseudo_seen)
+    model = VariableClassTGVPR(
+        sentence_embeds,
+        pseudo_seen,
+        centroids,
+        dropout=base_config["dropout"],
+        inner_ratio=base_config["inner_ratio"],
+        outer_ratio=base_config["outer_ratio"],
+        temperature=base_config["temperature"],
+    )
+    model.load_state_dict(checkpoint["model_state_dict"], strict=True)
+    return model.to(device).eval()
 
 
 def _fold_package(model, pseudo_seen, pseudo_unseen, tensors, seenclasses, device):
@@ -365,18 +396,31 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
         folds = fixed_class_folds(seenclasses)
         packages = []
         for fold_id, (pseudo_seen, pseudo_unseen) in enumerate(folds):
-            fold_model = _train_fold(
-                fold_id,
-                pseudo_seen,
-                tensors["sentence_embeds"],
-                tensors["train_features"],
-                tensors["train_labels"],
-                base_config,
-                device,
-                output_dir,
-                seed,
-                print_log,
-            )
+            if config["fold_checkpoint_dir"]:
+                fold_model = _load_fold_checkpoint(
+                    fold_id,
+                    pseudo_seen,
+                    tensors["sentence_embeds"],
+                    tensors["train_features"],
+                    tensors["train_labels"],
+                    base_config,
+                    device,
+                    config["fold_checkpoint_dir"],
+                )
+                print_log(f"fold={fold_id} reused_from={config['fold_checkpoint_dir']}")
+            else:
+                fold_model = _train_fold(
+                    fold_id,
+                    pseudo_seen,
+                    tensors["sentence_embeds"],
+                    tensors["train_features"],
+                    tensors["train_labels"],
+                    base_config,
+                    device,
+                    output_dir,
+                    seed,
+                    print_log,
+                )
             packages.append(
                 _fold_package(
                     fold_model,
@@ -492,6 +536,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "alpha_stats": alpha_stats,
             "gate_max_alpha": float(config["gate_max_alpha"]),
             "alpha_penalty": float(config["alpha_penalty"]),
+            "fold_checkpoint_dir": config["fold_checkpoint_dir"],
             "success": success,
             "gate_model_sha256": sha256_file(output_dir / "gate_model.pth"),
         }
