@@ -1,0 +1,202 @@
+from __future__ import annotations
+
+import argparse
+import copy
+import sys
+from pathlib import Path
+
+import torch
+import torch.nn.functional as F
+import yaml
+
+from model.innovations.elpt import VariableClassTGVPR, fixed_class_folds
+from model.innovations.spa import SeenPrototypeAnchor
+from model.innovations.train_elpt import FrozenPrototypeClassifier, _candidate_prototypes
+from model.innovations.tst import TangentStepGate
+from model.tg_vpr_h1 import train as h1
+from tools.reproducibility import configure_reproducibility
+from tools.run_contract import (
+    atomic_write_json,
+    current_code_commit,
+    prepare_output_dir,
+    require_clean_code_tree,
+)
+from tools.runtime import sha256_file
+
+
+CONFIG_KEYS = {
+    "schema_version", "attempt_id", "idea_id", "framework_id",
+    "base_config", "base_checkpoint", "base_checkpoint_sha256",
+    "tst_gate_model", "tst_gate_model_sha256", "seed", "epochs",
+    "batch_size", "lr", "weight_decay", "topology_weight",
+    "max_strength", "initial_strength", "parent_metrics_percent",
+}
+
+
+class TeeStream:
+    def __init__(self, *streams): self.streams = streams
+    def write(self, value):
+        for stream in self.streams: stream.write(value)
+        return len(value)
+    def flush(self):
+        for stream in self.streams: stream.flush()
+
+
+def load_config(path: Path):
+    path = path.resolve()
+    config = yaml.safe_load(path.read_text(encoding="utf-8"))
+    actual = set(config) if isinstance(config, dict) else set()
+    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+        raise ValueError(f"SPA配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
+    if config["schema_version"] != "gzsl-paper.spa.v1":
+        raise ValueError("SPA schema错误。")
+    if config["attempt_id"] != "V2-TRY-025" or config["idea_id"] != "IDEA-008":
+        raise ValueError("SPA首次TRY身份错误。")
+    if config["framework_id"] != "FRAMEWORK-V2":
+        raise ValueError("SPA父框架错误。")
+    if int(config["epochs"]) != 10 or int(config["batch_size"]) != 64:
+        raise ValueError("SPA固定10 epoch和batch_size=64。")
+    if float(config["lr"]) != 0.01 or float(config["weight_decay"]) != 0.0:
+        raise ValueError("SPA固定Adam lr=0.01且无weight decay。")
+    if float(config["topology_weight"]) != 0.1:
+        raise ValueError("SPA固定topology_weight=0.1。")
+    if float(config["max_strength"]) != 0.1 or float(config["initial_strength"]) != 0.01:
+        raise ValueError("SPA强度身份错误。")
+    if set(config["parent_metrics_percent"]) != {"U", "S", "H", "ZS"}:
+        raise ValueError("SPA父指标不完整。")
+    return config, sha256_file(path)
+
+
+def _load_gate(config, device):
+    path = Path(config["tst_gate_model"])
+    if sha256_file(path) != config["tst_gate_model_sha256"]:
+        raise ValueError("SPA父TST gate SHA不匹配。")
+    payload = torch.load(path, map_location="cpu", weights_only=False)
+    gate = TangentStepGate(max_step=1.5)
+    gate.load_state_dict(payload["gate_state_dict"], strict=True)
+    for parameter in gate.parameters(): parameter.requires_grad_(False)
+    return gate.to(device).eval()
+
+
+def run(config_path: Path, output_dir: Path, expected_commit: str):
+    require_clean_code_tree()
+    code_commit = current_code_commit()
+    if code_commit != expected_commit:
+        raise ValueError("expected-commit与当前干净HEAD不一致。")
+    config, config_sha = load_config(config_path)
+    base_path = Path(config["base_config"])
+    if not base_path.is_absolute(): base_path = Path.cwd() / base_path
+    base_config, base_config_sha = h1.load_config(base_path)
+    paths = h1.resolve_paths(base_config)
+    input_sha = h1.verify_inputs(base_config, paths, h1.TRAINING_KEYS)
+    checkpoint_path = Path(config["base_checkpoint"])
+    if sha256_file(checkpoint_path) != config["base_checkpoint_sha256"]:
+        raise ValueError("SPA父checkpoint SHA不匹配。")
+    device = torch.device(base_config["device"])
+    if device.type != "cuda" or not torch.cuda.is_available():
+        raise RuntimeError("SPA正式TRY要求CUDA。")
+    output_dir = prepare_output_dir(output_dir)
+    with (output_dir / "config.snapshot.yaml").open("x", encoding="utf-8") as handle:
+        yaml.safe_dump(config, handle, allow_unicode=True, sort_keys=False)
+    log_handle = (output_dir / "training.log").open("x", encoding="utf-8", buffering=1)
+    original_stdout = sys.stdout
+    sys.stdout = TeeStream(sys.stdout, log_handle)
+    try:
+        seed = int(config["seed"])
+        configure_reproducibility(seed, strict_determinism=True, deterministic_warn_only=False)
+        tensors = {name: torch.load(paths[name], map_location="cpu", weights_only=True) for name in ("sentence_embeds", "train_features", "train_labels")}
+        labels = tensors["train_labels"].long()
+        seenclasses = torch.unique(labels, sorted=True)
+        allclasses = torch.arange(200)
+        unseenclasses = allclasses[~torch.isin(allclasses, seenclasses)]
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+        centroids = h1.visual_centroids(tensors["train_features"], labels, seenclasses)
+        parent = VariableClassTGVPR(
+            tensors["sentence_embeds"], seenclasses, centroids,
+            dropout=base_config["dropout"], inner_ratio=base_config["inner_ratio"],
+            outer_ratio=base_config["outer_ratio"], temperature=base_config["temperature"],
+        )
+        parent.load_state_dict(checkpoint["model_state_dict"], strict=True)
+        parent = parent.to(device).eval()
+        gate = _load_gate(config, device)
+        folds = fixed_class_folds(seenclasses)
+        tst_prototypes, _ = _candidate_prototypes(
+            parent, gate, seenclasses, unseenclasses, device, "summary", folds, "tangent"
+        )
+        model = SeenPrototypeAnchor(
+            tst_prototypes, seenclasses, centroids.to(device), parent.scale(),
+            max_strength=config["max_strength"], initial_strength=config["initial_strength"],
+        ).to(device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=float(config["lr"]), weight_decay=0.0)
+        mapping = torch.full((200,), -1, dtype=torch.long)
+        mapping[seenclasses] = torch.arange(150)
+        generator = torch.Generator(device="cpu").manual_seed(seed)
+        history = []
+        for epoch in range(1, int(config["epochs"]) + 1):
+            permutation = torch.randperm(labels.numel(), generator=generator)
+            loss_sum = ce_sum = topo_sum = 0.0
+            count = 0
+            for start in range(0, labels.numel(), int(config["batch_size"])):
+                indices = permutation[start:start + int(config["batch_size"])]
+                features = tensors["train_features"][indices].to(device).float()
+                targets = mapping[labels[indices]].to(device)
+                ce = F.cross_entropy(model.logits(features, seenclasses), targets)
+                topo = model.topology_loss()
+                loss = ce + float(config["topology_weight"]) * topo
+                optimizer.zero_grad(set_to_none=True)
+                loss.backward()
+                if not torch.isfinite(model.raw_strength.grad):
+                    raise FloatingPointError("SPA强度梯度非有限。")
+                optimizer.step()
+                loss_sum += float(loss.detach()) * indices.numel()
+                ce_sum += float(ce.detach()) * indices.numel()
+                topo_sum += float(topo.detach()) * indices.numel()
+                count += indices.numel()
+            row = {"epoch": epoch, "loss": loss_sum/count, "ce": ce_sum/count, "topology": topo_sum/count, "strength": float(model.strength().detach())}
+            history.append(row)
+            print(f"epoch={epoch} ce={row['ce']:.6f} topology={row['topology']:.6f} strength={row['strength']:.6f}")
+        payload = {"attempt_id": config["attempt_id"], "code_commit": code_commit, "config": config, "model_state_dict": copy.deepcopy(model.state_dict()), "history": history}
+        torch.save(payload, output_dir / "anchor_model.pth")
+
+        # official test严格在SPA训练结束后加载。
+        input_sha.update(h1.verify_inputs(base_config, paths, h1.OFFICIAL_KEYS))
+        tensors.update({name: torch.load(paths[name], map_location="cpu", weights_only=True) for name in h1.OFFICIAL_KEYS})
+        parent_classifier = FrozenPrototypeClassifier(
+            tst_prototypes, parent.scale()
+        ).to(device)
+        parent_metrics = h1.evaluate(
+            parent_classifier, tensors, seenclasses, unseenclasses, device
+        )
+        candidate_metrics = h1.evaluate(model, tensors, seenclasses, unseenclasses, device)
+        delta = {key: candidate_metrics[key] - float(config["parent_metrics_percent"][key]) for key in ("U", "S", "H", "ZS")}
+        strength = float(model.strength().detach())
+        success = delta["H"] >= 0.05 and delta["U"] >= -2.0 and delta["S"] >= -2.0 and strength < 0.098
+        atomic_write_json(output_dir / "data_fingerprints.json", {"files": input_sha})
+        metrics = {
+            "attempt_id": config["attempt_id"], "idea_id": config["idea_id"],
+            "framework_id": config["framework_id"], "code_commit": code_commit,
+            "config_sha256": config_sha, "base_config_sha256": base_config_sha,
+            "evaluation_protocol": h1.EVALUATION_PROTOCOL, "test_used_for_selection": True,
+            "unseen_images_used_for_gradient": False,
+            "recomputed_parent_metrics_percent": parent_metrics,
+            "parent_metrics_percent": config["parent_metrics_percent"],
+            "candidate_metrics_percent": candidate_metrics, "delta_vs_parent_percent_points": delta,
+            "learned_strength": strength, "success": success,
+            "anchor_model_sha256": sha256_file(output_dir / "anchor_model.pth"),
+        }
+        atomic_write_json(output_dir / "metrics.json", metrics)
+        print(metrics)
+        return metrics
+    finally:
+        sys.stdout.flush(); sys.stdout = original_stdout; log_handle.close()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--expected-commit", required=True)
+    args = parser.parse_args(); run(args.config, args.output_dir, args.expected_commit)
+
+
+if __name__ == "__main__": main()
