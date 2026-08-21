@@ -108,7 +108,12 @@ def load_config(path: Path):
     if raw["schema_version"] not in ("gzsl-paper.elpt.v1", "gzsl-paper.tst.v1"):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
-    valid_tst = raw["attempt_id"] == "V2-TRY-015" and raw["idea_id"] == "IDEA-005"
+    valid_tst = raw["attempt_id"] in {
+        "V2-TRY-015",
+        "V2-TRY-016",
+        "V2-TRY-017",
+        "V2-TRY-018",
+    } and raw["idea_id"] == "IDEA-005"
     if not (valid_elpt or valid_tst):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
@@ -151,9 +156,12 @@ def load_config(path: Path):
         or float(raw["gate_max_step"]) != 1.5
         or raw["gate_feature_mode"] != "summary"
         or raw["gate_ensemble"] is not False
-        or not raw["fold_checkpoint_dir"]
     ):
-        raise ValueError("TRY-015必须使用切空间步长gate并复用ELPT fold checkpoint。")
+        raise ValueError("TST必须使用冻结的切空间步长gate结构。")
+    if raw["attempt_id"] == "V2-TRY-015" and not raw["fold_checkpoint_dir"]:
+        raise ValueError("TRY-015必须复用seed7 ELPT fold checkpoint。")
+    if raw["attempt_id"] in {"V2-TRY-016", "V2-TRY-017", "V2-TRY-018"} and raw["fold_checkpoint_dir"] is not None:
+        raise ValueError("TST多seed RUN必须从头训练各自fold权重。")
     return raw, sha256_file(path)
 
 

@@ -41,3 +41,14 @@ def test_tst_config_contract():
     assert config["transport_mode"] == "tangent"
     assert config["gate_max_step"] == 1.5
     assert config["fold_checkpoint_dir"].endswith("V2-TRY-006")
+
+
+def test_tst_multiseed_configs_train_own_folds():
+    expected = {"V2-TRY-016": 5, "V2-TRY-017": 6, "V2-TRY-018": 8}
+    for attempt_id, seed in expected.items():
+        config, _ = load_config(
+            ROOT / "config/tries" / f"v2_try_{attempt_id[-3:]}_tst_seed{seed}.yaml"
+        )
+        assert config["attempt_id"] == attempt_id
+        assert config["seed"] == seed
+        assert config["fold_checkpoint_dir"] is None
