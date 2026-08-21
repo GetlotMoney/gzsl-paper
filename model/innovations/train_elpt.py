@@ -18,6 +18,7 @@ from model.innovations.elpt import (
     gate_features,
     topology_loss,
 )
+from model.innovations.tst import TangentStepGate, tangent_transport
 from model.tg_vpr_h1 import TGVPRH1FixedEqual
 from model.tg_vpr_h1 import train as h1
 from tools.reproducibility import configure_reproducibility
@@ -53,6 +54,8 @@ OPTIONAL_CONFIG_KEYS = {
     "fold_checkpoint_dir",
     "gate_feature_mode",
     "gate_ensemble",
+    "transport_mode",
+    "gate_max_step",
 }
 
 
@@ -100,9 +103,13 @@ def load_config(path: Path):
     raw.setdefault("fold_checkpoint_dir", None)
     raw.setdefault("gate_feature_mode", "summary")
     raw.setdefault("gate_ensemble", False)
-    if raw["schema_version"] != "gzsl-paper.elpt.v1":
+    raw.setdefault("transport_mode", "convex_blend")
+    raw.setdefault("gate_max_step", 1.5)
+    if raw["schema_version"] not in ("gzsl-paper.elpt.v1", "gzsl-paper.tst.v1"):
         raise ValueError("ELPT schema错误。")
-    if raw["attempt_id"] not in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} or raw["idea_id"] != "IDEA-002":
+    valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
+    valid_tst = raw["attempt_id"] == "V2-TRY-015" and raw["idea_id"] == "IDEA-005"
+    if not (valid_elpt or valid_tst):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ELPT只接受FRAMEWORK-V2。")
@@ -139,7 +146,33 @@ def load_config(path: Path):
         or not raw["fold_checkpoint_dir"]
     ):
         raise ValueError("TRY-009必须使用三折独立gate ensemble。")
+    if valid_tst and (
+        raw["transport_mode"] != "tangent"
+        or float(raw["gate_max_step"]) != 1.5
+        or raw["gate_feature_mode"] != "summary"
+        or raw["gate_ensemble"] is not False
+        or not raw["fold_checkpoint_dir"]
+    ):
+        raise ValueError("TRY-015必须使用切空间步长gate并复用ELPT fold checkpoint。")
     return raw, sha256_file(path)
+
+
+def _make_gate(config, input_dim, device):
+    if config["transport_mode"] == "tangent":
+        return TangentStepGate(
+            input_dim=input_dim,
+            max_step=float(config["gate_max_step"]),
+        ).to(device)
+    return ELPTGate(
+        input_dim=input_dim,
+        max_alpha=float(config["gate_max_alpha"]),
+    ).to(device)
+
+
+def _transport(base, value, coefficient, mode):
+    if mode == "tangent":
+        return tangent_transport(base, value, coefficient)
+    return blend_prototypes(base, value, coefficient)
 
 
 def _stage_boundaries(stages):
@@ -302,10 +335,7 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
     if config["gate_ensemble"]:
         return _train_gate_ensemble(packages, tensors, config, device, seed, print_log)
     input_dim = 8 if config["gate_feature_mode"] == "top5_vector" else 4
-    gate = ELPTGate(
-        input_dim=input_dim,
-        max_alpha=float(config["gate_max_alpha"]),
-    ).to(device)
+    gate = _make_gate(config, input_dim, device)
     optimizer = torch.optim.Adam(
         gate.parameters(),
         lr=float(config["gate_lr"]),
@@ -339,10 +369,11 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
                 features = package["gate_features"].to(device)
                 alpha = gate(features)
                 pseudo_unseen = package["pseudo_unseen"].to(device)
-                final_all[pseudo_unseen] = blend_prototypes(
+                final_all[pseudo_unseen] = _transport(
                     base_all.index_select(0, pseudo_unseen),
                     package["value"].to(device),
                     alpha,
+                    config["transport_mode"],
                 )
                 competition = final_all.index_select(0, seenclasses.to(device))
                 logits = F.normalize(images, dim=-1) @ competition.T * package["scale"].to(device)
@@ -380,10 +411,7 @@ def _train_gate_ensemble(packages, tensors, config, device, seed, print_log):
     half = int(config["gate_batch_half"])
     input_dim = 8 if config["gate_feature_mode"] == "top5_vector" else 4
     for fold_id, package in enumerate(packages):
-        gate = ELPTGate(
-            input_dim=input_dim,
-            max_alpha=float(config["gate_max_alpha"]),
-        ).to(device)
+        gate = _make_gate(config, input_dim, device)
         optimizer = torch.optim.Adam(
             gate.parameters(),
             lr=float(config["gate_lr"]),
@@ -406,10 +434,11 @@ def _train_gate_ensemble(packages, tensors, config, device, seed, print_log):
                 final_all = package["fold_full"].to(device).clone()
                 alpha = gate(package["gate_features"].to(device))
                 pseudo_unseen = package["pseudo_unseen"].to(device)
-                final_all[pseudo_unseen] = blend_prototypes(
+                final_all[pseudo_unseen] = _transport(
                     base_all.index_select(0, pseudo_unseen),
                     package["value"].to(device),
                     alpha,
+                    config["transport_mode"],
                 )
                 competition = final_all.index_select(0, seenclasses.to(device))
                 logits = F.normalize(images, dim=-1) @ competition.T * package["scale"].to(device)
@@ -442,6 +471,7 @@ def _candidate_prototypes(
     device,
     feature_mode,
     folds,
+    transport_mode="convex_blend",
 ):
     model.eval()
     with torch.no_grad():
@@ -467,8 +497,11 @@ def _candidate_prototypes(
                 mode=feature_mode,
             )
             alpha = gate(features)
-        final_all[unseenclasses.to(device)] = blend_prototypes(
-            base_all.index_select(0, unseenclasses.to(device)), value, alpha
+        final_all[unseenclasses.to(device)] = _transport(
+            base_all.index_select(0, unseenclasses.to(device)),
+            value,
+            alpha,
+            transport_mode,
         )
     return final_all, alpha
 
@@ -615,6 +648,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             device,
             config["gate_feature_mode"],
             folds,
+            config["transport_mode"],
         )
         candidate = FrozenPrototypeClassifier(
             candidate_prototypes, variable.scale()
@@ -632,13 +666,37 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "min": float(alpha.min()),
             "max": float(alpha.max()),
         }
-        success = (
-            candidate_metrics["H"] > 74.023182
-            and candidate_metrics["U"] > baseline_metrics["U"]
-            and delta["S"] >= -2.0
-            and 0.02 < alpha_stats["mean"] < 0.50
-            and alpha_stats["std"] > 0.01
-        )
+        if config["transport_mode"] == "tangent":
+            base_unseen = variable.base_prototypes().index_select(
+                0, unseenclasses.to(device)
+            )
+            moved_unseen = candidate_prototypes.index_select(
+                0, unseenclasses.to(device)
+            )
+            angles = torch.rad2deg(
+                torch.acos((base_unseen * moved_unseen).sum(dim=-1).clamp(-1.0, 1.0))
+            )
+            angle_stats = {
+                "mean_degrees": float(angles.mean()),
+                "max_degrees": float(angles.max()),
+            }
+            success = (
+                delta["H"] >= 0.20
+                and candidate_metrics["U"] > baseline_metrics["U"]
+                and delta["S"] >= -2.0
+                and 0.02 < alpha_stats["mean"] < 1.45
+                and alpha_stats["std"] > 0.01
+                and angle_stats["max_degrees"] < 45.0
+            )
+        else:
+            angle_stats = None
+            success = (
+                candidate_metrics["H"] > 74.023182
+                and candidate_metrics["U"] > baseline_metrics["U"]
+                and delta["S"] >= -2.0
+                and 0.02 < alpha_stats["mean"] < 0.50
+                and alpha_stats["std"] > 0.01
+            )
         atomic_write_json(output_dir / "data_fingerprints.json", {"files": input_sha})
         metrics = {
             "attempt_id": config["attempt_id"],
@@ -667,6 +725,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "fold_checkpoint_dir": config["fold_checkpoint_dir"],
             "gate_feature_mode": config["gate_feature_mode"],
             "gate_ensemble": bool(config["gate_ensemble"]),
+            "transport_mode": config["transport_mode"],
+            "angle_stats": angle_stats,
             "success": success,
             "gate_model_sha256": sha256_file(output_dir / "gate_model.pth"),
         }
