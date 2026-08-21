@@ -55,3 +55,8 @@ def test_acgr_config_contract():
     assert config["idea_id"] == "IDEA-004"
     assert config["routing_semantics"] == "all_class_centered_roles"
     assert config["role_scale"] == 0.65
+    rescue, _ = load_config(
+        ROOT / "config/tries/v2_try_014_acgr_rescue1_seed7.yaml"
+    )
+    assert rescue["attempt_id"] == "V2-TRY-014"
+    assert rescue["role_scale"] == 0.25

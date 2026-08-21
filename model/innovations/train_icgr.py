@@ -64,7 +64,7 @@ def load_config(path: Path) -> tuple[dict, str]:
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    if schema == "gzsl-paper.acgr.v1":
+    if schema in ("gzsl-paper.acgr.v1", "gzsl-paper.acgr.v2"):
         expected = CONFIG_KEYS_V4
     elif schema == "gzsl-paper.icgr.v3":
         expected = CONFIG_KEYS_V3
@@ -82,9 +82,10 @@ def load_config(path: Path) -> tuple[dict, str]:
         "gzsl-paper.icgr.v2",
         "gzsl-paper.icgr.v3",
         "gzsl-paper.acgr.v1",
+        "gzsl-paper.acgr.v2",
     ):
         raise ValueError("ICGR配置schema错误。")
-    expected_idea = "IDEA-004" if schema == "gzsl-paper.acgr.v1" else "IDEA-003"
+    expected_idea = "IDEA-004" if schema in ("gzsl-paper.acgr.v1", "gzsl-paper.acgr.v2") else "IDEA-003"
     if config["idea_id"] != expected_idea or config["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ICGR研究身份不匹配。")
     if int(config["epochs"]) != 10 or int(config["hidden_dim"]) != 64:
@@ -100,11 +101,12 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("ICGR路由输入模式错误。")
     if float(config.get("kl_weight", 0.0)) not in (0.0, 0.01):
         raise ValueError("ICGR KL权重只能关闭或固定为0.01。")
-    if schema == "gzsl-paper.acgr.v1":
+    if schema in ("gzsl-paper.acgr.v1", "gzsl-paper.acgr.v2"):
         if config["routing_semantics"] != "all_class_centered_roles":
             raise ValueError("ACGR必须使用全类中心化三组语义。")
-        if float(config["role_scale"]) != 0.65:
-            raise ValueError("ACGR首次TRY固定role_scale=0.65。")
+        expected_scale = 0.65 if schema == "gzsl-paper.acgr.v1" else 0.25
+        if float(config["role_scale"]) != expected_scale:
+            raise ValueError("ACGR role_scale与TRY身份不匹配。")
     return config, sha256_file(path)
 
 
