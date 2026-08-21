@@ -130,6 +130,14 @@ def test_rescue2_config_uses_top5_vector():
     assert config["gate_max_alpha"] == 0.25
 
 
+def test_rescue3_config_uses_gate_ensemble():
+    config, _ = load_config(
+        ROOT / "config" / "tries" / "v2_try_009_elpt_rescue3_seed7.yaml"
+    )
+    assert config["gate_ensemble"] is True
+    assert config["gate_feature_mode"] == "top5_vector"
+
+
 class ELPTTest(unittest.TestCase):
     def test_equivalence(self):
         test_variable_150_path_is_bitwise_equal_to_v2()
@@ -157,6 +165,9 @@ class ELPTTest(unittest.TestCase):
 
     def test_rescue2_config(self):
         test_rescue2_config_uses_top5_vector()
+
+    def test_rescue3_config(self):
+        test_rescue3_config_uses_gate_ensemble()
 
 
 if __name__ == "__main__":

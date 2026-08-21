@@ -52,6 +52,7 @@ OPTIONAL_CONFIG_KEYS = {
     "alpha_penalty",
     "fold_checkpoint_dir",
     "gate_feature_mode",
+    "gate_ensemble",
 }
 
 
@@ -98,9 +99,10 @@ def load_config(path: Path):
     raw.setdefault("alpha_penalty", 0.0)
     raw.setdefault("fold_checkpoint_dir", None)
     raw.setdefault("gate_feature_mode", "summary")
+    raw.setdefault("gate_ensemble", False)
     if raw["schema_version"] != "gzsl-paper.elpt.v1":
         raise ValueError("ELPT schema错误。")
-    if raw["attempt_id"] not in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008"} or raw["idea_id"] != "IDEA-002":
+    if raw["attempt_id"] not in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} or raw["idea_id"] != "IDEA-002":
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ELPT只接受FRAMEWORK-V2。")
@@ -129,6 +131,14 @@ def load_config(path: Path):
         or not raw["fold_checkpoint_dir"]
     ):
         raise ValueError("TRY-008必须使用受约束top5向量gate并复用fold checkpoint。")
+    if raw["attempt_id"] == "V2-TRY-009" and (
+        float(raw["gate_max_alpha"]) != 0.25
+        or float(raw["alpha_penalty"]) != 0.01
+        or raw["gate_feature_mode"] != "top5_vector"
+        or raw["gate_ensemble"] is not True
+        or not raw["fold_checkpoint_dir"]
+    ):
+        raise ValueError("TRY-009必须使用三折独立gate ensemble。")
     return raw, sha256_file(path)
 
 
@@ -289,6 +299,8 @@ def _fold_package(
 
 
 def _train_gate(packages, tensors, config, device, seed, print_log):
+    if config["gate_ensemble"]:
+        return _train_gate_ensemble(packages, tensors, config, device, seed, print_log)
     input_dim = 8 if config["gate_feature_mode"] == "top5_vector" else 4
     gate = ELPTGate(
         input_dim=input_dim,
@@ -360,6 +372,68 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
     return gate.eval()
 
 
+def _train_gate_ensemble(packages, tensors, config, device, seed, print_log):
+    gates = []
+    label_map = torch.full((200,), -1, dtype=torch.long)
+    seenclasses = packages[0]["seenclasses"]
+    label_map[seenclasses] = torch.arange(150)
+    half = int(config["gate_batch_half"])
+    input_dim = 8 if config["gate_feature_mode"] == "top5_vector" else 4
+    for fold_id, package in enumerate(packages):
+        gate = ELPTGate(
+            input_dim=input_dim,
+            max_alpha=float(config["gate_max_alpha"]),
+        ).to(device)
+        optimizer = torch.optim.Adam(
+            gate.parameters(),
+            lr=float(config["gate_lr"]),
+            weight_decay=float(config["gate_weight_decay"]),
+        )
+        generator = torch.Generator(device="cpu").manual_seed(seed * 2000 + fold_id)
+        seen_indices = package["seen_indices"]
+        unseen_indices = package["unseen_indices"]
+        steps = min(seen_indices.numel() // half, unseen_indices.numel() // half)
+        for epoch in range(1, int(config["gate_epochs"]) + 1):
+            gate.train()
+            loss_sum = 0.0
+            for _ in range(steps):
+                si = seen_indices[torch.randperm(seen_indices.numel(), generator=generator)[:half]]
+                ui = unseen_indices[torch.randperm(unseen_indices.numel(), generator=generator)[:half]]
+                indices = torch.cat((si, ui))
+                images = tensors["train_features"][indices].to(device).float()
+                targets = label_map[tensors["train_labels"].long()[indices]].to(device)
+                base_all = package["base_all"].to(device)
+                final_all = package["fold_full"].to(device).clone()
+                alpha = gate(package["gate_features"].to(device))
+                pseudo_unseen = package["pseudo_unseen"].to(device)
+                final_all[pseudo_unseen] = blend_prototypes(
+                    base_all.index_select(0, pseudo_unseen),
+                    package["value"].to(device),
+                    alpha,
+                )
+                competition = final_all.index_select(0, seenclasses.to(device))
+                logits = F.normalize(images, dim=-1) @ competition.T * package["scale"].to(device)
+                ce = F.cross_entropy(logits, targets)
+                topo = topology_loss(
+                    base_all.index_select(0, seenclasses.to(device)), competition
+                )
+                loss = (
+                    ce
+                    + float(config["topology_weight"]) * topo
+                    + float(config["alpha_penalty"]) * alpha.square().mean()
+                )
+                optimizer.zero_grad(set_to_none=True)
+                loss.backward()
+                optimizer.step()
+                loss_sum += float(loss.detach())
+            if epoch in (1, 5, 10, 15, 20):
+                print_log(
+                    f"gate_fold={fold_id} epoch={epoch} loss={loss_sum/steps:.6f}"
+                )
+        gates.append(gate.eval())
+    return nn.ModuleList(gates)
+
+
 def _candidate_prototypes(
     model,
     gate,
@@ -367,19 +441,32 @@ def _candidate_prototypes(
     unseenclasses,
     device,
     feature_mode,
+    folds,
 ):
     model.eval()
     with torch.no_grad():
         base_all = model.base_prototypes()
         final_all = model.prototypes().clone()
         value = model.value_candidate(unseenclasses.to(device))
-        features = gate_features(
-            base_all.index_select(0, unseenclasses.to(device)),
-            value,
-            base_all.index_select(0, seenclasses.to(device)),
-            mode=feature_mode,
-        )
-        alpha = gate(features)
+        if isinstance(gate, nn.ModuleList):
+            alpha_values = []
+            for fold_gate, (pseudo_seen, _) in zip(gate, folds):
+                features = gate_features(
+                    base_all.index_select(0, unseenclasses.to(device)),
+                    value,
+                    base_all.index_select(0, pseudo_seen.to(device)),
+                    mode=feature_mode,
+                )
+                alpha_values.append(fold_gate(features))
+            alpha = torch.stack(alpha_values).mean(dim=0)
+        else:
+            features = gate_features(
+                base_all.index_select(0, unseenclasses.to(device)),
+                value,
+                base_all.index_select(0, seenclasses.to(device)),
+                mode=feature_mode,
+            )
+            alpha = gate(features)
         final_all[unseenclasses.to(device)] = blend_prototypes(
             base_all.index_select(0, unseenclasses.to(device)), value, alpha
         )
@@ -527,6 +614,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             unseenclasses,
             device,
             config["gate_feature_mode"],
+            folds,
         )
         candidate = FrozenPrototypeClassifier(
             candidate_prototypes, variable.scale()
@@ -578,6 +666,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "alpha_penalty": float(config["alpha_penalty"]),
             "fold_checkpoint_dir": config["fold_checkpoint_dir"],
             "gate_feature_mode": config["gate_feature_mode"],
+            "gate_ensemble": bool(config["gate_ensemble"]),
             "success": success,
             "gate_model_sha256": sha256_file(output_dir / "gate_model.pth"),
         }
