@@ -32,6 +32,6 @@ owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和
 
 owner已选择`FRAMEWORK-V2`作为论文主框架。V2当前正式单seed基线为`H=74.023182%`，新的三个百分点目标为`H >= 77.023182%`。
 
-下一件事是为创新2重新核对seen几何向unseen迁移相关论文，建立`PAPER-002`和`IDEA-002`。在证据与Idea完成前不写创新2代码。
+下一件事是基于V2本地代码观察建立`IDEA-002`：H1只适配seen原型、unseen保持Mean8，可能存在迁移断层。Idea和可证伪门槛完成后即可准备创新2实验；直接来源论文不是开工硬门，但论文claim前必须完成相关工作检索。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

@@ -2,7 +2,7 @@
 
 ## 目标
 
-本目录只解决一个问题：让每个新实验都能追溯到重新核对过的论文证据和一个可证伪的研究假设，并让实验结果反过来更新该假设。
+本目录只解决一个问题：让每个新实验都能追溯到明确证据来源和一个可证伪的研究假设，并让实验结果反过来更新该假设。证据来源可以是论文，也可以是本地实验、代码观察、指标异常、第一性原理分析或owner明确提出的假设。
 
 owner已选择`FRAMEWORK-V2`作为论文主框架。当前研究目标是在相同数据、划分和`test_selected_inductive_gzsl`评估口径下，使H从V2正式单seed基线`74.023182%`提高到至少`77.023182%`，即提高`3.00`个百分点。
 
@@ -11,7 +11,7 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。当前研究目标是在相�
 固定闭环：
 
 ```text
-新论文 → 可定位证据 → 新 idea → 正式实验 → 结果回填
+证据来源 → 新 idea → 正式实验 → 结果回填 → 论文定位
 ```
 
 本仓库从空白研究知识层开始。旧 GTPJ 的论文笔记、idea tree、研究结论和编号不迁移、不引用，也不能通过聊天记忆隐式恢复。需要使用同一篇论文时，必须重新核对原文并在本仓库重新登记。
@@ -70,7 +70,8 @@ PDF 原件、批量图片和大体积解析缓存不进入 Git。
 每个 idea 必须能被实验否定，至少写清：
 
 - `idea_id` 和要解决的具体问题；
-- `evidence_refs`，至少引用本仓库`PAPER-xxx`；细粒度claim编号可选；
+- `source_type`：`paper`、`local_observation`、`experiment_result`、`code_analysis`、`first_principles`或`owner_hypothesis`；
+- `evidence_refs`：引用论文、RUN/实验结果、代码文件/行、指标记录或owner假设记录中的至少一种，不强制包含`PAPER-xxx`；
 - 可证伪假设；
 - 准确 `base_commit`；
 - 相对基线的唯一核心改动；
@@ -110,9 +111,11 @@ PDF 原件、批量图片和大体积解析缓存不进入 Git。
 ```yaml
 idea_id: IDEA-xxx
 evidence_refs:
-  - PAPER-xxx
+  - <PAPER、RUN、代码或本地观察引用>
 base_commit: <准确 Git commit>
 ```
+
+正式实验不以“先找到论文”为硬门。没有直接论文时，只要本地证据清楚、假设可证伪、base commit和成功/失败条件完整，就可以开始实验。论文检索最迟必须在对外声称“新颖”或开始正式论文写作前完成。
 
 参数、seed、epoch 或预注册开关变化继续作为同一 Experiment 的新 RUN；模块公式、输入、forward、loss、数据边界或评估语义变化必须新建 Experiment。具体执行规则继续以 `docs/EXPERIMENT_PROTOCOL.md` 为准。
 

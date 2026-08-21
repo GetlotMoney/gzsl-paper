@@ -13,6 +13,20 @@ Framework
 
 一个创新实验可以包含基线、主方法、多个参数、消融、多个 seed 和最终结果。不能把“一项创新实验”压缩成一个配置，也不能把每个参数值拆成新的创新编号。
 
+## 框架固定目录
+
+每个正式框架必须始终提供四类实验入口：
+
+```text
+experiments/vX/
+├─ tune/INDEX.md
+├─ ablation/INDEX.md
+├─ innovation/INDEX.md
+└─ confirmation/INDEX.md
+```
+
+目录存在只表示分类入口存在，不代表已有实验。空目录的`INDEX.md`必须写明“当前无实验”和下一编号，不能伪造计划或结果。
+
 ## 实验目录
 
 ```text

@@ -3,6 +3,7 @@
 ```yaml
 idea_id: IDEA-001
 status: supported
+source_type: paper
 evidence_refs:
   - PAPER-001
 base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca

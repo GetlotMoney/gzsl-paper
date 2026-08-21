@@ -19,6 +19,7 @@
 ## 实验
 
 - 一个 Experiment 回答一个研究问题；一个 Experiment 可以包含多组 Condition 和多行 RUN。
+- 每个正式`experiments/vX/`必须固定包含`tune/`、`ablation/`、`innovation/`和`confirmation/`四类目录，并各有`INDEX.md`；没有实验时索引明确写“当前无实验”。
 - 只改配置、参数、seed 或预注册控制条件：新增 RUN。
 - 修改公式、模块输入、forward、loss、数据语义或评估语义：新建 Experiment。
 - 每个 RUN 必须绑定准确 code commit、完整配置快照、seed、数据身份、U/S/H/ZS、日志和模型 URI。
@@ -39,6 +40,8 @@
 - 论文、证据、idea 与实验之间的最小闭环以 `research/README.md` 为唯一规则入口。
 - 外部论文需要重新核对原文并记录来源；旧聊天、旧笔记和 Agent 记忆不能直接作为证据。
 - 正式创新实验必须绑定一个本仓库 `idea_id`，并引用支撑该假设的 `evidence_refs`。
+- 创新证据不强制来自论文；可以来自论文、正式实验结果、代码观察、指标异常、第一性原理分析或明确记录的owner假设。
+- 没有直接论文时可以先建立可证伪Idea并做实验；但在形成论文新颖性claim前必须检索最接近的相关工作并说明区别。
 - PDF 原件不提交 Git；仓库只保存来源、定位信息、必要摘要、文件 URI/哈希和研究判断。
 
 ## 三创新论文主线
