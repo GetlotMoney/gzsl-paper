@@ -149,7 +149,12 @@ def load_config(path: Path):
         "V2-TRY-024",
     } and raw["idea_id"] == "IDEA-007"
     valid_purl = raw["attempt_id"] in {"V2-TRY-026", "V2-TRY-027"} and raw["idea_id"] == "IDEA-009"
-    valid_ntr = raw["attempt_id"] == "V2-TRY-028" and raw["idea_id"] == "IDEA-010"
+    valid_ntr = raw["attempt_id"] in {
+        "V2-TRY-028",
+        "V2-TRY-029",
+        "V2-TRY-030",
+        "V2-TRY-031",
+    } and raw["idea_id"] == "IDEA-010"
     if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
@@ -206,7 +211,6 @@ def load_config(path: Path):
             or float(raw["centroid_alignment_weight"]) != 0.1
             or raw["gate_feature_mode"] != "summary"
             or raw["gate_ensemble"] is not False
-            or not raw["fold_checkpoint_dir"]
             or not isinstance(parent, dict)
             or set(parent) != {"U", "S", "H", "ZS"}
         ):
@@ -250,11 +254,14 @@ def load_config(path: Path):
             or int(raw["gate_initialization_ensemble"]) != 1
             or float(raw["centroid_alignment_weight"]) != 0.0
             or float(raw["pseudo_unseen_ce_weight"]) != 0.0
-            or not raw["fold_checkpoint_dir"]
             or not isinstance(parent, dict)
             or set(parent) != {"U", "S", "H", "ZS"}
         ):
             raise ValueError("NTR首次TRY身份不匹配。")
+        if raw["attempt_id"] == "V2-TRY-028" and not raw["fold_checkpoint_dir"]:
+            raise ValueError("NTR seed7必须复用对应fold权重。")
+        if raw["attempt_id"] in {"V2-TRY-029", "V2-TRY-030", "V2-TRY-031"} and raw["fold_checkpoint_dir"] is not None:
+            raise ValueError("NTR多seed必须从头训练各自fold权重。")
     return raw, sha256_file(path)
 
 
