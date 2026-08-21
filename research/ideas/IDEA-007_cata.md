@@ -13,10 +13,12 @@ hypothesis: 在pseudo-unseen episode中直接对齐迁移原型与视觉中心�
 core_change: TST gate loss增加0.1倍pseudo-unseen迁移原型与其seen训练图像中心的余弦对齐损失。
 success_condition: seed7相对TG-VPR+TST的DeltaH不低于0.05个百分点，U和S各自下降不超过2个百分点，并保持TST步长与角位移安全门槛。
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
-status: testing
+status: rejected
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-024
+current_attempt: none
+last_attempt: V2-TRY-024
+last_decision: drop
 ```
 
 CATA只在三折pseudo-unseen类上使用视觉中心；这些类属于150个seen训练类。true-unseen图像不加载、不进入梯度。对齐权重为0时严格回到TST训练目标。
@@ -32,3 +34,7 @@ CATA只在三折pseudo-unseen类上使用视觉中心；这些类属于150个see
 ## V2-TRY-023结果
 
 双向对比得到`H=77.009297%`、相对TST `ΔH=+0.024752`，弱于单向条件。最后一次补救回到单向中心对比，训练3个不同初始化的完整gate并平均步长，以降低优化方差；这是CATA最后一次方法预算。
+
+## V2-TRY-024结果与止损
+
+三gate平均得到`H=76.961977%`、相对TST `ΔH=-0.022568`，没有通过。CATA已用完3次方法级补救，IDEA-007标记`rejected`。最佳V2-TRY-022虽达到项目seed7目标，但相对TST增量未过预注册创新门槛，因此只保留为失败条件，不晋级。
