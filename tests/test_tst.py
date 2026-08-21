@@ -7,6 +7,7 @@ import torch
 from model.innovations.train_elpt import _pseudo_unseen_risk, load_config
 from model.innovations.tst import (
     TangentStepGate,
+    NeighborhoodResidualGate,
     bidirectional_centroid_contrastive_loss,
     centroid_alignment_loss,
     centroid_contrastive_loss,
@@ -35,6 +36,19 @@ def test_tangent_step_gate_accepts_neighborhood_vector():
     assert torch.allclose(
         gate(features), torch.full((9,), 0.1), atol=1e-7
     )
+
+
+def test_neighborhood_residual_starts_at_frozen_tst_step():
+    base = TangentStepGate(input_dim=4)
+    gate = NeighborhoodResidualGate(base, max_delta=0.1)
+    features = torch.randn(11, 8, generator=torch.Generator().manual_seed(57))
+    summary = torch.stack(
+        (features[:, 0], features[:, 1], features[:, 2], features[:, 3]), dim=1
+    )
+    assert torch.equal(gate(features), base(summary))
+    gate(features).square().mean().backward()
+    assert all(parameter.grad is None for parameter in gate.base_gate.parameters())
+    assert any(parameter.grad is not None for parameter in gate.residual.parameters())
 
 
 def test_tangent_transport_is_normalized_and_orthogonal_direction():
@@ -161,3 +175,12 @@ def test_ntr_multiseed_configs_train_own_folds():
         assert config["seed"] == seed
         assert config["fold_checkpoint_dir"] is None
         assert config["gate_feature_mode"] == "top5_vector"
+
+
+def test_ntr_residual_rescue_config():
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_032_ntr_rescue1_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-032"
+    assert config["gate_architecture"] == "neighborhood_residual"
+    assert config["max_residual_step"] == 0.1

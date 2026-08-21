@@ -20,6 +20,7 @@ from model.innovations.elpt import (
 )
 from model.innovations.tst import (
     TangentStepGate,
+    NeighborhoodResidualGate,
     bidirectional_centroid_contrastive_loss,
     centroid_alignment_loss,
     centroid_contrastive_loss,
@@ -68,6 +69,10 @@ OPTIONAL_CONFIG_KEYS = {
     "gate_initialization_ensemble",
     "pseudo_unseen_ce_weight",
     "pseudo_unseen_loss_mode",
+    "gate_architecture",
+    "parent_gate_model",
+    "parent_gate_model_sha256",
+    "max_residual_step",
 }
 
 
@@ -123,6 +128,10 @@ def load_config(path: Path):
     raw.setdefault("gate_initialization_ensemble", 1)
     raw.setdefault("pseudo_unseen_ce_weight", 0.0)
     raw.setdefault("pseudo_unseen_loss_mode", "cross_entropy")
+    raw.setdefault("gate_architecture", "direct")
+    raw.setdefault("parent_gate_model", None)
+    raw.setdefault("parent_gate_model_sha256", None)
+    raw.setdefault("max_residual_step", 0.1)
     if raw["schema_version"] not in (
         "gzsl-paper.elpt.v1",
         "gzsl-paper.tst.v1",
@@ -133,6 +142,7 @@ def load_config(path: Path):
         "gzsl-paper.purl.v1",
         "gzsl-paper.purl.v2",
         "gzsl-paper.ntr.v1",
+        "gzsl-paper.ntr-residual.v1",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -154,6 +164,7 @@ def load_config(path: Path):
         "V2-TRY-029",
         "V2-TRY-030",
         "V2-TRY-031",
+        "V2-TRY-032",
     } and raw["idea_id"] == "IDEA-010"
     if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr):
         raise ValueError("ELPT首次TRY身份不匹配。")
@@ -262,10 +273,28 @@ def load_config(path: Path):
             raise ValueError("NTR seed7必须复用对应fold权重。")
         if raw["attempt_id"] in {"V2-TRY-029", "V2-TRY-030", "V2-TRY-031"} and raw["fold_checkpoint_dir"] is not None:
             raise ValueError("NTR多seed必须从头训练各自fold权重。")
+        if raw["attempt_id"] == "V2-TRY-032" and (
+            raw["gate_architecture"] != "neighborhood_residual"
+            or not raw["parent_gate_model"]
+            or not raw["parent_gate_model_sha256"]
+            or float(raw["max_residual_step"]) != 0.1
+            or not raw["fold_checkpoint_dir"]
+        ):
+            raise ValueError("NTR补救1必须使用冻结TST gate的邻域残差。")
     return raw, sha256_file(path)
 
 
 def _make_gate(config, input_dim, device):
+    if config["gate_architecture"] == "neighborhood_residual":
+        path = Path(config["parent_gate_model"])
+        if sha256_file(path) != config["parent_gate_model_sha256"]:
+            raise ValueError("NTR父TST gate SHA不匹配。")
+        payload = torch.load(path, map_location="cpu", weights_only=False)
+        base_gate = TangentStepGate(input_dim=4, max_step=1.5)
+        base_gate.load_state_dict(payload["gate_state_dict"], strict=True)
+        return NeighborhoodResidualGate(
+            base_gate, max_delta=float(config["max_residual_step"])
+        ).to(device)
     if config["transport_mode"] == "tangent":
         return TangentStepGate(
             input_dim=input_dim,
@@ -1027,6 +1056,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
                 config["pseudo_unseen_ce_weight"]
             ),
             "pseudo_unseen_loss_mode": config["pseudo_unseen_loss_mode"],
+            "gate_architecture": config["gate_architecture"],
+            "parent_gate_model_sha256": config["parent_gate_model_sha256"],
+            "max_residual_step": float(config["max_residual_step"]),
             "parent_metrics_percent": config["parent_metrics_percent"],
             "delta_vs_parent_percent_points": parent_delta,
             "success": success,

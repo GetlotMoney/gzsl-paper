@@ -38,6 +38,36 @@ class TangentStepGate(nn.Module):
         return self.max_step * torch.sigmoid(self.network(features)).squeeze(-1)
 
 
+class NeighborhoodResidualGate(nn.Module):
+    """在冻结4维TST gate上学习top-5邻域残差。"""
+
+    def __init__(self, base_gate: TangentStepGate, max_delta: float = 0.1):
+        super().__init__()
+        if float(max_delta) <= 0.0:
+            raise ValueError("NTR residual max_delta必须为正数。")
+        self.base_gate = base_gate.eval()
+        for parameter in self.base_gate.parameters():
+            parameter.requires_grad_(False)
+        self.max_delta = float(max_delta)
+        self.residual = nn.Sequential(
+            nn.Linear(5, 16),
+            nn.GELU(),
+            nn.Linear(16, 1),
+        )
+        nn.init.zeros_(self.residual[-1].weight)
+        nn.init.zeros_(self.residual[-1].bias)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        if features.ndim != 2 or features.size(1) != 8:
+            raise ValueError("NTR residual gate要求8维top-5特征。")
+        summary = torch.stack(
+            (features[:, 0], features[:, 1], features[:, 2], features[:, 3]), dim=1
+        )
+        base_step = self.base_gate(summary)
+        delta = self.max_delta * torch.tanh(self.residual(features[:, 3:])).squeeze(-1)
+        return (base_step + delta).clamp(0.0, 1.5)
+
+
 def tangent_transport(
     base: torch.Tensor, value: torch.Tensor, step: torch.Tensor
 ) -> torch.Tensor:
