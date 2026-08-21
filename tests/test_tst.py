@@ -7,6 +7,7 @@ import torch
 from model.innovations.train_elpt import load_config
 from model.innovations.tst import (
     TangentStepGate,
+    bidirectional_centroid_contrastive_loss,
     centroid_alignment_loss,
     centroid_contrastive_loss,
     tangent_transport,
@@ -86,3 +87,18 @@ def test_centroid_contrastive_alignment_and_rescue_config():
     )
     assert config["attempt_id"] == "V2-TRY-022"
     assert config["centroid_alignment_mode"] == "contrastive"
+
+
+def test_bidirectional_centroid_contrastive_and_rescue2_config():
+    generator = torch.Generator().manual_seed(55)
+    prototypes = torch.randn(10, 768, generator=generator, requires_grad=True)
+    centroids = torch.randn(10, 768, generator=generator)
+    loss = bidirectional_centroid_contrastive_loss(prototypes, centroids)
+    assert torch.isfinite(loss)
+    loss.backward()
+    assert torch.isfinite(prototypes.grad).all()
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_023_cata_rescue2_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-023"
+    assert config["centroid_alignment_mode"] == "bidirectional_contrastive"

@@ -20,6 +20,7 @@ from model.innovations.elpt import (
 )
 from model.innovations.tst import (
     TangentStepGate,
+    bidirectional_centroid_contrastive_loss,
     centroid_alignment_loss,
     centroid_contrastive_loss,
     tangent_transport,
@@ -121,6 +122,7 @@ def load_config(path: Path):
         "gzsl-paper.tst.v1",
         "gzsl-paper.cata.v1",
         "gzsl-paper.cata.v2",
+        "gzsl-paper.cata.v3",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -130,7 +132,11 @@ def load_config(path: Path):
         "V2-TRY-017",
         "V2-TRY-018",
     } and raw["idea_id"] == "IDEA-005"
-    valid_cata = raw["attempt_id"] in {"V2-TRY-021", "V2-TRY-022"} and raw["idea_id"] == "IDEA-007"
+    valid_cata = raw["attempt_id"] in {
+        "V2-TRY-021",
+        "V2-TRY-022",
+        "V2-TRY-023",
+    } and raw["idea_id"] == "IDEA-007"
     if not (valid_elpt or valid_tst or valid_cata):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
@@ -192,7 +198,11 @@ def load_config(path: Path):
             or set(parent) != {"U", "S", "H", "ZS"}
         ):
             raise ValueError("CATA首次TRY身份或父指标不匹配。")
-        expected_mode = "pairwise" if raw["attempt_id"] == "V2-TRY-021" else "contrastive"
+        expected_mode = {
+            "V2-TRY-021": "pairwise",
+            "V2-TRY-022": "contrastive",
+            "V2-TRY-023": "bidirectional_contrastive",
+        }[raw["attempt_id"]]
         if raw["centroid_alignment_mode"] != expected_mode:
             raise ValueError("CATA对齐模式与TRY身份不匹配。")
     return raw, sha256_file(path)
@@ -217,6 +227,8 @@ def _transport(base, value, coefficient, mode):
 
 
 def _centroid_loss(prototypes, centroids, mode):
+    if mode == "bidirectional_contrastive":
+        return bidirectional_centroid_contrastive_loss(prototypes, centroids)
     if mode == "contrastive":
         return centroid_contrastive_loss(prototypes, centroids)
     return centroid_alignment_loss(prototypes, centroids)

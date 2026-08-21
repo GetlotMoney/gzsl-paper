@@ -65,3 +65,18 @@ def centroid_contrastive_loss(
     logits = prototypes @ visual_centroids.T / float(temperature)
     targets = torch.arange(prototypes.size(0), device=prototypes.device)
     return F.cross_entropy(logits, targets)
+
+
+def bidirectional_centroid_contrastive_loss(
+    prototypes: torch.Tensor,
+    visual_centroids: torch.Tensor,
+    temperature: float = 0.07,
+) -> torch.Tensor:
+    prototypes = F.normalize(prototypes, dim=-1)
+    visual_centroids = F.normalize(visual_centroids, dim=-1)
+    logits = prototypes @ visual_centroids.T / float(temperature)
+    targets = torch.arange(prototypes.size(0), device=prototypes.device)
+    return 0.5 * (
+        F.cross_entropy(logits, targets)
+        + F.cross_entropy(logits.T, targets)
+    )
