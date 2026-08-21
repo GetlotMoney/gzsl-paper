@@ -31,6 +31,19 @@ def test_initial_and_disabled_logits_reproduce_parent():
     )
 
 
+def test_role_cosine_inputs_have_771_dimensions_and_keep_uniform_start():
+    parent = make_model().eval()
+    classifier = ICGRClassifier(parent, router_input_mode="image_cls_role_cosine")
+    images = torch.randn(5, 768, generator=torch.Generator().manual_seed(34))
+    inputs = classifier.router_inputs(images)
+    assert inputs.shape == (5, 771)
+    assert torch.isfinite(inputs).all()
+    assert torch.equal(
+        classifier.route_weights(images), torch.full((5, 3), 1.0 / 3.0)
+    )
+    assert torch.allclose(classifier.logits(images), parent.logits(images), atol=2e-5)
+
+
 def test_only_router_receives_gradients():
     parent = make_model().eval()
     classifier = ICGRClassifier(parent)
@@ -54,3 +67,11 @@ def test_config_and_training_boundary_contract():
     source = (ROOT / "model/innovations/train_icgr.py").read_text(encoding="utf-8")
     assert source.index("for epoch in range") < source.index("# official test严格在路由训练结束后加载。")
     assert 'for name in ("sentence_embeds", "train_features", "train_labels")' in source
+
+
+def test_rescue2_config_contract():
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_011_icgr_rescue2_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-011"
+    assert config["router_input_mode"] == "image_cls_role_cosine"

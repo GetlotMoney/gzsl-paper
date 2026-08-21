@@ -38,6 +38,7 @@ CONFIG_KEYS = {
     "weight_decay",
     "hidden_dim",
 }
+CONFIG_KEYS_V2 = CONFIG_KEYS | {"router_input_mode"}
 
 
 class TeeStream:
@@ -58,12 +59,13 @@ def load_config(path: Path) -> tuple[dict, str]:
     path = path.resolve()
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    expected = CONFIG_KEYS_V2 if isinstance(config, dict) and config.get("schema_version") == "gzsl-paper.icgr.v2" else CONFIG_KEYS
+    if not isinstance(config, dict) or actual != expected:
         raise ValueError(
-            f"ICGR配置字段不匹配；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"ICGR配置字段不匹配；缺少={sorted(expected-actual)}，"
+            f"多出={sorted(actual-expected)}。"
         )
-    if config["schema_version"] != "gzsl-paper.icgr.v1":
+    if config["schema_version"] not in ("gzsl-paper.icgr.v1", "gzsl-paper.icgr.v2"):
         raise ValueError("ICGR配置schema错误。")
     if config["idea_id"] != "IDEA-003" or config["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ICGR研究身份不匹配。")
@@ -73,6 +75,11 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("ICGR batch_size必须为正数。")
     if float(config["lr"]) != 1e-3 or float(config["weight_decay"]) != 1e-4:
         raise ValueError("ICGR首次TRY固定Adam lr=1e-3、weight_decay=1e-4。")
+    if config.get("router_input_mode", "image_cls") not in (
+        "image_cls",
+        "image_cls_role_cosine",
+    ):
+        raise ValueError("ICGR路由输入模式错误。")
     return config, sha256_file(path)
 
 
@@ -176,7 +183,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             raise ValueError("ICGR训练边界必须是150 seen / 50 true unseen类。")
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
         parent = build_parent(tensors, base_config, checkpoint, seenclasses, device)
-        model = ICGRClassifier(parent, hidden_dim=int(config["hidden_dim"])).to(device)
+        model = ICGRClassifier(
+            parent,
+            hidden_dim=int(config["hidden_dim"]),
+            router_input_mode=config.get("router_input_mode", "image_cls"),
+        ).to(device)
         initial = model.route_weights(tensors["train_features"][:4].to(device).float())
         expected = torch.full_like(initial, 1.0 / 3.0)
         if not torch.equal(initial, expected):
@@ -282,6 +293,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "candidate_metrics_percent": candidate_metrics,
             "delta_percent_points": delta,
             "group_weight_stats": weight_stats,
+            "router_input_mode": config.get("router_input_mode", "image_cls"),
             "success": success,
             "gate_model_sha256": sha256_file(output_dir / "gate_model.pth"),
         }

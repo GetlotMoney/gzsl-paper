@@ -28,12 +28,21 @@ class ICGRRouter(nn.Module):
 class ICGRClassifier(nn.Module):
     """冻结TG-VPR，只训练图像条件三组路由。"""
 
-    def __init__(self, parent: nn.Module, hidden_dim: int = 64):
+    def __init__(
+        self,
+        parent: nn.Module,
+        hidden_dim: int = 64,
+        router_input_mode: str = "image_cls",
+    ):
         super().__init__()
+        if router_input_mode not in ("image_cls", "image_cls_role_cosine"):
+            raise ValueError("未知ICGR路由输入模式。")
+        self.router_input_mode = router_input_mode
         self.parent = parent.eval()
         for parameter in self.parent.parameters():
             parameter.requires_grad_(False)
-        self.router = ICGRRouter(input_dim=768, hidden_dim=hidden_dim)
+        input_dim = 771 if router_input_mode == "image_cls_role_cosine" else 768
+        self.router = ICGRRouter(input_dim=input_dim, hidden_dim=hidden_dim)
 
         with torch.no_grad():
             enhanced, base_part, equal_role_part = self.parent.prototype_components()
@@ -51,9 +60,23 @@ class ICGRClassifier(nn.Module):
             self.register_buffer(
                 "frozen_scale", self.parent.scale().detach().clone(), persistent=False
             )
+            self.register_buffer(
+                "semantic_groups",
+                self.parent.semantic_group_vectors().detach().clone(),
+                persistent=False,
+            )
+
+    def router_inputs(self, image_features: torch.Tensor) -> torch.Tensor:
+        features = image_features.float()
+        if self.router_input_mode == "image_cls":
+            return features
+        normalized = F.normalize(features, dim=-1)
+        cosine = torch.einsum("bd,crd->bcr", normalized, self.semantic_groups)
+        group_confidence = cosine.max(dim=1).values
+        return torch.cat((features, group_confidence), dim=-1)
 
     def route_weights(self, image_features: torch.Tensor) -> torch.Tensor:
-        return self.router(image_features)
+        return self.router(self.router_inputs(image_features))
 
     def component_logits(
         self, image_features: torch.Tensor, class_ids: torch.Tensor | None = None
