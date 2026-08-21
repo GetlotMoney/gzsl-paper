@@ -11,10 +11,10 @@
 ## 创新2
 
 - [ ] 写一张`IDEA-002`：问题、来源、假设、唯一改动、成功/失败条件。
-- [ ] 建一个`V2-INNOVATION-001`：`EXPERIMENT.yaml + config + PARAMETER_MATRIX.csv + result.md`。
-- [ ] 代码结构变化时增加实验级`framework_diagram.html`。
-- [ ] pre-run commit后去服务器运行，完成后做post-run result commit。
-- [ ] 根据结果标记`supported / revised / rejected`。
+- [ ] 把第一个尝试写入`experiments/v2/EXPERIMENT_QUEUE.csv`。
+- [ ] 每次服务器尝试只更新一行，失败`drop`、有效`keep`。
+- [ ] 只有出现值得验证的候选时标记`promote`，再建立`V2-INNOVATION-001`正式目录和HTML图。
+- [ ] 正式验证完成后标记`supported / revised / rejected`。
 
 ## 创新3
 
@@ -35,4 +35,4 @@
 
 ## 当前唯一下一步
 
-创建`IDEA-002`：基于“seen原型被适配、unseen仍保持Mean8”的本地代码观察，写清可证伪假设和失败门槛。无需先找直接来源论文。
+创建`IDEA-002`，然后把第一个最小条件登记为`V2-TRY-001`写入实验清单。无需先找直接来源论文，也不立即创建正式Innovation目录。

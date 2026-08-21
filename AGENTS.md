@@ -19,6 +19,9 @@
 ## 实验
 
 - 一个 Experiment 回答一个研究问题；一个 Experiment 可以包含多组 Condition 和多行 RUN。
+- 探索阶段统一写入当前框架的`EXPERIMENT_QUEUE.csv`；每个快速尝试只占一行，不建立独立目录。
+- 快速尝试至少记录idea、准确code commit、config、唯一改动、seed、U/S/H/ZS、状态、决策和仓库外输出URI。
+- 失败尝试标记`drop`并保留一行；有效候选标记`keep`；只有值得详细验证的候选标记`promote`后才建立正式Experiment目录。
 - 每个正式`experiments/vX/`必须固定包含`tune/`、`ablation/`、`innovation/`和`confirmation/`四类目录，并各有`INDEX.md`；没有实验时索引明确写“当前无实验”。
 - 只改配置、参数、seed 或预注册控制条件：新增 RUN。
 - 修改公式、模块输入、forward、loss、数据语义或评估语义：新建 Experiment。
@@ -27,6 +30,7 @@
 - `PARAMETER_MATRIX.md`、逐RUN evidence页、README、implementation和module_source均为按需文件，不再作为普通实验默认门槛。
 - 只有代码结构、模块、forward、loss、数据流或评估语义改变时，才额外要求实验级`framework_diagram.html`。
 - pre-run commit 只保存代码、配置和计划；post-run commit 只保存已经发生的结果。
+- 多个快速尝试可以共用一次结果回填提交，不要求每个TRY单独写post-run文档。
 - GitHub 不保存数据、cache、checkpoint、原始大日志或密钥。
 
 ## HTML 框架图

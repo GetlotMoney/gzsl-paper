@@ -13,6 +13,26 @@ Framework
 
 一个创新实验可以包含基线、主方法、多个参数、消融、多个 seed 和最终结果。不能把“一项创新实验”压缩成一个配置，也不能把每个参数值拆成新的创新编号。
 
+## 探索实验清单
+
+正式Experiment之前的快速尝试统一写入当前框架的`EXPERIMENT_QUEUE.csv`：
+
+```text
+一行 = 一个代码/配置条件 + 一个seed + 一次真实运行
+```
+
+快速尝试不创建实验目录，不写README、evidence、result或HTML图。每行必须绑定准确code commit、config、唯一改动、seed、U/S/H/ZS和仓库外输出URI。
+
+状态只使用`planned / running / completed / failed`；运行代码或配置改变时，服务器启动前仍需有准确Git commit。
+
+决策只使用：
+
+- `drop`：失败或无收益，保留一行后停止；
+- `keep`：有信号，继续少量尝试；
+- `promote`：值得正式验证，随后创建正式Experiment目录。
+
+只有`promote`候选进入下面的正式实验流程。
+
 ## 框架固定目录
 
 每个正式框架必须始终提供四类实验入口：
@@ -46,14 +66,15 @@ INNOVATION-001_example/
 ```text
 真实问题或证据
 → 一张可证伪Idea卡
-→ 一个Experiment和参数CSV
-→ pre-run commit
-→ 仓库外独立RUN目录训练
-→ 回填CSV与result.md
-→ post-run result commit
+→ EXPERIMENT_QUEUE.csv登记TRY
+→ 代码/配置commit
+→ 仓库外独立目录快速运行
+→ 回填TRY结果与drop/keep/promote
+→ promote后才建立正式Experiment
+→ 正式pre-run / run / post-run闭环
 ```
 
-不为普通实验增加审核线程、状态机、专用控制器、重复冻结或额外收据。
+不为快速尝试增加目录、审核线程、状态机、专用控制器、重复冻结或额外收据。
 
 ## 参数矩阵
 

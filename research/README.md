@@ -11,7 +11,7 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。当前研究目标是在相�
 固定闭环：
 
 ```text
-真实问题或证据 → 一张Idea卡 → 一个Experiment → 真实RUN → 结果回填
+真实问题或证据 → 一张Idea卡 → 实验清单快速尝试 → 成功后正式Experiment
 ```
 
 本仓库从空白研究知识层开始。旧 GTPJ 的论文笔记、idea tree、研究结论和编号不迁移、不引用，也不能通过聊天记忆隐式恢复。需要使用同一篇论文时，必须重新核对原文并在本仓库重新登记。
@@ -83,7 +83,7 @@ failure_condition: <失败条件>
 status: proposed | testing | supported | revised | rejected
 ```
 
-实验和结果路径发生后再补；论文角色、命名候选和与其他创新的接口只在进入最终三创新组合时补，不作为Idea开工门槛。
+实验和结果路径发生后再补；Idea完成后先进入当前框架的`EXPERIMENT_QUEUE.csv`，只有`promote`候选才建立正式Experiment。论文角色、命名候选和与其他创新的接口只在进入最终三创新组合时补，不作为Idea开工门槛。
 
 证据不足时可以保存为 `proposed`，但不能直接宣称创新成立。
 
