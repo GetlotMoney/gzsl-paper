@@ -5,7 +5,7 @@ from pathlib import Path
 import torch
 
 from model.innovations.icgr import ICGRClassifier, ICGRRouter
-from model.innovations.train_icgr import load_config
+from model.innovations.train_icgr import load_config, uniform_kl
 from tests.test_tg_vpr_h1 import make_model
 
 
@@ -75,3 +75,16 @@ def test_rescue2_config_contract():
     )
     assert config["attempt_id"] == "V2-TRY-011"
     assert config["router_input_mode"] == "image_cls_role_cosine"
+
+
+def test_uniform_kl_and_rescue1_config_contract():
+    uniform = torch.full((4, 3), 1.0 / 3.0)
+    collapsed = torch.tensor([[0.98, 0.01, 0.01]])
+    assert abs(float(uniform_kl(uniform))) < 1e-7
+    assert float(uniform_kl(collapsed)) > 0.0
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_012_icgr_rescue1_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-012"
+    assert config["router_input_mode"] == "image_cls_role_cosine"
+    assert config["kl_weight"] == 0.01

@@ -110,6 +110,14 @@ class ICGRClassifier(nn.Module):
         if not enabled:
             return base_logits + role_logits.mean(dim=-1)
         weights = self.route_weights(image_features)
+        return self.logits_from_weights(base_logits, role_logits, weights)
+
+    @staticmethod
+    def logits_from_weights(
+        base_logits: torch.Tensor,
+        role_logits: torch.Tensor,
+        weights: torch.Tensor,
+    ) -> torch.Tensor:
         return base_logits + torch.einsum("br,bcr->bc", weights, role_logits)
 
     def forward(

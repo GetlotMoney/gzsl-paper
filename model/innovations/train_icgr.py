@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -39,6 +40,7 @@ CONFIG_KEYS = {
     "hidden_dim",
 }
 CONFIG_KEYS_V2 = CONFIG_KEYS | {"router_input_mode"}
+CONFIG_KEYS_V3 = CONFIG_KEYS_V2 | {"kl_weight"}
 
 
 class TeeStream:
@@ -59,13 +61,23 @@ def load_config(path: Path) -> tuple[dict, str]:
     path = path.resolve()
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    expected = CONFIG_KEYS_V2 if isinstance(config, dict) and config.get("schema_version") == "gzsl-paper.icgr.v2" else CONFIG_KEYS
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    if schema == "gzsl-paper.icgr.v3":
+        expected = CONFIG_KEYS_V3
+    elif schema == "gzsl-paper.icgr.v2":
+        expected = CONFIG_KEYS_V2
+    else:
+        expected = CONFIG_KEYS
     if not isinstance(config, dict) or actual != expected:
         raise ValueError(
             f"ICGR配置字段不匹配；缺少={sorted(expected-actual)}，"
             f"多出={sorted(actual-expected)}。"
         )
-    if config["schema_version"] not in ("gzsl-paper.icgr.v1", "gzsl-paper.icgr.v2"):
+    if config["schema_version"] not in (
+        "gzsl-paper.icgr.v1",
+        "gzsl-paper.icgr.v2",
+        "gzsl-paper.icgr.v3",
+    ):
         raise ValueError("ICGR配置schema错误。")
     if config["idea_id"] != "IDEA-003" or config["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ICGR研究身份不匹配。")
@@ -80,7 +92,15 @@ def load_config(path: Path) -> tuple[dict, str]:
         "image_cls_role_cosine",
     ):
         raise ValueError("ICGR路由输入模式错误。")
+    if float(config.get("kl_weight", 0.0)) not in (0.0, 0.01):
+        raise ValueError("ICGR KL权重只能关闭或固定为0.01。")
     return config, sha256_file(path)
+
+
+def uniform_kl(weights: torch.Tensor) -> torch.Tensor:
+    return (
+        weights * (weights.clamp_min(1e-12).log() + math.log(3.0))
+    ).sum(dim=-1).mean()
 
 
 def build_parent(tensors, base_config, checkpoint, seenclasses, device):
@@ -218,14 +238,20 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             model.parent.eval()
             model.router.train()
             permutation = torch.randperm(labels.numel(), generator=generator)
-            loss_sum = 0.0
+            loss_sum = ce_sum = kl_sum = 0.0
             sample_count = 0
             for start in range(0, labels.numel(), int(config["batch_size"])):
                 indices = permutation[start : start + int(config["batch_size"])]
                 features = tensors["train_features"][indices].to(device).float()
                 targets = global_to_seen[labels[indices]].to(device)
                 optimizer.zero_grad(set_to_none=True)
-                loss = F.cross_entropy(model.logits(features, seenclasses), targets)
+                weights = model.route_weights(features)
+                base_logits, role_logits = model.component_logits(features, seenclasses)
+                ce = F.cross_entropy(
+                    model.logits_from_weights(base_logits, role_logits, weights), targets
+                )
+                kl = uniform_kl(weights)
+                loss = ce + float(config.get("kl_weight", 0.0)) * kl
                 if not torch.isfinite(loss):
                     raise FloatingPointError("ICGR loss包含NaN/Inf。")
                 loss.backward()
@@ -238,10 +264,20 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
                     raise RuntimeError("冻结TG-VPR参数意外获得梯度。")
                 optimizer.step()
                 loss_sum += float(loss.detach()) * indices.numel()
+                ce_sum += float(ce.detach()) * indices.numel()
+                kl_sum += float(kl.detach()) * indices.numel()
                 sample_count += indices.numel()
-            row = {"epoch": epoch, "train_ce": loss_sum / sample_count}
+            row = {
+                "epoch": epoch,
+                "train_loss": loss_sum / sample_count,
+                "train_ce": ce_sum / sample_count,
+                "train_kl": kl_sum / sample_count,
+            }
             history.append(row)
-            print(f"epoch={epoch} train_ce={row['train_ce']:.6f}")
+            print(
+                f"epoch={epoch} train_ce={row['train_ce']:.6f} "
+                f"train_kl={row['train_kl']:.6f}"
+            )
 
         gate_payload = {
             "attempt_id": config["attempt_id"],
@@ -294,6 +330,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "delta_percent_points": delta,
             "group_weight_stats": weight_stats,
             "router_input_mode": config.get("router_input_mode", "image_cls"),
+            "kl_weight": float(config.get("kl_weight", 0.0)),
             "success": success,
             "gate_model_sha256": sha256_file(output_dir / "gate_model.pth"),
         }
