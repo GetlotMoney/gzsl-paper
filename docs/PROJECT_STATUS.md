@@ -47,4 +47,6 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。V2当前正式单seed基线�
 
 `IDEA-005 / TST`已在seed 5/6/7/8全部提高H，平均提升`3.013152`个百分点，候选H mean=`76.866245%`，已超过四seed目标`76.853093%`，现为论文核心创新2。seed7为`76.984545%`，距离单点目标仍差`0.038637`个百分点；项目还缺第3个supported创新，因此整体工作未完成。
 
+TST之后已依次止损EPC、CATA、SPA、PURL和NTR。NTR直接8维条件曾达到seed7 `H=77.086536%`、四seedH mean约`76.876640%`，但相对TST仅2/4 seed为正，未按稳定创新晋级。当前正式状态仍是2个supported创新；第3创新与完整三创新组合尚未完成。
+
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

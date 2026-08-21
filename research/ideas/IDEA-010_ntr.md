@@ -12,10 +12,12 @@ hypothesis: 输入完整top-5邻域相似度分布，可让gate更准确地决�
 core_change: gate输入由4维摘要扩展为8维：Mean8-Value余弦、位移、top-5均值及完整5个邻居相似度；其余TST不变。
 success_condition: seed7相对TG-VPR+TST的DeltaH不低于0.05个百分点，U和S各自下降不超过2个百分点，并保持TST步长与角位移安全门槛。
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
-status: testing
+status: rejected
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-036
+current_attempt: none
+last_attempt: V2-TRY-036
+last_decision: drop
 ```
 
 NTR只改变训练式类别gate的语义几何输入；true-unseen图像不进入梯度。改回4维摘要时严格回到TST。
@@ -35,3 +37,9 @@ seed7得到`U=74.319029%`、`S=80.068129%`、`H=77.086536%`、`ZS=81.430238%`，
 ## 残差多seed诊断
 
 残差条件的seed 5/6/7/8 `ΔH=-0.209205 / -0.085143 / +0.066803 / +0.029781`，仍只有2/4为正。补救2将完整top-5向量压缩为一个邻域标准差，与原4维摘要组成5维低复杂度gate；若seed7不通过则停止。
+
+## V2-TRY-036结果与止损
+
+5维离散度条件得到`H=76.806996%`、相对TST `ΔH=-0.177549`，seed7即未通过。NTR已验证完整向量、冻结残差和低维离散度三种结构，均未形成稳定4/4增益，IDEA-010标记`rejected`并提前止损。
+
+保留观察：直接8维NTR的seed7为`77.086536%`，四seedH mean约`76.876640%`，两项数值目标均达到；但相对TST只有seed6/7为正，seed5/8为负，因此不能作为稳定第3创新晋级。
