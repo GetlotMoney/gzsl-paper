@@ -4,7 +4,7 @@ from pathlib import Path
 
 import torch
 
-from model.innovations.train_elpt import load_config
+from model.innovations.train_elpt import _pseudo_unseen_risk, load_config
 from model.innovations.tst import (
     TangentStepGate,
     bidirectional_centroid_contrastive_loss,
@@ -118,3 +118,18 @@ def test_purl_config_reweights_pseudo_unseen_risk():
     assert config["idea_id"] == "IDEA-009"
     assert config["pseudo_unseen_ce_weight"] == 1.0
     assert config["centroid_alignment_weight"] == 0.0
+
+
+def test_purl_focal_risk_and_rescue_config():
+    logits = torch.tensor([[3.0, 0.0], [0.2, 0.0]], requires_grad=True)
+    targets = torch.tensor([0, 0])
+    focal = _pseudo_unseen_risk(logits, targets, "focal_gamma2")
+    ce = _pseudo_unseen_risk(logits, targets, "cross_entropy")
+    assert float(focal.detach()) < float(ce.detach())
+    focal.backward()
+    assert torch.isfinite(logits.grad).all()
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_027_purl_rescue1_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-027"
+    assert config["pseudo_unseen_loss_mode"] == "focal_gamma2"

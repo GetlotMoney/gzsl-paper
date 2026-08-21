@@ -67,6 +67,7 @@ OPTIONAL_CONFIG_KEYS = {
     "centroid_alignment_mode",
     "gate_initialization_ensemble",
     "pseudo_unseen_ce_weight",
+    "pseudo_unseen_loss_mode",
 }
 
 
@@ -121,6 +122,7 @@ def load_config(path: Path):
     raw.setdefault("centroid_alignment_mode", "pairwise")
     raw.setdefault("gate_initialization_ensemble", 1)
     raw.setdefault("pseudo_unseen_ce_weight", 0.0)
+    raw.setdefault("pseudo_unseen_loss_mode", "cross_entropy")
     if raw["schema_version"] not in (
         "gzsl-paper.elpt.v1",
         "gzsl-paper.tst.v1",
@@ -129,6 +131,7 @@ def load_config(path: Path):
         "gzsl-paper.cata.v3",
         "gzsl-paper.cata.v4",
         "gzsl-paper.purl.v1",
+        "gzsl-paper.purl.v2",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -144,7 +147,7 @@ def load_config(path: Path):
         "V2-TRY-023",
         "V2-TRY-024",
     } and raw["idea_id"] == "IDEA-007"
-    valid_purl = raw["attempt_id"] == "V2-TRY-026" and raw["idea_id"] == "IDEA-009"
+    valid_purl = raw["attempt_id"] in {"V2-TRY-026", "V2-TRY-027"} and raw["idea_id"] == "IDEA-009"
     if not (valid_elpt or valid_tst or valid_cata or valid_purl):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
@@ -232,6 +235,9 @@ def load_config(path: Path):
             or set(parent) != {"U", "S", "H", "ZS"}
         ):
             raise ValueError("PURL首次TRY身份不匹配。")
+        expected_mode = "cross_entropy" if raw["attempt_id"] == "V2-TRY-026" else "focal_gamma2"
+        if raw["pseudo_unseen_loss_mode"] != expected_mode:
+            raise ValueError("PURL风险模式与TRY身份不匹配。")
     return raw, sha256_file(path)
 
 
@@ -259,6 +265,15 @@ def _centroid_loss(prototypes, centroids, mode):
     if mode == "contrastive":
         return centroid_contrastive_loss(prototypes, centroids)
     return centroid_alignment_loss(prototypes, centroids)
+
+
+def _pseudo_unseen_risk(logits, targets, mode):
+    if mode == "focal_gamma2":
+        log_probability = F.log_softmax(logits, dim=-1)
+        log_correct = log_probability.gather(1, targets.unsqueeze(1)).squeeze(1)
+        correct_probability = log_correct.exp()
+        return (-((1.0 - correct_probability).square()) * log_correct).mean()
+    return F.cross_entropy(logits, targets)
 
 
 def _stage_boundaries(stages):
@@ -477,8 +492,10 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
                     tensors["train_labels"].long()[indices],
                     package["pseudo_unseen"],
                 ).to(device)
-                pseudo_unseen_ce = F.cross_entropy(
-                    logits[pseudo_unseen_mask], targets[pseudo_unseen_mask]
+                pseudo_unseen_ce = _pseudo_unseen_risk(
+                    logits[pseudo_unseen_mask],
+                    targets[pseudo_unseen_mask],
+                    config["pseudo_unseen_loss_mode"],
                 )
                 topo = topology_loss(
                     base_all.index_select(0, seenclasses.to(device)), competition
@@ -573,8 +590,10 @@ def _train_gate_initialization_ensemble(
                         tensors["train_labels"].long()[indices],
                         package["pseudo_unseen"],
                     ).to(device)
-                    pseudo_unseen_ce = F.cross_entropy(
-                        logits[pseudo_unseen_mask], targets[pseudo_unseen_mask]
+                    pseudo_unseen_ce = _pseudo_unseen_risk(
+                        logits[pseudo_unseen_mask],
+                        targets[pseudo_unseen_mask],
+                        config["pseudo_unseen_loss_mode"],
                     )
                     topo = topology_loss(
                         base_all.index_select(0, seenclasses.to(device)), competition
@@ -650,8 +669,10 @@ def _train_gate_ensemble(packages, tensors, config, device, seed, print_log):
                     tensors["train_labels"].long()[indices],
                     package["pseudo_unseen"],
                 ).to(device)
-                pseudo_unseen_ce = F.cross_entropy(
-                    logits[pseudo_unseen_mask], targets[pseudo_unseen_mask]
+                pseudo_unseen_ce = _pseudo_unseen_risk(
+                    logits[pseudo_unseen_mask],
+                    targets[pseudo_unseen_mask],
+                    config["pseudo_unseen_loss_mode"],
                 )
                 topo = topology_loss(
                     base_all.index_select(0, seenclasses.to(device)), competition
@@ -981,6 +1002,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "pseudo_unseen_ce_weight": float(
                 config["pseudo_unseen_ce_weight"]
             ),
+            "pseudo_unseen_loss_mode": config["pseudo_unseen_loss_mode"],
             "parent_metrics_percent": config["parent_metrics_percent"],
             "delta_vs_parent_percent_points": parent_delta,
             "success": success,
