@@ -13,6 +13,13 @@ hypothesis: 将seen训练得到的共享Value变换直接用于unseen三组语�
 core_change: 仅在评估时对unseen原型应用共享Value重参数化，训练权重与seen原型保持不变。
 success_condition: H高于74.023182且U提高，S不出现严重下降。
 failure_condition: H不提升、U不提升或S下降导致H变差。
-status: proposed
+status: revised
+last_attempt: V2-TRY-001
+last_decision: drop
 ```
 
+## TRY-001结果
+
+直接把完整Value变换应用到unseen失败：`U=36.994851%`、`S=88.998413%`、`H=52.264429%`、`ZS=75.146323%`，相对基线`ΔH=-21.758753`个百分点。
+
+修订结论：unseen不能接受完整幅度改写；若继续该方向，只允许尝试受约束的小残差迁移，不再重复全量迁移。
