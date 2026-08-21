@@ -93,6 +93,17 @@ def test_gate_features_and_blend_are_finite_and_normalized():
     assert torch.allclose(blended.norm(dim=-1), torch.ones(50), atol=1e-6)
 
 
+def test_top5_vector_features_have_eight_dimensions():
+    generator = torch.Generator().manual_seed(12)
+    base = torch.randn(50, 768, generator=generator)
+    value = torch.randn(50, 768, generator=generator)
+    support = torch.randn(100, 768, generator=generator)
+    features = gate_features(base, value, support, mode="top5_vector")
+    assert features.shape == (50, 8)
+    alpha = ELPTGate(input_dim=8, max_alpha=0.25)(features)
+    assert alpha.shape == (50,)
+
+
 def test_try_config_is_frozen():
     config, digest = load_config(ROOT / "config" / "tries" / "v2_try_006_elpt_seed7.yaml")
     assert len(digest) == 64
@@ -111,6 +122,14 @@ def test_rescue_config_reuses_fold_checkpoints():
     assert config["fold_checkpoint_dir"].endswith("V2-TRY-006")
 
 
+def test_rescue2_config_uses_top5_vector():
+    config, _ = load_config(
+        ROOT / "config" / "tries" / "v2_try_008_elpt_rescue2_seed7.yaml"
+    )
+    assert config["gate_feature_mode"] == "top5_vector"
+    assert config["gate_max_alpha"] == 0.25
+
+
 class ELPTTest(unittest.TestCase):
     def test_equivalence(self):
         test_variable_150_path_is_bitwise_equal_to_v2()
@@ -127,11 +146,17 @@ class ELPTTest(unittest.TestCase):
     def test_features(self):
         test_gate_features_and_blend_are_finite_and_normalized()
 
+    def test_top5_features(self):
+        test_top5_vector_features_have_eight_dimensions()
+
     def test_config(self):
         test_try_config_is_frozen()
 
     def test_rescue_config(self):
         test_rescue_config_reuses_fold_checkpoints()
+
+    def test_rescue2_config(self):
+        test_rescue2_config_uses_top5_vector()
 
 
 if __name__ == "__main__":

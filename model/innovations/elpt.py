@@ -98,15 +98,23 @@ class VariableClassTGVPR(TGVPRH1FixedEqual):
 class ELPTGate(nn.Module):
     """用类别语义几何学习每类迁移强度。"""
 
-    def __init__(self, max_alpha: float = 1.0, initial_alpha: float = 0.1):
+    def __init__(
+        self,
+        input_dim: int = 4,
+        max_alpha: float = 1.0,
+        initial_alpha: float = 0.1,
+    ):
         super().__init__()
         if not 0.0 < float(max_alpha) <= 1.0:
             raise ValueError("max_alpha必须位于(0, 1]。")
         if not 0.0 < float(initial_alpha) < float(max_alpha):
             raise ValueError("initial_alpha必须位于(0, max_alpha)。")
+        if int(input_dim) not in (4, 8):
+            raise ValueError("ELPT gate input_dim只允许4或8。")
+        self.input_dim = int(input_dim)
         self.max_alpha = float(max_alpha)
         self.network = nn.Sequential(
-            nn.Linear(4, 16),
+            nn.Linear(self.input_dim, 16),
             nn.GELU(),
             nn.Linear(16, 1),
         )
@@ -138,21 +146,26 @@ def gate_features(
     base: torch.Tensor,
     value: torch.Tensor,
     support_base: torch.Tensor,
+    mode: str = "summary",
 ) -> torch.Tensor:
     base = F.normalize(base, dim=-1)
     value = F.normalize(value, dim=-1)
     support_base = F.normalize(support_base, dim=-1)
     similarity = base @ support_base.T
     top5 = similarity.topk(k=5, dim=1).values
-    return torch.stack(
-        (
-            (base * value).sum(dim=-1),
-            (value - base).norm(dim=-1),
-            top5.mean(dim=1),
-            top5.max(dim=1).values,
-        ),
-        dim=1,
-    )
+    cosine = (base * value).sum(dim=-1)
+    displacement = (value - base).norm(dim=-1)
+    if mode == "summary":
+        return torch.stack(
+            (cosine, displacement, top5.mean(dim=1), top5.max(dim=1).values),
+            dim=1,
+        )
+    if mode == "top5_vector":
+        return torch.cat(
+            (cosine.unsqueeze(1), displacement.unsqueeze(1), top5.mean(dim=1, keepdim=True), top5),
+            dim=1,
+        )
+    raise ValueError("未知ELPT gate feature mode。")
 
 
 def blend_prototypes(base: torch.Tensor, value: torch.Tensor, alpha: torch.Tensor):

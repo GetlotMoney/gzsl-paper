@@ -47,7 +47,12 @@ REQUIRED_CONFIG_KEYS = {
     "gate_weight_decay",
     "topology_weight",
 }
-OPTIONAL_CONFIG_KEYS = {"gate_max_alpha", "alpha_penalty", "fold_checkpoint_dir"}
+OPTIONAL_CONFIG_KEYS = {
+    "gate_max_alpha",
+    "alpha_penalty",
+    "fold_checkpoint_dir",
+    "gate_feature_mode",
+}
 
 
 class TeeStream:
@@ -92,9 +97,10 @@ def load_config(path: Path):
     raw.setdefault("gate_max_alpha", 1.0)
     raw.setdefault("alpha_penalty", 0.0)
     raw.setdefault("fold_checkpoint_dir", None)
+    raw.setdefault("gate_feature_mode", "summary")
     if raw["schema_version"] != "gzsl-paper.elpt.v1":
         raise ValueError("ELPT schema错误。")
-    if raw["attempt_id"] not in {"V2-TRY-006", "V2-TRY-007"} or raw["idea_id"] != "IDEA-002":
+    if raw["attempt_id"] not in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008"} or raw["idea_id"] != "IDEA-002":
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ELPT只接受FRAMEWORK-V2。")
@@ -116,6 +122,13 @@ def load_config(path: Path):
         raise ValueError("TRY-007必须使用0.25上限和0.01 alpha约束。")
     if raw["attempt_id"] == "V2-TRY-007" and not raw["fold_checkpoint_dir"]:
         raise ValueError("TRY-007必须复用TRY-006 fold checkpoint。")
+    if raw["attempt_id"] == "V2-TRY-008" and (
+        float(raw["gate_max_alpha"]) != 0.25
+        or float(raw["alpha_penalty"]) != 0.01
+        or raw["gate_feature_mode"] != "top5_vector"
+        or not raw["fold_checkpoint_dir"]
+    ):
+        raise ValueError("TRY-008必须使用受约束top5向量gate并复用fold checkpoint。")
     return raw, sha256_file(path)
 
 
@@ -239,7 +252,15 @@ def _load_fold_checkpoint(
     return model.to(device).eval()
 
 
-def _fold_package(model, pseudo_seen, pseudo_unseen, tensors, seenclasses, device):
+def _fold_package(
+    model,
+    pseudo_seen,
+    pseudo_unseen,
+    tensors,
+    seenclasses,
+    device,
+    feature_mode,
+):
     model.eval()
     with torch.no_grad():
         base_all = model.base_prototypes()
@@ -249,6 +270,7 @@ def _fold_package(model, pseudo_seen, pseudo_unseen, tensors, seenclasses, devic
             base_all.index_select(0, pseudo_unseen.to(device)),
             value,
             base_all.index_select(0, pseudo_seen.to(device)),
+            mode=feature_mode,
         )
     seen_sample_mask = torch.isin(tensors["train_labels"].long(), pseudo_seen)
     unseen_sample_mask = torch.isin(tensors["train_labels"].long(), pseudo_unseen)
@@ -267,7 +289,11 @@ def _fold_package(model, pseudo_seen, pseudo_unseen, tensors, seenclasses, devic
 
 
 def _train_gate(packages, tensors, config, device, seed, print_log):
-    gate = ELPTGate(max_alpha=float(config["gate_max_alpha"])).to(device)
+    input_dim = 8 if config["gate_feature_mode"] == "top5_vector" else 4
+    gate = ELPTGate(
+        input_dim=input_dim,
+        max_alpha=float(config["gate_max_alpha"]),
+    ).to(device)
     optimizer = torch.optim.Adam(
         gate.parameters(),
         lr=float(config["gate_lr"]),
@@ -334,7 +360,14 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
     return gate.eval()
 
 
-def _candidate_prototypes(model, gate, seenclasses, unseenclasses, device):
+def _candidate_prototypes(
+    model,
+    gate,
+    seenclasses,
+    unseenclasses,
+    device,
+    feature_mode,
+):
     model.eval()
     with torch.no_grad():
         base_all = model.base_prototypes()
@@ -344,6 +377,7 @@ def _candidate_prototypes(model, gate, seenclasses, unseenclasses, device):
             base_all.index_select(0, unseenclasses.to(device)),
             value,
             base_all.index_select(0, seenclasses.to(device)),
+            mode=feature_mode,
         )
         alpha = gate(features)
         final_all[unseenclasses.to(device)] = blend_prototypes(
@@ -429,6 +463,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
                     tensors,
                     seenclasses,
                     device,
+                    config["gate_feature_mode"],
                 )
             )
             del fold_model
@@ -486,7 +521,12 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             baseline, tensors, seenclasses, unseenclasses, device
         )
         candidate_prototypes, alpha = _candidate_prototypes(
-            variable, gate, seenclasses, unseenclasses, device
+            variable,
+            gate,
+            seenclasses,
+            unseenclasses,
+            device,
+            config["gate_feature_mode"],
         )
         candidate = FrozenPrototypeClassifier(
             candidate_prototypes, variable.scale()
@@ -537,6 +577,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "gate_max_alpha": float(config["gate_max_alpha"]),
             "alpha_penalty": float(config["alpha_penalty"]),
             "fold_checkpoint_dir": config["fold_checkpoint_dir"],
+            "gate_feature_mode": config["gate_feature_mode"],
             "success": success,
             "gate_model_sha256": sha256_file(output_dir / "gate_model.pth"),
         }

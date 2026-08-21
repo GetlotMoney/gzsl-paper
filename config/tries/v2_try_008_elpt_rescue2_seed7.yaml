@@ -1,0 +1,20 @@
+schema_version: gzsl-paper.elpt.v1
+attempt_id: V2-TRY-008
+idea_id: IDEA-002
+framework_id: FRAMEWORK-V2
+base_config: config/tg_vpr_h1.yaml
+base_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/runs/v2/CONFIRM-001_v2_baseline/RUN-001/model_best.pth
+base_checkpoint_sha256: 59397353a7db1b82df815a0faea1050c76b6f992ff3426a2bbb58d984f39595f
+seed: 7
+fold_count: 3
+fold_epochs: 50
+gate_epochs: 20
+gate_batch_half: 32
+gate_lr: 0.001
+gate_weight_decay: 0.0001
+topology_weight: 0.1
+gate_max_alpha: 0.25
+alpha_penalty: 0.01
+fold_checkpoint_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-006
+gate_feature_mode: top5_vector
+
