@@ -16,7 +16,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-022
+current_attempt: V2-TRY-023
 ```
 
 CATA只在三折pseudo-unseen类上使用视觉中心；这些类属于150个seen训练类。true-unseen图像不加载、不进入梯度。对齐权重为0时严格回到TST训练目标。
@@ -24,3 +24,7 @@ CATA只在三折pseudo-unseen类上使用视觉中心；这些类属于150个see
 ## V2-TRY-021结果
 
 一对一余弦对齐得到`H=76.900608%`，相对TST `ΔH=-0.083937`，U/S/ZS均轻微下降。失败原因是只拉近自己的视觉中心，没有显式保持类间判别性。补救1把该项改为50个迁移原型对50个视觉中心的对比分类loss，权重仍固定0.1。
+
+## V2-TRY-022结果
+
+单向中心对比得到`H=77.031094%`，已超过项目seed7目标`77.023182%`；但相对TST `ΔH=+0.046550`，比预注册创新门槛少`0.003450`，因此不直接通过。补救2把原型到中心的单向分类改为双向对比匹配，其他条件不变。
