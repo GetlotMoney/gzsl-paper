@@ -1,0 +1,28 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-002
+idea_id: IDEA-005
+framework_id: FRAMEWORK-V2
+base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
+code_commits:
+  seed7: 0b919b14f052ec5e3f99378383e94053a2cf45ae
+  multiseed: b9cfb5bd0139ca85de42c4445f9b045977c19fa3
+title: Tangent Semantic Transport
+status: supported
+question: 切空间迁移能否在不使用true-unseen图像梯度的前提下稳定提高V2的GZSL H
+source_attempts: [V2-TRY-016, V2-TRY-017, V2-TRY-015, V2-TRY-018]
+module:
+  module_id: TST
+  name: Tangent Semantic Transport
+  purpose: 将seen任务学到的Value语义方向安全迁移到unseen原型
+  inputs: [Mean8原型, Value候选原型, 四维类别几何量]
+  output: 单位范数迁移原型
+  formula: p=Norm(p_mean + beta * (p_value - dot(p_value,p_mean)*p_mean))
+  switch: transport_mode=tangent
+  baseline_off_behavior: beta=0时严格回到Mean8 unseen原型
+  parent_condition: FRAMEWORK-V2 / TG-VPR-H1
+  training: 三折100类pseudo-seen与50类pseudo-unseen；20 epoch gate；Adam lr=1e-3 wd=1e-4
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: framework_diagram.html
+decision: paper_core_innovation
