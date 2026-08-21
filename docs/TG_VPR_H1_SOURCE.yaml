@@ -9,6 +9,7 @@ source_result_commit: 0aa38ab46020690879c1de8b937f35fd6b607f22
 source_runtime_commits:
   stage1: 4cf8baafdf9022c1e3b900a528d849fd831bc945
   stage2: 4c5c0910b7b498ed6e4021bc76a9a7236a8ce15e
+target_code_commit: 4a063218989c6e193a7aa3c593bb4f0f8ecb7379
 source_files:
   standalone_model:
     path: experiments/v5/innovation/INNOVATION-024_tg_vpr_h1/tg_vpr_h1_model.py
@@ -41,12 +42,22 @@ target_files:
   test:
     path: tests/test_tg_vpr_h1.py
     sha256: ccd7d55b657241dd15e1874347d81c85ef5c8b9b27a527ddd97f776a85a8356e
+  editable_diagram:
+    path: docs/TG_VPR_H1_framework_diagram.drawio
+    sha256: 1eafb57c24cef664c8b8910688bc0e1cab817a6fc26ad9253e3fd6f2ad90d9cc
+  html_diagram:
+    path: docs/TG_VPR_H1_framework_diagram.html
+    sha256: 560e909a8f524c7d3870df82e45c7ba2f03f9a356fc410df32ec23834a409184
 migration_verification:
   state_dict_keys: 13
   strict_state_dict_load: pass
   prototype_output: bitwise_equal
   logits_output: bitwise_equal
   topology_loss: bitwise_equal
+  drawio_validation: pass_zero_errors_zero_warnings
+  html_self_contained: true
+  html_static_validation: pass
+  html_browser_open_check: blocked_by_browser_file_url_policy
 preserved_semantics:
   - eight-role cache order and local/unique/overall mapping
   - fixed one-third group weights
