@@ -39,6 +39,8 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。V2当前正式单seed基线�
 
 训练式ELPT已完成`V2-TRY-006`及全部3次方法级补救。最佳H达到`76.803085%`，但首次TRY的gate均值超过预注册上限；三个补救又持续出现gate饱和或S下降超过2个百分点，因此`IDEA-002`已标记`rejected`并强制止损。没有建立`V2-INNOVATION-002`。
 
-下一件事是以冻结V2基线为父条件执行`IDEA-003 / ICGR`：仅用seen训练图像学习图像条件三组路由，先运行seed7最小TRY。
+`IDEA-003 / ICGR`已完成首次TRY与两次适用的补救。原始路由和增加语义余弦输入均未提高H；均匀KL消除了权重塌缩，但最终仍为`H=73.976174%`、`ΔH=-0.047008`。只适用于跨seed不稳定的RESCUE-3前提不成立，因此该方向已提前止损并标记`rejected`。
+
+当前仍只有`IDEA-001 / TG-VPR-H1`一个supported核心创新。下一步必须建立新的独立训练式候选，不能把ELPT或ICGR失败条件晋级为正式创新。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
