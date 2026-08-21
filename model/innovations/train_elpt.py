@@ -65,6 +65,7 @@ OPTIONAL_CONFIG_KEYS = {
     "centroid_alignment_weight",
     "parent_metrics_percent",
     "centroid_alignment_mode",
+    "gate_initialization_ensemble",
 }
 
 
@@ -117,12 +118,14 @@ def load_config(path: Path):
     raw.setdefault("centroid_alignment_weight", 0.0)
     raw.setdefault("parent_metrics_percent", None)
     raw.setdefault("centroid_alignment_mode", "pairwise")
+    raw.setdefault("gate_initialization_ensemble", 1)
     if raw["schema_version"] not in (
         "gzsl-paper.elpt.v1",
         "gzsl-paper.tst.v1",
         "gzsl-paper.cata.v1",
         "gzsl-paper.cata.v2",
         "gzsl-paper.cata.v3",
+        "gzsl-paper.cata.v4",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -136,6 +139,7 @@ def load_config(path: Path):
         "V2-TRY-021",
         "V2-TRY-022",
         "V2-TRY-023",
+        "V2-TRY-024",
     } and raw["idea_id"] == "IDEA-007"
     if not (valid_elpt or valid_tst or valid_cata):
         raise ValueError("ELPT首次TRY身份不匹配。")
@@ -202,9 +206,13 @@ def load_config(path: Path):
             "V2-TRY-021": "pairwise",
             "V2-TRY-022": "contrastive",
             "V2-TRY-023": "bidirectional_contrastive",
+            "V2-TRY-024": "contrastive",
         }[raw["attempt_id"]]
         if raw["centroid_alignment_mode"] != expected_mode:
             raise ValueError("CATA对齐模式与TRY身份不匹配。")
+        expected_ensemble = 3 if raw["attempt_id"] == "V2-TRY-024" else 1
+        if int(raw["gate_initialization_ensemble"]) != expected_ensemble:
+            raise ValueError("CATA初始化ensemble与TRY身份不匹配。")
     return raw, sha256_file(path)
 
 
@@ -396,6 +404,10 @@ def _fold_package(
 
 
 def _train_gate(packages, tensors, config, device, seed, print_log):
+    if int(config["gate_initialization_ensemble"]) > 1:
+        return _train_gate_initialization_ensemble(
+            packages, tensors, config, device, seed, print_log
+        )
     if config["gate_ensemble"]:
         return _train_gate_ensemble(packages, tensors, config, device, seed, print_log)
     input_dim = 8 if config["gate_feature_mode"] == "top5_vector" else 4
@@ -473,6 +485,90 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
     return gate.eval()
 
 
+def _train_gate_initialization_ensemble(
+    packages, tensors, config, device, seed, print_log
+):
+    gates = []
+    label_map = torch.full((200,), -1, dtype=torch.long)
+    seenclasses = packages[0]["seenclasses"]
+    label_map[seenclasses] = torch.arange(150)
+    half = int(config["gate_batch_half"])
+    input_dim = 8 if config["gate_feature_mode"] == "top5_vector" else 4
+    for member in range(int(config["gate_initialization_ensemble"])):
+        torch.manual_seed(seed * 100 + member)
+        gate = _make_gate(config, input_dim, device)
+        optimizer = torch.optim.Adam(
+            gate.parameters(),
+            lr=float(config["gate_lr"]),
+            weight_decay=float(config["gate_weight_decay"]),
+        )
+        generators = [
+            torch.Generator(device="cpu").manual_seed(
+                seed * 10000 + member * 1000 + fold_id
+            )
+            for fold_id in range(3)
+        ]
+        for epoch in range(1, int(config["gate_epochs"]) + 1):
+            gate.train()
+            loss_sum = 0.0
+            step_count = 0
+            for fold_id, package in enumerate(packages):
+                seen_indices = package["seen_indices"]
+                unseen_indices = package["unseen_indices"]
+                steps = min(seen_indices.numel() // half, unseen_indices.numel() // half)
+                for _ in range(steps):
+                    generator = generators[fold_id]
+                    si = seen_indices[
+                        torch.randperm(seen_indices.numel(), generator=generator)[:half]
+                    ]
+                    ui = unseen_indices[
+                        torch.randperm(unseen_indices.numel(), generator=generator)[:half]
+                    ]
+                    indices = torch.cat((si, ui))
+                    images = tensors["train_features"][indices].to(device).float()
+                    targets = label_map[tensors["train_labels"].long()[indices]].to(device)
+                    base_all = package["base_all"].to(device)
+                    final_all = package["fold_full"].to(device).clone()
+                    coefficient = gate(package["gate_features"].to(device))
+                    pseudo_unseen = package["pseudo_unseen"].to(device)
+                    final_all[pseudo_unseen] = _transport(
+                        base_all.index_select(0, pseudo_unseen),
+                        package["value"].to(device),
+                        coefficient,
+                        config["transport_mode"],
+                    )
+                    competition = final_all.index_select(0, seenclasses.to(device))
+                    logits = F.normalize(images, dim=-1) @ competition.T
+                    logits = logits * package["scale"].to(device)
+                    ce = F.cross_entropy(logits, targets)
+                    topo = topology_loss(
+                        base_all.index_select(0, seenclasses.to(device)), competition
+                    )
+                    alignment = _centroid_loss(
+                        final_all.index_select(0, pseudo_unseen),
+                        package["pseudo_unseen_centroids"].to(device),
+                        config["centroid_alignment_mode"],
+                    )
+                    loss = (
+                        ce
+                        + float(config["topology_weight"]) * topo
+                        + float(config["alpha_penalty"]) * coefficient.square().mean()
+                        + float(config["centroid_alignment_weight"]) * alignment
+                    )
+                    optimizer.zero_grad(set_to_none=True)
+                    loss.backward()
+                    optimizer.step()
+                    loss_sum += float(loss.detach())
+                    step_count += 1
+            if epoch in (1, 5, 10, 15, 20):
+                print_log(
+                    f"gate_member={member} epoch={epoch} "
+                    f"loss={loss_sum/step_count:.6f}"
+                )
+        gates.append(gate.eval())
+    return nn.ModuleList(gates)
+
+
 def _train_gate_ensemble(packages, tensors, config, device, seed, print_log):
     gates = []
     label_map = torch.full((200,), -1, dtype=torch.long)
@@ -548,13 +644,22 @@ def _candidate_prototypes(
     feature_mode,
     folds,
     transport_mode="convex_blend",
+    initialization_ensemble=False,
 ):
     model.eval()
     with torch.no_grad():
         base_all = model.base_prototypes()
         final_all = model.prototypes().clone()
         value = model.value_candidate(unseenclasses.to(device))
-        if isinstance(gate, nn.ModuleList):
+        if isinstance(gate, nn.ModuleList) and initialization_ensemble:
+            features = gate_features(
+                base_all.index_select(0, unseenclasses.to(device)),
+                value,
+                base_all.index_select(0, seenclasses.to(device)),
+                mode=feature_mode,
+            )
+            alpha = torch.stack([member(features) for member in gate]).mean(dim=0)
+        elif isinstance(gate, nn.ModuleList):
             alpha_values = []
             for fold_gate, (pseudo_seen, _) in zip(gate, folds):
                 features = gate_features(
@@ -725,6 +830,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             config["gate_feature_mode"],
             folds,
             config["transport_mode"],
+            int(config["gate_initialization_ensemble"]) > 1,
         )
         candidate = FrozenPrototypeClassifier(
             candidate_prototypes, variable.scale()
@@ -817,6 +923,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "fold_checkpoint_dir": config["fold_checkpoint_dir"],
             "gate_feature_mode": config["gate_feature_mode"],
             "gate_ensemble": bool(config["gate_ensemble"]),
+            "gate_initialization_ensemble": int(
+                config["gate_initialization_ensemble"]
+            ),
             "transport_mode": config["transport_mode"],
             "angle_stats": angle_stats,
             "centroid_alignment_weight": float(

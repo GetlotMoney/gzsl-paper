@@ -102,3 +102,12 @@ def test_bidirectional_centroid_contrastive_and_rescue2_config():
     )
     assert config["attempt_id"] == "V2-TRY-023"
     assert config["centroid_alignment_mode"] == "bidirectional_contrastive"
+
+
+def test_cata_final_rescue_uses_three_initializations():
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_024_cata_rescue3_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-024"
+    assert config["centroid_alignment_mode"] == "contrastive"
+    assert config["gate_initialization_ensemble"] == 3
