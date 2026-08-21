@@ -45,12 +45,37 @@ def test_try_changes_only_unseen_prototypes_and_stays_finite():
     assert torch.allclose(candidate_proto.norm(dim=-1), torch.ones(200), atol=1e-6)
 
 
+def test_constrained_transfer_is_closer_to_baseline_than_full_transfer():
+    baseline, full, seenclasses = _models()
+    constrained = TGVPRH1UnseenValueTransfer(
+        baseline.sentence_embeds,
+        seenclasses,
+        baseline.visual_centroids,
+        dropout=0.0,
+        transfer_strength=0.1,
+    ).eval()
+    constrained.load_state_dict(baseline.state_dict(), strict=True)
+    allclasses = torch.arange(200)
+    unseen = allclasses[~torch.isin(allclasses, seenclasses)]
+    base_u = baseline.prototypes().index_select(0, unseen)
+    full_u = full.prototypes().index_select(0, unseen)
+    constrained_u = constrained.prototypes().index_select(0, unseen)
+    assert torch.equal(
+        constrained.prototypes().index_select(0, seenclasses),
+        baseline.prototypes().index_select(0, seenclasses),
+    )
+    assert (constrained_u - base_u).norm() < (full_u - base_u).norm()
+
+
 class V2Try001Test(unittest.TestCase):
     def test_seen_identity(self):
         test_try_has_identical_state_identity_and_seen_prototypes()
 
     def test_unseen_change(self):
         test_try_changes_only_unseen_prototypes_and_stays_finite()
+
+    def test_constrained_transfer(self):
+        test_constrained_transfer_is_closer_to_baseline_than_full_transfer()
 
 
 if __name__ == "__main__":

@@ -9,6 +9,12 @@ from model.tg_vpr_h1 import TGVPRH1FixedEqual
 class TGVPRH1UnseenValueTransfer(TGVPRH1FixedEqual):
     """保持seen路径不变，仅把共享Value变换应用到unseen语义。"""
 
+    def __init__(self, *args, transfer_strength: float = 1.0, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not 0.0 < float(transfer_strength) <= 1.0:
+            raise ValueError("transfer_strength必须位于(0, 1]。")
+        self.transfer_strength = float(transfer_strength)
+
     def transformed_unseen_groups(self) -> tuple[torch.Tensor, torch.Tensor]:
         all_classes = torch.arange(200, device=self.adapted_classes.device)
         unseen_classes = all_classes[
@@ -42,3 +48,25 @@ class TGVPRH1UnseenValueTransfer(TGVPRH1FixedEqual):
         enhanced = base_part + role_part.sum(dim=1)
         return enhanced, base_part, role_part
 
+    def prototypes(self, return_diagnostics: bool = False):
+        full_enhanced, base_part, role_part = self.prototype_components()
+        full = F.normalize(full_enhanced, dim=-1)
+        base_enhanced, _, _ = TGVPRH1FixedEqual.prototype_components(self)
+        base = F.normalize(base_enhanced, dim=-1)
+        all_classes = torch.arange(200, device=self.adapted_classes.device)
+        unseen = all_classes[~torch.isin(all_classes, self.adapted_classes)]
+        prototypes = base.clone()
+        prototypes[unseen] = F.normalize(
+            (1.0 - self.transfer_strength) * base.index_select(0, unseen)
+            + self.transfer_strength * full.index_select(0, unseen),
+            dim=-1,
+        )
+        if return_diagnostics:
+            return prototypes, {
+                "base": self.base_prototypes(),
+                "semantic_group_weights": self.semantic_group_weights(),
+                "base_part": base_part,
+                "role_part": role_part,
+                "transfer_strength": self.transfer_strength,
+            }
+        return prototypes

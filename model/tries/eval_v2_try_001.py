@@ -17,11 +17,10 @@ from tools.run_contract import (
 from tools.runtime import sha256_file
 
 
-ATTEMPT_ID = "V2-TRY-001"
 BASE_FRAMEWORK_COMMIT = "3dc078c0d52bf358bf24a26e48346c97de9e99ca"
 
 
-def _build_model(model_type, config, tensors, seenclasses):
+def _build_model(model_type, config, tensors, seenclasses, **kwargs):
     centroids = h1.visual_centroids(
         tensors["train_features"], tensors["train_labels"].long(), seenclasses
     )
@@ -33,10 +32,19 @@ def _build_model(model_type, config, tensors, seenclasses):
         inner_ratio=config["inner_ratio"],
         outer_ratio=config["outer_ratio"],
         temperature=config["temperature"],
+        **kwargs,
     )
 
 
-def run(config_path, checkpoint_path, checkpoint_sha256, output_dir, expected_commit):
+def run(
+    config_path,
+    checkpoint_path,
+    checkpoint_sha256,
+    output_dir,
+    expected_commit,
+    attempt_id,
+    transfer_strength,
+):
     require_clean_code_tree()
     code_commit = current_code_commit()
     if code_commit != expected_commit:
@@ -75,7 +83,11 @@ def run(config_path, checkpoint_path, checkpoint_sha256, output_dir, expected_co
 
     baseline = _build_model(TGVPRH1FixedEqual, config, tensors, seenclasses)
     candidate = _build_model(
-        TGVPRH1UnseenValueTransfer, config, tensors, seenclasses
+        TGVPRH1UnseenValueTransfer,
+        config,
+        tensors,
+        seenclasses,
+        transfer_strength=transfer_strength,
     )
     baseline.load_state_dict(checkpoint["model_state_dict"], strict=True)
     candidate.load_state_dict(checkpoint["model_state_dict"], strict=True)
@@ -95,7 +107,7 @@ def run(config_path, checkpoint_path, checkpoint_sha256, output_dir, expected_co
     output_dir = prepare_output_dir(output_dir)
     atomic_write_json(output_dir / "data_fingerprints.json", {"files": input_sha})
     metrics = {
-        "attempt_id": ATTEMPT_ID,
+        "attempt_id": attempt_id,
         "idea_id": "IDEA-002",
         "framework_id": "FRAMEWORK-V2",
         "code_commit": code_commit,
@@ -105,16 +117,18 @@ def run(config_path, checkpoint_path, checkpoint_sha256, output_dir, expected_co
         "evaluation_protocol": h1.EVALUATION_PROTOCOL,
         "test_used_for_selection": True,
         "unseen_images_used_for_gradient": False,
-        "change": "eval-only shared Value transfer to unseen prototypes",
+        "change": "eval-only blended shared Value transfer to unseen prototypes",
+        "transfer_strength": float(transfer_strength),
         "baseline_metrics_percent": baseline_metrics,
         "candidate_metrics_percent": candidate_metrics,
         "delta_percent_points": delta,
     }
     atomic_write_json(output_dir / "metrics.json", metrics)
     with (output_dir / "evaluation.log").open("x", encoding="utf-8") as stream:
-        stream.write(f"attempt={ATTEMPT_ID}\n")
+        stream.write(f"attempt={attempt_id}\n")
         stream.write(f"code_commit={code_commit}\n")
         stream.write(f"checkpoint_sha256={checkpoint_sha256}\n")
+        stream.write(f"transfer_strength={transfer_strength}\n")
         stream.write(f"baseline={baseline_metrics}\n")
         stream.write(f"candidate={candidate_metrics}\n")
         stream.write(f"delta={delta}\n")
@@ -129,6 +143,8 @@ def main():
     parser.add_argument("--checkpoint-sha256", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--expected-commit", required=True)
+    parser.add_argument("--attempt-id", required=True)
+    parser.add_argument("--transfer-strength", type=float, required=True)
     args = parser.parse_args()
     run(
         args.config,
@@ -136,9 +152,10 @@ def main():
         args.checkpoint_sha256,
         args.output_dir,
         args.expected_commit,
+        args.attempt_id,
+        args.transfer_strength,
     )
 
 
 if __name__ == "__main__":
     main()
-
