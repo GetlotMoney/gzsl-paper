@@ -165,6 +165,9 @@ def load_config(path: Path):
         "V2-TRY-030",
         "V2-TRY-031",
         "V2-TRY-032",
+        "V2-TRY-033",
+        "V2-TRY-034",
+        "V2-TRY-035",
     } and raw["idea_id"] == "IDEA-010"
     if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr):
         raise ValueError("ELPT首次TRY身份不匹配。")
@@ -273,7 +276,7 @@ def load_config(path: Path):
             raise ValueError("NTR seed7必须复用对应fold权重。")
         if raw["attempt_id"] in {"V2-TRY-029", "V2-TRY-030", "V2-TRY-031"} and raw["fold_checkpoint_dir"] is not None:
             raise ValueError("NTR多seed必须从头训练各自fold权重。")
-        if raw["attempt_id"] == "V2-TRY-032" and (
+        if raw["attempt_id"] in {"V2-TRY-032", "V2-TRY-033", "V2-TRY-034", "V2-TRY-035"} and (
             raw["gate_architecture"] != "neighborhood_residual"
             or not raw["parent_gate_model"]
             or not raw["parent_gate_model_sha256"]

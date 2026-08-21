@@ -184,3 +184,16 @@ def test_ntr_residual_rescue_config():
     assert config["attempt_id"] == "V2-TRY-032"
     assert config["gate_architecture"] == "neighborhood_residual"
     assert config["max_residual_step"] == 0.1
+
+
+def test_residual_ntr_multiseed_configs_bind_own_tst_gate():
+    expected = {"V2-TRY-033": 5, "V2-TRY-034": 6, "V2-TRY-035": 8}
+    for attempt, seed in expected.items():
+        config, _ = load_config(
+            ROOT / "config/tries" / f"v2_try_{attempt[-3:]}_ntr_residual_seed{seed}.yaml"
+        )
+        assert config["attempt_id"] == attempt
+        assert config["seed"] == seed
+        assert config["gate_architecture"] == "neighborhood_residual"
+        assert config["parent_gate_model"]
+        assert config["fold_checkpoint_dir"]

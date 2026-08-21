@@ -1,0 +1,26 @@
+schema_version: gzsl-paper.ntr-residual.v1
+attempt_id: V2-TRY-035
+idea_id: IDEA-010
+framework_id: FRAMEWORK-V2
+base_config: config/tries/v2_unseen_transfer_seed8.yaml
+base_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/multiseed-proof/V2-BASE-SEED-8/model_best.pth
+base_checkpoint_sha256: 3462920d3698f425f5ca83b053ab6128c8bfb411930762d9688e00b3a19b453c
+seed: 8
+fold_count: 3
+fold_epochs: 50
+gate_epochs: 20
+gate_batch_half: 32
+gate_lr: 0.001
+gate_weight_decay: 0.0001
+topology_weight: 0.1
+fold_checkpoint_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-031
+gate_feature_mode: top5_vector
+gate_ensemble: false
+gate_initialization_ensemble: 1
+gate_architecture: neighborhood_residual
+parent_gate_model: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-018/gate_model.pth
+parent_gate_model_sha256: 96c712e672b6490abe502a8f5814f4ab103314c88f8d7ad82c656bb9df6d3b0d
+max_residual_step: 0.1
+transport_mode: tangent
+gate_max_step: 1.5
+parent_metrics_percent: {U: 74.46070313453674, S: 79.55161333084106, H: 76.92201766775992, ZS: 81.26405477523804}
