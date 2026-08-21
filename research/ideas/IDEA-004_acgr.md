@@ -17,7 +17,11 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: FRAMEWORK-V2 / V2-CONFIRM-001 / RUN-001
-current_attempt: V2-TRY-013
+current_attempt: V2-TRY-014
 ```
 
 该候选只使用7057张seen训练图像训练路由gate；CLIP和TG-VPR冻结，true-unseen图像不进入梯度。它是相对ICGR的新forward语义，因此独立编号，不复用失败实验ID。
+
+## V2-TRY-013结果
+
+全类残差使`U`提高`0.818336`、`ZS`提高`0.348657`，证明路由已能直接作用于unseen；但`S`下降`1.149035`，最终`H=73.881786%`、`ΔH=-0.141395`。三组均值均高于0.05，不是权重塌缩。补救1只将固定残差幅度从0.65降到0.25并从头训练；若仍无H提升则停止，不搜索更多幅度。
