@@ -11,3 +11,9 @@
 | BVSA | 双向对齐视觉局部与文本语义 | 不产生局部分数 |
 | SGMP | 提供局部语义辅助训练目标 | 对应辅助 loss 为 0 |
 | Global/local fusion | `global + 0.2 * local` | local 权重为 0 时只剩全局分数 |
+
+## 已迁入但尚未接入V1的独立模块
+
+| Module | 身份 | 当前状态 | 入口 |
+|---|---|---|---|
+| TG-VPR-H1 | 创新模块1 | 独立代码与配置已迁入；未替换V1的PSE，也未分配Innovation编号 | `docs/TG_VPR_H1.md` |

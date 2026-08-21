@@ -13,6 +13,10 @@ evaluation_protocol: test_selected_inductive_gzsl
 
 V1 来源于 `model/v5-template-v2@fb4b29b04087640890a532f105cb527d3a8c461b` 的必要运行代码，旧仓库历史、旧实验和旧账本没有迁入。
 
+## 已迁入独立模块
+
+`TG-VPR-H1`已按owner当前明确授权迁入独立代码、配置和来源清单，身份为“创新模块1”。它尚未接入`FRAMEWORK-V1`，也未占用`V1-INNOVATION-001`：正式创新实验仍需先在本仓库重新建立Idea与PAPER证据。
+
 ## 当前待办
 
 1. 首个真实基线已由 `V1-CONFIRM-001 / RUN-002` 完成：`U=72.3584%`、`S=76.2365%`、`H=74.2468%`、`ZS=81.4479%`。
