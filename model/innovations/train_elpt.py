@@ -132,6 +132,7 @@ def load_config(path: Path):
         "gzsl-paper.cata.v4",
         "gzsl-paper.purl.v1",
         "gzsl-paper.purl.v2",
+        "gzsl-paper.ntr.v1",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -148,7 +149,8 @@ def load_config(path: Path):
         "V2-TRY-024",
     } and raw["idea_id"] == "IDEA-007"
     valid_purl = raw["attempt_id"] in {"V2-TRY-026", "V2-TRY-027"} and raw["idea_id"] == "IDEA-009"
-    if not (valid_elpt or valid_tst or valid_cata or valid_purl):
+    valid_ntr = raw["attempt_id"] == "V2-TRY-028" and raw["idea_id"] == "IDEA-010"
+    if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ELPT只接受FRAMEWORK-V2。")
@@ -238,6 +240,21 @@ def load_config(path: Path):
         expected_mode = "cross_entropy" if raw["attempt_id"] == "V2-TRY-026" else "focal_gamma2"
         if raw["pseudo_unseen_loss_mode"] != expected_mode:
             raise ValueError("PURL风险模式与TRY身份不匹配。")
+    if valid_ntr:
+        parent = raw["parent_metrics_percent"]
+        if (
+            raw["transport_mode"] != "tangent"
+            or float(raw["gate_max_step"]) != 1.5
+            or raw["gate_feature_mode"] != "top5_vector"
+            or raw["gate_ensemble"] is not False
+            or int(raw["gate_initialization_ensemble"]) != 1
+            or float(raw["centroid_alignment_weight"]) != 0.0
+            or float(raw["pseudo_unseen_ce_weight"]) != 0.0
+            or not raw["fold_checkpoint_dir"]
+            or not isinstance(parent, dict)
+            or set(parent) != {"U", "S", "H", "ZS"}
+        ):
+            raise ValueError("NTR首次TRY身份不匹配。")
     return raw, sha256_file(path)
 
 

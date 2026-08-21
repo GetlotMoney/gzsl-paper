@@ -29,6 +29,14 @@ def test_tangent_step_gate_initialization_and_gradient():
     )
 
 
+def test_tangent_step_gate_accepts_neighborhood_vector():
+    gate = TangentStepGate(input_dim=8)
+    features = torch.randn(9, 8, generator=torch.Generator().manual_seed(56))
+    assert torch.allclose(
+        gate(features), torch.full((9,), 0.1), atol=1e-7
+    )
+
+
 def test_tangent_transport_is_normalized_and_orthogonal_direction():
     generator = torch.Generator().manual_seed(52)
     base = torch.nn.functional.normalize(torch.randn(8, 768, generator=generator), dim=-1)
@@ -133,3 +141,11 @@ def test_purl_focal_risk_and_rescue_config():
     )
     assert config["attempt_id"] == "V2-TRY-027"
     assert config["pseudo_unseen_loss_mode"] == "focal_gamma2"
+
+
+def test_ntr_config_uses_full_top5_neighborhood():
+    config, _ = load_config(ROOT / "config/tries/v2_try_028_ntr_seed7.yaml")
+    assert config["idea_id"] == "IDEA-010"
+    assert config["gate_feature_mode"] == "top5_vector"
+    assert config["centroid_alignment_weight"] == 0.0
+    assert config["pseudo_unseen_ce_weight"] == 0.0

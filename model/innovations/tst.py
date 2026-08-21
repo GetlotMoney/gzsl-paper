@@ -17,13 +17,13 @@ class TangentStepGate(nn.Module):
         initial_step: float = 0.1,
     ):
         super().__init__()
-        if int(input_dim) != 4:
-            raise ValueError("TST首次TRY固定4维几何输入。")
+        if int(input_dim) not in (4, 8):
+            raise ValueError("切空间gate输入只允许4维摘要或8维邻域向量。")
         if not 0.0 < float(initial_step) < float(max_step):
             raise ValueError("TST初始步长必须位于(0, max_step)。")
         self.max_step = float(max_step)
         self.network = nn.Sequential(
-            nn.Linear(input_dim, 16),
+            nn.Linear(int(input_dim), 16),
             nn.GELU(),
             nn.Linear(16, 1),
         )
