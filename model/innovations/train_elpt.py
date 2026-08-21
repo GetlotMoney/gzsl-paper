@@ -30,7 +30,7 @@ from tools.run_contract import (
 from tools.runtime import sha256_file
 
 
-CONFIG_KEYS = {
+REQUIRED_CONFIG_KEYS = {
     "schema_version",
     "attempt_id",
     "idea_id",
@@ -47,6 +47,7 @@ CONFIG_KEYS = {
     "gate_weight_decay",
     "topology_weight",
 }
+OPTIONAL_CONFIG_KEYS = {"gate_max_alpha", "alpha_penalty"}
 
 
 class TeeStream:
@@ -79,14 +80,20 @@ class FrozenPrototypeClassifier(nn.Module):
 def load_config(path: Path):
     path = path.resolve()
     raw = yaml.safe_load(path.read_text(encoding="utf-8"))
-    if not isinstance(raw, dict) or set(raw) != CONFIG_KEYS:
+    if not isinstance(raw, dict):
+        raise ValueError("ELPT配置必须是字典。")
+    missing = REQUIRED_CONFIG_KEYS - set(raw)
+    extra = set(raw) - REQUIRED_CONFIG_KEYS - OPTIONAL_CONFIG_KEYS
+    if missing or extra:
         actual = set(raw) if isinstance(raw, dict) else set()
         raise ValueError(
-            f"ELPT配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。"
+            f"ELPT配置字段错误；缺少={sorted(missing)}，多出={sorted(extra)}。"
         )
+    raw.setdefault("gate_max_alpha", 1.0)
+    raw.setdefault("alpha_penalty", 0.0)
     if raw["schema_version"] != "gzsl-paper.elpt.v1":
         raise ValueError("ELPT schema错误。")
-    if raw["attempt_id"] != "V2-TRY-006" or raw["idea_id"] != "IDEA-002":
+    if raw["attempt_id"] not in {"V2-TRY-006", "V2-TRY-007"} or raw["idea_id"] != "IDEA-002":
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ELPT只接受FRAMEWORK-V2。")
@@ -98,6 +105,14 @@ def load_config(path: Path):
         raise ValueError("ELPT gate优化器参数不匹配。")
     if float(raw["topology_weight"]) != 0.1:
         raise ValueError("ELPT固定topology_weight=0.1。")
+    if raw["attempt_id"] == "V2-TRY-006" and (
+        float(raw["gate_max_alpha"]) != 1.0 or float(raw["alpha_penalty"]) != 0.0
+    ):
+        raise ValueError("TRY-006必须使用无上限补救的初始ELPT。")
+    if raw["attempt_id"] == "V2-TRY-007" and (
+        float(raw["gate_max_alpha"]) != 0.25 or float(raw["alpha_penalty"]) != 0.01
+    ):
+        raise ValueError("TRY-007必须使用0.25上限和0.01 alpha约束。")
     return raw, sha256_file(path)
 
 
@@ -221,7 +236,7 @@ def _fold_package(model, pseudo_seen, pseudo_unseen, tensors, seenclasses, devic
 
 
 def _train_gate(packages, tensors, config, device, seed, print_log):
-    gate = ELPTGate().to(device)
+    gate = ELPTGate(max_alpha=float(config["gate_max_alpha"])).to(device)
     optimizer = torch.optim.Adam(
         gate.parameters(),
         lr=float(config["gate_lr"]),
@@ -266,7 +281,12 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
                 topo = topology_loss(
                     base_all.index_select(0, seenclasses.to(device)), competition
                 )
-                loss = ce + float(config["topology_weight"]) * topo
+                alpha_regularization = alpha.square().mean()
+                loss = (
+                    ce
+                    + float(config["topology_weight"]) * topo
+                    + float(config["alpha_penalty"]) * alpha_regularization
+                )
                 if not torch.isfinite(loss):
                     raise FloatingPointError("ELPT gate loss非有限。")
                 optimizer.zero_grad(set_to_none=True)
@@ -470,6 +490,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "candidate_metrics_percent": candidate_metrics,
             "delta_percent_points": delta,
             "alpha_stats": alpha_stats,
+            "gate_max_alpha": float(config["gate_max_alpha"]),
+            "alpha_penalty": float(config["alpha_penalty"]),
             "success": success,
             "gate_model_sha256": sha256_file(output_dir / "gate_model.pth"),
         }

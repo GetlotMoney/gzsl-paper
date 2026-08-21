@@ -72,6 +72,14 @@ def test_gate_initializes_at_point_one_and_receives_gradients():
     )
 
 
+def test_bounded_gate_keeps_point_one_initialization_and_caps_output():
+    gate = ELPTGate(max_alpha=0.25)
+    features = torch.randn(50, 4)
+    alpha = gate(features)
+    assert torch.allclose(alpha, torch.full_like(alpha, 0.1), atol=1e-7)
+    assert float(alpha.detach().max()) <= 0.25
+
+
 def test_gate_features_and_blend_are_finite_and_normalized():
     generator = torch.Generator().manual_seed(11)
     base = torch.randn(50, 768, generator=generator)
@@ -104,6 +112,9 @@ class ELPTTest(unittest.TestCase):
     def test_gate_gradient(self):
         test_gate_initializes_at_point_one_and_receives_gradients()
 
+    def test_bounded_gate(self):
+        test_bounded_gate_keeps_point_one_initialization_and_caps_output()
+
     def test_features(self):
         test_gate_features_and_blend_are_finite_and_normalized()
 
@@ -113,4 +124,3 @@ class ELPTTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

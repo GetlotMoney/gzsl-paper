@@ -98,18 +98,27 @@ class VariableClassTGVPR(TGVPRH1FixedEqual):
 class ELPTGate(nn.Module):
     """用类别语义几何学习每类迁移强度。"""
 
-    def __init__(self):
+    def __init__(self, max_alpha: float = 1.0, initial_alpha: float = 0.1):
         super().__init__()
+        if not 0.0 < float(max_alpha) <= 1.0:
+            raise ValueError("max_alpha必须位于(0, 1]。")
+        if not 0.0 < float(initial_alpha) < float(max_alpha):
+            raise ValueError("initial_alpha必须位于(0, max_alpha)。")
+        self.max_alpha = float(max_alpha)
         self.network = nn.Sequential(
             nn.Linear(4, 16),
             nn.GELU(),
             nn.Linear(16, 1),
         )
         nn.init.zeros_(self.network[-1].weight)
-        nn.init.constant_(self.network[-1].bias, math.log(0.1 / 0.9))
+        raw_initial = float(initial_alpha) / self.max_alpha
+        nn.init.constant_(
+            self.network[-1].bias,
+            math.log(raw_initial / (1.0 - raw_initial)),
+        )
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        return torch.sigmoid(self.network(features)).squeeze(-1)
+        return self.max_alpha * torch.sigmoid(self.network(features)).squeeze(-1)
 
 
 def fixed_class_folds(seenclasses: torch.Tensor) -> list[tuple[torch.Tensor, torch.Tensor]]:
@@ -167,4 +176,3 @@ def topology_loss(base: torch.Tensor, adapted: torch.Tensor) -> torch.Tensor:
         * torch.sqrt(y.square().sum() + 1e-8)
     )
     return 1.0 - correlation
-
