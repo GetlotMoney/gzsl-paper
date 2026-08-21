@@ -43,3 +43,9 @@ conda run -n dvsr_gpu python train.py `
 ## 研究闭环
 
 新论文、新证据和新 idea 从本仓库重新建立，不迁移旧 GTPJ 的研究知识。统一规则见 [research/README.md](research/README.md)。
+
+## 独立创新模块
+
+- `TG-VPR-H1`已按owner明确授权迁入[正式方法、代码与配置](docs/TG_VPR_H1.md)。
+- [HTML框架图](docs/TG_VPR_H1_framework_diagram.html)绑定模块代码提交`4a063218989c6e193a7aa3c593bb4f0f8ecb7379`。
+- 当前模块仍是standalone代码身份，尚未接入`FRAMEWORK-V1`，也未占用`V1-INNOVATION-001`。
