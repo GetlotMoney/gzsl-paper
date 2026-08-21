@@ -1,4 +1,5 @@
 schema_version: gzsl-paper.tg-vpr-h1.v1
+framework_id: FRAMEWORK-V2
 module_id: INNOVATION-MODULE-1
 dataset: CUB
 evaluation_protocol: test_selected_inductive_gzsl

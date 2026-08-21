@@ -81,6 +81,7 @@ def test_formal_config_and_protocol_contract():
     config_path = ROOT / "config" / "tg_vpr_h1.yaml"
     config, digest = h1_train.load_config(config_path)
     assert digest == sha256_file(config_path)
+    assert config["framework_id"] == "FRAMEWORK-V2"
     assert config["module_id"] == "INNOVATION-MODULE-1"
     assert config["evaluation_protocol"] == "test_selected_inductive_gzsl"
     assert config["test_used_for_selection"] is True
@@ -97,10 +98,12 @@ def test_source_manifest_is_clean_snapshot_not_old_experiment_tree():
         (ROOT / "docs" / "TG_VPR_H1_SOURCE.yaml").read_text(encoding="utf-8")
     )
     assert source["module_id"] == "INNOVATION-MODULE-1"
+    assert source["target_framework"] == "FRAMEWORK-V2"
     assert source["source_result_commit"] == (
         "0aa38ab46020690879c1de8b937f35fd6b607f22"
     )
     assert source["framework_v1_integration"] == "not_applied"
+    assert source["framework_v2_status"] == "formal_pending_new_repository_baseline"
     for record in source["target_files"].values():
         assert sha256_file(ROOT / record["path"]) == record["sha256"]
     assert not (ROOT / "experiments" / "v5").exists()

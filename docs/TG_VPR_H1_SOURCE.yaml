@@ -1,5 +1,7 @@
 schema_version: gzsl-paper.module-source.v1
 module_id: INNOVATION-MODULE-1
+target_framework: FRAMEWORK-V2
+owner_promotion_decision: promote_as_independent_framework_v2_2026-08-22
 module_name: TG-VPR-H1
 migration_authorization: owner_explicit_request_2026-08-21
 migration_type: clean_code_and_config_snapshot_without_git_history
@@ -32,22 +34,22 @@ target_files:
     sha256: 77eea247c22ee12cd6d8583db2a9a19a006048f0fdc009eadab997fd67afa98c
   runner:
     path: model/tg_vpr_h1/train.py
-    sha256: 31e5eeafdaf7fa250ffdbd4967d572ff2db3a975551688d908d8503e1a8790f2
+    sha256: 49e56892964d8f411474db51dfda7e7379e2d0864aaa5b15caa0a891079c2ca0
   config:
     path: config/tg_vpr_h1.yaml
-    sha256: f744a4df80228e2d5f065e80406542608071623d31f1774edc5a33fae66c6e77
+    sha256: c6754432a299eedbba1279d5e938b61e23994c6041caa893955a6497642eca22
   framework_document:
     path: docs/TG_VPR_H1.md
-    sha256: 232bf0209209480e65a611e15cd69dc1ade1997cc616a5f01b9b000c3634539f
+    sha256: 6142c1fbdccb8ab1445664d96418aee1f866371d5cc32763b91d9cebea13265d
   test:
     path: tests/test_tg_vpr_h1.py
-    sha256: ccd7d55b657241dd15e1874347d81c85ef5c8b9b27a527ddd97f776a85a8356e
+    sha256: 6488e2540f1025537b85b6bad0aa66d50fa5b43109c84fc8f9136080a5a0a76f
   editable_diagram:
     path: docs/TG_VPR_H1_framework_diagram.drawio
-    sha256: 1eafb57c24cef664c8b8910688bc0e1cab817a6fc26ad9253e3fd6f2ad90d9cc
+    sha256: b96b9385c1767c7d86ba0a75726f0caa71af77aa6b2e0b2694845c50d11fbdc9
   html_diagram:
-    path: docs/TG_VPR_H1_framework_diagram.html
-    sha256: 560e909a8f524c7d3870df82e45c7ba2f03f9a356fc410df32ec23834a409184
+    path: experiments/v2/framework_diagram.html
+    sha256: ad6bf27e2d2daf5cddb31d08ce4f929cdcfac0f1c97c68082119695659c8d63f
 migration_verification:
   state_dict_keys: 13
   strict_state_dict_load: pass
@@ -57,7 +59,7 @@ migration_verification:
   drawio_validation: pass_zero_errors_zero_warnings
   html_self_contained: true
   html_static_validation: pass
-  html_browser_open_check: blocked_by_browser_file_url_policy
+  html_browser_open_check: pass_zero_console_errors
 preserved_semantics:
   - eight-role cache order and local/unique/overall mapping
   - fixed one-third group weights
@@ -71,7 +73,8 @@ excluded:
   - old experiment and idea identifiers
   - old paper notes and research knowledge tree
   - checkpoints, caches, data and raw logs
-target_status: owner_accepted_innovation_module_1_standalone
+target_status: owner_promoted_to_independent_framework_v2
 framework_v1_integration: not_applied
+framework_v2_status: formal_pending_new_repository_baseline
 innovation_experiment_id: not_assigned
-innovation_id_reason: pending_new_repo_idea_and_paper_evidence
+innovation_id_reason: owner_promoted_source_module_directly_as_independent_v2

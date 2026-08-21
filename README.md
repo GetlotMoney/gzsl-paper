@@ -2,14 +2,12 @@
 
 面向 CUB Generalized Zero-Shot Learning（GZSL）的干净研究仓库。
 
-## 当前框架
+## 正式框架
 
-- 正式框架：`FRAMEWORK-V1`
-- 冻结 Git 分支：`framework/v1`
-- 冻结 Tag：`v1`
-- 代码来源：旧 GTPJ 的 `model/v5-template-v2@fb4b29b04087640890a532f105cb527d3a8c461b`
-- 迁移方式：只复制必要代码，不迁移旧 Git 历史、旧实验或旧账本
-- HTML 框架图：[experiments/v1/framework_diagram.html](experiments/v1/framework_diagram.html)
+- `FRAMEWORK-V1`：冻结分支`framework/v1`、Tag`v1`，[HTML框架图](experiments/v1/framework_diagram.html)，确认基线H=`74.2468%`。
+- `FRAMEWORK-V2`：TG-VPR-H1独立框架，冻结分支`framework/v2`、Tag`v2`，[HTML框架图](experiments/v2/framework_diagram.html)，等待本仓库首个正式基线。
+- V1与V2是两套独立训练路径；V2不接入或静默修改V1。
+- 两套框架都只迁入必要代码与来源信息，不继承旧Git历史、旧实验账本或旧研究知识。
 
 ## 评估协议
 
@@ -44,8 +42,10 @@ conda run -n dvsr_gpu python train.py `
 
 新论文、新证据和新 idea 从本仓库重新建立，不迁移旧 GTPJ 的研究知识。统一规则见 [research/README.md](research/README.md)。
 
-## 独立创新模块
+## FRAMEWORK-V2 入口
 
-- `TG-VPR-H1`已按owner明确授权迁入[正式方法、代码与配置](docs/TG_VPR_H1.md)。
-- [HTML框架图](docs/TG_VPR_H1_framework_diagram.html)绑定模块代码提交`4a063218989c6e193a7aa3c593bb4f0f8ecb7379`。
-- 当前模块仍是standalone代码身份，尚未接入`FRAMEWORK-V1`，也未占用`V1-INNOVATION-001`。
+- 方法说明：[docs/TG_VPR_H1.md](docs/TG_VPR_H1.md)
+- 模块代码：`model/tg_vpr_h1/module.py`
+- 独立训练入口：`python -m model.tg_vpr_h1.train`
+- 冻结配置：`config/tg_vpr_h1.yaml`
+- 来源身份：`INNOVATION-MODULE-1`

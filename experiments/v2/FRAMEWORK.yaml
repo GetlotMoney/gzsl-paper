@@ -1,0 +1,29 @@
+schema_version: gzsl-paper.framework.v1
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+framework_branch: framework/v2
+framework_tag: v2
+framework_diagram: experiments/v2/framework_diagram.html
+method_name: TG-VPR-H1
+method_full_name: Tri-Group Value Prototype Reparameterization
+source_identity: INNOVATION-MODULE-1
+source_code_commit: 4a063218989c6e193a7aa3c593bb4f0f8ecb7379
+derived_from_framework: none
+owner_promotion_decision: promote_as_independent_framework_v2_2026-08-22
+status: formal_pending_new_repository_baseline
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+training_entry: model/tg_vpr_h1/train.py
+config_ref: config/tg_vpr_h1.yaml
+modules:
+  - frozen CLIP CLS feature input
+  - eight-role semantic sentence input
+  - tri-group local unique and overall semantic grouping
+  - shared single Value reparameterization path
+  - fixed one-third group fusion
+  - seen-class prototype residual adaptation
+  - Mean8 unseen-class fallback
+  - topology-preserving auxiliary loss
+  - cosine GZSL classifier
+

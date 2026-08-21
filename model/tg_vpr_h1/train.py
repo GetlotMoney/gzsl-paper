@@ -25,12 +25,15 @@ from tools.run_contract import (
 from tools.runtime import sha256_file
 
 
-MODULE_ID = "INNOVATION-MODULE-1"
+FRAMEWORK_ID = "FRAMEWORK-V2"
+MODULE_SOURCE_ID = "INNOVATION-MODULE-1"
+MODULE_ID = MODULE_SOURCE_ID
 EVALUATION_PROTOCOL = "test_selected_inductive_gzsl"
 TRAINING_KEYS = ("sentence_embeds", "train_features", "train_labels", "res101", "att_splits")
 OFFICIAL_KEYS = ("seen_features", "seen_labels", "unseen_features", "unseen_labels")
 CONFIG_KEYS = {
     "schema_version",
+    "framework_id",
     "module_id",
     "dataset",
     "evaluation_protocol",
@@ -83,8 +86,10 @@ def load_config(path: Path) -> tuple[dict, str]:
         )
     if config["schema_version"] != "gzsl-paper.tg-vpr-h1.v1":
         raise ValueError("TG-VPR-H1配置schema错误。")
-    if config["module_id"] != MODULE_ID or config["dataset"] != "CUB":
-        raise ValueError("TG-VPR-H1只接受正式模块身份和CUB数据集。")
+    if config["framework_id"] != FRAMEWORK_ID:
+        raise ValueError("TG-VPR-H1只接受FRAMEWORK-V2身份。")
+    if config["module_id"] != MODULE_SOURCE_ID or config["dataset"] != "CUB":
+        raise ValueError("TG-VPR-H1来源模块身份或CUB数据集不匹配。")
     if config["evaluation_protocol"] != EVALUATION_PROTOCOL:
         raise ValueError("TG-VPR-H1评估协议不匹配。")
     if config["test_used_for_selection"] is not True:
@@ -207,7 +212,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     reproducibility = configure_reproducibility(
         seed, strict_determinism=True, deterministic_warn_only=False
     )
-    print(f"模块：{MODULE_ID}")
+    print(f"框架：{FRAMEWORK_ID}")
+    print(f"来源模块：{MODULE_SOURCE_ID}")
     print(f"代码commit：{code_commit}")
     print(f"配置SHA-256：{config_sha}")
     print(f"RUN：{run_id} seed={seed}")
@@ -305,7 +311,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     model.load_state_dict(best_state)
     model.eval()
     checkpoint = {
-        "module_id": MODULE_ID,
+        "framework_id": FRAMEWORK_ID,
+        "module_source_id": MODULE_SOURCE_ID,
+        "module_id": MODULE_SOURCE_ID,
         "run_id": run_id,
         "code_commit": code_commit,
         "config": config,
@@ -345,7 +353,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     atomic_write_json(
         output_dir / "metrics.json",
         {
-            "module_id": MODULE_ID,
+            "framework_id": FRAMEWORK_ID,
+            "module_source_id": MODULE_SOURCE_ID,
+            "module_id": MODULE_SOURCE_ID,
             "run_id": run_id,
             "evaluation_protocol": EVALUATION_PROTOCOL,
             "test_used_for_selection": True,
