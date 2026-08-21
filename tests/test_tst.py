@@ -38,6 +38,12 @@ def test_tangent_step_gate_accepts_neighborhood_vector():
     )
 
 
+def test_tangent_step_gate_accepts_dispersion_summary():
+    gate = TangentStepGate(input_dim=5)
+    features = torch.randn(9, 5, generator=torch.Generator().manual_seed(58))
+    assert torch.allclose(gate(features), torch.full((9,), 0.1), atol=1e-7)
+
+
 def test_neighborhood_residual_starts_at_frozen_tst_step():
     base = TangentStepGate(input_dim=4)
     gate = NeighborhoodResidualGate(base, max_delta=0.1)
@@ -184,6 +190,15 @@ def test_ntr_residual_rescue_config():
     assert config["attempt_id"] == "V2-TRY-032"
     assert config["gate_architecture"] == "neighborhood_residual"
     assert config["max_residual_step"] == 0.1
+
+
+def test_ntr_dispersion_rescue_config():
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_036_ntr_rescue2_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-036"
+    assert config["gate_feature_mode"] == "summary_std"
+    assert config["gate_architecture"] == "direct"
 
 
 def test_residual_ntr_multiseed_configs_bind_own_tst_gate():

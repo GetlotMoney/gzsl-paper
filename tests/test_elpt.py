@@ -104,6 +104,16 @@ def test_top5_vector_features_have_eight_dimensions():
     assert alpha.shape == (50,)
 
 
+def test_summary_std_features_have_five_dimensions():
+    generator = torch.Generator().manual_seed(13)
+    base = torch.randn(50, 768, generator=generator)
+    value = torch.randn(50, 768, generator=generator)
+    support = torch.randn(100, 768, generator=generator)
+    features = gate_features(base, value, support, mode="summary_std")
+    assert features.shape == (50, 5)
+    assert torch.isfinite(features).all()
+
+
 def test_try_config_is_frozen():
     config, digest = load_config(ROOT / "config" / "tries" / "v2_try_006_elpt_seed7.yaml")
     assert len(digest) == 64

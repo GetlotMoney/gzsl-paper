@@ -143,6 +143,7 @@ def load_config(path: Path):
         "gzsl-paper.purl.v2",
         "gzsl-paper.ntr.v1",
         "gzsl-paper.ntr-residual.v1",
+        "gzsl-paper.ntr-dispersion.v1",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -168,6 +169,7 @@ def load_config(path: Path):
         "V2-TRY-033",
         "V2-TRY-034",
         "V2-TRY-035",
+        "V2-TRY-036",
     } and raw["idea_id"] == "IDEA-010"
     if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr):
         raise ValueError("ELPT首次TRY身份不匹配。")
@@ -263,7 +265,8 @@ def load_config(path: Path):
         if (
             raw["transport_mode"] != "tangent"
             or float(raw["gate_max_step"]) != 1.5
-            or raw["gate_feature_mode"] != "top5_vector"
+            or raw["gate_feature_mode"]
+            != ("summary_std" if raw["attempt_id"] == "V2-TRY-036" else "top5_vector")
             or raw["gate_ensemble"] is not False
             or int(raw["gate_initialization_ensemble"]) != 1
             or float(raw["centroid_alignment_weight"]) != 0.0
@@ -284,6 +287,10 @@ def load_config(path: Path):
             or not raw["fold_checkpoint_dir"]
         ):
             raise ValueError("NTR补救1必须使用冻结TST gate的邻域残差。")
+        if raw["attempt_id"] == "V2-TRY-036" and (
+            raw["gate_architecture"] != "direct" or not raw["fold_checkpoint_dir"]
+        ):
+            raise ValueError("NTR补救2必须使用5维离散度gate并复用fold权重。")
     return raw, sha256_file(path)
 
 
@@ -307,6 +314,10 @@ def _make_gate(config, input_dim, device):
         input_dim=input_dim,
         max_alpha=float(config["gate_max_alpha"]),
     ).to(device)
+
+
+def _gate_input_dim(mode):
+    return {"summary": 4, "summary_std": 5, "top5_vector": 8}[mode]
 
 
 def _transport(base, value, coefficient, mode):
@@ -500,7 +511,7 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
         )
     if config["gate_ensemble"]:
         return _train_gate_ensemble(packages, tensors, config, device, seed, print_log)
-    input_dim = 8 if config["gate_feature_mode"] == "top5_vector" else 4
+    input_dim = _gate_input_dim(config["gate_feature_mode"])
     gate = _make_gate(config, input_dim, device)
     optimizer = torch.optim.Adam(
         gate.parameters(),
@@ -594,7 +605,7 @@ def _train_gate_initialization_ensemble(
     seenclasses = packages[0]["seenclasses"]
     label_map[seenclasses] = torch.arange(150)
     half = int(config["gate_batch_half"])
-    input_dim = 8 if config["gate_feature_mode"] == "top5_vector" else 4
+    input_dim = _gate_input_dim(config["gate_feature_mode"])
     for member in range(int(config["gate_initialization_ensemble"])):
         torch.manual_seed(seed * 100 + member)
         gate = _make_gate(config, input_dim, device)
@@ -687,7 +698,7 @@ def _train_gate_ensemble(packages, tensors, config, device, seed, print_log):
     seenclasses = packages[0]["seenclasses"]
     label_map[seenclasses] = torch.arange(150)
     half = int(config["gate_batch_half"])
-    input_dim = 8 if config["gate_feature_mode"] == "top5_vector" else 4
+    input_dim = _gate_input_dim(config["gate_feature_mode"])
     for fold_id, package in enumerate(packages):
         gate = _make_gate(config, input_dim, device)
         optimizer = torch.optim.Adam(

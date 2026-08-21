@@ -160,6 +160,17 @@ def gate_features(
             (cosine, displacement, top5.mean(dim=1), top5.max(dim=1).values),
             dim=1,
         )
+    if mode == "summary_std":
+        return torch.stack(
+            (
+                cosine,
+                displacement,
+                top5.mean(dim=1),
+                top5.max(dim=1).values,
+                top5.std(dim=1, unbiased=False),
+            ),
+            dim=1,
+        )
     if mode == "top5_vector":
         return torch.cat(
             (cosine.unsqueeze(1), displacement.unsqueeze(1), top5.mean(dim=1, keepdim=True), top5),
