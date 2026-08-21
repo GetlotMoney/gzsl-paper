@@ -1,0 +1,5 @@
+run_id,condition,seed,code_commit,config_sha256,status,U,S,H,ZS,best_epoch,repeat_type,not_confirmation_evidence,artifact_uri
+RUN-007,TG-VPR-H1,5,7ebbb6cbf28a2aac63997bb89ec87024beaf51c3,dde54ce821e536a4a4617e517cac1dc13817495a070909c7c7356743dcaad840,completed,73.333913,74.088860,73.709453,81.534684,50,multi_seed_stability,true,warehouse://runs/tg-vpr-heads-20260821/RUN-007
+RUN-020,TG-VPR-H1-S6,6,69d2289af57e50ae1fac3048d47938c4529f1e14,54bc5e5ae23beb512a2951dde37dbfa728f7fe2b3d59593daef74d32f045f9ca,completed,73.225462,74.515074,73.864640,81.534684,50,multi_seed_stability,true,warehouse://runs/tg-vpr-h1-multiseed-20260821/RUN-020
+RUN-021,TG-VPR-H1-S7,7,69d2289af57e50ae1fac3048d47938c4529f1e14,54bc5e5ae23beb512a2951dde37dbfa728f7fe2b3d59593daef74d32f045f9ca,completed,72.690260,75.398600,74.019664,81.534684,50,multi_seed_stability,true,warehouse://runs/tg-vpr-h1-multiseed-20260821/RUN-021
+RUN-022,TG-VPR-H1-S8,8,69d2289af57e50ae1fac3048d47938c4529f1e14,54bc5e5ae23beb512a2951dde37dbfa728f7fe2b3d59593daef74d32f045f9ca,completed,73.327583,74.196154,73.759312,81.534684,50,multi_seed_stability,true,warehouse://runs/tg-vpr-h1-multiseed-20260821/RUN-022

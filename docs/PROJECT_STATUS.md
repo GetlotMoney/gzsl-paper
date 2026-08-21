@@ -26,10 +26,12 @@ V1 来源于 `model/v5-template-v2@fb4b29b04087640890a532f105cb527d3a8c461b` 的
 
 owner已将来源身份`INNOVATION-MODULE-1 / TG-VPR-H1`提升为独立正式框架`FRAMEWORK-V2`。V2使用独立代码、配置和训练入口，不接入`FRAMEWORK-V1`。首个当前仓库正式基线已由`V2-CONFIRM-001 / RUN-001`完成：`U=72.655779%`、`S=75.443041%`、`H=74.023182%`、`ZS=81.534684%`。
 
+owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
+
 ## 当前待办
 
 owner已选择`FRAMEWORK-V2`作为论文主框架。V2当前正式单seed基线为`H=74.023182%`，新的三个百分点目标为`H >= 77.023182%`。
 
-下一件事是重新核对论文来源并建立本仓库`PAPER-001`和`IDEA-001`，使TG-VPR-H1具备当前仓库可追溯的论文创新身份。之后才进入创新2和创新3的证据、代码与实验。
+下一件事是为创新2重新核对seen几何向unseen迁移相关论文，建立`PAPER-002`和`IDEA-002`。在证据与Idea完成前不写创新2代码。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

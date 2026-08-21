@@ -1,0 +1,2 @@
+run_id,condition,seed,code_commit,config_sha256,status,U,S,H,ZS,best_epoch,decision,artifact_uri
+RUN-001,TG-VPR-H1-standalone-migration,7,f0f804a846f14e32c8658019b50048b8c8ce3e0e,db39e6890ca3f291a62713f0e30028a7023ed8d956342db0daebd809b1dd5f14,completed,72.690260,75.398600,74.019664,81.534684,50,migration_equivalence_passed,warehouse://runs/tg-vpr-h1-standalone-r2-20260821/RUN-001

@@ -2,16 +2,21 @@
 
 ```yaml
 idea_id: IDEA-001
-status: testing
+status: supported
 evidence_refs:
   - PAPER-001
 base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
 framework: FRAMEWORK-V2
 paper_role: innovation_slot_1_candidate
-paper_core_innovation: false
+paper_core_innovation: true
 method_name_candidate: TG-VPR
-experiment_ref: pending_control_experiment
+experiment_ref: experiments/v2/evidence/legacy_h1
 framework_baseline_ref: V2-CONFIRM-001/RUN-001
+legacy_evidence_refs:
+  - V5-INNOVATION-024
+  - V5-ABLATION-014
+  - V5-TUNE-005
+  - V5-TUNE-006
 ```
 
 ## 研究问题
@@ -34,3 +39,13 @@ framework_baseline_ref: V2-CONFIRM-001/RUN-001
 ## 论文衔接
 
 创新1输出结构化类别原型；后续创新2、创新3只能围绕这些原型的unseen迁移和图像条件证据选择继续，不能另起无关模块。
+
+## 已迁入支持结果
+
+- Value路径相对无Value：`+6.376252 H`；
+- 三组结构相对单组Value：`+0.131688 H`；
+- 可学习组权重相对固定`1/3`：`-0.003517 H`，因此删除；
+- 最终四seed H mean=`73.853094`，range=`0.313729`；
+- 当前仓库V2正式seed 7基线H=`74.023182`，与旧固定等权seed 7逐值一致。
+
+结论：IDEA-001获得机制消融、多seed和当前仓库基线支持，标记为论文核心创新1。旧证据是test-exposed、非blind-test，不扩展为独立confirmation结论。

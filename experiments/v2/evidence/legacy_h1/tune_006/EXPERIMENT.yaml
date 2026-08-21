@@ -1,0 +1,115 @@
+schema_version: gtpj.experiment.v1
+experiment_id: V5-TUNE-006
+framework_id: FRAMEWORK-V5
+kind: tune
+source_experiment: V5-ABLATION-014
+idea_id: IDEA-0021
+question: 固定H1三组等权和单一Value路径后，内部残差比例与topology约束怎样组合才能完成最终收口
+experiment_branch: exp/v5/tune/tune-006-tg-vpr-h1-closeout
+base_code_commit: 4d81ab2600cd37e38a503fc80abbd80049e0f7b7
+plan_base_commit: c94702d5a8fe4bd3428bfa2b5446e6ce1cc6539b
+status: completed
+implementation_status: completed_and_frozen
+reviewed_code_commit: 40b43aab1f1c58db05602e7c30909587f4fce8cb
+machine_test_ref: three_h1_test_files_18_passed
+review_records:
+  - review_round_1.md
+  - review_round_2.md
+  - review_stage2_round_1.md
+  - review_stage2_round_2.md
+formal_evidence: false
+not_confirmation_evidence: true
+test_used_for_selection: true
+server_only_training: true
+fixed:
+  semantic_groups:
+    - local
+    - unique
+    - overall
+  semantic_group_weights:
+    - 0.3333333333333333
+    - 0.3333333333333333
+    - 0.3333333333333333
+  value_heads: 1
+  value_dimension: 768
+  outer_ratio: 0.65
+  seed_stage_1: 7
+search:
+  inner_ratio:
+    - 0.20
+    - 0.35
+    - 0.50
+    - 0.65
+  topology_weight:
+    - 0.0
+    - 0.1
+reference:
+  condition: inner_ratio=0.35,topology_weight=0.1
+  legacy_ref: V5-ABLATION-014/RUN-003
+  H: 74.023182
+run_budget:
+  stage_1_conditions: 8
+  stage_1_new_runs: 7
+  stage_2_new_runs_without_challenger: 3
+  stage_2_new_runs_with_challenger: 6
+  max_new_runs: 13
+  hard_cap: true
+selection:
+  challenger_min_seed7_delta_H: 0.10
+  near_tie_tolerance_H: 0.02
+  stage_2_seeds:
+    - 5
+    - 6
+    - 8
+  final_min_mean_delta_H: 0.10
+  final_min_paired_seed_wins: 3
+  final_seed_count: 4
+  fallback: freeze_current_reference
+run_commit_status: use_final_pre_run_freeze_head
+stage_1:
+  server_run_commit: 4cf8baafdf9022c1e3b900a528d849fd831bc945
+  completed_new_runs: 7
+  failed_runs: 0
+  reference_H: 74.023182
+  challenger_gate_H: 74.123182
+  best_nonreference_run: RUN-002
+  best_nonreference_H: 73.869826
+  challenger_selected: false
+  decision: current_reference_multiseed_only
+stage_2:
+  config_sha256: 981648d6d50deccf2bff8556c33ff2c5b68da74fa404d1f21ffc53bee2c4c9e6
+  run_ids:
+    - RUN-009
+    - RUN-010
+    - RUN-011
+  seeds:
+    - 5
+    - 6
+    - 8
+  condition: inner_ratio=0.35,topology_weight=0.1
+  status: completed
+  server_run_commit: 4c5c0910b7b498ed6e4021bc76a9a7236a8ce15e
+  completed_runs: 3
+  failed_runs: 0
+final:
+  decision: freeze_h1_fixed_equal_no_more_search
+  group_weights:
+    - 0.3333333333333333
+    - 0.3333333333333333
+    - 0.3333333333333333
+  value_heads: 1
+  inner_ratio: 0.35
+  outer_ratio: 0.65
+  topology_weight: 0.1
+  seeds:
+    - 5
+    - 6
+    - 7
+    - 8
+  H_mean: 73.853094
+  H_min: 73.709453
+  H_max: 74.023182
+  H_range: 0.313729
+  ZS_mean: 81.534684
+  new_runs_total: 10
+  hard_stop_satisfied: true

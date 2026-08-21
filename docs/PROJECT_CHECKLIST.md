@@ -19,7 +19,9 @@
 - [x] 分开记录论文事实和本项目推断。
 - [x] 创建`research/ideas/IDEA-001_tg_vpr_h1.md`，把TG-VPR-H1登记为创新1候选。
 - [x] IDEA-001记录证据、base commit、可证伪假设、成立/失败条件和论文主线角色。
-- [x] 更新`research/IDEA_TREE.md`；IDEA-001当前仍为`testing`，未标记`paper_core_innovation`。
+- [x] owner明确授权直接迁移H1旧实验的轻量证据。
+- [x] 迁入主方法、组件消融、多seed和最终收口四组证据及逐文件SHA。
+- [x] 更新`research/IDEA_TREE.md`；IDEA-001现为`supported / paper_core_innovation`。
 
 P0完成条件：`PAPER-001 → IDEA-001 → FRAMEWORK-V2`形成可追溯闭环。当前已完成。
 
@@ -71,4 +73,4 @@ P2完成条件：创新3有论文证据、独立Idea、正式实验和可复核�
 
 ## 当前唯一下一步
 
-为IDEA-001准备当前仓库最小baseline-off控制实验，验证完整TG-VPR-H1是否优于关闭Value重参数化的条件；在此之前不创建创新2或创新3代码。
+开始P1：重新核对与seen类别几何向unseen可靠迁移相关的论文，建立`PAPER-002`；在论文和`IDEA-002`完成前不写创新2代码。

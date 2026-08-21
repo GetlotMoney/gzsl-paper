@@ -66,3 +66,4 @@ H mean=`73.853094`，min=`73.709453`，max=`74.023182`，range=`0.313729`。固�
 - V2模块说明：`experiments/v2/MODULES.md`
 - HTML框架图：`experiments/v2/framework_diagram.html`
 - 可编辑源图：`docs/TG_VPR_H1_framework_diagram.drawio`
+- 直接迁入的旧实验轻量证据：`experiments/v2/evidence/legacy_h1/`

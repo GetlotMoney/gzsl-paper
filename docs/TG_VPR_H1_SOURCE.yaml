@@ -40,7 +40,7 @@ target_files:
     sha256: c6754432a299eedbba1279d5e938b61e23994c6041caa893955a6497642eca22
   framework_document:
     path: docs/TG_VPR_H1.md
-    sha256: 7b75c0b776716d7834f94788ca9461d18b732e9126ebad83f21fdba322fb3cfd
+    sha256: 1d5e404466038f9e6ebb9a65b77235d0baf52656e6ca30ad69706af2db8eb30a
   test:
     path: tests/test_tg_vpr_h1.py
     sha256: 82ca71b2e780c089aa1b7d3508667947cb29ee76ac492d92972e6e27a14e59be
@@ -76,5 +76,11 @@ excluded:
 target_status: owner_promoted_to_independent_framework_v2
 framework_v1_integration: not_applied
 framework_v2_status: baseline_completed_single_seed
+legacy_evidence_migration:
+  authorization: owner_explicit_2026-08-22
+  target_path: experiments/v2/evidence/legacy_h1
+  evidence_id: LEGACY-H1-EVIDENCE-001
+  copied_file_count: 21
+  file_manifest_aggregate_sha256: 75b2d47fe8ca64af240d4640ffaf401d94098c42e19459029bd2277e6557a483
 innovation_experiment_id: not_assigned
 innovation_id_reason: owner_promoted_source_module_directly_as_independent_v2

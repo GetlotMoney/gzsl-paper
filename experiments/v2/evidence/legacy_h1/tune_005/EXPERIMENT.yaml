@@ -1,0 +1,24 @@
+schema_version: gtpj.experiment.v1
+experiment_id: V5-TUNE-005
+framework_id: FRAMEWORK-V5
+title: TG-VPR-H1 多 seed 稳定性
+question: TG-VPR-H1 在 seeds 5/6/7/8 下的U/S/H/ZS分布与当前最高单次是多少
+source_condition: TG-VPR-H1
+source_code_commit: 7ebbb6cbf28a2aac63997bb89ec87024beaf51c3
+multiseed_code_commit: 69d2289af57e50ae1fac3048d47938c4529f1e14
+seeds: [5, 6, 7, 8]
+repeat_type: multi_seed_stability
+not_confirmation_evidence: true
+formal_evidence: false
+status: completed
+best_observed:
+  seed: 7
+  U: 72.690260
+  S: 75.398600
+  H: 74.019664
+  ZS: 81.534684
+distribution:
+  mean_H: 73.838267
+  min_H: 73.709453
+  max_H: 74.019664
+  range_H: 0.310211
