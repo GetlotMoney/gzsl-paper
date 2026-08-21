@@ -1,0 +1,38 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-CONFIRM-001
+slug: v2_baseline
+kind: confirmation
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+framework_diagram: experiments/v2/framework_diagram.html
+base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
+code_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
+research_question: 在当前gzsl-paper仓库的真实CUB数据与固定协议下，FRAMEWORK-V2的首个正式U/S/H/ZS基线是多少？
+status: ready_to_run
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+historical_multiseed_reference_is_baseline: false
+dataset:
+  name: CUB
+  train_split: trainval_loc
+  train_samples: 7057
+  seen_classes: 150
+  test_seen_samples: 1764
+  unseen_classes: 50
+  test_unseen_samples: 2967
+server:
+  ssh_host: lab4090
+  gpu: 1
+  repository: /data/lby/projects/cv_project/gzsl-paper
+  data_entry: /data/lby/projects/cv_project/gzsl-paper/data
+  output_root: /data/lby/projects/cv_project/GZSL_Warehouse/runs/v2/CONFIRM-001_v2_baseline
+runs:
+  - run_id: RUN-001
+    code_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
+    condition: v2_frozen_default
+    seed: 7
+    config_ref: experiments/v2/confirmation/CONFIRM-001_v2_baseline/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/runs/v2/CONFIRM-001_v2_baseline/RUN-001
+    status: ready_to_run
+
