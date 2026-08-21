@@ -30,7 +30,7 @@ V2-H-PLUS-3PP
    ├─ V2-CONFIRM-001 / RUN-001：H=74.023182%
    └─ paper_method_goal
       ├─ shared_research_question：待证据确定
-      ├─ innovation_slot_1：TG-VPR-H1候选；等待PAPER-001与IDEA-001
+      ├─ innovation_slot_1：IDEA-001 / TG-VPR-H1（testing，等待控制实验）
       ├─ innovation_slot_2：待筛选与验证
       ├─ innovation_slot_3：待筛选与验证
       ├─ integration_gate：三者必须形成连续或互补逻辑
@@ -48,3 +48,5 @@ V2-H-PLUS-3PP
 - 三个最终节点必须共享一个核心研究问题，并能在同一 HTML 框架图中形成自然的数据流或机制关系；互不相关的模块不得强行并列。
 - 实验开始后链接准确 Experiment 路径；结束后回填真实结果和 Idea 状态。
 - 失败节点保留在树中，不删除、不重编号，也不事后修改成功门槛。
+
+当前创新1来源：`PAPER-001 → IDEA-001 → FRAMEWORK-V2`。它尚未标记为`paper_core_innovation`，下一步需要当前仓库正式baseline-off控制实验。

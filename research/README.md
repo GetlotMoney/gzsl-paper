@@ -45,9 +45,8 @@ research/
 - DOI、arXiv 或出版社等可复查来源；
 - `source_checked_at`；
 - 所核对 PDF 的仓库外绝对 URI 和 SHA256；
-- 与当前研究直接相关的证据，每条使用 `PAPER-xxx-Cxx` 标识；
-- 每条证据在原文中的页码、章节、表格或公式位置；
-- 适用边界和作者没有证明的内容；
+- 与当前研究的简短关系，以及论文没有直接证明的本项目改动；
+- 页码、章节、表格、公式位置和`PAPER-xxx-Cxx`细粒度证据均为可选，只在后续论文claim需要严格逐条审计时补充；
 - 自己的推断必须单独标记，不能写成论文事实。
 
 PDF 原件、批量图片和大体积解析缓存不进入 Git。
@@ -69,7 +68,7 @@ PDF 原件、批量图片和大体积解析缓存不进入 Git。
 每个 idea 必须能被实验否定，至少写清：
 
 - `idea_id` 和要解决的具体问题；
-- `evidence_refs`，引用本仓库论文证据编号；
+- `evidence_refs`，至少引用本仓库`PAPER-xxx`；细粒度claim编号可选；
 - 可证伪假设；
 - 准确 `base_commit`；
 - 相对基线的唯一核心改动；
@@ -109,7 +108,7 @@ PDF 原件、批量图片和大体积解析缓存不进入 Git。
 ```yaml
 idea_id: IDEA-xxx
 evidence_refs:
-  - PAPER-xxx-Cxx
+  - PAPER-xxx
 base_commit: <准确 Git commit>
 ```
 

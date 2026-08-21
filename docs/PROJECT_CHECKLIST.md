@@ -12,20 +12,20 @@
 
 ## P0：现在立即做——为创新1建立当前仓库证据
 
-- [ ] 选择并重新核对第一篇与结构化类别语义、原型学习或语义重参数化直接相关的论文原文。
-- [ ] 在仓库外固定PDF绝对URI和SHA256。
-- [ ] 创建`research/papers/PAPER-001_<slug>.md`。
-- [ ] 记录至少一条可定位证据`PAPER-001-C01`，包含页码、章节、公式或表格位置、适用边界和作者未证明内容。
-- [ ] 分开记录论文事实和本项目推断，不能把旧聊天或旧GTPJ结论当证据。
-- [ ] 创建`research/ideas/IDEA-001_<slug>.md`，把TG-VPR-H1登记为创新1候选。
-- [ ] IDEA-001必须记录`evidence_refs`、准确`base_commit=3dc078c...`、唯一核心假设、成立条件、失败条件和论文主线角色。
-- [ ] 更新`research/IDEA_TREE.md`；证据和假设未完成前不得标记`paper_core_innovation`。
+- [x] 核对《Enhancing CLIP with GPT-4: Harnessing Visual Descriptions as Prompts》本地原文。
+- [x] 在仓库外固定PDF绝对URI和SHA256。
+- [x] 创建`research/papers/PAPER-001_enhancing_clip_with_gpt4.md`。
+- [x] 简单记录论文与TG-VPR-H1的改版关系；按owner要求不保留页码。
+- [x] 分开记录论文事实和本项目推断。
+- [x] 创建`research/ideas/IDEA-001_tg_vpr_h1.md`，把TG-VPR-H1登记为创新1候选。
+- [x] IDEA-001记录证据、base commit、可证伪假设、成立/失败条件和论文主线角色。
+- [x] 更新`research/IDEA_TREE.md`；IDEA-001当前仍为`testing`，未标记`paper_core_innovation`。
 
-P0完成条件：`PAPER-001 → PAPER-001-C01 → IDEA-001 → FRAMEWORK-V2`形成可追溯闭环。
+P0完成条件：`PAPER-001 → IDEA-001 → FRAMEWORK-V2`形成可追溯闭环。当前已完成。
 
 ## P1：创新2——seen几何向unseen可靠迁移
 
-- [ ] 先检索并核对相关论文，建立新的PAPER证据编号。
+- [ ] 先检索并核对相关论文，建立新的PAPER记录。
 - [ ] 明确H1当前只改写seen原型、unseen保持Mean8所留下的具体问题。
 - [ ] 建立独立`IDEA-002`，提出可证伪的unseen迁移机制，而不是继续调H1的head、组权重、inner或topology。
 - [ ] 预先写明预期改善U、S、H中的哪一项，以及失败门槛。
@@ -71,5 +71,4 @@ P2完成条件：创新3有论文证据、独立Idea、正式实验和可复核�
 
 ## 当前唯一下一步
 
-重新核对第一篇论文原文，创建`PAPER-001`及第一条可定位证据；在此之前不创建创新2或创新3代码。
-
+为IDEA-001准备当前仓库最小baseline-off控制实验，验证完整TG-VPR-H1是否优于关闭Value重参数化的条件；在此之前不创建创新2或创新3代码。
