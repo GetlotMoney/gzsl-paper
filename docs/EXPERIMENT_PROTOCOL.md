@@ -31,21 +31,29 @@ experiments/vX/
 
 ```text
 INNOVATION-001_example/
-├─ README.md
 ├─ EXPERIMENT.yaml
-├─ module_source.md
-├─ implementation.md
-├─ framework_diagram.html
 ├─ configs/
 │  ├─ RUN-001.yaml
 │  └─ RUN-002.yaml
 ├─ PARAMETER_MATRIX.csv
-├─ PARAMETER_MATRIX.md
-├─ evidence/
-│  ├─ RUN-001.md
-│  └─ RUN-002.md
 └─ result.md
 ```
+
+这四类文件构成普通实验的最小闭环。只有修改代码结构、模块、forward、loss、数据流或评估语义时，才增加`framework_diagram.html`。`PARAMETER_MATRIX.md`、逐RUN evidence页、README、implementation和module_source均为按需文件；现有历史文件保留，但不要求新实验复制这些层级。
+
+## 最短执行流程
+
+```text
+真实问题或证据
+→ 一张可证伪Idea卡
+→ 一个Experiment和参数CSV
+→ pre-run commit
+→ 仓库外独立RUN目录训练
+→ 回填CSV与result.md
+→ post-run result commit
+```
+
+不为普通实验增加审核线程、状态机、专用控制器、重复冻结或额外收据。
 
 ## 参数矩阵
 

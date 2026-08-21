@@ -11,7 +11,7 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。当前研究目标是在相�
 固定闭环：
 
 ```text
-证据来源 → 新 idea → 正式实验 → 结果回填 → 论文定位
+真实问题或证据 → 一张Idea卡 → 一个Experiment → 真实RUN → 结果回填
 ```
 
 本仓库从空白研究知识层开始。旧 GTPJ 的论文笔记、idea tree、研究结论和编号不迁移、不引用，也不能通过聊天记忆隐式恢复。需要使用同一篇论文时，必须重新核对原文并在本仓库重新登记。
@@ -35,9 +35,9 @@ research/
 
 ## 本地知识库与 RAG
 
-论文卡片是项目内唯一可提交的研究知识事实源。用于核对的 PDF、解析全文、批量图片和检索索引保存在仓库外；每篇论文登记前都必须固定所核对 PDF 的仓库外绝对 URI 和 SHA256。
+论文卡片只负责记录论文来源，不是创新开工硬门。用于核对的PDF、解析全文、批量图片和检索索引保存在仓库外；登记论文时固定所核对PDF的仓库外绝对URI和SHA256。
 
-本地 PDF 与正式出版页面、DOI 或 arXiv 都可以作为来源，但必须重新核对原文。RAG 只是一层可选检索工具，用于从大量本地全文中找候选段落，不能替代论文卡片，也不能把模型生成的回答直接当作证据。只有论文规模已经造成真实检索困难时才建立 RAG；当前先使用论文卡片和可定位证据完成最小闭环。
+本地PDF与正式出版页面、DOI或arXiv都可以作为论文来源，但必须重新核对原文。RAG只是一层可选检索工具，不能把模型回答直接当证据。没有论文时，Idea可以直接引用本地实验、代码或指标记录。
 
 ## 论文记录
 
@@ -67,20 +67,23 @@ PDF 原件、批量图片和大体积解析缓存不进入 Git。
 
 ## Idea 记录
 
-每个 idea 必须能被实验否定，至少写清：
+每个Idea只需一张卡，并且必须能被实验否定。最少写清：
 
-- `idea_id` 和要解决的具体问题；
-- `source_type`：`paper`、`local_observation`、`experiment_result`、`code_analysis`、`first_principles`或`owner_hypothesis`；
-- `evidence_refs`：引用论文、RUN/实验结果、代码文件/行、指标记录或owner假设记录中的至少一种，不强制包含`PAPER-xxx`；
-- 可证伪假设；
-- 准确 `base_commit`；
-- 相对基线的唯一核心改动；
-- 预期影响的指标或现象；
-- 成立条件和失败条件；
-- 当前状态只能是：`proposed`、`testing`、`supported`、`revised` 或 `rejected`；
-- 对应实验与结果路径（发生后再填写）。
-- 它在论文主线中的作用，以及与其他候选 Idea 的输入输出关系；
-- 总方法名候选、子创新名候选和可能造成框架割裂的风险。
+```yaml
+idea_id: IDEA-xxx
+source_type: paper | local_observation | experiment_result | code_analysis | first_principles | owner_hypothesis
+evidence_refs:
+  - <至少一个可追溯来源>
+base_commit: <准确commit>
+problem: <真实问题>
+hypothesis: <可证伪假设>
+core_change: <唯一核心改动>
+success_condition: <成立条件>
+failure_condition: <失败条件>
+status: proposed | testing | supported | revised | rejected
+```
+
+实验和结果路径发生后再补；论文角色、命名候选和与其他创新的接口只在进入最终三创新组合时补，不作为Idea开工门槛。
 
 证据不足时可以保存为 `proposed`，但不能直接宣称创新成立。
 

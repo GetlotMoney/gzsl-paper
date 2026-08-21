@@ -23,6 +23,9 @@
 - 只改配置、参数、seed 或预注册控制条件：新增 RUN。
 - 修改公式、模块输入、forward、loss、数据语义或评估语义：新建 Experiment。
 - 每个 RUN 必须绑定准确 code commit、完整配置快照、seed、数据身份、U/S/H/ZS、日志和模型 URI。
+- 新实验默认只要求`EXPERIMENT.yaml`、`configs/RUN-xxx.yaml`、`PARAMETER_MATRIX.csv`和`result.md`四类文件。
+- `PARAMETER_MATRIX.md`、逐RUN evidence页、README、implementation和module_source均为按需文件，不再作为普通实验默认门槛。
+- 只有代码结构、模块、forward、loss、数据流或评估语义改变时，才额外要求实验级`framework_diagram.html`。
 - pre-run commit 只保存代码、配置和计划；post-run commit 只保存已经发生的结果。
 - GitHub 不保存数据、cache、checkpoint、原始大日志或密钥。
 
