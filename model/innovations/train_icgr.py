@@ -11,6 +11,7 @@ import torch
 import torch.nn.functional as F
 import yaml
 
+from model.innovations.acgr import AllClassCenteredGroupRouter
 from model.innovations.icgr import ICGRClassifier
 from model.tg_vpr_h1 import TGVPRH1FixedEqual
 from model.tg_vpr_h1 import train as h1
@@ -41,6 +42,7 @@ CONFIG_KEYS = {
 }
 CONFIG_KEYS_V2 = CONFIG_KEYS | {"router_input_mode"}
 CONFIG_KEYS_V3 = CONFIG_KEYS_V2 | {"kl_weight"}
+CONFIG_KEYS_V4 = CONFIG_KEYS | {"routing_semantics", "role_scale"}
 
 
 class TeeStream:
@@ -62,7 +64,9 @@ def load_config(path: Path) -> tuple[dict, str]:
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    if schema == "gzsl-paper.icgr.v3":
+    if schema == "gzsl-paper.acgr.v1":
+        expected = CONFIG_KEYS_V4
+    elif schema == "gzsl-paper.icgr.v3":
         expected = CONFIG_KEYS_V3
     elif schema == "gzsl-paper.icgr.v2":
         expected = CONFIG_KEYS_V2
@@ -77,9 +81,11 @@ def load_config(path: Path) -> tuple[dict, str]:
         "gzsl-paper.icgr.v1",
         "gzsl-paper.icgr.v2",
         "gzsl-paper.icgr.v3",
+        "gzsl-paper.acgr.v1",
     ):
         raise ValueError("ICGR配置schema错误。")
-    if config["idea_id"] != "IDEA-003" or config["framework_id"] != "FRAMEWORK-V2":
+    expected_idea = "IDEA-004" if schema == "gzsl-paper.acgr.v1" else "IDEA-003"
+    if config["idea_id"] != expected_idea or config["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ICGR研究身份不匹配。")
     if int(config["epochs"]) != 10 or int(config["hidden_dim"]) != 64:
         raise ValueError("ICGR首次TRY固定训练10 epoch、隐藏维64。")
@@ -94,6 +100,11 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("ICGR路由输入模式错误。")
     if float(config.get("kl_weight", 0.0)) not in (0.0, 0.01):
         raise ValueError("ICGR KL权重只能关闭或固定为0.01。")
+    if schema == "gzsl-paper.acgr.v1":
+        if config["routing_semantics"] != "all_class_centered_roles":
+            raise ValueError("ACGR必须使用全类中心化三组语义。")
+        if float(config["role_scale"]) != 0.65:
+            raise ValueError("ACGR首次TRY固定role_scale=0.65。")
     return config, sha256_file(path)
 
 
@@ -203,11 +214,18 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             raise ValueError("ICGR训练边界必须是150 seen / 50 true unseen类。")
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
         parent = build_parent(tensors, base_config, checkpoint, seenclasses, device)
-        model = ICGRClassifier(
-            parent,
-            hidden_dim=int(config["hidden_dim"]),
-            router_input_mode=config.get("router_input_mode", "image_cls"),
-        ).to(device)
+        if config.get("routing_semantics") == "all_class_centered_roles":
+            model = AllClassCenteredGroupRouter(
+                parent,
+                hidden_dim=int(config["hidden_dim"]),
+                role_scale=float(config["role_scale"]),
+            ).to(device)
+        else:
+            model = ICGRClassifier(
+                parent,
+                hidden_dim=int(config["hidden_dim"]),
+                router_input_mode=config.get("router_input_mode", "image_cls"),
+            ).to(device)
         initial = model.route_weights(tensors["train_features"][:4].to(device).float())
         expected = torch.full_like(initial, 1.0 / 3.0)
         if not torch.equal(initial, expected):
@@ -330,6 +348,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "delta_percent_points": delta,
             "group_weight_stats": weight_stats,
             "router_input_mode": config.get("router_input_mode", "image_cls"),
+            "routing_semantics": config.get("routing_semantics", "parent_components"),
+            "role_scale": float(config.get("role_scale", 1.0)),
             "kl_weight": float(config.get("kl_weight", 0.0)),
             "success": success,
             "gate_model_sha256": sha256_file(output_dir / "gate_model.pth"),
