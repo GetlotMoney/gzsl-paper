@@ -53,3 +53,15 @@ def centroid_alignment_loss(
     prototypes = F.normalize(prototypes, dim=-1)
     visual_centroids = F.normalize(visual_centroids, dim=-1)
     return 1.0 - (prototypes * visual_centroids).sum(dim=-1).mean()
+
+
+def centroid_contrastive_loss(
+    prototypes: torch.Tensor,
+    visual_centroids: torch.Tensor,
+    temperature: float = 0.07,
+) -> torch.Tensor:
+    prototypes = F.normalize(prototypes, dim=-1)
+    visual_centroids = F.normalize(visual_centroids, dim=-1)
+    logits = prototypes @ visual_centroids.T / float(temperature)
+    targets = torch.arange(prototypes.size(0), device=prototypes.device)
+    return F.cross_entropy(logits, targets)

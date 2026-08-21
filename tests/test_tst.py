@@ -8,6 +8,7 @@ from model.innovations.train_elpt import load_config
 from model.innovations.tst import (
     TangentStepGate,
     centroid_alignment_loss,
+    centroid_contrastive_loss,
     tangent_transport,
 )
 
@@ -70,3 +71,18 @@ def test_centroid_alignment_and_cata_config():
     assert config["idea_id"] == "IDEA-007"
     assert config["centroid_alignment_weight"] == 0.1
     assert config["parent_metrics_percent"]["H"] == 76.98454484002713
+
+
+def test_centroid_contrastive_alignment_and_rescue_config():
+    generator = torch.Generator().manual_seed(54)
+    prototypes = torch.randn(12, 768, generator=generator, requires_grad=True)
+    centroids = torch.randn(12, 768, generator=generator)
+    loss = centroid_contrastive_loss(prototypes, centroids)
+    assert torch.isfinite(loss)
+    loss.backward()
+    assert torch.isfinite(prototypes.grad).all()
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_022_cata_rescue1_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-022"
+    assert config["centroid_alignment_mode"] == "contrastive"

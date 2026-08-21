@@ -21,6 +21,7 @@ from model.innovations.elpt import (
 from model.innovations.tst import (
     TangentStepGate,
     centroid_alignment_loss,
+    centroid_contrastive_loss,
     tangent_transport,
 )
 from model.tg_vpr_h1 import TGVPRH1FixedEqual
@@ -62,6 +63,7 @@ OPTIONAL_CONFIG_KEYS = {
     "gate_max_step",
     "centroid_alignment_weight",
     "parent_metrics_percent",
+    "centroid_alignment_mode",
 }
 
 
@@ -113,10 +115,12 @@ def load_config(path: Path):
     raw.setdefault("gate_max_step", 1.5)
     raw.setdefault("centroid_alignment_weight", 0.0)
     raw.setdefault("parent_metrics_percent", None)
+    raw.setdefault("centroid_alignment_mode", "pairwise")
     if raw["schema_version"] not in (
         "gzsl-paper.elpt.v1",
         "gzsl-paper.tst.v1",
         "gzsl-paper.cata.v1",
+        "gzsl-paper.cata.v2",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -126,7 +130,7 @@ def load_config(path: Path):
         "V2-TRY-017",
         "V2-TRY-018",
     } and raw["idea_id"] == "IDEA-005"
-    valid_cata = raw["attempt_id"] == "V2-TRY-021" and raw["idea_id"] == "IDEA-007"
+    valid_cata = raw["attempt_id"] in {"V2-TRY-021", "V2-TRY-022"} and raw["idea_id"] == "IDEA-007"
     if not (valid_elpt or valid_tst or valid_cata):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
@@ -188,6 +192,9 @@ def load_config(path: Path):
             or set(parent) != {"U", "S", "H", "ZS"}
         ):
             raise ValueError("CATA首次TRY身份或父指标不匹配。")
+        expected_mode = "pairwise" if raw["attempt_id"] == "V2-TRY-021" else "contrastive"
+        if raw["centroid_alignment_mode"] != expected_mode:
+            raise ValueError("CATA对齐模式与TRY身份不匹配。")
     return raw, sha256_file(path)
 
 
@@ -207,6 +214,12 @@ def _transport(base, value, coefficient, mode):
     if mode == "tangent":
         return tangent_transport(base, value, coefficient)
     return blend_prototypes(base, value, coefficient)
+
+
+def _centroid_loss(prototypes, centroids, mode):
+    if mode == "contrastive":
+        return centroid_contrastive_loss(prototypes, centroids)
+    return centroid_alignment_loss(prototypes, centroids)
 
 
 def _stage_boundaries(stages):
@@ -421,9 +434,10 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
                     base_all.index_select(0, seenclasses.to(device)), competition
                 )
                 alpha_regularization = alpha.square().mean()
-                alignment = centroid_alignment_loss(
+                alignment = _centroid_loss(
                     final_all.index_select(0, pseudo_unseen),
                     package["pseudo_unseen_centroids"].to(device),
+                    config["centroid_alignment_mode"],
                 )
                 loss = (
                     ce
@@ -495,9 +509,10 @@ def _train_gate_ensemble(packages, tensors, config, device, seed, print_log):
                     + float(config["topology_weight"]) * topo
                     + float(config["alpha_penalty"]) * alpha.square().mean()
                     + float(config["centroid_alignment_weight"])
-                    * centroid_alignment_loss(
+                    * _centroid_loss(
                         final_all.index_select(0, pseudo_unseen),
                         package["pseudo_unseen_centroids"].to(device),
+                        config["centroid_alignment_mode"],
                     )
                 )
                 optimizer.zero_grad(set_to_none=True)
@@ -795,6 +810,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "centroid_alignment_weight": float(
                 config["centroid_alignment_weight"]
             ),
+            "centroid_alignment_mode": config["centroid_alignment_mode"],
             "parent_metrics_percent": config["parent_metrics_percent"],
             "delta_vs_parent_percent_points": parent_delta,
             "success": success,
