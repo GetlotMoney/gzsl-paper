@@ -14,6 +14,10 @@ frameworks:
     tag: v2
     status: baseline_completed_single_seed
 evaluation_protocol: test_selected_inductive_gzsl
+paper_primary_framework: FRAMEWORK-V2
+paper_baseline_H: 74.023182
+paper_target_H: 77.023182
+target_supported_innovations: 3
 ```
 
 V1 来源于 `model/v5-template-v2@fb4b29b04087640890a532f105cb527d3a8c461b` 的必要运行代码，旧仓库历史、旧实验和旧账本没有迁入。
@@ -24,8 +28,8 @@ owner已将来源身份`INNOVATION-MODULE-1 / TG-VPR-H1`提升为独立正式框
 
 ## 当前待办
 
-1. 首个真实基线已由 `V1-CONFIRM-001 / RUN-002` 完成：`U=72.3584%`、`S=76.2365%`、`H=74.2468%`、`ZS=81.4479%`。
-2. 基线实际代码包含一个不改变模型与评估语义的 CUDA device validation 修复，准确提交为 `f8dd7c72465686cfe4aea8a0f37f658e1176386a`。
-3. 下一目标是在相同数据和评估口径下达到 `H >= 77.2468%`。
-4. 后续创新从 `V1-INNOVATION-001` 开始编号，并绑定本仓库 Idea 与论文证据。
-5. V2首个正式单seed基线已完成；下一步由owner决定论文主框架采用V1还是V2，再基于所选框架重新设定提升目标。
+owner已选择`FRAMEWORK-V2`作为论文主框架。V2当前正式单seed基线为`H=74.023182%`，新的三个百分点目标为`H >= 77.023182%`。
+
+下一件事是重新核对论文来源并建立本仓库`PAPER-001`和`IDEA-001`，使TG-VPR-H1具备当前仓库可追溯的论文创新身份。之后才进入创新2和创新3的证据、代码与实验。
+
+完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

@@ -14,3 +14,5 @@ V2必须使用`config/tg_vpr_h1.yaml`和`python -m model.tg_vpr_h1.train`在本�
 - Warehouse：`/data/lby/projects/cv_project/GZSL_Warehouse/runs/v2/CONFIRM-001_v2_baseline/RUN-001`
 
 该结果逐值复现迁入历史seed 7的H=`74.023182%`，但当前正式基线只有一个seed；它不能单独证明多seed稳定性。
+
+owner已选择V2作为论文主框架。当前论文目标是在相同数据和评估口径下达到`H >= 77.023182%`，即相对该基线提高`3.00`个百分点。

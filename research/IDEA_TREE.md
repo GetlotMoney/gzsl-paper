@@ -3,36 +3,39 @@
 ## 根目标
 
 ```yaml
-objective_id: GZSL-H-PLUS-3PP
-framework: FRAMEWORK-V1
-baseline_code_commit: 7d842e5c0e5554409eedb3097fea5130a848c9e4
+objective_id: V2-H-PLUS-3PP
+framework: FRAMEWORK-V2
+framework_selection: owner_selected_2026-08-22
+baseline_code_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
+comparison_framework: FRAMEWORK-V1
+comparison_H: 74.2468
 evaluation_protocol: test_selected_inductive_gzsl
 primary_metric: H
 target_improvement_percentage_points: 3.00
 target_supported_innovations: 3
 paper_method_requirement: one_coherent_framework
 naming_requirement: one_method_name_plus_three_consistent_subnames
-baseline_status: completed_with_runtime_device_fix
-baseline_H: 74.2468
-target_H: 77.2468
+baseline_status: completed_single_seed
+baseline_H: 74.023182
+target_H: 77.023182
 ```
 
-这里的 `3.00` 表示 H 提高 3.00 个百分点，不是相对增长 3%。当前真实基线为 `74.2468%`，目标为 `H >= 77.2468%`。
+这里的`3.00`表示H提高3.00个百分点，不是相对增长3%。当前论文主框架是V2，正式基线为`74.023182%`，目标为`H >= 77.023182%`。V1的`74.2468%`只保留为独立比较参考。
 
 ## 当前树
 
 ```text
-GZSL-H-PLUS-3PP
+V2-H-PLUS-3PP
 └─ baseline_completed
-   ├─ V1-CONFIRM-001 / RUN-002：H=74.2468%
+   ├─ V2-CONFIRM-001 / RUN-001：H=74.023182%
    └─ paper_method_goal
       ├─ shared_research_question：待证据确定
-      ├─ innovation_slot_1：待筛选与验证
+      ├─ innovation_slot_1：TG-VPR-H1候选；等待PAPER-001与IDEA-001
       ├─ innovation_slot_2：待筛选与验证
       ├─ innovation_slot_3：待筛选与验证
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
-      └─ metric_target：H>=77.2468%
+      └─ metric_target：H>=77.023182%
 ```
 
 ## 节点规则
