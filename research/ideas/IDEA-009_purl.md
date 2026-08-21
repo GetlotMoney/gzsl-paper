@@ -15,7 +15,11 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-026
+current_attempt: V2-TRY-027
 ```
 
 PURL只重加权150个seen训练类构造的pseudo-unseen子批；true-unseen图像不加载、不进入梯度。额外权重为0时严格回到TST训练目标。
+
+## V2-TRY-026结果
+
+统一额外CE使`U`提高`2.532071`、`ZS`提高`1.086795`，但`S`下降`3.367519`，最终相对TST `ΔH=-0.311272`。补救1把额外CE改为gamma=2的pseudo-unseen focal loss，只强调低置信难例，避免所有样本统一双计。
