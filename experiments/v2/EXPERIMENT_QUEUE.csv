@@ -1,2 +1,3 @@
 attempt_id,idea_id,code_commit,config_ref,change,seed,status,U,S,H,ZS,best_epoch,decision,output_uri
 V2-TRY-001,IDEA-002,68743efc0eb1edc48a253b21fd1e6c3bf1415f89,config/tg_vpr_h1.yaml,eval_only_shared_value_to_unseen,7,completed,36.994851,88.998413,52.264429,75.146323,50,drop,/data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-001
+V2-TRY-002,IDEA-002,1a56fa2b0d8fc390e46e7e64535b962e44983813,config/tg_vpr_h1.yaml,eval_only_unseen_value_blend_alpha_0.1,7,planned,,,,,,,/data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-002
