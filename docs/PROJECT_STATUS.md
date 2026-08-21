@@ -12,7 +12,7 @@ frameworks:
   - id: FRAMEWORK-V2
     branch: framework/v2
     tag: v2
-    status: formal_pending_new_repository_baseline
+    status: baseline_completed_single_seed
 evaluation_protocol: test_selected_inductive_gzsl
 ```
 
@@ -20,7 +20,7 @@ V1 来源于 `model/v5-template-v2@fb4b29b04087640890a532f105cb527d3a8c461b` 的
 
 ## FRAMEWORK-V2
 
-owner已将来源身份`INNOVATION-MODULE-1 / TG-VPR-H1`提升为独立正式框架`FRAMEWORK-V2`。V2使用独立代码、配置和训练入口，不接入`FRAMEWORK-V1`；迁入的多seed结果只作来源证据，不能替代本仓库正式V2基线。
+owner已将来源身份`INNOVATION-MODULE-1 / TG-VPR-H1`提升为独立正式框架`FRAMEWORK-V2`。V2使用独立代码、配置和训练入口，不接入`FRAMEWORK-V1`。首个当前仓库正式基线已由`V2-CONFIRM-001 / RUN-001`完成：`U=72.655779%`、`S=75.443041%`、`H=74.023182%`、`ZS=81.534684%`。
 
 ## 当前待办
 
@@ -28,4 +28,4 @@ owner已将来源身份`INNOVATION-MODULE-1 / TG-VPR-H1`提升为独立正式框
 2. 基线实际代码包含一个不改变模型与评估语义的 CUDA device validation 修复，准确提交为 `f8dd7c72465686cfe4aea8a0f37f658e1176386a`。
 3. 下一目标是在相同数据和评估口径下达到 `H >= 77.2468%`。
 4. 后续创新从 `V1-INNOVATION-001` 开始编号，并绑定本仓库 Idea 与论文证据。
-5. V2下一步是按固定配置建立首个正式confirmation基线；在完成前不得把迁入结果写成V2 confirmed baseline。
+5. V2首个正式单seed基线已完成；下一步由owner决定论文主框架采用V1还是V2，再基于所选框架重新设定提升目标。

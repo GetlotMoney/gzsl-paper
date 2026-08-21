@@ -10,10 +10,14 @@ source_identity: INNOVATION-MODULE-1
 source_code_commit: 4a063218989c6e193a7aa3c593bb4f0f8ecb7379
 derived_from_framework: none
 owner_promotion_decision: promote_as_independent_framework_v2_2026-08-22
-status: formal_pending_new_repository_baseline
+status: baseline_completed_single_seed
 evaluation_protocol: test_selected_inductive_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
+baseline_experiment: V2-CONFIRM-001
+baseline_code_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
+baseline_seed: 7
+baseline_H: 74.023182
 training_entry: model/tg_vpr_h1/train.py
 config_ref: config/tg_vpr_h1.yaml
 modules:
@@ -26,4 +30,3 @@ modules:
   - Mean8 unseen-class fallback
   - topology-preserving auxiliary loss
   - cosine GZSL classifier
-

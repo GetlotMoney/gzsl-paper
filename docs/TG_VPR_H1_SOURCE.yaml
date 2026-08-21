@@ -40,16 +40,16 @@ target_files:
     sha256: c6754432a299eedbba1279d5e938b61e23994c6041caa893955a6497642eca22
   framework_document:
     path: docs/TG_VPR_H1.md
-    sha256: 6142c1fbdccb8ab1445664d96418aee1f866371d5cc32763b91d9cebea13265d
+    sha256: 7b75c0b776716d7834f94788ca9461d18b732e9126ebad83f21fdba322fb3cfd
   test:
     path: tests/test_tg_vpr_h1.py
-    sha256: 6488e2540f1025537b85b6bad0aa66d50fa5b43109c84fc8f9136080a5a0a76f
+    sha256: 82ca71b2e780c089aa1b7d3508667947cb29ee76ac492d92972e6e27a14e59be
   editable_diagram:
     path: docs/TG_VPR_H1_framework_diagram.drawio
     sha256: b96b9385c1767c7d86ba0a75726f0caa71af77aa6b2e0b2694845c50d11fbdc9
   html_diagram:
     path: experiments/v2/framework_diagram.html
-    sha256: ad6bf27e2d2daf5cddb31d08ce4f929cdcfac0f1c97c68082119695659c8d63f
+    sha256: 8dc3c3001f42cdbc0c557cb6e7cf2d65e7385992399375e98a0a402130d16cba
 migration_verification:
   state_dict_keys: 13
   strict_state_dict_load: pass
@@ -75,6 +75,6 @@ excluded:
   - checkpoints, caches, data and raw logs
 target_status: owner_promoted_to_independent_framework_v2
 framework_v1_integration: not_applied
-framework_v2_status: formal_pending_new_repository_baseline
+framework_v2_status: baseline_completed_single_seed
 innovation_experiment_id: not_assigned
 innovation_id_reason: owner_promoted_source_module_directly_as_independent_v2

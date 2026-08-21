@@ -103,7 +103,7 @@ def test_source_manifest_is_clean_snapshot_not_old_experiment_tree():
         "0aa38ab46020690879c1de8b937f35fd6b607f22"
     )
     assert source["framework_v1_integration"] == "not_applied"
-    assert source["framework_v2_status"] == "formal_pending_new_repository_baseline"
+    assert source["framework_v2_status"] == "baseline_completed_single_seed"
     for record in source["target_files"].values():
         assert sha256_file(ROOT / record["path"]) == record["sha256"]
     assert not (ROOT / "experiments" / "v5").exists()
