@@ -15,7 +15,11 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-019
+current_attempt: V2-TRY-020
 ```
 
 EPC只训练一个有界参数，数据来自150个seen类的三折episode；true-unseen official图像在训练结束后才加载。关闭EPC或边际为0时严格回到TG-VPR+TST。
+
+## V2-TRY-019结果
+
+CE训练得到边际`+0.062557`，使`U`提高`0.336754`、`S`下降`0.794458`，最终`H=76.793393%`、相对TST `ΔH=-0.191152`。失败原因是CE目标与最终U/S调和均值错位。补救1保持相同参数和数据边界，只把episode目标改为pseudo-seen/pseudo-unseen软准确率的可微调和均值。
