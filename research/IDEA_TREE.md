@@ -37,7 +37,8 @@ V2-H-PLUS-3PP
       ├─ innovation_slot_2：IDEA-005 / TST切空间语义迁移（supported，paper_core_innovation）
       ├─ rejected_branch：IDEA-006 / EPC分折先验校准（rejected，折内边际不迁移）
       ├─ rejected_branch：IDEA-007 / CATA中心对齐切空间适配（rejected，3次补救用尽）
-      ├─ innovation_slot_3：IDEA-008 / SPA seen原型视觉锚定（testing）
+      ├─ rejected_branch：IDEA-008 / SPA seen原型视觉锚定（rejected，破坏联合竞争）
+      ├─ innovation_slot_3：IDEA-009 / PURL pseudo-unseen风险重加权（下一候选）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：四seed mean已通过；seed7仍差0.038637个百分点
