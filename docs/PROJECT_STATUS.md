@@ -18,9 +18,9 @@ paper_primary_framework: FRAMEWORK-V2
 paper_baseline_H: 74.023182
 paper_target_H: 77.023182
 target_supported_innovations: 3
-supported_innovations: 2
-current_seed7_H: 75.587012
-current_multiseed_mean_H: 75.237222
+supported_innovations: 1
+current_seed7_H: 74.023182
+current_multiseed_mean_H: 73.853093
 ```
 
 V1 来源于 `model/v5-template-v2@fb4b29b04087640890a532f105cb527d3a8c461b` 的必要运行代码，旧仓库历史、旧实验和旧账本没有迁入。
@@ -35,8 +35,8 @@ owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和
 
 owner已选择`FRAMEWORK-V2`作为论文主框架。V2当前正式单seed基线为`H=74.023182%`，新的三个百分点目标为`H >= 77.023182%`。
 
-`IDEA-002 / V2-INNOVATION-001`已完成：固定10%保守unseen迁移在seed 5/6/7/8全部提高H，平均`+1.384128`个百分点；seed 7从`74.023182%`提高到`75.587012%`。该方法无新增参数、无额外训练，但10%由official test下的快速TRY选择，必须披露test-exposed边界。
+固定10%保守unseen迁移在四seed均提升H，但它只在测试时生效，现降级为`test_time_observation`，不计入论文核心创新。
 
-下一件事是建立`IDEA-003`，研究单图像如何动态选择local/unique/overall证据，并与创新1、创新2形成连续逻辑。
+下一件事是执行`V2-TRY-006`：用3折pseudo-unseen任务训练ELPT迁移gate。只有训练式权重通过seed7和四seed验证，IDEA-002才能重新标记`supported`。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

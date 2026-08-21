@@ -13,11 +13,12 @@ hypothesis: 将seen训练得到的共享Value变换直接用于unseen三组语�
 core_change: 仅在评估时对unseen原型应用共享Value重参数化，训练权重与seen原型保持不变。
 success_condition: H高于74.023182且U提高，S不出现严重下降。
 failure_condition: H不提升、U不提升或S下降导致H变差。
-status: supported
-paper_core_innovation: true
+status: revised
+paper_core_innovation: false
 last_attempt: V2-TRY-005
 last_decision: promote
 experiment_ref: V2-INNOVATION-001
+next_training_attempt: V2-TRY-006
 ```
 
 ## TRY-001结果
@@ -36,4 +37,8 @@ experiment_ref: V2-INNOVATION-001
 
 固定10%条件在当前仓库从头训练的seed 5/6/7/8 checkpoint上全部提升H：`+1.304404 / +1.346984 / +1.563830 / +1.321295`。候选H mean=`75.237222`，相对基线平均`+1.384128`个百分点。
 
-结论：IDEA-002获得4/4 seed支持，升级为`supported / paper_core_innovation`。10%是在official test下由快速TRY选出，必须始终披露test-exposed边界。
+结论：固定10%在4/4 seed有效，但它只在测试时生效，且比例由official test下的快速TRY选择。该结果保留为动机观察，不作为论文核心创新。
+
+## 训练式修订
+
+下一方案改为ELPT：把150个seen类拆成3折pseudo-seen/pseudo-unseen任务，训练类别级迁移gate，由训练权重学习每类迁移强度，不在测试时人工指定10%。

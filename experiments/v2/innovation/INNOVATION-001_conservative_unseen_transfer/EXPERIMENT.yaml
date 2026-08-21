@@ -9,7 +9,7 @@ question: 固定10%共享Value原型迁移能否在多个从头训练checkpoint�
 core_change: unseen原型固定为90% Mean8加10%完整Value原型，seen原型和训练权重不变
 transfer_strength: 0.1
 selection_history: 100%迁移失败后在seed7 official test选择10%，随后冻结且不再搜索
-status: completed
+status: retained_test_time_observation
 evaluation_protocol: test_selected_inductive_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -17,5 +17,4 @@ training_change: none
 new_parameters: 0
 source_attempts: [V2-TRY-002, V2-TRY-003, V2-TRY-004, V2-TRY-005]
 framework_diagram: framework_diagram.html
-decision: supported
-
+decision: not_paper_core

@@ -1,0 +1,116 @@
+from __future__ import annotations
+
+from pathlib import Path
+import unittest
+
+import torch
+
+from model.innovations.elpt import (
+    ELPTGate,
+    VariableClassTGVPR,
+    blend_prototypes,
+    fixed_class_folds,
+    gate_features,
+)
+from model.innovations.train_elpt import load_config
+from model.tg_vpr_h1 import TGVPRH1FixedEqual
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _inputs():
+    generator = torch.Generator().manual_seed(2406)
+    sentences = torch.randn(200, 8, 768, generator=generator)
+    seen = torch.tensor([i for i in range(200) if i % 4 != 0])
+    centroids = torch.randn(150, 768, generator=generator)
+    return sentences, seen, centroids
+
+
+def test_variable_150_path_is_bitwise_equal_to_v2():
+    sentences, seen, centroids = _inputs()
+    baseline = TGVPRH1FixedEqual(
+        sentences, seen, centroids, dropout=0.0
+    ).eval()
+    variable = VariableClassTGVPR(
+        sentences, seen, centroids, dropout=0.0
+    ).eval()
+    variable.load_state_dict(baseline.state_dict(), strict=True)
+    assert baseline.state_dict().keys() == variable.state_dict().keys()
+    assert torch.equal(baseline.prototypes(), variable.prototypes())
+    images = torch.randn(4, 768, generator=torch.Generator().manual_seed(3))
+    assert torch.equal(baseline.logits(images), variable.logits(images))
+    assert torch.equal(baseline.topology_loss(), variable.topology_loss())
+
+
+def test_fixed_folds_are_disjoint_and_cover_seen_classes():
+    _, seen, _ = _inputs()
+    folds = fixed_class_folds(seen)
+    assert len(folds) == 3
+    pseudo_unseen = [fold[1] for fold in folds]
+    assert all(x.numel() == 50 for x in pseudo_unseen)
+    assert all(fold[0].numel() == 100 for fold in folds)
+    merged = torch.cat(pseudo_unseen).sort().values
+    assert torch.equal(merged, seen.sort().values)
+    assert all(
+        not torch.isin(pseudo_unseen[i], pseudo_unseen[j]).any()
+        for i in range(3)
+        for j in range(i + 1, 3)
+    )
+
+
+def test_gate_initializes_at_point_one_and_receives_gradients():
+    gate = ELPTGate()
+    features = torch.randn(50, 4)
+    alpha = gate(features)
+    assert torch.allclose(alpha, torch.full_like(alpha, 0.1), atol=1e-7)
+    loss = alpha.square().mean()
+    loss.backward()
+    assert any(
+        parameter.grad is not None and float(parameter.grad.abs().sum()) > 0
+        for parameter in gate.parameters()
+    )
+
+
+def test_gate_features_and_blend_are_finite_and_normalized():
+    generator = torch.Generator().manual_seed(11)
+    base = torch.randn(50, 768, generator=generator)
+    value = torch.randn(50, 768, generator=generator)
+    support = torch.randn(100, 768, generator=generator)
+    features = gate_features(base, value, support)
+    assert features.shape == (50, 4)
+    alpha = ELPTGate()(features)
+    blended = blend_prototypes(base, value, alpha)
+    assert torch.isfinite(features).all() and torch.isfinite(blended).all()
+    assert torch.allclose(blended.norm(dim=-1), torch.ones(50), atol=1e-6)
+
+
+def test_try_config_is_frozen():
+    config, digest = load_config(ROOT / "config" / "tries" / "v2_try_006_elpt_seed7.yaml")
+    assert len(digest) == 64
+    assert config["fold_count"] == 3
+    assert config["fold_epochs"] == 50
+    assert config["gate_epochs"] == 20
+    assert config["gate_batch_half"] == 32
+
+
+class ELPTTest(unittest.TestCase):
+    def test_equivalence(self):
+        test_variable_150_path_is_bitwise_equal_to_v2()
+
+    def test_folds(self):
+        test_fixed_folds_are_disjoint_and_cover_seen_classes()
+
+    def test_gate_gradient(self):
+        test_gate_initializes_at_point_one_and_receives_gradients()
+
+    def test_features(self):
+        test_gate_features_and_blend_are_finite_and_normalized()
+
+    def test_config(self):
+        test_try_config_is_frozen()
+
+
+if __name__ == "__main__":
+    unittest.main()
+

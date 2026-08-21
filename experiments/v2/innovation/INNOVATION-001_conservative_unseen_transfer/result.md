@@ -13,5 +13,4 @@ delta S mean = -0.830208
 delta ZS mean = +1.721367
 ```
 
-结论：`supported`。10%是在official test下由TRY-001/002选择，属于test-exposed方法选择，不能描述为blind-test或无偏独立验证。
-
+结论：结果保留为`test_time_observation`。10%是在official test下由TRY-001/002选择，属于test-exposed方法选择；它不进入训练，因此不作为论文核心创新。该结果只用于支持训练式ELPT的研究动机。
