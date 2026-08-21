@@ -43,4 +43,6 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。V2当前正式单seed基线�
 
 当前仍只有`IDEA-001 / TG-VPR-H1`一个supported核心创新。下一步必须建立新的独立训练式候选，不能把ELPT或ICGR失败条件晋级为正式创新。
 
+`IDEA-004 / ACGR`使U和ZS出现正向信号，但H未提升；一次保守幅度补救仍失败且发生组权重塌缩，现已标记`rejected`。下一候选回到原型迁移主线，改用切空间方向迁移的新公式，不复用ELPT实验身份。
+
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

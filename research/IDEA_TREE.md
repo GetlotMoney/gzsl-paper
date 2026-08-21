@@ -33,7 +33,8 @@ V2-H-PLUS-3PP
       ├─ innovation_slot_1：IDEA-001 / TG-VPR-H1（supported，paper_core_innovation）
       ├─ rejected_branch：IDEA-002 / ELPT训练式迁移（rejected，已用尽3次补救）
       ├─ rejected_branch：IDEA-003 / ICGR图像条件三组路由（rejected，两次适用补救均无提升）
-      ├─ innovation_slot_2：待新候选
+      ├─ rejected_branch：IDEA-004 / ACGR全类中心化三组路由（rejected，保守补救仍无提升）
+      ├─ innovation_slot_2：IDEA-005 / 切空间原型迁移（下一候选）
       ├─ innovation_slot_3：待新候选
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
