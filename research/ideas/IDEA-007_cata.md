@@ -1,0 +1,22 @@
+# IDEA-007：CATA中心对齐切空间适配
+
+```yaml
+idea_id: IDEA-007
+source_type: local_result_analysis
+evidence_refs:
+  - V2-INNOVATION-002
+  - V2-TRY-015
+  - V2-TRY-020
+base_commit: 0b919b14f052ec5e3f99378383e94053a2cf45ae
+problem: TST依靠分类CE间接学习迁移步长，seed7 ZS略降且H距离单点目标仍差0.038637个百分点；EPC证明事后logit校准不能可靠迁移。
+hypothesis: 在pseudo-unseen episode中直接对齐迁移原型与视觉中心，可从训练阶段改善切空间方向，而不依赖测试时校准。
+core_change: TST gate loss增加0.1倍pseudo-unseen迁移原型与其seen训练图像中心的余弦对齐损失。
+success_condition: seed7相对TG-VPR+TST的DeltaH不低于0.05个百分点，U和S各自下降不超过2个百分点，并保持TST步长与角位移安全门槛。
+failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
+status: testing
+paper_core_innovation: false
+parent_condition: V2-INNOVATION-002 / TG-VPR + TST
+current_attempt: V2-TRY-021
+```
+
+CATA只在三折pseudo-unseen类上使用视觉中心；这些类属于150个seen训练类。true-unseen图像不加载、不进入梯度。对齐权重为0时严格回到TST训练目标。

@@ -5,7 +5,11 @@ from pathlib import Path
 import torch
 
 from model.innovations.train_elpt import load_config
-from model.innovations.tst import TangentStepGate, tangent_transport
+from model.innovations.tst import (
+    TangentStepGate,
+    centroid_alignment_loss,
+    tangent_transport,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,3 +56,17 @@ def test_tst_multiseed_configs_train_own_folds():
         assert config["attempt_id"] == attempt_id
         assert config["seed"] == seed
         assert config["fold_checkpoint_dir"] is None
+
+
+def test_centroid_alignment_and_cata_config():
+    generator = torch.Generator().manual_seed(53)
+    prototypes = torch.randn(8, 768, generator=generator, requires_grad=True)
+    centroids = torch.randn(8, 768, generator=generator)
+    loss = centroid_alignment_loss(prototypes, centroids)
+    assert torch.isfinite(loss)
+    loss.backward()
+    assert torch.isfinite(prototypes.grad).all()
+    config, _ = load_config(ROOT / "config/tries/v2_try_021_cata_seed7.yaml")
+    assert config["idea_id"] == "IDEA-007"
+    assert config["centroid_alignment_weight"] == 0.1
+    assert config["parent_metrics_percent"]["H"] == 76.98454484002713

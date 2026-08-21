@@ -18,7 +18,11 @@ from model.innovations.elpt import (
     gate_features,
     topology_loss,
 )
-from model.innovations.tst import TangentStepGate, tangent_transport
+from model.innovations.tst import (
+    TangentStepGate,
+    centroid_alignment_loss,
+    tangent_transport,
+)
 from model.tg_vpr_h1 import TGVPRH1FixedEqual
 from model.tg_vpr_h1 import train as h1
 from tools.reproducibility import configure_reproducibility
@@ -56,6 +60,8 @@ OPTIONAL_CONFIG_KEYS = {
     "gate_ensemble",
     "transport_mode",
     "gate_max_step",
+    "centroid_alignment_weight",
+    "parent_metrics_percent",
 }
 
 
@@ -105,7 +111,13 @@ def load_config(path: Path):
     raw.setdefault("gate_ensemble", False)
     raw.setdefault("transport_mode", "convex_blend")
     raw.setdefault("gate_max_step", 1.5)
-    if raw["schema_version"] not in ("gzsl-paper.elpt.v1", "gzsl-paper.tst.v1"):
+    raw.setdefault("centroid_alignment_weight", 0.0)
+    raw.setdefault("parent_metrics_percent", None)
+    if raw["schema_version"] not in (
+        "gzsl-paper.elpt.v1",
+        "gzsl-paper.tst.v1",
+        "gzsl-paper.cata.v1",
+    ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
     valid_tst = raw["attempt_id"] in {
@@ -114,7 +126,8 @@ def load_config(path: Path):
         "V2-TRY-017",
         "V2-TRY-018",
     } and raw["idea_id"] == "IDEA-005"
-    if not (valid_elpt or valid_tst):
+    valid_cata = raw["attempt_id"] == "V2-TRY-021" and raw["idea_id"] == "IDEA-007"
+    if not (valid_elpt or valid_tst or valid_cata):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ELPT只接受FRAMEWORK-V2。")
@@ -162,6 +175,19 @@ def load_config(path: Path):
         raise ValueError("TRY-015必须复用seed7 ELPT fold checkpoint。")
     if raw["attempt_id"] in {"V2-TRY-016", "V2-TRY-017", "V2-TRY-018"} and raw["fold_checkpoint_dir"] is not None:
         raise ValueError("TST多seed RUN必须从头训练各自fold权重。")
+    if valid_cata:
+        parent = raw["parent_metrics_percent"]
+        if (
+            raw["transport_mode"] != "tangent"
+            or float(raw["gate_max_step"]) != 1.5
+            or float(raw["centroid_alignment_weight"]) != 0.1
+            or raw["gate_feature_mode"] != "summary"
+            or raw["gate_ensemble"] is not False
+            or not raw["fold_checkpoint_dir"]
+            or not isinstance(parent, dict)
+            or set(parent) != {"U", "S", "H", "ZS"}
+        ):
+            raise ValueError("CATA首次TRY身份或父指标不匹配。")
     return raw, sha256_file(path)
 
 
@@ -336,6 +362,11 @@ def _fold_package(
         "unseen_indices": unseen_sample_mask.nonzero(as_tuple=False).flatten(),
         "scale": model.scale().detach().cpu(),
         "seenclasses": seenclasses,
+        "pseudo_unseen_centroids": h1.visual_centroids(
+            tensors["train_features"],
+            tensors["train_labels"].long(),
+            pseudo_unseen,
+        ),
     }
 
 
@@ -390,10 +421,15 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
                     base_all.index_select(0, seenclasses.to(device)), competition
                 )
                 alpha_regularization = alpha.square().mean()
+                alignment = centroid_alignment_loss(
+                    final_all.index_select(0, pseudo_unseen),
+                    package["pseudo_unseen_centroids"].to(device),
+                )
                 loss = (
                     ce
                     + float(config["topology_weight"]) * topo
                     + float(config["alpha_penalty"]) * alpha_regularization
+                    + float(config["centroid_alignment_weight"]) * alignment
                 )
                 if not torch.isfinite(loss):
                     raise FloatingPointError("ELPT gate loss非有限。")
@@ -458,6 +494,11 @@ def _train_gate_ensemble(packages, tensors, config, device, seed, print_log):
                     ce
                     + float(config["topology_weight"]) * topo
                     + float(config["alpha_penalty"]) * alpha.square().mean()
+                    + float(config["centroid_alignment_weight"])
+                    * centroid_alignment_loss(
+                        final_all.index_select(0, pseudo_unseen),
+                        package["pseudo_unseen_centroids"].to(device),
+                    )
                 )
                 optimizer.zero_grad(set_to_none=True)
                 loss.backward()
@@ -688,16 +729,32 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
                 "mean_degrees": float(angles.mean()),
                 "max_degrees": float(angles.max()),
             }
-            success = (
-                delta["H"] >= 0.20
-                and candidate_metrics["U"] > baseline_metrics["U"]
-                and delta["S"] >= -2.0
-                and 0.02 < alpha_stats["mean"] < 1.45
-                and alpha_stats["std"] > 0.01
-                and angle_stats["max_degrees"] < 45.0
-            )
+            if config["parent_metrics_percent"] is not None:
+                parent_delta = {
+                    key: candidate_metrics[key] - float(config["parent_metrics_percent"][key])
+                    for key in ("U", "S", "H", "ZS")
+                }
+                success = (
+                    parent_delta["H"] >= 0.05
+                    and parent_delta["U"] >= -2.0
+                    and parent_delta["S"] >= -2.0
+                    and 0.02 < alpha_stats["mean"] < 1.45
+                    and alpha_stats["std"] > 0.01
+                    and angle_stats["max_degrees"] < 45.0
+                )
+            else:
+                parent_delta = None
+                success = (
+                    delta["H"] >= 0.20
+                    and candidate_metrics["U"] > baseline_metrics["U"]
+                    and delta["S"] >= -2.0
+                    and 0.02 < alpha_stats["mean"] < 1.45
+                    and alpha_stats["std"] > 0.01
+                    and angle_stats["max_degrees"] < 45.0
+                )
         else:
             angle_stats = None
+            parent_delta = None
             success = (
                 candidate_metrics["H"] > 74.023182
                 and candidate_metrics["U"] > baseline_metrics["U"]
@@ -735,6 +792,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "gate_ensemble": bool(config["gate_ensemble"]),
             "transport_mode": config["transport_mode"],
             "angle_stats": angle_stats,
+            "centroid_alignment_weight": float(
+                config["centroid_alignment_weight"]
+            ),
+            "parent_metrics_percent": config["parent_metrics_percent"],
+            "delta_vs_parent_percent_points": parent_delta,
             "success": success,
             "gate_model_sha256": sha256_file(output_dir / "gate_model.pth"),
         }

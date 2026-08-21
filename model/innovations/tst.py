@@ -45,3 +45,11 @@ def tangent_transport(
     value = F.normalize(value, dim=-1)
     tangent = value - (value * base).sum(dim=-1, keepdim=True) * base
     return F.normalize(base + step.unsqueeze(-1) * tangent, dim=-1)
+
+
+def centroid_alignment_loss(
+    prototypes: torch.Tensor, visual_centroids: torch.Tensor
+) -> torch.Tensor:
+    prototypes = F.normalize(prototypes, dim=-1)
+    visual_centroids = F.normalize(visual_centroids, dim=-1)
+    return 1.0 - (prototypes * visual_centroids).sum(dim=-1).mean()
