@@ -35,7 +35,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-003 / ICGR图像条件三组路由（rejected，两次适用补救均无提升）
       ├─ rejected_branch：IDEA-004 / ACGR全类中心化三组路由（rejected，保守补救仍无提升）
       ├─ innovation_slot_2：IDEA-005 / TST切空间语义迁移（supported，paper_core_innovation）
-      ├─ innovation_slot_3：待新候选
+      ├─ innovation_slot_3：IDEA-006 / EPC分折先验校准（testing）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：四seed mean已通过；seed7仍差0.038637个百分点
