@@ -15,7 +15,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-032
+current_attempt: V2-TRY-033_to_035
 ```
 
 NTR只改变训练式类别gate的语义几何输入；true-unseen图像不进入梯度。改回4维摘要时严格回到TST。
@@ -27,3 +27,7 @@ seed7得到`U=74.319029%`、`S=80.068129%`、`H=77.086536%`、`ZS=81.430238%`，
 ## 四seed诊断
 
 相对TST的seed 5/6/7/8 `ΔH=-0.114005 / +0.055576 / +0.101991 / -0.001984`，只有2/4为正，触发跨seed不稳定。补救1不再用8维gate整体替换TST，而是冻结4维TST gate，只训练由完整top-5邻域驱动、范围±0.1且零初始化的残差步长。
+
+## V2-TRY-032结果
+
+残差NTR的seed7得到`H=77.051348%`，相对TST `ΔH=+0.066803`、ZS提高`0.040007`，通过门槛。结构现已冻结，下一步在seed5/6/8加载各自TST gate并只训练邻域残差。
