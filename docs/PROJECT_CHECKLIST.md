@@ -10,11 +10,11 @@
 
 ## 创新2
 
-- [ ] 写一张`IDEA-002`：问题、来源、假设、唯一改动、成功/失败条件。
-- [ ] 把第一个尝试写入`experiments/v2/EXPERIMENT_QUEUE.csv`。
-- [ ] 每次服务器尝试只更新一行，失败`drop`、有效`keep`。
-- [ ] 只有出现值得验证的候选时标记`promote`，再建立`V2-INNOVATION-001`正式目录和HTML图。
-- [ ] 正式验证完成后标记`supported / revised / rejected`。
+- [x] IDEA-002已建立并完成TRY清单。
+- [x] 100%迁移失败并标记`drop`；固定10%后停止继续调参。
+- [x] seed 5/6/7/8均使用当前仓库V2代码从头训练checkpoint。
+- [x] 4/4 seed的H均提升，平均`+1.384128`个百分点。
+- [x] 升级为`V2-INNOVATION-001`，IDEA-002标记`supported`。
 
 ## 创新3
 
@@ -35,4 +35,4 @@
 
 ## 当前唯一下一步
 
-`V2-TRY-002`已获得`H=75.587012%`并标记`promote`。下一步建立最小正式`V2-INNOVATION-001`，固定10%unseen残差迁移并做正式验证；不再搜索迁移强度。
+创新1和创新2已获得支持。下一步只建立`IDEA-003`，研究单图像如何动态选择local/unique/overall证据；先写Idea并进入实验清单，不立即创建正式目录。

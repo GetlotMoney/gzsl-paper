@@ -31,7 +31,7 @@ V2-H-PLUS-3PP
    └─ paper_method_goal
       ├─ shared_research_question：待证据确定
       ├─ innovation_slot_1：IDEA-001 / TG-VPR-H1（supported，paper_core_innovation）
-      ├─ innovation_slot_2：待筛选与验证
+      ├─ innovation_slot_2：IDEA-002 / 10%保守unseen迁移（supported，paper_core_innovation）
       ├─ innovation_slot_3：待筛选与验证
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>V2-INNOVATION-001 · Conservative Unseen Value Transfer</title>
+  <style>
+    :root{--ink:#172033;--muted:#667085;--line:#c7d0dd;--blue:#e8f1ff;--green:#e8f7ef;--violet:#f1ebff;--orange:#fff1df;--red:#fff0f0}
+    *{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:var(--ink);font:15px/1.55 Inter,"Segoe UI","Microsoft YaHei",sans-serif}
+    main{width:min(1260px,calc(100% - 32px));margin:28px auto 60px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 12px 28px #20304a12;margin-bottom:18px}
+    h1{margin:0 0 6px;font-size:32px}.sub{color:var(--muted)}.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.badge{border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:#f9fbff;font-size:13px}
+    .flow{display:grid;grid-template-columns:1fr 42px 1.15fr 42px 1fr;gap:12px;align-items:stretch}.stack{display:grid;gap:12px}.node{border:1px solid var(--line);border-radius:14px;padding:16px;min-height:100px;display:flex;flex-direction:column;justify-content:center}.node h2,.node h3{margin:0 0 6px}.node p{margin:0;color:var(--muted);font-size:13px}.blue{background:var(--blue)}.green{background:var(--green)}.violet{background:var(--violet)}.orange{background:var(--orange)}.arrow{display:grid;place-items:center;font-size:28px;font-weight:800;color:#4368a8}
+    .formula{margin-top:14px;background:linear-gradient(135deg,#315fb4,#7047c8);color:#fff;border-radius:14px;padding:16px;text-align:center;font:700 18px Consolas,monospace}
+    table{width:100%;border-collapse:collapse}th,td{padding:10px 12px;border-bottom:1px solid #dce3ed;text-align:right}th:first-child,td:first-child{text-align:left}th{background:#f1f5fb}.good{color:#08784f;font-weight:700}.warn{background:var(--red);border-left:5px solid #c94343;padding:14px 16px;border-radius:10px}
+    @media(max-width:900px){.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg);min-height:28px}}
+  </style>
+</head>
+<body>
+<main>
+  <section class="card">
+    <h1>V2-INNOVATION-001</h1>
+    <div class="sub">Conservative Unseen Value Transfer · 固定10%保守unseen原型迁移</div>
+    <div class="badges">
+      <span class="badge">base: FRAMEWORK-V2 @ 3dc078c</span>
+      <span class="badge">code: 1a56fa2</span>
+      <span class="badge">new parameters: 0</span>
+      <span class="badge">extra training: 0</span>
+      <span class="badge">alpha: 0.1 fixed</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="flow">
+      <div class="stack">
+        <article class="node blue"><h3>已训练V2 checkpoint</h3><p>共享Value路径只由seen图像训练；checkpoint保持不变。</p></article>
+        <article class="node violet"><h3>8句语义 → 三组</h3><p>local / unique / overall，固定各1/3。</p></article>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stack">
+        <article class="node green"><h3>Seen类别</h3><p>完整TG-VPR-H1原型，逐位保持原V2结果。</p></article>
+        <article class="node orange"><h3>Unseen类别</h3><p>同时计算原Mean8原型与完整Value改写原型。</p></article>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stack">
+        <article class="node green"><h3>200类联合竞争</h3><p>seen原型不变；unseen使用90/10混合后归一化。</p></article>
+        <article class="node blue"><h3>U / S / H / ZS</h3><p>GZSL使用200类，ZS使用50个unseen类。</p></article>
+      </div>
+    </div>
+    <div class="formula">p_unseen = Normalize(0.9 × p_Mean8 + 0.1 × p_Value)</div>
+  </section>
+
+  <section class="card">
+    <h2>四seed结果</h2>
+    <table>
+      <thead><tr><th>seed</th><th>baseline H</th><th>candidate H</th><th>ΔH</th></tr></thead>
+      <tbody>
+        <tr><td>5</td><td>73.709453</td><td>75.013857</td><td class="good">+1.304404</td></tr>
+        <tr><td>6</td><td>73.881597</td><td>75.228581</td><td class="good">+1.346984</td></tr>
+        <tr><td>7</td><td>74.023182</td><td>75.587012</td><td class="good">+1.563830</td></tr>
+        <tr><td>8</td><td>73.798142</td><td>75.119437</td><td class="good">+1.321295</td></tr>
+        <tr><td>mean</td><td>73.853093</td><td>75.237222</td><td class="good">+1.384128</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card warn">
+    <strong>证据边界：</strong>10%是在official test下由快速TRY选择，属于test-exposed方法选择；不是blind-test。四seed均使用当前仓库冻结V2代码从头训练的checkpoint，候选迁移本身不增加训练或参数。
+  </section>
+</main>
+</body>
+</html>

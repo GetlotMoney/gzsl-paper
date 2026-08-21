@@ -13,9 +13,11 @@ hypothesis: 将seen训练得到的共享Value变换直接用于unseen三组语�
 core_change: 仅在评估时对unseen原型应用共享Value重参数化，训练权重与seen原型保持不变。
 success_condition: H高于74.023182且U提高，S不出现严重下降。
 failure_condition: H不提升、U不提升或S下降导致H变差。
-status: testing
-last_attempt: V2-TRY-002
+status: supported
+paper_core_innovation: true
+last_attempt: V2-TRY-005
 last_decision: promote
+experiment_ref: V2-INNOVATION-001
 ```
 
 ## TRY-001结果
@@ -29,3 +31,9 @@ last_decision: promote
 保留90% Mean8、注入10%共享Value原型后：`U=76.842153%`、`S=74.372214%`、`H=75.587012%`、`ZS=83.266521%`，相对基线`ΔH=+1.563830`个百分点。
 
 结论：该条件标记`promote`，停止继续搜索迁移强度；下一步建立正式`V2-INNOVATION-001`验证。当前仍是test-exposed单checkpoint结果，尚未标记`supported`。
+
+## 四seed证明
+
+固定10%条件在当前仓库从头训练的seed 5/6/7/8 checkpoint上全部提升H：`+1.304404 / +1.346984 / +1.563830 / +1.321295`。候选H mean=`75.237222`，相对基线平均`+1.384128`个百分点。
+
+结论：IDEA-002获得4/4 seed支持，升级为`supported / paper_core_innovation`。10%是在official test下由快速TRY选出，必须始终披露test-exposed边界。

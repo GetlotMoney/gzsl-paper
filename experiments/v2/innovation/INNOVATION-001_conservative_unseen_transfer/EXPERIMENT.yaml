@@ -1,0 +1,21 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-001
+idea_id: IDEA-002
+framework_id: FRAMEWORK-V2
+base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
+code_commit: 1a56fa2b0d8fc390e46e7e64535b962e44983813
+title: Conservative Unseen Value Transfer
+question: 固定10%共享Value原型迁移能否在多个从头训练checkpoint上稳定提高U和H
+core_change: unseen原型固定为90% Mean8加10%完整Value原型，seen原型和训练权重不变
+transfer_strength: 0.1
+selection_history: 100%迁移失败后在seed7 official test选择10%，随后冻结且不再搜索
+status: completed
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+training_change: none
+new_parameters: 0
+source_attempts: [V2-TRY-002, V2-TRY-003, V2-TRY-004, V2-TRY-005]
+framework_diagram: framework_diagram.html
+decision: supported
+
