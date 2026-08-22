@@ -10,12 +10,12 @@ hypothesis: 用seen属性到视觉中心的ridge生成200类视觉原型，并�
 core_change: 在冻结CRA上增加属性→视觉中心ridge分支；beta=0回到CRA，正反ridge均使用0.01。
 success_condition: seed17 H超过79.448210%，U/S任一下降不超过2个百分点，beta不饱和。
 failure_condition: 首次TRY和最多3次方法级补救后仍不超过CRA父条件。
-status: testing
+status: supported
 paper_core_innovation: false
 parent_condition: V2-TRY-104 / TG-VPR + TST + NTR + CCGR + CRA
-current_attempt: V2-TRY-122..124
-last_attempt: V2-TRY-118
-last_decision: test_EBC_combination
+current_attempt: none
+last_attempt: V2-TRY-124
+last_decision: promote_auxiliary_after_combination_reliability
 ```
 
 VPA的正反ridge和beta训练都只使用seen类别中心或seen图像；true-unseen图像不进入梯度。语义→视觉ridge已有论文先例，因此只检验本框架中的组合价值。
@@ -23,3 +23,7 @@ VPA的正反ridge和beta训练都只使用seen类别中心或seen图像；true-u
 ## V2-TRY-118结果
 
 第9轮得到`U=74.306595%`、`S=85.574788%`、`H=79.543609%`、`ZS=87.125778%`，相对CRA提高H `0.095400`和ZS `0.906229`，但U下降`1.013190`。VPA提供强类内判别、同时加重seen偏置；下一步与已支持EBC做训练式组合，再决定是否运行VPA多seed。
+
+## 四训练seed支持结论
+
+seed7/17/27/37的H为`79.524497/79.543609/79.463000/79.454045%`，H mean/min/max/range=`79.496287/79.454045/79.543609/0.089564`；四个seed均提高H与ZS。IDEA-036标记`supported`辅助，最终是否采用由VEBC组合可靠性决定。

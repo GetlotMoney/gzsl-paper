@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 80.474080
 current_best_observation_seed: VEBC_training_seed_17
-completed_try_count: 121
+completed_try_count: 124
 minimum_required_try_count: 50
 ```
 
@@ -158,6 +158,8 @@ VEBC组合VPA类内判别与EBC域间平衡，在seed17达到`U/S/H/ZS=76.674461
 VEBC降低gamma学习率后仍在训练后期贴近0.25边界并复现`H=80.410490%`，补救1未解决饱和。当前累计120组，补救2扩大边界到0.30，使有效gamma成为内部解。
 
 VEBC扩大gamma上限到0.30后达到`U/S/H/ZS=77.077311/84.184039/80.474080/87.125778%`，gamma通过非饱和门槛并成为新最高。当前累计121组，先补VPA各seed父模型，再运行组合可靠性。
+
+VPA在seed7/17/27/37上的H为`79.524497/79.543609/79.463000/79.454045%`，mean/range=`79.496287/0.089564`，四个seed均提高H与ZS。当前累计124组；继续用各自VPA父模型训练VEBC组合可靠性。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
