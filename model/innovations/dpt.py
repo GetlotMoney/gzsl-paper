@@ -95,6 +95,8 @@ class AdaptiveDistributionalPrototypeClassifier(nn.Module):
         scale: torch.Tensor,
         *,
         max_log_scale: float = 0.1,
+        seenclasses: torch.Tensor | None = None,
+        center_seen_log_scale: bool = False,
     ):
         super().__init__()
         if tuple(parent_prototypes.shape) != (200, 768):
@@ -111,6 +113,13 @@ class AdaptiveDistributionalPrototypeClassifier(nn.Module):
         )
         self.register_buffer("uncertainty_features", features)
         self.register_buffer("_scale", scale.detach().clone())
+        seen = (
+            torch.empty(0, dtype=torch.long)
+            if seenclasses is None
+            else seenclasses.detach().cpu().long()
+        )
+        self.register_buffer("seenclasses", seen)
+        self.center_seen_log_scale = bool(center_seen_log_scale)
         self.max_log_scale = float(max_log_scale)
         self.gate = nn.Sequential(
             nn.Linear(4, 16),
@@ -123,6 +132,11 @@ class AdaptiveDistributionalPrototypeClassifier(nn.Module):
     def class_confidence(self) -> torch.Tensor:
         normalized = (self.uncertainty_features - self.feature_mean) / self.feature_std
         log_scale = self.max_log_scale * torch.tanh(self.gate(normalized)).squeeze(-1)
+        if self.center_seen_log_scale:
+            if self.seenclasses.numel() != 150:
+                raise ValueError("中心化DPT要求150个seen类。")
+            seen = self.seenclasses.to(log_scale.device)
+            log_scale = log_scale - log_scale.index_select(0, seen).mean()
         return torch.exp(log_scale)
 
     def prototypes(self, *, enabled: bool = True) -> torch.Tensor:

@@ -52,12 +52,12 @@ def load_config(path: Path):
     path = path.resolve()
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    expected = CONFIG_KEYS_V2 if isinstance(config, dict) and config.get("schema_version") == "gzsl-paper.dpt.v2" else CONFIG_KEYS
+    expected = CONFIG_KEYS_V2 if isinstance(config, dict) and config.get("schema_version") in ("gzsl-paper.dpt.v2", "gzsl-paper.dpt.v3") else CONFIG_KEYS
     if not isinstance(config, dict) or actual != expected:
         raise ValueError(f"DPT配置字段错误；缺少={sorted(expected-actual)}，多出={sorted(actual-expected)}。")
-    if config["schema_version"] not in ("gzsl-paper.dpt.v1", "gzsl-paper.dpt.v2"):
+    if config["schema_version"] not in ("gzsl-paper.dpt.v1", "gzsl-paper.dpt.v2", "gzsl-paper.dpt.v3"):
         raise ValueError("DPT schema错误。")
-    if config["attempt_id"] not in ("V2-TRY-041", "V2-TRY-042") or config["idea_id"] != "IDEA-012":
+    if config["attempt_id"] not in ("V2-TRY-041", "V2-TRY-042", "V2-TRY-043") or config["idea_id"] != "IDEA-012":
         raise ValueError("DPT首次TRY身份错误。")
     if config["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("DPT父框架错误。")
@@ -71,7 +71,11 @@ def load_config(path: Path):
         raise ValueError("DPT父指标不完整。")
     config.setdefault("confidence_mode", "global_resultant")
     config.setdefault("max_log_scale", 0.1)
-    expected_mode = "global_resultant" if config["attempt_id"] == "V2-TRY-041" else "adaptive_gate"
+    expected_mode = {
+        "V2-TRY-041": "global_resultant",
+        "V2-TRY-042": "adaptive_gate",
+        "V2-TRY-043": "centered_adaptive_gate",
+    }[config["attempt_id"]]
     if config["confidence_mode"] != expected_mode:
         raise ValueError("DPT置信模式与TRY身份不匹配。")
     if float(config["max_log_scale"]) != 0.1:
@@ -135,12 +139,16 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             parent, gate, seenclasses, unseenclasses, device,
             "summary", fixed_class_folds(seenclasses), "tangent"
         )
-        if config["confidence_mode"] == "adaptive_gate":
+        if config["confidence_mode"] in ("adaptive_gate", "centered_adaptive_gate"):
             model = AdaptiveDistributionalPrototypeClassifier(
                 tst_prototypes,
                 text_uncertainty_features(tensors["sentence_embeds"]).to(device),
                 parent.scale(),
                 max_log_scale=config["max_log_scale"],
+                seenclasses=seenclasses,
+                center_seen_log_scale=(
+                    config["confidence_mode"] == "centered_adaptive_gate"
+                ),
             ).to(device)
         else:
             model = DistributionalPrototypeClassifier(

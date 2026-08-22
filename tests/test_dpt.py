@@ -70,3 +70,25 @@ def test_adaptive_dpt_starts_off_and_rescue_config():
     )
     assert config["attempt_id"] == "V2-TRY-042"
     assert config["confidence_mode"] == "adaptive_gate"
+
+
+def test_centered_adaptive_dpt_removes_common_mode():
+    generator = torch.Generator().manual_seed(94)
+    sentences = torch.randn(200, 8, 768, generator=generator)
+    parent = torch.randn(200, 768, generator=generator)
+    seen = torch.tensor([class_id for class_id in range(200) if class_id % 4 != 0])
+    model = AdaptiveDistributionalPrototypeClassifier(
+        parent,
+        text_uncertainty_features(sentences),
+        torch.tensor(10.0),
+        seenclasses=seen,
+        center_seen_log_scale=True,
+    )
+    model.gate[-1].bias.data.fill_(3.0)
+    confidence = model.class_confidence()
+    assert abs(float(confidence.index_select(0, seen).log().mean().detach())) < 1e-6
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_043_dpt_rescue2_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-043"
+    assert config["confidence_mode"] == "centered_adaptive_gate"
