@@ -21,7 +21,7 @@ target_supported_innovations: 3
 supported_innovations: 2
 current_seed7_H: 76.984545
 current_multiseed_mean_H: 76.866245
-current_best_observation_H: 77.237120
+current_best_observation_H: 77.384331
 current_best_observation_seed: 7
 completed_try_count: 57
 minimum_required_try_count: 50
@@ -66,6 +66,8 @@ seed9后续结果：TST `H=76.698446%`，NTR `H=76.795441%`。NTR相对TST四项
 CCGR类别条件文本几何生成在seed7得到`H=77.100834%`，比NTR提高`0.014298`，成为当前最高观察，但未达到核心创新门槛。下一条件改用pseudo-unseen episode直接训练CCGR Gate。
 
 episodic CCGR进一步达到`H=77.237120%`，相对NTR提高`0.150584`，成为当前最高观察；仍未达到78%，且U/S偏向需要继续补救。
+
+unseen平衡CCGR进一步达到`H=77.384331%`，相对NTR提高`0.297795`且U/S/ZS全部提高，首次达到新核心创新增益门槛。当前仍需完成幅度非饱和补救、多seed和正式消融，78%目标尚未达到。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
