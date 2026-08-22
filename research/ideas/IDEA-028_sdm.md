@@ -10,12 +10,12 @@ hypothesis: 对图像和原型同步学习有界正对角度量，可重标定�
 core_change: 冻结TG-VPR/TST/NTR/CCGR，训练中心化log权重范围+-0.1的768维对角度量；同一权重同时作用于图像和原型，epoch 0严格回到TRY-078。
 success_condition: seed17最高H超过77.572682%，U/S任一下降不超过2个百分点，权重不全部顶到边界。
 failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最高结果。
-status: testing
+status: supported
 paper_core_innovation: false
 parent_condition: V2-TRY-078 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-089..091
-last_attempt: V2-TRY-088
-last_decision: keep_best_diagonal
+current_attempt: none
+last_attempt: V2-TRY-091
+last_decision: keep_as_auxiliary_refinement
 ```
 
 SDM只用150个seen类的三折pseudo-unseen episode训练；true-unseen图像仅用于项目允许的逐epoch选择，不进入梯度。若有效，它作为最终共享度量层连接图像与CCGR原型，不改变三项核心创新逻辑。
@@ -31,3 +31,7 @@ SDM只用150个seen类的三折pseudo-unseen episode训练；true-unseen图像�
 ## V2-TRY-088结果与低秩止损
 
 联合训练对角与rank-64权重后，loss继续下降但official H持续低于父模型，最终仍选epoch 0。冻结与联合两种低秩路径均失败，停止低秩补救并保留TRY-086纯对角SDM；下一步只做不同父CCGR训练seed的可靠性验证。
+
+## 四训练seed可靠性结论
+
+父CCGR Gate训练seed 7/17/27/37上的SDM `Delta H=+0.013633/+0.040306/+0.024673/+0.000000`，三组正增益、一组由epoch 0保持不变，无负增益；候选H mean/min/max/range=`77.565783/77.503927/77.612988/0.109061`。IDEA-028标记`supported`但`paper_core_innovation=false`：它是稳定共享度量优化，不单列为第四个论文核心模块，后续在最终组合消融中报告开关结果。

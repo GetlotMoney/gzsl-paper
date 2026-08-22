@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 77.612988
 current_best_observation_seed: gate_training_seed_17_on_data_seed_7
-completed_try_count: 88
+completed_try_count: 91
 minimum_required_try_count: 50
 ```
 
@@ -106,6 +106,8 @@ SDM对图像和原型同步学习有界对角度量，在第2轮得到`H=77.6129
 SDM冻结对角基的rank-64低秩补救loss持续下降，但所有非零epoch均低于父模型，说明发生pseudo-episode过拟合。当前累计87组；补救2只解除对角基冻结，让对角与低秩权重联合补偿。
 
 SDM联合对角/低秩优化同样降低训练loss却不能提高official H，低秩路线止损，保留TRY-086纯对角新最高。当前累计88组；下一步在CCGR Gate训练seed 7/27/37上复现同一对角SDM，检验可靠性并搜索最高seed。
+
+纯对角SDM在CCGR Gate训练seed 7/17/27/37上的H增益为`+0.013633/+0.040306/+0.024673/+0.000000`，候选H range仅`0.109061`，可保留为稳定辅助优化；低秩版本不保留。当前累计91组，最高仍为`77.612988%`，SDM不计为第四个论文核心创新，78%目标继续。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

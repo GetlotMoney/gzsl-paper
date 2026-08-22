@@ -8,7 +8,7 @@ supported_innovations: [TG-VPR, TST, CCGR]
 current_best_observation: V2-TRY-086 / TG-VPR + TST + NTR + CCGR + SDM
 current_best_H: 77.612988
 current_best_seed: gate_training_seed_17_on_data_seed_7
-completed_try_count: 88
+completed_try_count: 91
 minimum_total_try_count: 50
 target_best_H: 78.0
 evaluation_protocol: test_selected_inductive_gzsl
