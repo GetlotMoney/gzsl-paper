@@ -178,6 +178,14 @@ def test_ntr_config_uses_full_top5_neighborhood():
     assert config["pseudo_unseen_ce_weight"] == 0.0
 
 
+def test_ntr_seed9_config_reuses_seed9_folds():
+    config, _ = load_config(ROOT / "config/tries/v2_try_052_ntr_seed9.yaml")
+    assert config["attempt_id"] == "V2-TRY-052"
+    assert config["seed"] == 9
+    assert config["gate_feature_mode"] == "top5_vector"
+    assert config["fold_checkpoint_dir"].endswith("V2-TRY-051")
+
+
 def test_ntr_multiseed_configs_train_own_folds():
     expected = {"V2-TRY-029": 5, "V2-TRY-030": 6, "V2-TRY-031": 8}
     for attempt, seed in expected.items():

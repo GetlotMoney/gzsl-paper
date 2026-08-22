@@ -189,6 +189,7 @@ def load_config(path: Path):
         "V2-TRY-034",
         "V2-TRY-035",
         "V2-TRY-036",
+        "V2-TRY-052",
     } and raw["idea_id"] == "IDEA-010"
     valid_bmr = raw["attempt_id"] in {
         "V2-TRY-037",
