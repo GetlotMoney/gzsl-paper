@@ -72,6 +72,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）
       ├─ auxiliary_branch：IDEA-041 / CNRA类名残差对齐（supported辅助，4seed稳定提高H）
+      ├─ rejected_branch：IDEA-042 / CNEBC类名后偏置校准（rejected，仅1个seed有实质增益）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：最终CCGR+ARA四训练seed H=79.265577至79.386082，稳定超过78

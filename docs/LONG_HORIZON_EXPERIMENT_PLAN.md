@@ -8,7 +8,7 @@ supported_innovations: [TG-VPR, TST, CCGR]
 current_best_observation: V2-TRY-142 / CNRA + episodic bias residual
 current_best_H: 80.817183
 current_best_seed: CNEBC_training_seed_17
-completed_try_count: 142
+completed_try_count: 145
 minimum_total_try_count: 50
 target_best_H: 78.0
 evaluation_protocol: test_selected_inductive_gzsl
