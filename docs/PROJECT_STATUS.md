@@ -149,6 +149,8 @@ EBC收紧gamma上限到0.15后达到`U/S/H/ZS=76.813483/83.009040/79.791176/86.2
 
 EBC在seed7/17/27/37上的H为`79.748697/79.791176/79.649150/79.675166%`，mean/range=`79.716047/0.142025`，四个seed均提高H且gamma非饱和。当前累计117组；EBC可靠成立为CRA后的辅助输出平衡层，不增加论文核心创新数量。
 
+EBC已正式登记为`V2-INNOVATION-006 / supported auxiliary`，包含4seed结果、0.2饱和对照、完整配置与SHA以及HTML框架图。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

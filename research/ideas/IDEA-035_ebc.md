@@ -16,6 +16,7 @@ parent_condition: V2-TRY-104 / TG-VPR + TST + NTR + CCGR + CRA
 current_attempt: none
 last_attempt: V2-TRY-117
 last_decision: promote_auxiliary
+experiment_ref: V2-INNOVATION-006
 ```
 
 EBC训练只使用seen类构造pseudo-seen/pseudo-unseen episode；true-unseen图像不进入gamma梯度。只读上界仅作动机，正式结果必须来自训练gamma。
