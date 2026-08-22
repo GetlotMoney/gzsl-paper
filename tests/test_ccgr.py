@@ -15,3 +15,5 @@ def test_ccgr_episode_config():
     config,_=load_config(ROOT/"config/tries/v2_try_059_ccgr_rescue1_seed7.yaml"); assert config["attempt_id"]=="V2-TRY-059"; assert config["training_objective"]=="pseudo_unseen_episode"; assert config["fold_checkpoint_dir"]
 def test_ccgr_unseen_risk_config():
     config,_=load_config(ROOT/"config/tries/v2_try_060_ccgr_rescue2_seed7.yaml"); assert config["attempt_id"]=="V2-TRY-060"; assert config["pseudo_unseen_weight"]==0.25
+def test_ccgr_magnitude_penalty_config():
+    config,_=load_config(ROOT/"config/tries/v2_try_061_ccgr_rescue3_seed7.yaml"); assert config["attempt_id"]=="V2-TRY-061"; assert config["magnitude_penalty"]==0.01

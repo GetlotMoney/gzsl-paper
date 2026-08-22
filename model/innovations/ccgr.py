@@ -87,6 +87,14 @@ class ClassConditionedGeometricGenerator(nn.Module):
             parent_prototypes + magnitude.unsqueeze(-1) * direction, dim=-1
         )
 
+    def magnitude_values(self, class_features=None):
+        if class_features is None:
+            class_features = self.class_features
+        features = (class_features - self.feature_mean) / self.feature_std
+        return self.max_magnitude * torch.sigmoid(
+            self.magnitude_head(self.trunk(features))
+        ).squeeze(-1)
+
     def generated_all(self):
         return self._generate(
             self.parent_prototypes, self.direction_basis, self.class_features
@@ -108,8 +116,5 @@ class ClassConditionedGeometricGenerator(nn.Module):
         return self._scale
 
     def magnitude_stats(self):
-        features = (self.class_features - self.feature_mean) / self.feature_std
-        magnitude = self.max_magnitude * torch.sigmoid(
-            self.magnitude_head(self.trunk(features))
-        ).squeeze(-1)
+        magnitude = self.magnitude_values()
         return {"mean": float(magnitude.mean()), "max": float(magnitude.max())}
