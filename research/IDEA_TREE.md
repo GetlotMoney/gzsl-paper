@@ -39,7 +39,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-007 / CATA中心对齐切空间适配（rejected，3次补救用尽）
       ├─ rejected_branch：IDEA-008 / SPA seen原型视觉锚定（rejected，破坏联合竞争）
       ├─ rejected_branch：IDEA-009 / PURL pseudo-unseen风险重加权（rejected，持续过度纠偏）
-      ├─ rejected_branch：IDEA-010 / NTR邻域感知切空间路由（rejected，2/4 seed正增益）
+      ├─ auxiliary_branch：IDEA-010 / NTR邻域感知切空间路由（revised，当前最高观察，非核心创新）
       ├─ innovation_slot_3：待新候选
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称

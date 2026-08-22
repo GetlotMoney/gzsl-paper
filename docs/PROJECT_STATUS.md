@@ -16,11 +16,15 @@ frameworks:
 evaluation_protocol: test_selected_inductive_gzsl
 paper_primary_framework: FRAMEWORK-V2
 paper_baseline_H: 74.023182
-paper_target_H: 77.023182
+paper_target_H: 78.0
 target_supported_innovations: 3
 supported_innovations: 2
 current_seed7_H: 76.984545
 current_multiseed_mean_H: 76.866245
+current_best_observation_H: 77.086536
+current_best_observation_seed: 7
+completed_try_count: 36
+minimum_required_try_count: 50
 ```
 
 V1 来源于 `model/v5-template-v2@fb4b29b04087640890a532f105cb527d3a8c461b` 的必要运行代码，旧仓库历史、旧实验和旧账本没有迁入。
@@ -48,5 +52,9 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。V2当前正式单seed基线�
 `IDEA-005 / TST`已在seed 5/6/7/8全部提高H，平均提升`3.013152`个百分点，候选H mean=`76.866245%`，已超过四seed目标`76.853093%`，现为论文核心创新2。seed7为`76.984545%`，距离单点目标仍差`0.038637`个百分点；项目还缺第3个supported创新，因此整体工作未完成。
 
 TST之后已依次止损EPC、CATA、SPA、PURL和NTR。NTR直接8维条件曾达到seed7 `H=77.086536%`、四seedH mean约`76.876640%`，但相对TST仅2/4 seed为正，未按稳定创新晋级。当前正式状态仍是2个supported创新；第3创新与完整三创新组合尚未完成。
+
+owner已更新成绩口径：主结果报告最高seed，mean/range只用于判断偶然性；`range<=1.0`个百分点时可以最高seed作为主成绩。按此口径，当前最佳观察是`V2-TRY-028 / seed7 / H=77.086536%`，四seed范围约`0.5432`，可作为当前最佳框架参考。但NTR相对TST的最高增益只有`0.101991`个百分点，未达到新核心创新`0.20`个百分点门槛，因此继续搜索替代或增强模块。
+
+新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

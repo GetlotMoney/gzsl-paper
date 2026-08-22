@@ -117,3 +117,11 @@ unseen_images_used_for_gradient: false
 ```
 
 这不是 blind-test 证据，任何论文数字或对外比较都必须如实说明。
+
+## 多seed成绩口径
+
+- 对owner汇报和当前项目内部选模时，主成绩使用所有已完成seed中的最高`H`，并明确报告对应seed。
+- mean不作为主成绩，只用于判断结果是否可能由seed偶然性造成；同时必须计算`min / max / range`，不得只报最高值而隐藏波动。
+- 当前稳定性判断固定为：`H range <= 1.0`个百分点时视为差距不大，可以最高seed作为主结果；`1.0 < range <= 1.5`时必须追加稳定性诊断；`range > 1.5`时不得称为稳定结果。
+- 新论文核心创新原则上要求相对准确父条件的最高seed `Delta H >= 0.20`个百分点；更小的增益只作为辅助模块或观察，除非它提供不可替代且经消融证明的机制贡献。
+- 多seed口径不改变评估协议：official test仍参与选择，必须保持`test_used_for_selection: true`，不得描述为blind-test。
