@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 80.817183
 current_best_observation_seed: CNEBC_training_seed_17
-completed_try_count: 145
+completed_try_count: 146
 minimum_required_try_count: 50
 ```
 
@@ -190,6 +190,8 @@ CNRA已正式登记为`V2-INNOVATION-009 / supported auxiliary`，包含类名ca
 CNEBC在CNRA后训练额外episodic seen偏置，seed17达到`U/S/H/ZS=77.844131/84.026349/80.817183/87.423056%`，gamma残差非饱和并成为新最高。当前累计142组，继续其余seed可靠性。
 
 CNEBC在seed7/17/27/37上的Delta H为`0/+0.104618/0/+0.005971`，可靠性未成立并已止损。当前累计145组；最高观察为seed17 `80.817183%`，最高可靠结构仍是CNRA `80.712565%`。
+
+HGCS seen CE学到与有效诊断相反的正beta，所有非零epoch降低H。当前累计146组；补救1仅改用pseudo-unseen episode训练beta，检验能否学到负的组级公共模式抑制。
 
 完整最高seed链式消融已建立为`V2-ABLATION-002`：TG-VPR→TST/NTR→CCGR构成三核心创新主干，CRA/VPA/JBEC/CNRA统一归入辅助语义证据头；H从`74.023182%`逐层提高到`80.712565%`，总增益`6.689383`个百分点。
 
