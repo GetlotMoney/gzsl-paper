@@ -8,6 +8,7 @@ from torch.func import functional_call
 from model.innovations.train_elpt import (
     _first_order_adapted_parameters,
     _pcgrad_merge,
+    _symmetric_pcgrad_merge,
     load_config,
 )
 from model.innovations.elpt import semantic_pca_folds
@@ -96,3 +97,14 @@ def test_semantic_hard_folds_and_final_rescue_config():
     assert config["attempt_id"] == "V2-TRY-040"
     assert config["fold_strategy"] == "semantic_pca_blocks"
     assert config["fold_checkpoint_dir"] is None
+
+
+def test_symmetric_pcgrad_and_pgo_config():
+    first = (torch.tensor([-1.0, 0.0]),)
+    second = (torch.tensor([1.0, 0.0]),)
+    merged, conflict = _symmetric_pcgrad_merge(first, second)
+    assert conflict is True
+    assert torch.isfinite(merged[0]).all()
+    config, _ = load_config(ROOT / "config/tries/v2_try_048_pgo_seed7.yaml")
+    assert config["idea_id"] == "IDEA-015"
+    assert config["gate_training_mode"] == "pcgrad_joint_residual"

@@ -158,6 +158,7 @@ def load_config(path: Path):
         "gzsl-paper.ntr-residual.v1",
         "gzsl-paper.ntr-dispersion.v1",
         "gzsl-paper.bmr.v1",
+        "gzsl-paper.pgo.v1",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -191,7 +192,8 @@ def load_config(path: Path):
         "V2-TRY-039",
         "V2-TRY-040",
     } and raw["idea_id"] == "IDEA-011"
-    if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr or valid_bmr):
+    valid_pgo = raw["attempt_id"] == "V2-TRY-048" and raw["idea_id"] == "IDEA-015"
+    if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr or valid_bmr or valid_pgo):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ELPT只接受FRAMEWORK-V2。")
@@ -359,6 +361,21 @@ def load_config(path: Path):
             raise ValueError("BMR fold策略与TRY身份不匹配。")
         if raw["attempt_id"] == "V2-TRY-040" and raw["fold_checkpoint_dir"] is not None:
             raise ValueError("BMR困难折必须从头训练fold权重。")
+    if valid_pgo:
+        parent = raw["parent_metrics_percent"]
+        if (
+            raw["transport_mode"] != "tangent"
+            or raw["gate_feature_mode"] != "summary"
+            or raw["gate_architecture"] != "bilevel_residual"
+            or raw["gate_training_mode"] != "pcgrad_joint_residual"
+            or not raw["parent_gate_model"]
+            or not raw["parent_gate_model_sha256"]
+            or float(raw["max_residual_step"]) != 0.1
+            or not raw["fold_checkpoint_dir"]
+            or not isinstance(parent, dict)
+            or set(parent) != {"U", "S", "H", "ZS"}
+        ):
+            raise ValueError("PGO首次TRY身份不匹配。")
     return raw, sha256_file(path)
 
 
@@ -583,6 +600,8 @@ def _fold_package(
 
 
 def _train_gate(packages, tensors, config, device, seed, print_log):
+    if config["gate_training_mode"] == "pcgrad_joint_residual":
+        return _train_gate_pcgrad_joint(packages, tensors, config, device, seed, print_log)
     if config["gate_training_mode"] == "bilevel_first_order":
         return _train_gate_bilevel(packages, tensors, config, device, seed, print_log)
     if int(config["gate_initialization_ensemble"]) > 1:
@@ -709,6 +728,104 @@ def _pcgrad_merge(primary_gradients, anchor_gradients, anchor_weight=1.0):
         for primary, anchor in zip(primary_gradients, anchor_gradients)
     )
     return merged, conflict
+
+
+def _symmetric_pcgrad_merge(first_gradients, second_gradients):
+    dot = sum(
+        (first * second).sum()
+        for first, second in zip(first_gradients, second_gradients)
+    )
+    conflict = bool(float(dot.detach()) < 0.0)
+    if conflict:
+        first_norm = sum(first.square().sum() for first in first_gradients).clamp_min(1e-12)
+        second_norm = sum(second.square().sum() for second in second_gradients).clamp_min(1e-12)
+        projected_first = tuple(
+            first - dot / second_norm * second
+            for first, second in zip(first_gradients, second_gradients)
+        )
+        projected_second = tuple(
+            second - dot / first_norm * first
+            for first, second in zip(first_gradients, second_gradients)
+        )
+        first_gradients, second_gradients = projected_first, projected_second
+    return tuple(
+        0.5 * (first + second)
+        for first, second in zip(first_gradients, second_gradients)
+    ), conflict
+
+
+def _train_gate_pcgrad_joint(packages, tensors, config, device, seed, print_log):
+    gate = _make_gate(config, _gate_input_dim(config["gate_feature_mode"]), device)
+    optimizer = torch.optim.Adam(
+        (parameter for parameter in gate.parameters() if parameter.requires_grad),
+        lr=float(config["gate_lr"]),
+        weight_decay=float(config["gate_weight_decay"]),
+    )
+    seenclasses = packages[0]["seenclasses"]
+    label_map = torch.full((200,), -1, dtype=torch.long)
+    label_map[seenclasses] = torch.arange(150)
+    half = int(config["gate_batch_half"])
+    generators = [
+        torch.Generator(device="cpu").manual_seed(seed * 15000 + fold_id)
+        for fold_id in range(3)
+    ]
+    for epoch in range(1, int(config["gate_epochs"]) + 1):
+        seen_sum = unseen_sum = 0.0
+        step_count = conflict_count = 0
+        for fold_id, package in enumerate(packages):
+            seen_indices = package["seen_indices"]
+            unseen_indices = package["unseen_indices"]
+            steps = min(seen_indices.numel() // half, unseen_indices.numel() // half)
+            for _ in range(steps):
+                generator = generators[fold_id]
+                si = seen_indices[torch.randperm(seen_indices.numel(), generator=generator)[:half]]
+                ui = unseen_indices[torch.randperm(unseen_indices.numel(), generator=generator)[:half]]
+                seen_images = tensors["train_features"][si].to(device).float()
+                unseen_images = tensors["train_features"][ui].to(device).float()
+                seen_targets = label_map[tensors["train_labels"].long()[si]].to(device)
+                unseen_targets = label_map[tensors["train_labels"].long()[ui]].to(device)
+                named_parameters = tuple(
+                    (name, parameter)
+                    for name, parameter in gate.named_parameters()
+                    if parameter.requires_grad
+                )
+                parameter_dict = dict(named_parameters)
+                seen_logits, base_seen, competition_seen = _bilevel_logits(
+                    package, gate, parameter_dict, seen_images, seenclasses, device, config
+                )
+                unseen_logits, base_unseen, competition_unseen = _bilevel_logits(
+                    package, gate, parameter_dict, unseen_images, seenclasses, device, config
+                )
+                seen_loss = F.cross_entropy(seen_logits, seen_targets) + float(
+                    config["topology_weight"]
+                ) * topology_loss(
+                    base_seen.index_select(0, seenclasses.to(device)), competition_seen
+                )
+                unseen_loss = F.cross_entropy(unseen_logits, unseen_targets) + float(
+                    config["topology_weight"]
+                ) * topology_loss(
+                    base_unseen.index_select(0, seenclasses.to(device)), competition_unseen
+                )
+                parameters = tuple(parameter for _, parameter in named_parameters)
+                seen_gradients = torch.autograd.grad(seen_loss, parameters)
+                unseen_gradients = torch.autograd.grad(unseen_loss, parameters)
+                merged, conflict = _symmetric_pcgrad_merge(
+                    seen_gradients, unseen_gradients
+                )
+                optimizer.zero_grad(set_to_none=True)
+                for parameter, gradient in zip(parameters, merged):
+                    parameter.grad = gradient.detach()
+                optimizer.step()
+                seen_sum += float(seen_loss.detach())
+                unseen_sum += float(unseen_loss.detach())
+                step_count += 1
+                conflict_count += int(conflict)
+        print_log(
+            f"pgo_epoch={epoch} seen_loss={seen_sum/step_count:.6f} "
+            f"unseen_loss={unseen_sum/step_count:.6f} "
+            f"conflict_rate={conflict_count/step_count:.6f}"
+        )
+    return gate.eval()
 
 
 def _bilevel_logits(package, gate, gate_parameters, images, seenclasses, device, config):
