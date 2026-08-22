@@ -13,9 +13,9 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过CRA父条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-104 / TG-VPR + TST + NTR + CCGR + CRA
-current_attempt: V2-TRY-114
-last_attempt: V2-TRY-113
-last_decision: rescue
+current_attempt: none
+last_attempt: V2-TRY-114
+last_decision: run_reliability_seeds
 ```
 
 EBC训练只使用seen类构造pseudo-seen/pseudo-unseen episode；true-unseen图像不进入gamma梯度。只读上界仅作动机，正式结果必须来自训练gamma。
@@ -23,3 +23,7 @@ EBC训练只使用seen类构造pseudo-seen/pseudo-unseen episode；true-unseen�
 ## V2-TRY-113结果
 
 第4轮得到`U=77.081305%`、`S=82.539904%`、`H=79.717270%`、`ZS=86.219549%`，相对CRA H提高`0.269060`且U/S变化均在2个百分点内；但gamma=`0.196359`接近0.2上限，未通过非饱和门槛。补救1将max_gamma收紧到0.15，其他条件不变。
+
+## V2-TRY-114结果
+
+max_gamma=0.15时第2轮得到`U=76.813483%`、`S=83.009040%`、`H=79.791176%`、`ZS=86.219549%`，相对CRA提高H `0.342966`；gamma=`0.142321`未触及边界，成功门槛通过。继续运行父CRA seed7/27/37可靠性。

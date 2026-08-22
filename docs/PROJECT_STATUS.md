@@ -21,9 +21,9 @@ target_supported_innovations: 3
 supported_innovations: 3
 current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
-current_best_observation_H: 79.717270
-current_best_observation_seed: EBC_training_seed_17_saturated_candidate
-completed_try_count: 113
+current_best_observation_H: 79.791176
+current_best_observation_seed: EBC_training_seed_17
+completed_try_count: 114
 minimum_required_try_count: 50
 ```
 
@@ -144,6 +144,8 @@ CRA第111组确定性重跑逐位复现第104组U/S/H/ZS，并完整生成`train
 CRA第112组完成真实SIGTERM恢复：中断发生于epoch 5日志写出后、checkpoint替换前，有效原子checkpoint为epoch 4；恢复到全新目录后state/history/metrics/best epoch与同代码未中断运行完全一致。当前累计112组，单机跨目录resume已验证；尚无第二物理机器用于跨主机验证。
 
 EBC在pseudo-unseen episode中训练全局seen logit扣减，seed17达到`H=79.717270%`并提高U `1.761520`，但gamma接近0.2上限，当前只作为饱和候选。累计113组，补救1收紧上限到0.15。
+
+EBC收紧gamma上限到0.15后达到`U/S/H/ZS=76.813483/83.009040/79.791176/86.219549%`，gamma非饱和并成为新最高。当前累计114组，继续seed7/27/37可靠性，单seed暂不晋级。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
