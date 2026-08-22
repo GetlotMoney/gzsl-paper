@@ -10,10 +10,12 @@ hypothesis: 用pseudo-unseen episode训练样本条件Gate，根据两域最大�
 core_change: 固定CCGR 0.20原型，训练7-16-1竞争Gate，校正范围+-0.2；关闭时严格回到CCGR。
 success_condition: seed7相对CCGR最高H提高至少0.20个百分点，U和S各自下降不超过2个百分点，校正有样本差异且不饱和。
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
-status: testing
+status: rejected
 paper_core_innovation: false
 parent_condition: V2-TRY-067 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-071
+current_attempt: none
+last_attempt: V2-TRY-071
+last_decision: drop
 ```
 
 EDC只使用seen类构造的pseudo-seen/pseudo-unseen episode训练；true-unseen图像在训练结束后才加载。
@@ -21,3 +23,7 @@ EDC只使用seen类构造的pseudo-seen/pseudo-unseen episode训练；true-unsee
 ## V2-TRY-070结果
 
 校正std=`0.185955`且min/max饱和到`+-0.2`，`U`提高`0.615638`但`S`下降`1.043212`，相对CCGR `Delta H=-0.155490`。补救1把校正范围缩到`+-0.05`，与只读margin诊断的有效量级一致。
+
+## V2-TRY-071结果与止损
+
+校正范围`+-0.05`后，`U`提高`0.206119`、`S`下降`0.486124`，相对CCGR `Delta H=-0.113622`。两种范围均只改变U/S权衡而不能提高H，IDEA-020提前止损。
