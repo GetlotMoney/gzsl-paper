@@ -123,6 +123,8 @@ ARA已正式登记为`V2-INNOVATION-004 / supported auxiliary`，目录包含4se
 
 不依赖人工attributes的DRA尝试出现明确seen过拟合：beta增大、训练loss下降，但所有非零epoch official H均下降，最终选回CCGR父模型并提前止损。当前累计101组，说明ARA增益来自独立显式属性证据而非重复编码GPT描述。
 
+ARA相关工作已重新核对：CVPR 2017已有视觉→属性ridge回归与多语义模态融合，CVPR 2020已有细粒度GZSL属性对齐，CVPR 2025已有视觉/语义prompt协作。ARA继续作为稳定辅助增强，不作算法原创或第四个核心创新claim；论文卡为PAPER-002至004。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

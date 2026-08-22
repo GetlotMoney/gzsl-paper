@@ -1,6 +1,7 @@
 schema_version: gzsl-paper.experiment.v1
 experiment_id: V2-INNOVATION-004
 idea_id: IDEA-029
+evidence_refs: [PAPER-002, PAPER-003, PAPER-004, V2-TRY-096, V2-TRY-097]
 framework_id: FRAMEWORK-V2
 base_commit: f5bb00266ec5e3771775db50ac73c3b42074970c
 code_commits:
@@ -29,3 +30,4 @@ unseen_images_used_for_gradient: false
 primary_reporting: highest_seed_H_with_multiseed_range
 framework_diagram: framework_diagram.html
 decision: auxiliary_refinement_not_fourth_core_innovation
+novelty_claim: none

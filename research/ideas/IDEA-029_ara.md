@@ -3,7 +3,7 @@
 ```yaml
 idea_id: IDEA-029
 source_type: complementary_semantic_evidence
-evidence_refs: [V2-TRY-086, V2-TRY-091]
+evidence_refs: [V2-TRY-086, V2-TRY-091, PAPER-002, PAPER-003, PAPER-004]
 base_commit: f5bb00266ec5e3771775db50ac73c3b42074970c
 problem: GPT描述原型与SDM已把H推到77.61，但仍有unseen域内细粒度错误；CUB标准attributes提供与描述提示不同的显式部位语义。
 hypothesis: 用seen图像闭式学习CLIP到属性空间的ridge映射，再把属性相似度作为主logit的训练式残差，可提供与TG-VPR/CCGR互补的细粒度证据。
@@ -12,6 +12,7 @@ success_condition: seed17最高H达到78.0%，U/S任一下降不超过2个百分
 failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最高结果。
 status: supported
 paper_core_innovation: false
+novelty_claim: auxiliary_only_existing_ridge_and_attribute_alignment_precedents
 parent_condition: V2-TRY-086 / TG-VPR + TST + NTR + CCGR + SDM
 current_attempt: none
 last_attempt: V2-TRY-100
@@ -42,3 +43,7 @@ seed7/17/27/37的ARA H为`79.330716/79.307063/79.253171/79.280845%`，相对各�
 seed7/17/27/37的H为`79.334907/79.386082/79.265577/79.280845%`，H mean/min/max/range=`79.316853/79.265577/79.386082/0.120505`；U mean=`73.933692`，S mean=`85.546258`，ZS mean=`86.032633`。4/4 seed均稳定超过79.26，最终组合可靠性成立。
 
 正式实验已建立为`V2-INNOVATION-004`。该编号是实验身份，ARA仍明确标记为辅助增强，不增加论文核心创新数量。
+
+## 新颖性边界
+
+重新核对PAPER-002至004后确认：视觉到属性ridge回归、属性级细粒度GZSL对齐、视觉/语义融合均有明确先例。ARA只可陈述为“本框架中经过可靠性和消融验证的辅助组合”，不得写成新的核心算法、首次属性对齐或首次视觉语义融合。

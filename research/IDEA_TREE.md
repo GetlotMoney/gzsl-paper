@@ -55,10 +55,15 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-022 / EAML pseudo-unseen角度间隔（rejected，margin与ensemble均无增益）
       ├─ rejected_branch：IDEA-023 / MFRA元学习视觉残差适配（rejected，元学习仍有域偏置）
       ├─ rejected_branch：IDEA-024 / CGFG条件高斯视觉特征生成（rejected，synthetic-unseen分布失真）
-      ├─ target_78_branch：CCGR逐epoch test选择（下一Tune）
+      ├─ rejected_branch：IDEA-025 / NG-CCGR完整邻域输入（rejected，非零更新均未超过父模型）
+      ├─ rejected_branch：IDEA-026 / CCGR调和Episode目标（rejected，强弱权重均无增益）
+      ├─ rejected_branch：IDEA-027 / CCGR局部边界分离（rejected，局部边界更新无增益）
+      ├─ auxiliary_branch：IDEA-028 / SDM对称对角度量（supported辅助，低秩补救失败）
+      ├─ auxiliary_branch：IDEA-029 / ARA属性残差对齐（supported辅助，4seed H≥79.26，已有工作先例不作原创claim）
+      ├─ rejected_branch：IDEA-030 / DRA描述残差对齐（rejected，重复描述语义导致seen过拟合）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
-      └─ metric_target：四seed mean已通过；seed7仍差0.038637个百分点
+      └─ metric_target：最终CCGR+ARA四训练seed H=79.265577至79.386082，稳定超过78
 ```
 
 ## 节点规则
