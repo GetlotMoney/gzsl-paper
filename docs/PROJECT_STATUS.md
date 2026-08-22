@@ -23,7 +23,7 @@ current_seed7_H: 76.984545
 current_multiseed_mean_H: 76.866245
 current_best_observation_H: 77.086536
 current_best_observation_seed: 7
-completed_try_count: 36
+completed_try_count: 50
 minimum_required_try_count: 50
 ```
 
@@ -54,6 +54,8 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。V2当前正式单seed基线�
 TST之后已依次止损EPC、CATA、SPA、PURL和NTR。NTR直接8维条件曾达到seed7 `H=77.086536%`、四seedH mean约`76.876640%`，但相对TST仅2/4 seed为正，未按稳定创新晋级。当前正式状态仍是2个supported创新；第3创新与完整三创新组合尚未完成。
 
 owner已更新成绩口径：主结果报告最高seed，mean/range只用于判断偶然性；`range<=1.0`个百分点时可以最高seed作为主成绩。按此口径，当前最佳观察是`V2-TRY-028 / seed7 / H=77.086536%`，四seed范围约`0.5432`，可作为当前最佳框架参考。但NTR相对TST的最高增益只有`0.101991`个百分点，未达到新核心创新`0.20`个百分点门槛，因此继续搜索替代或增强模块。
+
+长期计划已完成第50个有效实验：`V2-TRY-050 / TG-VPR seed9`得到`H=73.478685%`。达到50组不结束目标，下一步继续运行seed9对应TST与NTR，并推进新的框架候选。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
