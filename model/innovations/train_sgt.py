@@ -36,6 +36,7 @@ CONFIG_KEYS = {
     "batch_half", "lr", "weight_decay", "topology_weight", "top_k",
     "graph_temperature", "max_strength", "initial_strength", "parent_metrics_percent",
 }
+CONFIG_KEYS_V2 = CONFIG_KEYS | {"edge_mode", "alignment_temperature"}
 
 
 class TeeStream:
@@ -50,9 +51,10 @@ class TeeStream:
 def load_config(path: Path):
     path = path.resolve(); config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
-        raise ValueError(f"SGT配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if config["schema_version"] != "gzsl-paper.sgt.v1" or config["attempt_id"] != "V2-TRY-044" or config["idea_id"] != "IDEA-013":
+    expected = CONFIG_KEYS_V2 if isinstance(config, dict) and config.get("schema_version") == "gzsl-paper.sgt.v2" else CONFIG_KEYS
+    if not isinstance(config, dict) or actual != expected:
+        raise ValueError(f"SGT配置字段错误；缺少={sorted(expected-actual)}，多出={sorted(actual-expected)}。")
+    if config["schema_version"] not in ("gzsl-paper.sgt.v1", "gzsl-paper.sgt.v2") or config["attempt_id"] not in ("V2-TRY-044", "V2-TRY-045") or config["idea_id"] != "IDEA-013":
         raise ValueError("SGT首次TRY身份错误。")
     if int(config["epochs"]) != 20 or int(config["batch_half"]) != 32:
         raise ValueError("SGT固定20 epoch与32/32平衡batch。")
@@ -64,6 +66,11 @@ def load_config(path: Path):
         raise ValueError("SGT传播强度身份错误。")
     if set(config["parent_metrics_percent"]) != {"U", "S", "H", "ZS"}:
         raise ValueError("SGT父指标不完整。")
+    config.setdefault("edge_mode", "text_similarity")
+    config.setdefault("alignment_temperature", 0.2)
+    expected_mode = "text_similarity" if config["attempt_id"] == "V2-TRY-044" else "direction_consistent"
+    if config["edge_mode"] != expected_mode or float(config["alignment_temperature"]) != 0.2:
+        raise ValueError("SGT边模式与TRY身份不匹配。")
     return config, sha256_file(path)
 
 
@@ -102,7 +109,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             with torch.no_grad():
                 base_all = package["base_all"].to(device); tst_all = package["fold_full"].to(device).clone(); pu = pseudo_unseen.to(device)
                 step = tst_gate(package["gate_features"].to(device)); tst_all[pu] = tangent_transport(base_all.index_select(0, pu), package["value"].to(device), step)
-                graph = semantic_graph_residual(base_all, package["fold_full"].to(device).index_select(0, pseudo_seen.to(device)), pseudo_seen, pseudo_unseen, top_k=config["top_k"], temperature=config["graph_temperature"])
+                target_direction = None
+                if config["edge_mode"] == "direction_consistent":
+                    target_base = base_all.index_select(0, pu)
+                    target_direction = tst_all.index_select(0, pu) - (
+                        tst_all.index_select(0, pu) * target_base
+                    ).sum(dim=-1, keepdim=True) * target_base
+                graph = semantic_graph_residual(base_all, package["fold_full"].to(device).index_select(0, pseudo_seen.to(device)), pseudo_seen, pseudo_unseen, top_k=config["top_k"], temperature=config["graph_temperature"], target_direction=target_direction, alignment_temperature=config["alignment_temperature"])
             package["tst_all"] = tst_all; package["graph_residual"] = graph; packages.append(package); del fold_model
         strength = GraphTransportStrength(config["max_strength"], config["initial_strength"]).to(device); optimizer = torch.optim.Adam(strength.parameters(), lr=float(config["lr"]), weight_decay=0.0)
         mapping = torch.full((200,), -1, dtype=torch.long); mapping[seenclasses] = torch.arange(150); generators = [torch.Generator(device="cpu").manual_seed(seed*13000+i) for i in range(3)]; half = int(config["batch_half"]); history = []
@@ -118,8 +131,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
         payload = {"attempt_id": config["attempt_id"], "code_commit": code_commit, "config": config, "strength_state_dict": copy.deepcopy(strength.state_dict()), "history": history}; torch.save(payload, output_dir / "graph_model.pth")
         # official test严格在SGT训练结束后加载。
         input_sha.update(h1.verify_inputs(base_config, paths, h1.OFFICIAL_KEYS)); tensors.update({name: torch.load(paths[name], map_location="cpu", weights_only=True) for name in h1.OFFICIAL_KEYS})
-        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False); centroids = h1.visual_centroids(tensors["train_features"], labels, seenclasses); parent = VariableClassTGVPR(tensors["sentence_embeds"], seenclasses, centroids, dropout=base_config["dropout"], inner_ratio=base_config["inner_ratio"], outer_ratio=base_config["outer_ratio"], temperature=base_config["temperature"]); parent.load_state_dict(checkpoint["model_state_dict"], strict=True); parent = parent.to(device).eval(); tst_prototypes, _ = _candidate_prototypes(parent, tst_gate, seenclasses, unseenclasses, device, "summary", folds, "tangent"); base_all = parent.base_prototypes(); graph = semantic_graph_residual(base_all, parent.prototypes().index_select(0, seenclasses.to(device)), seenclasses, unseenclasses, top_k=config["top_k"], temperature=config["graph_temperature"]); model = GraphResidualClassifier(tst_prototypes, unseenclasses, graph, strength, parent.scale()).to(device); parent_metrics = h1.evaluate(FrozenPrototypeClassifier(tst_prototypes, parent.scale()).to(device), tensors, seenclasses, unseenclasses, device); candidate_metrics = h1.evaluate(model, tensors, seenclasses, unseenclasses, device); delta = {key: candidate_metrics[key]-float(config["parent_metrics_percent"][key]) for key in ("U","S","H","ZS")}; value = float(strength().detach()); success = delta["H"]>=0.20 and delta["U"]>=-2 and delta["S"]>=-2 and value < 0.49
-        atomic_write_json(output_dir / "data_fingerprints.json", {"files": input_sha}); metrics = {"attempt_id": config["attempt_id"], "idea_id": config["idea_id"], "framework_id": config["framework_id"], "code_commit": code_commit, "config_sha256": config_sha, "base_config_sha256": base_config_sha, "evaluation_protocol": h1.EVALUATION_PROTOCOL, "test_used_for_selection": True, "unseen_images_used_for_gradient": False, "recomputed_parent_metrics_percent": parent_metrics, "parent_metrics_percent": config["parent_metrics_percent"], "candidate_metrics_percent": candidate_metrics, "delta_vs_parent_percent_points": delta, "learned_strength": value, "success": success, "graph_model_sha256": sha256_file(output_dir / "graph_model.pth")}; atomic_write_json(output_dir / "metrics.json", metrics); print(metrics); return metrics
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False); centroids = h1.visual_centroids(tensors["train_features"], labels, seenclasses); parent = VariableClassTGVPR(tensors["sentence_embeds"], seenclasses, centroids, dropout=base_config["dropout"], inner_ratio=base_config["inner_ratio"], outer_ratio=base_config["outer_ratio"], temperature=base_config["temperature"]); parent.load_state_dict(checkpoint["model_state_dict"], strict=True); parent = parent.to(device).eval(); tst_prototypes, _ = _candidate_prototypes(parent, tst_gate, seenclasses, unseenclasses, device, "summary", folds, "tangent"); base_all = parent.base_prototypes(); target_direction = None
+        if config["edge_mode"] == "direction_consistent":
+            target_base = base_all.index_select(0, unseenclasses.to(device)); target_tst = tst_prototypes.index_select(0, unseenclasses.to(device)); target_direction = target_tst - (target_tst * target_base).sum(dim=-1, keepdim=True) * target_base
+        graph = semantic_graph_residual(base_all, parent.prototypes().index_select(0, seenclasses.to(device)), seenclasses, unseenclasses, top_k=config["top_k"], temperature=config["graph_temperature"], target_direction=target_direction, alignment_temperature=config["alignment_temperature"]); model = GraphResidualClassifier(tst_prototypes, unseenclasses, graph, strength, parent.scale()).to(device); parent_metrics = h1.evaluate(FrozenPrototypeClassifier(tst_prototypes, parent.scale()).to(device), tensors, seenclasses, unseenclasses, device); candidate_metrics = h1.evaluate(model, tensors, seenclasses, unseenclasses, device); delta = {key: candidate_metrics[key]-float(config["parent_metrics_percent"][key]) for key in ("U","S","H","ZS")}; value = float(strength().detach()); success = delta["H"]>=0.20 and delta["U"]>=-2 and delta["S"]>=-2 and value < 0.49
+        atomic_write_json(output_dir / "data_fingerprints.json", {"files": input_sha}); metrics = {"attempt_id": config["attempt_id"], "idea_id": config["idea_id"], "framework_id": config["framework_id"], "code_commit": code_commit, "config_sha256": config_sha, "base_config_sha256": base_config_sha, "evaluation_protocol": h1.EVALUATION_PROTOCOL, "test_used_for_selection": True, "unseen_images_used_for_gradient": False, "recomputed_parent_metrics_percent": parent_metrics, "parent_metrics_percent": config["parent_metrics_percent"], "candidate_metrics_percent": candidate_metrics, "delta_vs_parent_percent_points": delta, "learned_strength": value, "edge_mode": config["edge_mode"], "success": success, "graph_model_sha256": sha256_file(output_dir / "graph_model.pth")}; atomic_write_json(output_dir / "metrics.json", metrics); print(metrics); return metrics
     finally:
         sys.stdout.flush(); sys.stdout = original_stdout; log_handle.close()
 

@@ -15,6 +15,8 @@ def semantic_graph_residual(
     *,
     top_k: int = 5,
     temperature: float = 0.05,
+    target_direction: torch.Tensor | None = None,
+    alignment_temperature: float = 0.2,
 ) -> torch.Tensor:
     base = F.normalize(base_prototypes, dim=-1)
     source_classes = source_classes.to(base.device)
@@ -25,10 +27,17 @@ def semantic_graph_residual(
     residual = source - (source * source_base).sum(dim=-1, keepdim=True) * source_base
     similarity = target_base @ source_base.T
     values, indices = similarity.topk(k=int(top_k), dim=1)
-    weights = F.softmax(values / float(temperature), dim=1)
     selected = residual.index_select(0, indices.flatten()).view(
         target_classes.numel(), int(top_k), -1
     )
+    edge_logits = values / float(temperature)
+    if target_direction is not None:
+        target_direction = F.normalize(target_direction, dim=-1)
+        alignment = (
+            F.normalize(selected, dim=-1) * target_direction.unsqueeze(1)
+        ).sum(dim=-1)
+        edge_logits = edge_logits + alignment / float(alignment_temperature)
+    weights = F.softmax(edge_logits, dim=1)
     transported = (weights.unsqueeze(-1) * selected).sum(dim=1)
     return transported - (transported * target_base).sum(dim=-1, keepdim=True) * target_base
 
