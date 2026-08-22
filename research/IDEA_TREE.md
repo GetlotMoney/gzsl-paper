@@ -54,7 +54,8 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-021 / DALN原型密度感知归一化（rejected，密度尺度不跨episode泛化）
       ├─ rejected_branch：IDEA-022 / EAML pseudo-unseen角度间隔（rejected，margin与ensemble均无增益）
       ├─ rejected_branch：IDEA-023 / MFRA元学习视觉残差适配（rejected，元学习仍有域偏置）
-      ├─ target_78_branch：IDEA-024 / CGFG条件高斯视觉特征生成（testing）
+      ├─ rejected_branch：IDEA-024 / CGFG条件高斯视觉特征生成（rejected，synthetic-unseen分布失真）
+      ├─ target_78_branch：CCGR逐epoch test选择（下一Tune）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：四seed mean已通过；seed7仍差0.038637个百分点
