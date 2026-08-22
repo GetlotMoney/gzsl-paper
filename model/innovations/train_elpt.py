@@ -17,6 +17,7 @@ from model.innovations.elpt import (
     blend_prototypes,
     fixed_class_folds,
     gate_features,
+    semantic_pca_folds,
     topology_loss,
 )
 from model.innovations.tst import (
@@ -79,6 +80,7 @@ OPTIONAL_CONFIG_KEYS = {
     "inner_lr",
     "meta_gradient_mode",
     "seen_gradient_weight",
+    "fold_strategy",
 }
 
 
@@ -142,6 +144,7 @@ def load_config(path: Path):
     raw.setdefault("inner_lr", 0.01)
     raw.setdefault("meta_gradient_mode", "outer_only")
     raw.setdefault("seen_gradient_weight", 0.0)
+    raw.setdefault("fold_strategy", "fixed_mod3")
     if raw["schema_version"] not in (
         "gzsl-paper.elpt.v1",
         "gzsl-paper.tst.v1",
@@ -182,7 +185,12 @@ def load_config(path: Path):
         "V2-TRY-035",
         "V2-TRY-036",
     } and raw["idea_id"] == "IDEA-010"
-    valid_bmr = raw["attempt_id"] in {"V2-TRY-037", "V2-TRY-038", "V2-TRY-039"} and raw["idea_id"] == "IDEA-011"
+    valid_bmr = raw["attempt_id"] in {
+        "V2-TRY-037",
+        "V2-TRY-038",
+        "V2-TRY-039",
+        "V2-TRY-040",
+    } and raw["idea_id"] == "IDEA-011"
     if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr or valid_bmr):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
@@ -309,12 +317,19 @@ def load_config(path: Path):
             raw["transport_mode"] != "tangent"
             or raw["gate_feature_mode"] != "summary"
             or raw["gate_architecture"]
-            != ("bilevel_residual" if raw["attempt_id"] == "V2-TRY-039" else "direct")
+            != (
+                "bilevel_residual"
+                if raw["attempt_id"] in {"V2-TRY-039", "V2-TRY-040"}
+                else "direct"
+            )
             or raw["gate_training_mode"] != "bilevel_first_order"
             or float(raw["inner_lr"]) != 0.01
             or float(raw["centroid_alignment_weight"]) != 0.0
             or float(raw["pseudo_unseen_ce_weight"]) != 0.0
-            or not raw["fold_checkpoint_dir"]
+            or (
+                raw["attempt_id"] != "V2-TRY-040"
+                and not raw["fold_checkpoint_dir"]
+            )
             or not isinstance(parent, dict)
             or set(parent) != {"U", "S", "H", "ZS"}
         ):
@@ -328,13 +343,22 @@ def load_config(path: Path):
             or float(raw["seen_gradient_weight"]) != expected_seen_weight
         ):
             raise ValueError("BMR梯度合并模式与TRY身份不匹配。")
-        if raw["attempt_id"] == "V2-TRY-039" and (
+        if raw["attempt_id"] in {"V2-TRY-039", "V2-TRY-040"} and (
             raw["gate_architecture"] != "bilevel_residual"
             or not raw["parent_gate_model"]
             or not raw["parent_gate_model_sha256"]
             or float(raw["max_residual_step"]) != 0.1
         ):
             raise ValueError("BMR补救2必须使用冻结TST Gate的有界残差。")
+        expected_fold_strategy = (
+            "semantic_pca_blocks"
+            if raw["attempt_id"] == "V2-TRY-040"
+            else "fixed_mod3"
+        )
+        if raw["fold_strategy"] != expected_fold_strategy:
+            raise ValueError("BMR fold策略与TRY身份不匹配。")
+        if raw["attempt_id"] == "V2-TRY-040" and raw["fold_checkpoint_dir"] is not None:
+            raise ValueError("BMR困难折必须从头训练fold权重。")
     return raw, sha256_file(path)
 
 
@@ -1095,7 +1119,10 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
         seenclasses = torch.unique(tensors["train_labels"].long(), sorted=True)
         allclasses = torch.arange(200)
         unseenclasses = allclasses[~torch.isin(allclasses, seenclasses)]
-        folds = fixed_class_folds(seenclasses)
+        if config["fold_strategy"] == "semantic_pca_blocks":
+            folds = semantic_pca_folds(seenclasses, tensors["sentence_embeds"])
+        else:
+            folds = fixed_class_folds(seenclasses)
         packages = []
         for fold_id, (pseudo_seen, pseudo_unseen) in enumerate(folds):
             if config["fold_checkpoint_dir"]:
@@ -1310,6 +1337,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "inner_lr": float(config["inner_lr"]),
             "meta_gradient_mode": config["meta_gradient_mode"],
             "seen_gradient_weight": float(config["seen_gradient_weight"]),
+            "fold_strategy": config["fold_strategy"],
             "parent_metrics_percent": config["parent_metrics_percent"],
             "delta_vs_parent_percent_points": parent_delta,
             "success": success,

@@ -142,6 +142,31 @@ def fixed_class_folds(seenclasses: torch.Tensor) -> list[tuple[torch.Tensor, tor
     return folds
 
 
+def semantic_pca_folds(
+    seenclasses: torch.Tensor, sentence_embeds: torch.Tensor
+) -> list[tuple[torch.Tensor, torch.Tensor]]:
+    """沿seen文本原型主方向形成三个连续50类困难簇。"""
+    classes = torch.as_tensor(seenclasses).detach().cpu().long().sort().values
+    if classes.numel() != 150 or classes.unique().numel() != 150:
+        raise ValueError("语义困难折固定要求150个seen类。")
+    semantics = F.normalize(
+        sentence_embeds.detach().cpu().float().mean(dim=1), dim=-1
+    ).index_select(0, classes)
+    centered = semantics - semantics.mean(dim=0, keepdim=True)
+    _, _, vh = torch.linalg.svd(centered, full_matrices=False)
+    direction = vh[0]
+    pivot = direction.abs().argmax()
+    if direction[pivot] < 0:
+        direction = -direction
+    order = torch.argsort(centered @ direction, stable=True)
+    folds = []
+    for fold_id in range(3):
+        mask = torch.zeros(150, dtype=torch.bool)
+        mask[order[fold_id * 50 : (fold_id + 1) * 50]] = True
+        folds.append((classes[~mask], classes[mask]))
+    return folds
+
+
 def gate_features(
     base: torch.Tensor,
     value: torch.Tensor,

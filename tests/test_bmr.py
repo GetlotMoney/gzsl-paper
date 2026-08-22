@@ -10,6 +10,7 @@ from model.innovations.train_elpt import (
     _pcgrad_merge,
     load_config,
 )
+from model.innovations.elpt import semantic_pca_folds
 from model.innovations.tst import SummaryResidualGate, TangentStepGate
 
 
@@ -75,3 +76,23 @@ def test_first_order_update_ignores_frozen_parent_gate():
     )
     assert adapted
     assert all(name.startswith("residual.") for name in adapted)
+
+
+def test_semantic_hard_folds_and_final_rescue_config():
+    generator = torch.Generator().manual_seed(85)
+    sentences = torch.randn(200, 8, 768, generator=generator)
+    seen = torch.tensor([class_id for class_id in range(200) if class_id % 4 != 0])
+    folds = semantic_pca_folds(seen, sentences)
+    assert len(folds) == 3
+    assert all(pseudo_seen.numel() == 100 for pseudo_seen, _ in folds)
+    assert all(pseudo_unseen.numel() == 50 for _, pseudo_unseen in folds)
+    assert torch.equal(
+        torch.cat([pseudo_unseen for _, pseudo_unseen in folds]).sort().values,
+        seen.sort().values,
+    )
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_040_bmr_rescue3_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-040"
+    assert config["fold_strategy"] == "semantic_pca_blocks"
+    assert config["fold_checkpoint_dir"] is None
