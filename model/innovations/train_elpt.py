@@ -76,6 +76,8 @@ OPTIONAL_CONFIG_KEYS = {
     "max_residual_step",
     "gate_training_mode",
     "inner_lr",
+    "meta_gradient_mode",
+    "seen_gradient_weight",
 }
 
 
@@ -137,6 +139,8 @@ def load_config(path: Path):
     raw.setdefault("max_residual_step", 0.1)
     raw.setdefault("gate_training_mode", "joint_balanced_ce")
     raw.setdefault("inner_lr", 0.01)
+    raw.setdefault("meta_gradient_mode", "outer_only")
+    raw.setdefault("seen_gradient_weight", 0.0)
     if raw["schema_version"] not in (
         "gzsl-paper.elpt.v1",
         "gzsl-paper.tst.v1",
@@ -177,7 +181,7 @@ def load_config(path: Path):
         "V2-TRY-035",
         "V2-TRY-036",
     } and raw["idea_id"] == "IDEA-010"
-    valid_bmr = raw["attempt_id"] == "V2-TRY-037" and raw["idea_id"] == "IDEA-011"
+    valid_bmr = raw["attempt_id"] in {"V2-TRY-037", "V2-TRY-038"} and raw["idea_id"] == "IDEA-011"
     if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr or valid_bmr):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
@@ -313,6 +317,15 @@ def load_config(path: Path):
             or set(parent) != {"U", "S", "H", "ZS"}
         ):
             raise ValueError("BMR首次TRY身份不匹配。")
+        expected_mode = (
+            "outer_only" if raw["attempt_id"] == "V2-TRY-037" else "pcgrad_seen_outer"
+        )
+        expected_seen_weight = 0.0 if raw["attempt_id"] == "V2-TRY-037" else 1.0
+        if (
+            raw["meta_gradient_mode"] != expected_mode
+            or float(raw["seen_gradient_weight"]) != expected_seen_weight
+        ):
+            raise ValueError("BMR梯度合并模式与TRY身份不匹配。")
     return raw, sha256_file(path)
 
 
@@ -632,6 +645,25 @@ def _first_order_adapted_parameters(gate, inner_loss, inner_lr):
     }
 
 
+def _pcgrad_merge(primary_gradients, anchor_gradients, anchor_weight=1.0):
+    dot = sum(
+        (primary * anchor).sum()
+        for primary, anchor in zip(primary_gradients, anchor_gradients)
+    )
+    anchor_norm = sum(anchor.square().sum() for anchor in anchor_gradients).clamp_min(1e-12)
+    conflict = bool(float(dot.detach()) < 0.0)
+    if conflict:
+        primary_gradients = tuple(
+            primary - dot / anchor_norm * anchor
+            for primary, anchor in zip(primary_gradients, anchor_gradients)
+        )
+    merged = tuple(
+        primary + float(anchor_weight) * anchor
+        for primary, anchor in zip(primary_gradients, anchor_gradients)
+    )
+    return merged, conflict
+
+
 def _bilevel_logits(package, gate, gate_parameters, images, seenclasses, device, config):
     base_all = package["base_all"].to(device)
     final_all = package["fold_full"].to(device).clone()
@@ -668,7 +700,7 @@ def _train_gate_bilevel(packages, tensors, config, device, seed, print_log):
     for epoch in range(1, int(config["gate_epochs"]) + 1):
         gate.train()
         inner_sum = outer_sum = 0.0
-        step_count = 0
+        step_count = conflict_count = 0
         for fold_id, package in enumerate(packages):
             seen_indices = package["seen_indices"]
             unseen_indices = package["unseen_indices"]
@@ -720,7 +752,36 @@ def _train_gate_bilevel(packages, tensors, config, device, seed, print_log):
                 if not torch.isfinite(inner_loss) or not torch.isfinite(outer_loss):
                     raise FloatingPointError("BMR内外层loss非有限。")
                 optimizer.zero_grad(set_to_none=True)
-                outer_loss.backward()
+                if config["meta_gradient_mode"] == "pcgrad_seen_outer":
+                    named_parameters = tuple(gate.named_parameters())
+                    outer_gradients = torch.autograd.grad(
+                        outer_loss,
+                        tuple(parameter for _, parameter in named_parameters),
+                    )
+                    retention_logits, _, _ = _bilevel_logits(
+                        package,
+                        gate,
+                        dict(named_parameters),
+                        inner_images,
+                        seenclasses,
+                        device,
+                        config,
+                    )
+                    retention_loss = F.cross_entropy(retention_logits, inner_targets)
+                    seen_gradients = torch.autograd.grad(
+                        retention_loss,
+                        tuple(parameter for _, parameter in named_parameters),
+                    )
+                    merged, conflict = _pcgrad_merge(
+                        outer_gradients,
+                        seen_gradients,
+                        config["seen_gradient_weight"],
+                    )
+                    for (_, parameter), gradient in zip(named_parameters, merged):
+                        parameter.grad = gradient.detach()
+                    conflict_count += int(conflict)
+                else:
+                    outer_loss.backward()
                 if any(
                     parameter.grad is not None and not torch.isfinite(parameter.grad).all()
                     for parameter in gate.parameters()
@@ -732,7 +793,8 @@ def _train_gate_bilevel(packages, tensors, config, device, seed, print_log):
                 step_count += 1
         print_log(
             f"bmr_epoch={epoch} inner_ce={inner_sum/step_count:.6f} "
-            f"outer_loss={outer_sum/step_count:.6f}"
+            f"outer_loss={outer_sum/step_count:.6f} "
+            f"conflict_rate={conflict_count/step_count:.6f}"
         )
     return gate.eval()
 
@@ -1215,6 +1277,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "max_residual_step": float(config["max_residual_step"]),
             "gate_training_mode": config["gate_training_mode"],
             "inner_lr": float(config["inner_lr"]),
+            "meta_gradient_mode": config["meta_gradient_mode"],
+            "seen_gradient_weight": float(config["seen_gradient_weight"]),
             "parent_metrics_percent": config["parent_metrics_percent"],
             "delta_vs_parent_percent_points": parent_delta,
             "success": success,

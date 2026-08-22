@@ -7,6 +7,7 @@ from torch.func import functional_call
 
 from model.innovations.train_elpt import (
     _first_order_adapted_parameters,
+    _pcgrad_merge,
     load_config,
 )
 from model.innovations.tst import TangentStepGate
@@ -34,3 +35,17 @@ def test_bmr_config_and_official_test_boundary():
     assert config["inner_lr"] == 0.01
     source = (ROOT / "model/innovations/train_elpt.py").read_text(encoding="utf-8")
     assert source.index("gate = _train_gate") < source.index("# official test只在所有训练完成后加载。")
+
+
+def test_pcgrad_removes_conflict_and_rescue_config():
+    primary = (torch.tensor([-1.0, 0.0]),)
+    anchor = (torch.tensor([1.0, 0.0]),)
+    merged, conflict = _pcgrad_merge(primary, anchor, anchor_weight=1.0)
+    assert conflict is True
+    assert float((merged[0] * anchor[0]).sum()) >= 0.0
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_038_bmr_rescue1_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-038"
+    assert config["meta_gradient_mode"] == "pcgrad_seen_outer"
+    assert config["seen_gradient_weight"] == 1.0
