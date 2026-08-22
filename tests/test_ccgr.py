@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 import torch
 from model.innovations.ccgr import ClassConditionedGeometricGenerator,NeighborhoodResidualCCGR,tangent_direction_basis
-from model.innovations.train_ccgr import ccgr_class_features,load_config
+from model.innovations.train_ccgr import ccgr_class_features,harmonic_episode_loss,load_config
 ROOT=Path(__file__).resolve().parents[1]
 def test_ccgr_basis_and_unseen_only_application():
     g=torch.Generator().manual_seed(141); base=torch.randn(200,768,generator=g); value=torch.randn(200,768,generator=g); roles=torch.randn(200,3,768,generator=g); basis=tangent_direction_basis(base,value,roles); assert basis.shape==(200,4,768); features=torch.randn(200,4,generator=g,requires_grad=True); unseen=torch.arange(150,200); model=ClassConditionedGeometricGenerator(base,basis,features,unseen,torch.tensor(10.0)); changed=model.prototypes(); parent=model.prototypes(enabled=False); assert torch.equal(changed[:150],parent[:150]); assert not torch.equal(changed[150:],parent[150:]); optimizer=torch.optim.SGD(model.parameters(),lr=0.01)
@@ -45,3 +45,7 @@ def test_neighborhood_residual_starts_exactly_at_parent():
     residual=NeighborhoodResidualCCGR(base,basis,vector,unseen,torch.tensor(10.0),parent.state_dict()); assert torch.equal(parent.generated_all(),residual.generated_all()); assert [name for name,p in residual.named_parameters() if p.requires_grad]==["neighborhood_residual.weight"]
 def test_neighborhood_residual_config():
     config,_=load_config(ROOT/"config/tries/v2_try_082_ng_ccgr_rescue1_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-082"; assert config["parent_ccgr_model_sha256"]; assert config["class_feature_mode"]=="top5_vector"
+def test_harmonic_episode_loss_balances_both_groups():
+    logits=torch.tensor([[2.0,0.0],[0.0,2.0],[1.0,0.0],[0.0,1.0]],requires_grad=True); targets=torch.tensor([0,1,0,1]); loss,seen,unseen=harmonic_episode_loss(logits,targets,2); assert 0<loss<1; assert seen>unseen; loss.backward(); assert logits.grad is not None and torch.isfinite(logits.grad).all()
+def test_ccgr_heo_config():
+    config,_=load_config(ROOT/"config/tries/v2_try_083_ccgr_heo_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-083"; assert config["idea_id"]=="IDEA-026"; assert config["harmonic_weight"]==1.0; assert config["parent_ccgr_model_sha256"]
