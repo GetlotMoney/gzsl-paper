@@ -44,13 +44,15 @@ class SymmetricLowRankMetric(nn.Module):
         base_metric: SymmetricDiagonalMetric,
         basis: torch.Tensor,
         max_subspace_log_weight: float = 0.1,
+        freeze_base_metric: bool = True,
     ):
         super().__init__()
         if basis.ndim != 2 or basis.shape[1] != base_metric.raw_log_weight.numel():
             raise ValueError("SDM低秩基形状错误。")
         self.base_metric = base_metric
-        for parameter in self.base_metric.parameters():
-            parameter.requires_grad_(False)
+        if freeze_base_metric:
+            for parameter in self.base_metric.parameters():
+                parameter.requires_grad_(False)
         self.register_buffer("basis", basis.detach().float())
         self.max_subspace_log_weight = float(max_subspace_log_weight)
         self.raw_subspace_log_weight = nn.Parameter(torch.zeros(basis.shape[0]))
