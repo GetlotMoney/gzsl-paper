@@ -28,3 +28,5 @@ def test_cra_reliability_configs():
         config,_=load_config(ROOT/f"config/tries/v2_try_{suffix}_cra_seed{seed}.yaml"); assert config["seed"]==seed and config["ridge_source"]=="class_centroids" and config["ccgr_model_sha256"]
 def test_cra_ridge_tune_configs():
     c01,_=load_config(ROOT/"config/tries/v2_try_109_cra_ridge01_seed17.yaml"); c1,_=load_config(ROOT/"config/tries/v2_try_110_cra_ridge1_seed17.yaml"); assert c01["ridge"]==0.1 and c1["ridge"]==1.0
+def test_cra_standard_output_contract():
+    config,_=load_config(ROOT/"config/tries/v2_try_111_cra_contract_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-111"; source=(ROOT/"model/innovations/train_ara.py").read_text(encoding="utf-8"); assert 'model_best.pth' in source and 'checkpoint_last.pth' in source and 'data_fingerprints.json' in source
