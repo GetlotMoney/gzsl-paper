@@ -21,3 +21,5 @@ def test_ccgr_multiseed_configs_bind_own_ntr_parent():
     expected={"062":5,"063":6,"064":8,"065":9}
     for suffix,seed in expected.items():
         config,_=load_config(ROOT/f"config/tries/v2_try_{suffix}_ccgr_seed{seed}.yaml"); assert config["seed"]==seed; assert config["ntr_gate_model"]; assert config["fold_checkpoint_dir"]; assert config["pseudo_unseen_weight"]==0.25
+def test_ccgr_magnitude_tune_configs():
+    c15,_=load_config(ROOT/"config/tries/v2_try_066_ccgr_mag015_seed7.yaml"); c20,_=load_config(ROOT/"config/tries/v2_try_067_ccgr_mag020_seed7.yaml"); assert c15["max_magnitude"]==0.15; assert c20["max_magnitude"]==0.2
