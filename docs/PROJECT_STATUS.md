@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 79.448210
 current_best_observation_seed: CRA_training_seed_17
-completed_try_count: 107
+completed_try_count: 108
 minimum_required_try_count: 50
 ```
 
@@ -134,6 +134,8 @@ CRA用150个seen类别视觉中心替代7057张图像拟合属性ridge，在seed
 CRA在seed7/17/27/37上得到H `79.377682/79.448210/79.346923/79.336822%`，mean/range=`79.377409/0.111388`，且每个seed的U/S/ZS都高于CCGR父条件。当前累计107组；CRA可靠成立并替代普通ARA作为最终辅助结构，但不增加论文核心创新数量。
 
 CRA已正式登记为`V2-INNOVATION-005 / supported auxiliary`，包含4seed配置、结果与SHA、实现说明和HTML框架图；ARA实验保留为父统计，不删除历史。
+
+CCRA类别beta Gate产生真实类别差异，但所有非零epoch H均低于CRA父模型，已止损。当前累计108组，最高正式可靠结构仍是CRA seed17 `H=79.448210%`。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

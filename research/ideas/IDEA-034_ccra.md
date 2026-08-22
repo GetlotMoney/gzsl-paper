@@ -10,12 +10,16 @@ hypothesis: 由200类属性的16维PCA因子预测类别级beta残差，可增�
 core_change: 冻结CCGR、类别中心ridge和CRA全局beta，只训练16→16→1 Gate输出每类+-4 beta残差；末层零初始化。
 success_condition: seed17 H超过79.448210%，U/S任一下降不超过2个百分点，类别残差std>0.01。
 failure_condition: 首次TRY和最多3次方法级补救后仍不超过CRA父条件。
-status: testing
+status: rejected
 paper_core_innovation: false
 parent_condition: V2-TRY-104 / TG-VPR + TST + NTR + CCGR + CRA
-current_attempt: V2-TRY-108
-last_attempt: none
-last_decision: none
+current_attempt: none
+last_attempt: V2-TRY-108
+last_decision: drop
 ```
 
 CCRA的属性PCA允许使用全部类别属性，Gate梯度只来自seen图像；true-unseen图像不进入训练。该方向只继续优化辅助属性路径。
+
+## V2-TRY-108结果与止损
+
+类别beta残差std从第1轮`0.036302`增长到第20轮`0.307217`，说明Gate真实产生类别差异；但20个非零epoch全部低于CRA父模型，最高仅`79.436551%`，最终选回epoch 0。类别条件融合破坏了CRA已形成的全局平衡，IDEA-034标记`rejected`，不扫描PCA rank或残差范围。
