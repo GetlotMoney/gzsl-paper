@@ -16,7 +16,7 @@ parent_condition: V2-TRY-104 / TG-VPR + TST + NTR + CCGR + CRA
 current_attempt: none
 last_attempt: V2-TRY-124
 last_decision: promote_auxiliary_after_combination_reliability
-current_tune: V2-TRY-128..129
+current_tune: none
 ```
 
 VPA的正反ridge和beta训练都只使用seen类别中心或seen图像；true-unseen图像不进入梯度。语义→视觉ridge已有论文先例，因此只检验本框架中的组合价值。
@@ -28,3 +28,5 @@ VPA的正反ridge和beta训练都只使用seen类别中心或seen图像；true-u
 ## 四训练seed支持结论
 
 seed7/17/27/37的H为`79.524497/79.543609/79.463000/79.454045%`，H mean/min/max/range=`79.496287/79.454045/79.543609/0.089564`；四个seed均提高H与ZS。IDEA-036标记`supported`辅助，最终是否采用由VEBC组合可靠性决定。
+
+seed17反向ridge `0.01/0.1/1.0`的H为`79.543609/79.674486/79.662435%`。0.1单VPA最高，0.01的ZS最高；追加一次0.1与VEBC组合后关闭该轴。
