@@ -13,7 +13,11 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-048
+current_attempt: V2-TRY-049
 ```
 
 PGO只在150个seen训练类构造的pseudo-seen/pseudo-unseen目标上计算梯度；true-unseen图像在训练结束后才加载。
+
+## V2-TRY-048结果
+
+seen/unseen梯度冲突率全程为`1.0`，但相对TST `Delta H=-0.040093`。补救1在冲突投影前分别把两组梯度归一到相同全局范数，消除较大目标通过梯度幅度继续主导更新的问题。
