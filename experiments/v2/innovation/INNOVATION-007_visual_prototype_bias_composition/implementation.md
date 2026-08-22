@@ -1,0 +1,3 @@
+# 实现说明
+
+VPA以seen属性到视觉中心的ridge生成所有类别视觉原型，训练beta融合到CRA。VEBC在每个fold仅用pseudo-seen中心重建正反ridge与VPA，再训练全局seen扣减gamma。最终推理依次计算CCGR、CRA、VPA和seen偏置扣减。

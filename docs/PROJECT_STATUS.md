@@ -163,6 +163,8 @@ VPA在seed7/17/27/37上的H为`79.524497/79.543609/79.463000/79.454045%`，mean/
 
 最终VEBC在seed7/17/27/37上的H为`79.917063/80.474080/80.384030/80.140382%`，mean/range=`80.228888/0.557017`，四个seed均提高VPA父H且gamma通过非饱和边界。当前累计127组，最高可靠结果`H=80.474080%`。
 
+VEBC最终组合已正式登记为`V2-INNOVATION-007 / supported auxiliary composition`，包含4seed结果、CRA/VPA/EBC组件消融、完整配置与SHA及HTML框架图。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
