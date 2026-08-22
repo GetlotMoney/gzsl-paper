@@ -17,6 +17,7 @@ class SemanticVisualPrototypeGenerator(nn.Module):
         *,
         hidden_dim: int = 128,
         residual_scale: float = 0.1,
+        target_classes: torch.Tensor | None = None,
     ):
         super().__init__()
         if tuple(parent_prototypes.shape) != (200, 768):
@@ -26,6 +27,12 @@ class SemanticVisualPrototypeGenerator(nn.Module):
         )
         self.register_buffer("_scale", scale.detach().clone())
         self.residual_scale = float(residual_scale)
+        target = (
+            torch.empty(0, dtype=torch.long)
+            if target_classes is None
+            else target_classes.detach().cpu().long()
+        )
+        self.register_buffer("target_classes", target)
         self.adapter = nn.Sequential(
             nn.Linear(768, int(hidden_dim)),
             nn.GELU(),
@@ -34,13 +41,22 @@ class SemanticVisualPrototypeGenerator(nn.Module):
         nn.init.zeros_(self.adapter[-1].weight)
         nn.init.zeros_(self.adapter[-1].bias)
 
-    def prototypes(self, *, enabled=True):
-        if not enabled:
-            return self.parent_prototypes
+    def generated_all(self):
         residual = self.adapter(self.parent_prototypes)
         return F.normalize(
             self.parent_prototypes + self.residual_scale * residual, dim=-1
         )
+
+    def prototypes(self, *, enabled=True):
+        if not enabled:
+            return self.parent_prototypes
+        generated = self.generated_all()
+        if self.target_classes.numel() == 0:
+            return generated
+        result = self.parent_prototypes.clone()
+        target = self.target_classes.to(result.device)
+        result[target] = generated.index_select(0, target)
+        return result
 
     def scale(self):
         return self._scale
