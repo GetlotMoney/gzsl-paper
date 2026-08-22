@@ -12,6 +12,7 @@ status: supported
 paper_core_innovation: false
 question: 类别级视觉中心能否比图像级样本更可靠地拟合显式属性ridge并稳定提高U/S/H/ZS
 source_attempts: [V2-TRY-105, V2-TRY-104, V2-TRY-106, V2-TRY-107]
+tune_attempts: [V2-TRY-109, V2-TRY-110]
 module:
   module_id: CRA
   name: Centroid Ridge Alignment
