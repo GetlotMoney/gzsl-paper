@@ -30,3 +30,5 @@ def test_cra_ridge_tune_configs():
     c01,_=load_config(ROOT/"config/tries/v2_try_109_cra_ridge01_seed17.yaml"); c1,_=load_config(ROOT/"config/tries/v2_try_110_cra_ridge1_seed17.yaml"); assert c01["ridge"]==0.1 and c1["ridge"]==1.0
 def test_cra_standard_output_contract():
     config,_=load_config(ROOT/"config/tries/v2_try_111_cra_contract_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-111"; source=(ROOT/"model/innovations/train_ara.py").read_text(encoding="utf-8"); assert 'model_best.pth' in source and 'checkpoint_last.pth' in source and 'data_fingerprints.json' in source
+def test_cra_resume_config_and_checkpoint_contract():
+    config,_=load_config(ROOT/"config/tries/v2_try_112_cra_resume_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-112"; source=(ROOT/"model/innovations/train_ara.py").read_text(encoding="utf-8"); assert '--resume-from' in source and 'optimizer_state_dict' in source and 'generator_state' in source and 'config_sha256' in source

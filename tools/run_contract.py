@@ -171,6 +171,12 @@ def _atomic_torch_save(payload, target: Path) -> None:
             temporary_path.unlink(missing_ok=True)
 
 
+def atomic_torch_save(target: Path, payload) -> None:
+    """对外提供原子torch checkpoint写入，避免中断留下半文件。"""
+    require_finite_tensor_tree(payload, "checkpoint")
+    _atomic_torch_save(payload, target)
+
+
 def atomic_write_json(target: Path, payload: dict) -> None:
     encoded = (
         json.dumps(
