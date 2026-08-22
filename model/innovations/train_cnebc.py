@@ -36,7 +36,7 @@ class TeeStream:
 def load_config(path):
     path=Path(path).resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
     if not isinstance(config,dict) or actual!=CONFIG_KEYS: raise ValueError(f"CNEBC配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if config["schema_version"]!="gzsl-paper.cnebc.v1" or config["attempt_id"]!="V2-TRY-142" or config["idea_id"]!="IDEA-042": raise ValueError("CNEBC首次TRY身份错误。")
+    if config["schema_version"]!="gzsl-paper.cnebc.v1" or config["attempt_id"] not in ("V2-TRY-142","V2-TRY-143","V2-TRY-144","V2-TRY-145") or config["idea_id"]!="IDEA-042": raise ValueError("CNEBC首次TRY身份错误。")
     if int(config["epochs"])!=20 or int(config["batch_half"])!=32 or float(config["lr"])!=0.001 or float(config["weight_decay"])!=0.0 or float(config["forward_ridge"])!=0.01 or float(config["reverse_ridge"])!=0.01 or float(config["max_beta"])!=20.0 or float(config["max_vpa_beta"])!=20.0 or float(config["max_gamma"])!=0.3 or float(config["max_name_beta"])!=5.0 or float(config["max_gamma_residual"])!=0.1: raise ValueError("CNEBC训练参数错误。")
     return config,sha256_file(path)
 
