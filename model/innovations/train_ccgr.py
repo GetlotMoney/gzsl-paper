@@ -44,12 +44,12 @@ def load_config(path:Path):
     schema=config.get("schema_version") if isinstance(config,dict) else None
     expected=CONFIG_KEYS_EPOCH if schema=="gzsl-paper.ccgr-epoch-select.v1" else (CONFIG_KEYS_MARGIN if schema=="gzsl-paper.ccgr-margin.v1" else (CONFIG_KEYS_V4 if schema=="gzsl-paper.ccgr.v4" else (CONFIG_KEYS_V3 if schema in ("gzsl-paper.ccgr.v3","gzsl-paper.ccgr.tune.v1") else (CONFIG_KEYS_V2 if schema=="gzsl-paper.ccgr.v2" else CONFIG_KEYS))))
     if not isinstance(config,dict) or actual!=expected: raise ValueError(f"CCGR配置字段错误；缺少={sorted(expected-actual)}，多出={sorted(actual-expected)}。")
-    valid_ids=("V2-TRY-058","V2-TRY-059","V2-TRY-060","V2-TRY-061","V2-TRY-062","V2-TRY-063","V2-TRY-064","V2-TRY-065","V2-TRY-066","V2-TRY-067","V2-TRY-074","V2-TRY-077")
+    valid_ids=("V2-TRY-058","V2-TRY-059","V2-TRY-060","V2-TRY-061","V2-TRY-062","V2-TRY-063","V2-TRY-064","V2-TRY-065","V2-TRY-066","V2-TRY-067","V2-TRY-074","V2-TRY-077","V2-TRY-078","V2-TRY-079","V2-TRY-080")
     expected_idea="IDEA-022" if config.get("attempt_id")=="V2-TRY-074" else "IDEA-018"
     if config["schema_version"] not in ("gzsl-paper.ccgr.v1","gzsl-paper.ccgr.v2","gzsl-paper.ccgr.v3","gzsl-paper.ccgr.v4","gzsl-paper.ccgr.tune.v1","gzsl-paper.ccgr-margin.v1","gzsl-paper.ccgr-epoch-select.v1") or config["attempt_id"] not in valid_ids or config["idea_id"]!=expected_idea: raise ValueError("CCGR首次TRY身份错误。")
     expected_epochs=200 if config["attempt_id"]=="V2-TRY-058" else 20
     if int(config["epochs"])!=expected_epochs or float(config["lr"])!=0.001 or float(config["weight_decay"])!=0.0001: raise ValueError("CCGR训练参数错误。")
-    expected_max={"V2-TRY-066":0.15,"V2-TRY-067":0.2,"V2-TRY-074":0.2,"V2-TRY-077":0.2}.get(config["attempt_id"],0.1)
+    expected_max={"V2-TRY-066":0.15,"V2-TRY-067":0.2,"V2-TRY-074":0.2,"V2-TRY-077":0.2,"V2-TRY-078":0.2,"V2-TRY-079":0.2,"V2-TRY-080":0.2}.get(config["attempt_id"],0.1)
     if int(config["hidden_dim"])!=32 or float(config["max_magnitude"])!=expected_max or float(config["initial_magnitude"])!=0.02 or float(config["topology_weight"])!=0.1: raise ValueError("CCGR模块参数错误。")
     if set(config["parent_metrics_percent"])!={"U","S","H","ZS"}: raise ValueError("CCGR父指标不完整。")
     config.setdefault("training_objective","seen_centroid_alignment"); config.setdefault("fold_checkpoint_dir",None); config.setdefault("batch_half",32)
@@ -60,10 +60,10 @@ def load_config(path:Path):
     expected_objective="seen_centroid_alignment" if config["attempt_id"]=="V2-TRY-058" else "pseudo_unseen_episode"
     if config["training_objective"]!=expected_objective: raise ValueError("CCGR训练目标与TRY身份错误。")
     if config["attempt_id"]=="V2-TRY-059" and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32): raise ValueError("CCGR episode配置错误。")
-    if config["attempt_id"] in ("V2-TRY-060","V2-TRY-062","V2-TRY-063","V2-TRY-064","V2-TRY-065","V2-TRY-066","V2-TRY-067","V2-TRY-074","V2-TRY-077") and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32 or float(config["pseudo_unseen_weight"])!=0.25): raise ValueError("CCGR unseen风险配置错误。")
+    if config["attempt_id"] in ("V2-TRY-060","V2-TRY-062","V2-TRY-063","V2-TRY-064","V2-TRY-065","V2-TRY-066","V2-TRY-067","V2-TRY-074","V2-TRY-077","V2-TRY-078","V2-TRY-079","V2-TRY-080") and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32 or float(config["pseudo_unseen_weight"])!=0.25): raise ValueError("CCGR unseen风险配置错误。")
     if config["attempt_id"]=="V2-TRY-061" and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32 or float(config["pseudo_unseen_weight"])!=0.25 or float(config["magnitude_penalty"])!=0.01): raise ValueError("CCGR幅度约束配置错误。")
     if config["attempt_id"]=="V2-TRY-074" and float(config["pseudo_unseen_margin"])!=0.1: raise ValueError("EAML角度间隔配置错误。")
-    if config["attempt_id"]=="V2-TRY-077" and config["select_each_epoch"] is not True: raise ValueError("CCGR逐epoch选择配置错误。")
+    if config["attempt_id"] in ("V2-TRY-077","V2-TRY-078","V2-TRY-079","V2-TRY-080") and config["select_each_epoch"] is not True: raise ValueError("CCGR逐epoch选择配置错误。")
     return config,sha256_file(path)
 
 

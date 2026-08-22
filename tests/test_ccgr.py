@@ -27,3 +27,7 @@ def test_eaml_margin_config():
     config,_=load_config(ROOT/"config/tries/v2_try_074_eaml_seed7.yaml"); assert config["idea_id"]=="IDEA-022"; assert config["pseudo_unseen_margin"]==0.1; assert config["max_magnitude"]==0.2
 def test_ccgr_epoch_selection_config():
     config,_=load_config(ROOT/"config/tries/v2_try_077_ccgr_epoch_select_seed7.yaml"); assert config["attempt_id"]=="V2-TRY-077"; assert config["select_each_epoch"] is True; assert config["max_magnitude"]==0.2
+def test_ccgr_epoch_selection_training_seeds():
+    expected={"078":17,"079":27,"080":37}
+    for suffix,seed in expected.items():
+        config,_=load_config(ROOT/f"config/tries/v2_try_{suffix}_ccgr_epoch_seed{seed}.yaml"); assert config["seed"]==seed; assert config["select_each_epoch"] is True
