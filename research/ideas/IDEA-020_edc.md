@@ -13,7 +13,11 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-067 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-070
+current_attempt: V2-TRY-071
 ```
 
 EDC只使用seen类构造的pseudo-seen/pseudo-unseen episode训练；true-unseen图像在训练结束后才加载。
+
+## V2-TRY-070结果
+
+校正std=`0.185955`且min/max饱和到`+-0.2`，`U`提高`0.615638`但`S`下降`1.043212`，相对CCGR `Delta H=-0.155490`。补救1把校正范围缩到`+-0.05`，与只读margin诊断的有效量级一致。
