@@ -13,9 +13,13 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-078 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-083
-last_attempt: none
-last_decision: none
+current_attempt: none
+last_attempt: V2-TRY-083
+last_decision: rescue
 ```
 
 训练只在150个seen类的三折pseudo-unseen episode中计算调和目标；true-unseen图像不进入梯度。HEO是CCGR的训练目标增强，不新增论文割裂模块；无提升则不晋级。
+
+## V2-TRY-083结果
+
+epoch 0精确复现父模型`H=77.572682%`，权重1.0的调和目标训练20轮均未超过父模型，最终选回epoch 0。新增目标量级约0.45，明显改变了原CE优化；补救1把权重降到0.1，仅检验轻量调和约束能否提供增量，若仍无提升则提前止损而不继续扫描。
