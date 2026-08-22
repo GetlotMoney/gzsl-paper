@@ -13,7 +13,11 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-056
+current_attempt: V2-TRY-057
 ```
 
 ORT子空间只由seen或pseudo-seen训练原型残差建立；true-unseen图像在训练结束后才加载。
+
+## V2-TRY-056结果
+
+共享子空间mix降到`0.055600`且四项均略降，`Delta H=-0.088396`，说明seen残差主子空间不是直接可迁移信号。补救1把该子空间解释为seen域偏置，从TST切向中减去其投影并保留正交补空间。
