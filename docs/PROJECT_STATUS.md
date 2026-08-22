@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 77.572682
 current_best_observation_seed: gate_training_seed_17_on_data_seed_7
-completed_try_count: 83
+completed_try_count: 84
 minimum_required_try_count: 50
 ```
 
@@ -96,6 +96,8 @@ NG-CCGR完整top-5输入得到`H=77.562646%`，仅比当前最高低`0.010036`�
 NG-CCGR补救1在epoch 0精确复现`77.572682%`，但20轮邻域残差更新均降低H，确认top-5排序细节不是当前瓶颈并提前止损。当前累计82组，最高不变；下一候选转向不同目标，不再修改CCGR邻域输入。
 
 CCGR-HEO首次TRY从当前最佳权重出发，权重1.0的pseudo-seen/pseudo-unseen软调和目标在20轮内均降低official H，最终选回epoch 0。当前累计83组，补救1只把调和权重降到0.1；若仍无增益则停止该目标，不做参数网格。
+
+CCGR-HEO权重0.1的非零训练轮次最高仅`77.560640%`，仍未超过父模型并再次选回epoch 0；该目标已止损，不继续扫权重。当前累计84组，最高仍为`77.572682%`。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
