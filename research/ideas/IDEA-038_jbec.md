@@ -16,6 +16,7 @@ parent_condition: V2-TRY-121 / TG-VPR + TST + NTR + CCGR + CRA + VPA + EBC
 current_attempt: none
 last_attempt: V2-TRY-134
 last_decision: promote_auxiliary_training_refinement
+experiment_ref: V2-INNOVATION-008
 ```
 
 JBEC的正反ridge只用pseudo-seen中心重建，两个残差的梯度只来自seen图像；true-unseen图像不进入训练。该实验只检验辅助模块联合优化。

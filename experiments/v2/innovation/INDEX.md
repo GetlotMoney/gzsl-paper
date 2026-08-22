@@ -9,5 +9,6 @@
 | V2-INNOVATION-005 | IDEA-033 | CRA类别中心属性对齐 | supported auxiliary | `INNOVATION-005_centroid_ridge_alignment/` |
 | V2-INNOVATION-006 | IDEA-035 | EBC episodic偏置校准 | supported auxiliary | `INNOVATION-006_episodic_bias_calibration/` |
 | V2-INNOVATION-007 | IDEA-037 | VPA+EBC互补组合 | supported auxiliary composition | `INNOVATION-007_visual_prototype_bias_composition/` |
+| V2-INNOVATION-008 | IDEA-038 | JBEC联合双向校准 | supported auxiliary training | `INNOVATION-008_joint_bidirectional_episodic_calibration/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

@@ -1,0 +1,32 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-008
+idea_id: IDEA-038
+evidence_refs: [V2-INNOVATION-007, V2-TRY-131]
+framework_id: FRAMEWORK-V2
+base_commit: 2a34f51563bf6e827ea732d6cf0e25ba232bc7e9
+code_commits:
+  seed17: df3eaab8bb373e6d6773bdda00adf25803b95df3
+  multiseed: 0db76ab1cd9c1394f729572b56905a61365bfcff
+title: Joint Bidirectional Episodic Calibration
+status: supported
+paper_core_innovation: false
+question: 在VEBC父解附近联合训练VPA beta与seen gamma残差能否稳定获得增益
+source_attempts: [V2-TRY-132, V2-TRY-131, V2-TRY-133, V2-TRY-134]
+module:
+  module_id: JBEC
+  name: Joint Bidirectional Episodic Calibration
+  purpose: 用同一pseudo-unseen目标协同细化属性视觉证据强度与域间偏置
+  inputs: [CRA logits, VPA视觉原型logits, seen掩码, VEBC父beta和gamma]
+  output: 联合细化beta/gamma后的最终logits
+  formula: logits=logits_CRA+(beta_parent+delta_beta)logits_VPA-(gamma_parent+delta_gamma)I_seen
+  switches: {max_beta_residual: 2.0, max_gamma_residual: 0.05}
+  baseline_off_behavior: 两个残差为0时严格回到VEBC
+  parent_condition: TG-VPR + TST + NTR + CCGR + CRA + VPA + EBC
+  training: 三折pseudo-unseen episode联合训练两个标量残差
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+primary_reporting: highest_seed_H_with_multiseed_range
+framework_diagram: framework_diagram.html
+decision: auxiliary_training_refinement_not_fourth_core_innovation
+novelty_claim: none

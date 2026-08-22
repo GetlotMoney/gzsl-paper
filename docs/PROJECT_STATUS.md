@@ -173,6 +173,8 @@ JBEC在VEBC父解附近联合微调beta/gamma，seed17仅提高H `0.008688`到`8
 
 JBEC在seed7/17/27/37上的H为`80.045741/80.482768/80.437363/80.227127%`，mean/range=`80.298250/0.437026`，四个seed相对VEBC均为正增益且残差非饱和。当前累计134组；JBEC可靠成立为不增加推理模块的辅助训练细化。
 
+JBEC已正式登记为`V2-INNOVATION-008 / supported auxiliary training`，包含4seed配置、结果与SHA及HTML框架图。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
