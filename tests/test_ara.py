@@ -14,3 +14,5 @@ def test_ara_reliability_configs_bind_own_parents():
         config,_=load_config(ROOT/f"config/tries/v2_try_{suffix}_ara_seed{seed}.yaml"); assert config["seed"]==seed; assert config["ccgr_model_sha256"] and config["sdm_model_sha256"]
 def test_ara_sdm_off_ablation_config():
     config,_=load_config(ROOT/"config/tries/v2_try_096_ara_sdm_off_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-096" and config["sdm_enabled"] is False
+def test_ara_ccgr_off_ablation_config():
+    config,_=load_config(ROOT/"config/tries/v2_try_097_ara_ccgr_off_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-097" and config["sdm_enabled"] is False and config["ccgr_enabled"] is False

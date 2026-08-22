@@ -13,7 +13,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最
 status: supported
 paper_core_innovation: false
 parent_condition: V2-TRY-086 / TG-VPR + TST + NTR + CCGR + SDM
-current_attempt: none
+current_attempt: V2-TRY-097
 last_attempt: V2-TRY-096
 last_decision: drop_SDM_from_final_combination
 ```
