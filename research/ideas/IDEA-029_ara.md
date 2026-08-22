@@ -16,6 +16,7 @@ parent_condition: V2-TRY-086 / TG-VPR + TST + NTR + CCGR + SDM
 current_attempt: none
 last_attempt: V2-TRY-100
 last_decision: promote
+experiment_ref: V2-INNOVATION-004
 ```
 
 属性来自当前CUB `att_splits.mat`，不是旧仓库知识；ridge和beta训练都只使用seen图像。只读official-test上界扫描曾达到`H=79.385635%`，只作为动机，不计正式结果；正式TRY必须由训练得到beta并继续披露`test_used_for_selection=true`。
@@ -39,3 +40,5 @@ seed7/17/27/37的ARA H为`79.330716/79.307063/79.253171/79.280845%`，相对各�
 ## 最终无SDM结构四seed
 
 seed7/17/27/37的H为`79.334907/79.386082/79.265577/79.280845%`，H mean/min/max/range=`79.316853/79.265577/79.386082/0.120505`；U mean=`73.933692`，S mean=`85.546258`，ZS mean=`86.032633`。4/4 seed均稳定超过79.26，最终组合可靠性成立。
+
+正式实验已建立为`V2-INNOVATION-004`。该编号是实验身份，ARA仍明确标记为辅助增强，不增加论文核心创新数量。
