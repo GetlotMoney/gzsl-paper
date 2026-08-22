@@ -1,0 +1,5 @@
+run_id: RUN-009
+condition: +CNRA
+source_ref: V2-TRY-138
+code_commit: bb0e66e3364fae56aef61663541fc2f891a727c5
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-138

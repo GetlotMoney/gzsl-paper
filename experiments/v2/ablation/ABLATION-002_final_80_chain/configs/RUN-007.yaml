@@ -1,0 +1,5 @@
+run_id: RUN-007
+condition: +VEBC
+source_ref: V2-TRY-121
+code_commit: 01470a4f0e0f450a95fc0c70c743d8cad76b9e8e
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-121

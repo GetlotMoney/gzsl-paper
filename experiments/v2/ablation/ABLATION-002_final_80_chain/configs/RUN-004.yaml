@@ -1,0 +1,5 @@
+run_id: RUN-004
+condition: +CCGR_tuned
+source_ref: V2-TRY-078
+code_commit: 12e8c99bb377e9b31ba7621575c2d9de498027fd
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-078

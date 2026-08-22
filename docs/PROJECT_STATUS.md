@@ -187,6 +187,8 @@ CNRA在seed7/17/27/37上的H为`80.288043/80.712565/80.519916/80.530291%`，mean
 
 CNRA已正式登记为`V2-INNOVATION-009 / supported auxiliary`，包含类名cache SHA、4seed配置与结果、模型/日志/指标SHA和HTML框架图。
 
+完整最高seed链式消融已建立为`V2-ABLATION-002`：TG-VPR→TST/NTR→CCGR构成三核心创新主干，CRA/VPA/JBEC/CNRA统一归入辅助语义证据头；H从`74.023182%`逐层提高到`80.712565%`，总增益`6.689383`个百分点。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

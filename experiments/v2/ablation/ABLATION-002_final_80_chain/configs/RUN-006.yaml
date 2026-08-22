@@ -1,0 +1,5 @@
+run_id: RUN-006
+condition: +VPA
+source_ref: V2-TRY-118
+code_commit: 4b3b2d4cedc599165d03018917ed768291cacc69
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-118
