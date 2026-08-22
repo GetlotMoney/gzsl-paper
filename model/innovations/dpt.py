@@ -40,7 +40,8 @@ class DistributionalPrototypeClassifier(nn.Module):
         self.register_buffer("resultant_lengths", resultant_lengths.detach().float())
         self.register_buffer("seenclasses", seenclasses.detach().cpu().long())
         self.register_buffer("_scale", scale.detach().clone())
-        seen_log = self.resultant_lengths.index_select(0, self.seenclasses).log()
+        seen_index = self.seenclasses.to(self.resultant_lengths.device)
+        seen_log = self.resultant_lengths.index_select(0, seen_index).log()
         self.register_buffer("seen_log_reference", seen_log.mean().detach())
         self.max_gamma = float(max_gamma)
         ratio = float(initial_gamma) / self.max_gamma
