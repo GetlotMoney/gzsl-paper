@@ -5,10 +5,10 @@
 ```yaml
 base_framework: FRAMEWORK-V2 / TG-VPR-H1
 supported_innovations: [TG-VPR, TST, CCGR]
-current_best_observation: V2-TRY-096 / TG-VPR + TST + NTR + CCGR + ARA
-current_best_H: 79.386082
-current_best_seed: ARA_training_seed_17_without_SDM
-completed_try_count: 101
+current_best_observation: V2-TRY-102 / TG-VPR + TST + NTR + CCGR + ARA beta retune
+current_best_H: 79.404922
+current_best_seed: ARA_seed17_global_beta_retune_observation
+completed_try_count: 102
 minimum_total_try_count: 50
 target_best_H: 78.0
 evaluation_protocol: test_selected_inductive_gzsl
