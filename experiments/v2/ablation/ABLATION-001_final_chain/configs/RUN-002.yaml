@@ -1,0 +1,5 @@
+run_id: RUN-002
+condition: TG-VPR+TST
+source_ref: V2-TRY-015
+code_commit: 0b919b14f052ec5e3f99378383e94053a2cf45ae
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-015

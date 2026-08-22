@@ -1,0 +1,16 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-ABLATION-001
+framework_id: FRAMEWORK-V2
+title: Final Method Chain Ablation
+question: TG-VPR、TST、NTR与CCGR逐层加入时分别产生多少真实增益
+status: completed
+seed: 7
+conditions:
+  - {id: C0, name: TG-VPR, source: V2-CONFIRM-001/RUN-001, code_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca}
+  - {id: C1, name: TG-VPR+TST, source: V2-TRY-015, code_commit: 0b919b14f052ec5e3f99378383e94053a2cf45ae}
+  - {id: C2, name: TG-VPR+TST+NTR, source: V2-TRY-028, code_commit: 42cd4457a65f89023ff342ba13679471d5db0942}
+  - {id: C3, name: TG-VPR+TST+NTR+CCGR, source: V2-TRY-060, code_commit: 5e2038ef963c0a55d7c53580bbb1cdf33aa77267}
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: framework_diagram.html

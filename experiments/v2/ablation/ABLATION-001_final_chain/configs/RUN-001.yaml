@@ -1,0 +1,5 @@
+run_id: RUN-001
+condition: TG-VPR
+source_ref: V2-CONFIRM-001/RUN-001
+code_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/runs/v2/CONFIRM-001_v2_baseline/RUN-001
