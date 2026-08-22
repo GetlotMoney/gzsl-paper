@@ -23,7 +23,7 @@ current_seed7_H: 77.384331
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 77.459931
 current_best_observation_seed: 7
-completed_try_count: 72
+completed_try_count: 73
 minimum_required_try_count: 50
 ```
 
@@ -78,6 +78,8 @@ FVRA视觉特征适配在无界和L2上限0.1两种条件下都系统性提高S�
 EDC样本条件竞争在校正范围0.2和0.05下都只改变U/S权衡并降低H，已止损。当前累计71组有效实验，最高仍为`H=77.459931%`；下一主线转向类别条件温度与能量归一化。
 
 DALN密度Gate提高U与ZS但seen CE导致S下降，H仅低于父条件`0.039483`；该方向保留并转入pseudo-unseen episode训练。当前累计72组，最高仍为`77.459931%`。
+
+DALN在seen CE与pseudo-unseen episode两条训练路径下均未提高H，已止损。当前累计73组，下一主线使用pseudo-unseen角度间隔直接扩大类间边界。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
