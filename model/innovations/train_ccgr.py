@@ -14,8 +14,8 @@ from model.innovations.ccgr import (
 )
 from model.innovations.dpt import text_resultant_lengths
 from model.innovations.elpt import VariableClassTGVPR, fixed_class_folds, topology_loss
-from model.innovations.train_elpt import FrozenPrototypeClassifier, _candidate_prototypes
-from model.innovations.tst import TangentStepGate
+from model.innovations.train_elpt import FrozenPrototypeClassifier, _candidate_prototypes, _fold_package, _load_fold_checkpoint
+from model.innovations.tst import TangentStepGate, tangent_transport
 from model.tg_vpr_h1 import train as h1
 from tools.reproducibility import configure_reproducibility
 from tools.run_contract import atomic_write_json, current_code_commit, prepare_output_dir, require_clean_code_tree
@@ -23,6 +23,7 @@ from tools.runtime import sha256_file
 
 
 CONFIG_KEYS={"schema_version","attempt_id","idea_id","framework_id","base_config","base_checkpoint","base_checkpoint_sha256","ntr_gate_model","ntr_gate_model_sha256","seed","epochs","lr","weight_decay","hidden_dim","max_magnitude","initial_magnitude","topology_weight","parent_metrics_percent"}
+CONFIG_KEYS_V2=CONFIG_KEYS|{"training_objective","fold_checkpoint_dir","batch_half"}
 
 
 class TeeStream:
@@ -36,11 +37,17 @@ class TeeStream:
 
 def load_config(path:Path):
     path=path.resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
-    if not isinstance(config,dict) or actual!=CONFIG_KEYS: raise ValueError(f"CCGR配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if config["schema_version"]!="gzsl-paper.ccgr.v1" or config["attempt_id"]!="V2-TRY-058" or config["idea_id"]!="IDEA-018": raise ValueError("CCGR首次TRY身份错误。")
-    if int(config["epochs"])!=200 or float(config["lr"])!=0.001 or float(config["weight_decay"])!=0.0001: raise ValueError("CCGR训练参数错误。")
+    expected=CONFIG_KEYS_V2 if isinstance(config,dict) and config.get("schema_version")=="gzsl-paper.ccgr.v2" else CONFIG_KEYS
+    if not isinstance(config,dict) or actual!=expected: raise ValueError(f"CCGR配置字段错误；缺少={sorted(expected-actual)}，多出={sorted(actual-expected)}。")
+    if config["schema_version"] not in ("gzsl-paper.ccgr.v1","gzsl-paper.ccgr.v2") or config["attempt_id"] not in ("V2-TRY-058","V2-TRY-059") or config["idea_id"]!="IDEA-018": raise ValueError("CCGR首次TRY身份错误。")
+    expected_epochs=200 if config["attempt_id"]=="V2-TRY-058" else 20
+    if int(config["epochs"])!=expected_epochs or float(config["lr"])!=0.001 or float(config["weight_decay"])!=0.0001: raise ValueError("CCGR训练参数错误。")
     if int(config["hidden_dim"])!=32 or float(config["max_magnitude"])!=0.1 or float(config["initial_magnitude"])!=0.02 or float(config["topology_weight"])!=0.1: raise ValueError("CCGR模块参数错误。")
     if set(config["parent_metrics_percent"])!={"U","S","H","ZS"}: raise ValueError("CCGR父指标不完整。")
+    config.setdefault("training_objective","seen_centroid_alignment"); config.setdefault("fold_checkpoint_dir",None); config.setdefault("batch_half",32)
+    expected_objective="seen_centroid_alignment" if config["attempt_id"]=="V2-TRY-058" else "pseudo_unseen_episode"
+    if config["training_objective"]!=expected_objective: raise ValueError("CCGR训练目标与TRY身份错误。")
+    if config["attempt_id"]=="V2-TRY-059" and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32): raise ValueError("CCGR episode配置错误。")
     return config,sha256_file(path)
 
 
@@ -65,8 +72,22 @@ def run(config_path:Path,output_dir:Path,expected_commit:str):
     with (output_dir/"config.snapshot.yaml").open("x",encoding="utf-8") as handle: yaml.safe_dump(config,handle,allow_unicode=True,sort_keys=False)
     log_handle=(output_dir/"training.log").open("x",encoding="utf-8",buffering=1); original_stdout=sys.stdout; sys.stdout=TeeStream(sys.stdout,log_handle)
     try:
-        seed=int(config["seed"]); configure_reproducibility(seed,strict_determinism=True,deterministic_warn_only=False); tensors={name:torch.load(paths[name],map_location="cpu",weights_only=True) for name in ("sentence_embeds","train_features","train_labels")}; labels=tensors["train_labels"].long(); seenclasses=torch.unique(labels,sorted=True); allclasses=torch.arange(200); unseenclasses=allclasses[~torch.isin(allclasses,seenclasses)]; checkpoint=torch.load(checkpoint_path,map_location="cpu",weights_only=False); centroids=h1.visual_centroids(tensors["train_features"],labels,seenclasses); parent=VariableClassTGVPR(tensors["sentence_embeds"],seenclasses,centroids,dropout=base_config["dropout"],inner_ratio=base_config["inner_ratio"],outer_ratio=base_config["outer_ratio"],temperature=base_config["temperature"]); parent.load_state_dict(checkpoint["model_state_dict"],strict=True); parent=parent.to(device).eval(); ntr_gate=_load_gate(config,device); ntr_prototypes,_=_candidate_prototypes(parent,ntr_gate,seenclasses,unseenclasses,device,"top5_vector",fixed_class_folds(seenclasses),"tangent"); base=parent.base_prototypes(); value=parent.value_candidate(allclasses.to(device)); roles=parent.semantic_group_vectors(); basis=tangent_direction_basis(base,value,roles); similarity=base@base.index_select(0,seenclasses.to(device)).T; top5=similarity.topk(5,dim=1).values; features=torch.stack(((base*value).sum(dim=-1),(value-base).norm(dim=-1),text_resultant_lengths(tensors["sentence_embeds"]).to(device),top5.mean(dim=1)),dim=1); model=ClassConditionedGeometricGenerator(ntr_prototypes,basis,features,unseenclasses,parent.scale(),hidden_dim=config["hidden_dim"],max_magnitude=config["max_magnitude"],initial_magnitude=config["initial_magnitude"]).to(device); optimizer=torch.optim.Adam(model.parameters(),lr=float(config["lr"]),weight_decay=float(config["weight_decay"])); history=[]
+        seed=int(config["seed"]); configure_reproducibility(seed,strict_determinism=True,deterministic_warn_only=False); tensors={name:torch.load(paths[name],map_location="cpu",weights_only=True) for name in ("sentence_embeds","train_features","train_labels")}; labels=tensors["train_labels"].long(); seenclasses=torch.unique(labels,sorted=True); allclasses=torch.arange(200); unseenclasses=allclasses[~torch.isin(allclasses,seenclasses)]; checkpoint=torch.load(checkpoint_path,map_location="cpu",weights_only=False); centroids=h1.visual_centroids(tensors["train_features"],labels,seenclasses); parent=VariableClassTGVPR(tensors["sentence_embeds"],seenclasses,centroids,dropout=base_config["dropout"],inner_ratio=base_config["inner_ratio"],outer_ratio=base_config["outer_ratio"],temperature=base_config["temperature"]); parent.load_state_dict(checkpoint["model_state_dict"],strict=True); parent=parent.to(device).eval(); ntr_gate=_load_gate(config,device); folds=fixed_class_folds(seenclasses); ntr_prototypes,_=_candidate_prototypes(parent,ntr_gate,seenclasses,unseenclasses,device,"top5_vector",folds,"tangent"); base=parent.base_prototypes(); value=parent.value_candidate(allclasses.to(device)); roles=parent.semantic_group_vectors(); basis=tangent_direction_basis(base,value,roles); similarity=base@base.index_select(0,seenclasses.to(device)).T; top5=similarity.topk(5,dim=1).values; text_resultant=text_resultant_lengths(tensors["sentence_embeds"]).to(device); features=torch.stack(((base*value).sum(dim=-1),(value-base).norm(dim=-1),text_resultant,top5.mean(dim=1)),dim=1); model=ClassConditionedGeometricGenerator(ntr_prototypes,basis,features,unseenclasses,parent.scale(),hidden_dim=config["hidden_dim"],max_magnitude=config["max_magnitude"],initial_magnitude=config["initial_magnitude"]).to(device); optimizer=torch.optim.Adam(model.parameters(),lr=float(config["lr"]),weight_decay=float(config["weight_decay"])); history=[]; episode_packages=[]
+        if config["training_objective"]=="pseudo_unseen_episode":
+            for fold_id,(ps,pu) in enumerate(folds):
+                fold_model=_load_fold_checkpoint(fold_id,ps,tensors["sentence_embeds"],tensors["train_features"],labels,base_config,device,config["fold_checkpoint_dir"]); package=_fold_package(fold_model,ps,pu,tensors,seenclasses,device,"top5_vector")
+                with torch.no_grad():
+                    fold_base=package["base_all"].to(device); fold_full=package["fold_full"].to(device).clone(); fold_value_all=fold_model.value_candidate(allclasses.to(device)); fold_roles=fold_model.semantic_group_vectors(); fold_basis=tangent_direction_basis(fold_base,fold_value_all,fold_roles); support=fold_base.index_select(0,ps.to(device)); fold_top5=(fold_base@support.T).topk(5,dim=1).values; fold_features=torch.stack(((fold_base*fold_value_all).sum(dim=-1),(fold_value_all-fold_base).norm(dim=-1),text_resultant,fold_top5.mean(dim=1)),dim=1); step=ntr_gate(package["gate_features"].to(device)); pu_device=pu.to(device); fold_full[pu_device]=tangent_transport(fold_base.index_select(0,pu_device),package["value"].to(device),step)
+                package["ntr_all"]=fold_full; package["ccgr_basis"]=fold_basis; package["ccgr_features"]=fold_features; episode_packages.append(package); del fold_model
+            generators=[torch.Generator(device="cpu").manual_seed(seed*19000+i) for i in range(3)]; half=int(config["batch_half"]); mapping=torch.full((200,),-1,dtype=torch.long); mapping[seenclasses]=torch.arange(150)
         for epoch in range(1,int(config["epochs"])+1):
+            if config["training_objective"]=="pseudo_unseen_episode":
+                loss_sum=0.0; count=0
+                for fold_id,package in enumerate(episode_packages):
+                    steps=min(package["seen_indices"].numel()//half,package["unseen_indices"].numel()//half)
+                    for _ in range(steps):
+                        g=generators[fold_id]; si=package["seen_indices"][torch.randperm(package["seen_indices"].numel(),generator=g)[:half]]; ui=package["unseen_indices"][torch.randperm(package["unseen_indices"].numel(),generator=g)[:half]]; indices=torch.cat((si,ui)); images=tensors["train_features"][indices].to(device).float(); targets=mapping[labels[indices]].to(device); generated=model.generate_external(package["ntr_all"],package["ccgr_basis"],package["ccgr_features"]); final=package["ntr_all"].clone(); pu=package["pseudo_unseen"].to(device); final[pu]=generated.index_select(0,pu); competition=final.index_select(0,seenclasses.to(device)); logits=torch.nn.functional.normalize(images,dim=-1)@competition.T*package["scale"].to(device); ce=torch.nn.functional.cross_entropy(logits,targets); topo=topology_loss(package["ntr_all"].index_select(0,seenclasses.to(device)),competition); loss=ce+float(config["topology_weight"])*topo; optimizer.zero_grad(set_to_none=True); loss.backward(); optimizer.step(); loss_sum+=float(loss.detach()); count+=1
+                stats=model.magnitude_stats(); row={"epoch":epoch,"loss":loss_sum/count,"magnitude":stats}; history.append(row); print(f"epoch={epoch} loss={row['loss']:.6f} magnitude={stats}"); continue
             generated=model.generated_all(); generated_seen=generated.index_select(0,seenclasses.to(device)); alignment=1.0-(generated_seen*centroids.to(device)).sum(dim=-1).mean(); topo=topology_loss(ntr_prototypes,generated); loss=alignment+float(config["topology_weight"])*topo; optimizer.zero_grad(set_to_none=True); loss.backward(); optimizer.step(); stats=model.magnitude_stats(); row={"epoch":epoch,"loss":float(loss.detach()),"alignment":float(alignment.detach()),"topology":float(topo.detach()),"magnitude":stats}; history.append(row)
             if epoch in (1,10,20,50,100,150,200): print(f"epoch={epoch} alignment={row['alignment']:.6f} topology={row['topology']:.6f} magnitude={stats}")
         torch.save({"attempt_id":config["attempt_id"],"code_commit":code_commit,"config":config,"model_state_dict":copy.deepcopy(model.state_dict()),"history":history},output_dir/"ccgr_model.pth")

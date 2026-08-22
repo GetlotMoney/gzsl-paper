@@ -11,3 +11,5 @@ def test_ccgr_basis_and_unseen_only_application():
     assert model.feature_mean.grad_fn is None and model.feature_std.grad_fn is None
 def test_ccgr_config_and_boundary():
     config,_=load_config(ROOT/"config/tries/v2_try_058_ccgr_seed7.yaml"); assert config["idea_id"]=="IDEA-018"; source=(ROOT/"model/innovations/train_ccgr.py").read_text(encoding="utf-8"); assert source.index("for epoch in range")<source.index("# official test严格在CCGR训练结束后加载。")
+def test_ccgr_episode_config():
+    config,_=load_config(ROOT/"config/tries/v2_try_059_ccgr_rescue1_seed7.yaml"); assert config["attempt_id"]=="V2-TRY-059"; assert config["training_objective"]=="pseudo_unseen_episode"; assert config["fold_checkpoint_dir"]

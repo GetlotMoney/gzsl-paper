@@ -68,23 +68,32 @@ class ClassConditionedGeometricGenerator(nn.Module):
             self.magnitude_head.bias, math.log(ratio / (1.0 - ratio))
         )
 
-    def generated_all(self):
-        features = (self.class_features - self.feature_mean) / self.feature_std
+    def _generate(self, parent_prototypes, direction_basis, class_features):
+        parent_prototypes = F.normalize(parent_prototypes, dim=-1)
+        features = (class_features - self.feature_mean) / self.feature_std
         hidden = self.trunk(features)
         weights = F.softmax(self.weight_head(hidden), dim=-1)
         magnitude = self.max_magnitude * torch.sigmoid(
             self.magnitude_head(hidden)
         ).squeeze(-1)
         direction = F.normalize(
-            (weights.unsqueeze(-1) * self.direction_basis).sum(dim=1), dim=-1
+            (weights.unsqueeze(-1) * direction_basis).sum(dim=1), dim=-1
         )
         direction = direction - (
-            direction * self.parent_prototypes
-        ).sum(dim=-1, keepdim=True) * self.parent_prototypes
+            direction * parent_prototypes
+        ).sum(dim=-1, keepdim=True) * parent_prototypes
         direction = F.normalize(direction, dim=-1)
         return F.normalize(
-            self.parent_prototypes + magnitude.unsqueeze(-1) * direction, dim=-1
+            parent_prototypes + magnitude.unsqueeze(-1) * direction, dim=-1
         )
+
+    def generated_all(self):
+        return self._generate(
+            self.parent_prototypes, self.direction_basis, self.class_features
+        )
+
+    def generate_external(self, parent_prototypes, direction_basis, class_features):
+        return self._generate(parent_prototypes, direction_basis, class_features)
 
     def prototypes(self, *, enabled=True):
         if not enabled:
