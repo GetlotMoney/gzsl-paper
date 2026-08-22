@@ -11,3 +11,5 @@ def test_vebc_reliability_configs_bind_vpa_parents():
     expected={"125":7,"126":27,"127":37}
     for suffix,seed in expected.items():
         config,_=load_config(ROOT/f"config/tries/v2_try_{suffix}_vebc_seed{seed}.yaml"); assert config["seed"]==seed and config["max_gamma"]==0.3 and config["vpa_model_sha256"]
+def test_vebc_reverse_ridge_tune_config():
+    config,_=load_config(ROOT/"config/tries/v2_try_130_vebc_reverse01_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-130" and config["reverse_ridge"]==0.1 and config["vpa_model_sha256"]

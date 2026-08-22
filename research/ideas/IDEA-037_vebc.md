@@ -17,6 +17,7 @@ current_attempt: none
 last_attempt: V2-TRY-127
 last_decision: promote_auxiliary_combination
 experiment_ref: V2-INNOVATION-007
+current_tune: V2-TRY-130
 ```
 
 VEBC的fold正反ridge只使用pseudo-seen视觉中心，gamma梯度只来自seen图像；true-unseen图像不进入训练。VPA与EBC均为辅助组合，不增加论文核心创新数量。
