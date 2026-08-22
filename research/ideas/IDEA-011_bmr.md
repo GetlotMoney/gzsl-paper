@@ -13,10 +13,12 @@ hypothesis: 先用pseudo-seen对Gate做临时内层更新，再只用pseudo-unse
 core_change: Gate训练改为一阶双层元更新；原型公式、TST切空间迁移、数据划分和推理路径保持不变。
 success_condition: seed7相对TG-VPR+TST的最高H提高至少0.20个百分点，U和S各自下降不超过2个百分点，步长与角位移不越过TST安全门槛。
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
-status: testing
+status: rejected
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-040
+current_attempt: none
+last_attempt: V2-TRY-040
+last_decision: drop
 ```
 
 BMR内外层都只使用150个seen训练类构造的episode；true-unseen图像在所有Gate训练结束后才加载。关闭双层更新时回到TST的联合Gate训练。
@@ -32,3 +34,7 @@ PCGrad条件从第2轮起冲突率为`1.0`，最终步长均值`1.499258`并饱�
 ## V2-TRY-039-R1结果
 
 修复工程错误后的残差BMR使`U`相对TST提高`1.494062`、`ZS`提高`0.722259`，但`S`下降`1.682091`，`H=76.975867%`、`Delta H=-0.008678`。最后一次补救把固定mod-3 episode改为按文本语义主方向形成的三个连续困难簇，并从头训练对应fold模型。
+
+## V2-TRY-040结果与止损
+
+语义困难折使训练任务明显更难，但最终相对TST仅`Delta H=+0.018177`，`H=77.002721%`，未达到核心创新门槛。BMR首次TRY和3次方法级补救均已完成，IDEA-011标记`rejected`；其U/ZS正向信号保留为后续多原型或概率原型框架的动机。
