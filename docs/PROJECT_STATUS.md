@@ -21,9 +21,9 @@ target_supported_innovations: 3
 supported_innovations: 3
 current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
-current_best_observation_H: 80.410490
-current_best_observation_seed: VEBC_training_seed_17_saturated_candidate
-completed_try_count: 120
+current_best_observation_H: 80.474080
+current_best_observation_seed: VEBC_training_seed_17
+completed_try_count: 121
 minimum_required_try_count: 50
 ```
 
@@ -156,6 +156,8 @@ VPA属性→视觉中心反向ridge在seed17把ZS提高`0.906229`、H提高`0.09
 VEBC组合VPA类内判别与EBC域间平衡，在seed17达到`U/S/H/ZS=76.674461/84.529251/80.410490/87.125778%`并首次超过80；gamma接近0.25上限，当前为饱和候选。累计119组，补救1降低gamma学习率细化最优区间。
 
 VEBC降低gamma学习率后仍在训练后期贴近0.25边界并复现`H=80.410490%`，补救1未解决饱和。当前累计120组，补救2扩大边界到0.30，使有效gamma成为内部解。
+
+VEBC扩大gamma上限到0.30后达到`U/S/H/ZS=77.077311/84.184039/80.474080/87.125778%`，gamma通过非饱和门槛并成为新最高。当前累计121组，先补VPA各seed父模型，再运行组合可靠性。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
