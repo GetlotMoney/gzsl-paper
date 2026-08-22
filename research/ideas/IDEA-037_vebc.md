@@ -17,7 +17,7 @@ current_attempt: none
 last_attempt: V2-TRY-127
 last_decision: promote_auxiliary_combination
 experiment_ref: V2-INNOVATION-007
-current_tune: V2-TRY-130
+current_tune: none
 ```
 
 VEBC的fold正反ridge只使用pseudo-seen视觉中心，gamma梯度只来自seen图像；true-unseen图像不进入训练。VPA与EBC均为辅助组合，不增加论文核心创新数量。
@@ -35,3 +35,5 @@ V2-TRY-121在第12轮得到`U=77.077311%`、`S=84.184039%`、`H=80.474080%`、`Z
 seed7/17/27/37的H为`79.917063/80.474080/80.384030/80.140382%`，H mean/min/max/range=`80.228888/79.917063/80.474080/0.557017`；四个seed相对各自VPA均提高H `0.392566–0.930470`，gamma范围`0.237696–0.293854`且均通过边界门槛。IDEA-037标记`supported`辅助组合，不增加论文核心创新数量。
 
 四seed固定等权logit/probability ensemble均得到`H=80.115795%`、`ZS=86.815143%`，低于最高单模型和四seed均值，故不保留ensemble推理。
+
+反向ridge=0.1的VPA单独H更高，但与VEBC组合仅`H=80.165438%`，低于ridge=0.01组合的`80.474080%`；最终组合固定0.01，原因是其更高ZS与EBC域间平衡更互补。

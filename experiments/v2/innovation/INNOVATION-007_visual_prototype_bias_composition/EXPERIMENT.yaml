@@ -14,6 +14,7 @@ paper_core_innovation: false
 question: 属性视觉原型的类内判别增益与episodic偏置校准能否互补并稳定把H推到80左右
 source_attempts: [V2-TRY-125, V2-TRY-121, V2-TRY-126, V2-TRY-127]
 component_ablation_attempts: [V2-TRY-104, V2-TRY-118, V2-TRY-114]
+tune_attempts: [V2-TRY-130]
 module:
   module_id: VEBC
   name: VPA + Episodic Bias Calibration
