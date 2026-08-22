@@ -13,7 +13,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-028 / TG-VPR + TST + NTR
-current_attempt: V2-TRY-059
+current_attempt: V2-TRY-060
 ```
 
 CCGR生成方向全部来自目标类别文本；true-unseen图像在训练结束后才加载。关闭CCGR时严格回到NTR父框架。
@@ -21,3 +21,7 @@ CCGR生成方向全部来自目标类别文本；true-unseen图像在训练结�
 ## V2-TRY-058-R1结果
 
 工程重跑后`H=77.100834%`，相对NTR `Delta H=+0.014298`，成为当前最高观察；但生成幅度降到mean/max=`0.009905/0.011706`，seen中心对齐信号过弱。补救1改用三折pseudo-unseen图像的32/32联合CE直接训练同一类别条件Gate。
+
+## V2-TRY-059结果
+
+episodic CCGR得到`H=77.237120%`，相对NTR提高`0.150584`并成为当前最高；U下降`0.359970`、S提高`0.751114`，最大幅度顶到`0.1`。补救2保持幅度边界，增加`0.25`倍pseudo-unseen子批CE，温和修正U/S偏向。
