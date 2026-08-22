@@ -13,9 +13,13 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-086 / TG-VPR + TST + NTR + CCGR + SDM
-current_attempt: V2-TRY-092
-last_attempt: none
-last_decision: none
+current_attempt: none
+last_attempt: V2-TRY-092
+last_decision: run_reliability_seeds
 ```
 
 属性来自当前CUB `att_splits.mat`，不是旧仓库知识；ridge和beta训练都只使用seen图像。只读official-test上界扫描曾达到`H=79.385635%`，只作为动机，不计正式结果；正式TRY必须由训练得到beta并继续披露`test_used_for_selection=true`。
+
+## V2-TRY-092结果
+
+训练式ARA在第7轮得到`U=73.954368%`、`S=85.495055%`、`H=79.307063%`、`ZS=86.089158%`，相对SDM父条件的`Delta H=+1.694075`并首次超过78%；learned beta=`13.706591`，未触及20的边界。当前仅为seed17成立，必须继续运行父CCGR/SDM seed7/27/37并完成module-off消融后才能标记supported。
