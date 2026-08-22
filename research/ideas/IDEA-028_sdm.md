@@ -13,9 +13,9 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-078 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-088
-last_attempt: V2-TRY-087
-last_decision: rescue
+current_attempt: none
+last_attempt: V2-TRY-088
+last_decision: keep_best_diagonal
 ```
 
 SDM只用150个seen类的三折pseudo-unseen episode训练；true-unseen图像仅用于项目允许的逐epoch选择，不进入梯度。若有效，它作为最终共享度量层连接图像与CCGR原型，不改变三项核心创新逻辑。
@@ -27,3 +27,7 @@ SDM只用150个seen类的三折pseudo-unseen episode训练；true-unseen图像�
 ## V2-TRY-087结果
 
 冻结对角度量后训练rank-64低秩主方向，loss从`0.724616`降到`0.686161`，说明低秩参数实际更新；但所有非零epoch均低于父模型，最高仅`77.552835%`，最终选回epoch 0。失败来自低秩方向无法由冻结对角基补偿。补救2保持rank、学习率和边界不变，只允许对角与低秩权重联合更新。
+
+## V2-TRY-088结果与低秩止损
+
+联合训练对角与rank-64权重后，loss继续下降但official H持续低于父模型，最终仍选epoch 0。冻结与联合两种低秩路径均失败，停止低秩补救并保留TRY-086纯对角SDM；下一步只做不同父CCGR训练seed的可靠性验证。
