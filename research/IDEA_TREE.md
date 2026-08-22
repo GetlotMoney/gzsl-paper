@@ -47,7 +47,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-015 / PGO梯度冲突优化（rejected，投影仅改变U/S权衡）
       ├─ reliability_branch：TG-VPR/TST/NTR新增seed9（下一RUN）
       ├─ rejected_branch：IDEA-016 / SVPG语义到视觉原型生成（rejected，seen视觉映射存在unseen域偏置）
-      ├─ innovation_slot_3：待新候选（正交残差/类别条件生成）
+      ├─ innovation_slot_3：IDEA-017 / ORT正交残差迁移（testing）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：四seed mean已通过；seed7仍差0.038637个百分点
