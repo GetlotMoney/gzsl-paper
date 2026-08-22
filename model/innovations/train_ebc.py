@@ -39,8 +39,8 @@ class TeeStream:
 def load_config(path):
     path=Path(path).resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
     if not isinstance(config,dict) or actual!=CONFIG_KEYS: raise ValueError(f"EBC配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if config["schema_version"]!="gzsl-paper.ebc.v1" or config["attempt_id"] not in ("V2-TRY-113","V2-TRY-114") or config["idea_id"]!="IDEA-035": raise ValueError("EBC首次TRY身份错误。")
-    expected_gamma=0.15 if config["attempt_id"]=="V2-TRY-114" else 0.2
+    if config["schema_version"]!="gzsl-paper.ebc.v1" or config["attempt_id"] not in ("V2-TRY-113","V2-TRY-114","V2-TRY-115","V2-TRY-116","V2-TRY-117") or config["idea_id"]!="IDEA-035": raise ValueError("EBC首次TRY身份错误。")
+    expected_gamma=0.15 if config["attempt_id"] in ("V2-TRY-114","V2-TRY-115","V2-TRY-116","V2-TRY-117") else 0.2
     if int(config["epochs"])!=20 or int(config["batch_half"])!=32 or float(config["lr"])!=0.01 or float(config["weight_decay"])!=0.0 or float(config["ridge"])!=0.01 or float(config["max_beta"])!=20.0 or float(config["max_gamma"])!=expected_gamma: raise ValueError("EBC训练参数错误。")
     return config,sha256_file(path)
 
