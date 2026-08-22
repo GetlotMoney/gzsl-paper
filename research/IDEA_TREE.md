@@ -52,7 +52,8 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-019 / FVRA视觉特征残差适配（rejected，seen视觉适配系统性伤害U）
       ├─ rejected_branch：IDEA-020 / EDC样本条件联合竞争（rejected，样本margin仅改变U/S权衡）
       ├─ rejected_branch：IDEA-021 / DALN原型密度感知归一化（rejected，密度尺度不跨episode泛化）
-      ├─ target_78_branch：IDEA-022 / EAML pseudo-unseen角度间隔（testing）
+      ├─ rejected_branch：IDEA-022 / EAML pseudo-unseen角度间隔（rejected，margin与ensemble均无增益）
+      ├─ target_78_branch：待元学习视觉适配候选
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：四seed mean已通过；seed7仍差0.038637个百分点

@@ -10,10 +10,16 @@ hypothesis: 在pseudo-unseen正确类logit上施加训练期角度间隔，可�
 core_change: CCGR结构、幅度0.2和0.25 pseudo-unseen权重保持不变，只在pseudo-unseen辅助CE中对正确类减去0.1 margin；推理无新增模块。
 success_condition: seed7相对NTR最高H提高并超过当前CCGR最高77.459931，U/S任一下降不超过2个百分点。
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
-status: testing
+status: rejected
 paper_core_innovation: false
 parent_condition: TG-VPR + TST + NTR / CCGR训练目标增强
-current_attempt: V2-TRY-074
+current_attempt: none
+last_attempt: V2-TRY-074
+last_decision: drop
 ```
 
 EAML只在seen类构造的pseudo-unseen episode中使用角度间隔；true-unseen图像在训练结束后才加载。
+
+## V2-TRY-074结果与止损
+
+EAML得到`H=77.417950%`，低于CCGR 0.20的`77.459931%`。CCGR 0.10/0.15/0.20与EAML固定原型ensemble最高也只有`77.459608%`，没有互补增益；IDEA-022止损。
