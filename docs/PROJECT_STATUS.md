@@ -21,9 +21,9 @@ target_supported_innovations: 3
 supported_innovations: 3
 current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
-current_best_observation_H: 80.474080
-current_best_observation_seed: VEBC_training_seed_17
-completed_try_count: 130
+current_best_observation_H: 80.482768
+current_best_observation_seed: JBEC_training_seed_17_tiny_gain
+completed_try_count: 131
 minimum_required_try_count: 50
 ```
 
@@ -168,6 +168,8 @@ VEBC最终组合已正式登记为`V2-INNOVATION-007 / supported auxiliary compo
 VPA反向ridge `0.01/0.1/1.0`在seed17的H为`79.543609/79.674486/79.662435%`；0.1单VPA最高、0.01 ZS最高。当前累计129组，只追加0.1与VEBC组合比较后关闭参数轴。
 
 VPA反向ridge=0.1与VEBC组合得到`H=80.165438%`，低于0.01组合`80.474080%`；最终组合参数固定0.01。当前累计130组，最高可靠结果不变。
+
+JBEC在VEBC父解附近联合微调beta/gamma，seed17仅提高H `0.008688`到`80.482768%`，且两个残差接近边界。当前累计131组，必须做其余seed可靠性；最高可靠结构仍暂为VEBC。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

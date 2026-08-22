@@ -13,9 +13,13 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过VEBC父�
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-121 / TG-VPR + TST + NTR + CCGR + CRA + VPA + EBC
-current_attempt: V2-TRY-131
-last_attempt: none
-last_decision: none
+current_attempt: none
+last_attempt: V2-TRY-131
+last_decision: run_reliability_seeds
 ```
 
 JBEC的正反ridge只用pseudo-seen中心重建，两个残差的梯度只来自seen图像；true-unseen图像不进入训练。该实验只检验辅助模块联合优化。
+
+## V2-TRY-131结果
+
+第20轮得到`U=77.045119%`、`S=84.241509%`、`H=80.482768%`、`ZS=87.227464%`，相对VEBC仅提高H `0.008688`；beta/gamma残差=`1.562304/0.047924`，均接近各自98%门槛。按预注册条件通过但效应极小，必须完成其余seed后再判断是否保留。

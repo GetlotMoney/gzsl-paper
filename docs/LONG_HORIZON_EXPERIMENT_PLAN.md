@@ -5,10 +5,10 @@
 ```yaml
 base_framework: FRAMEWORK-V2 / TG-VPR-H1
 supported_innovations: [TG-VPR, TST, CCGR]
-current_best_observation: V2-TRY-121 / TG-VPR + TST + NTR + CCGR + CRA + VPA + EBC
-current_best_H: 80.474080
-current_best_seed: VEBC_training_seed_17
-completed_try_count: 130
+current_best_observation: V2-TRY-131 / VEBC + joint beta-gamma residual
+current_best_H: 80.482768
+current_best_seed: JBEC_training_seed_17_tiny_gain
+completed_try_count: 131
 minimum_total_try_count: 50
 target_best_H: 78.0
 evaluation_protocol: test_selected_inductive_gzsl
