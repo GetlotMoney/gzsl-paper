@@ -41,8 +41,11 @@ class ClassConditionedGeometricGenerator(nn.Module):
         super().__init__()
         if tuple(direction_basis.shape) != (200, 4, 768):
             raise ValueError("CCGR方向基必须是[200,4,768]。")
-        if tuple(class_features.shape) != (200, 4):
-            raise ValueError("CCGR类别特征必须是[200,4]。")
+        if class_features.ndim != 2 or class_features.shape[0] != 200:
+            raise ValueError("CCGR类别特征必须是[200,F]。")
+        feature_dim = int(class_features.shape[1])
+        if feature_dim not in (4, 8):
+            raise ValueError("CCGR类别特征目前只支持4维均值或8维top-5向量。")
         self.register_buffer(
             "parent_prototypes", F.normalize(parent_prototypes.detach(), dim=-1)
         )
@@ -57,7 +60,7 @@ class ClassConditionedGeometricGenerator(nn.Module):
         self.register_buffer("target_classes", target_classes.detach().cpu().long())
         self.register_buffer("_scale", scale.detach().clone())
         self.max_magnitude = float(max_magnitude)
-        self.trunk = nn.Sequential(nn.Linear(4, hidden_dim), nn.GELU())
+        self.trunk = nn.Sequential(nn.Linear(feature_dim, hidden_dim), nn.GELU())
         self.weight_head = nn.Linear(hidden_dim, 4)
         self.magnitude_head = nn.Linear(hidden_dim, 1)
         nn.init.zeros_(self.weight_head.weight)
