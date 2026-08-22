@@ -21,9 +21,9 @@ target_supported_innovations: 3
 supported_innovations: 3
 current_seed7_H: 77.384331
 current_multiseed_mean_H: 77.066040
-current_best_observation_H: 77.459931
+current_best_observation_H: 77.547270
 current_best_observation_seed: 7
-completed_try_count: 76
+completed_try_count: 77
 minimum_required_try_count: 50
 ```
 
@@ -80,6 +80,8 @@ EDC样本条件竞争在校正范围0.2和0.05下都只改变U/S权衡并降低H
 DALN密度Gate提高U与ZS但seen CE导致S下降，H仅低于父条件`0.039483`；该方向保留并转入pseudo-unseen episode训练。当前累计72组，最高仍为`77.459931%`。
 
 DALN在seen CE与pseudo-unseen episode两条训练路径下均未提高H，已止损。当前累计73组，下一主线使用pseudo-unseen角度间隔直接扩大类间边界。
+
+CCGR逐epoch选择在第5轮达到`H=77.547270%`，成为当前最高；仍未达到78%。后续固定结构与父checkpoint，运行多个Gate训练seed并继续记录official-test选模。
 
 EAML角度间隔及CCGR/EAML原型ensemble均未超过`77.459931%`，已止损。当前累计74组，下一主线转向内层pseudo-seen、外层pseudo-unseen的元学习视觉适配。
 

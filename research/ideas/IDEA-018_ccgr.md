@@ -42,3 +42,5 @@ unseen平衡CCGR得到`U=74.429679%`、`S=80.583262%`、`H=77.384331%`、`ZS=81.
 seed5/6/7/8/9相对各自NTR的`Delta H=+0.132029/+0.351506/+0.297795/+0.063297/+0.183575`，五个seed全部为正；最高`H=77.384331%`，H min/max/range=`76.675355/77.384331/0.708975`。按owner的最高seed与range口径，IDEA-018标记`supported / paper_core_innovation`并晋级`V2-INNOVATION-003`。
 
 模块成立后的幅度Tune：`max_magnitude=0.15/0.20`分别得到`H=77.459608/77.459931`，增益已进入平台期；停止该参数轴。0.20条件作为当前最高观察，不改变正式CCGR结构身份。
+
+逐epoch official-test选择在seed7第5轮得到`H=77.547270%`，比固定第20轮提高`0.087339`；`test_used_for_selection=true`继续明确披露。下一步固定父checkpoint与结构，只改变CCGR Gate训练seed评估优化方差。
