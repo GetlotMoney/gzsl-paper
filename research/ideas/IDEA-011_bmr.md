@@ -16,7 +16,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-039
+current_attempt: V2-TRY-040
 ```
 
 BMR内外层都只使用150个seen训练类构造的episode；true-unseen图像在所有Gate训练结束后才加载。关闭双层更新时回到TST的联合Gate训练。
@@ -28,3 +28,7 @@ BMR内外层都只使用150个seen训练类构造的episode；true-unseen图像�
 ## V2-TRY-038结果
 
 PCGrad条件从第2轮起冲突率为`1.0`，最终步长均值`1.499258`并饱和到上限，`H=63.138895%`。补救2冻结可靠TST Gate，只允许双层元更新学习范围`+-0.1`的残差步长，避免离开TST安全邻域。
+
+## V2-TRY-039-R1结果
+
+修复工程错误后的残差BMR使`U`相对TST提高`1.494062`、`ZS`提高`0.722259`，但`S`下降`1.682091`，`H=76.975867%`、`Delta H=-0.008678`。最后一次补救把固定mod-3 episode改为按文本语义主方向形成的三个连续困难簇，并从头训练对应fold模型。
