@@ -68,6 +68,31 @@ class NeighborhoodResidualGate(nn.Module):
         return (base_step + delta).clamp(0.0, 1.5)
 
 
+class SummaryResidualGate(nn.Module):
+    """在冻结4维TST gate上学习有界双层元残差。"""
+
+    def __init__(self, base_gate: TangentStepGate, max_delta: float = 0.1):
+        super().__init__()
+        self.base_gate = base_gate.eval()
+        for parameter in self.base_gate.parameters():
+            parameter.requires_grad_(False)
+        self.max_delta = float(max_delta)
+        self.residual = nn.Sequential(
+            nn.Linear(4, 16),
+            nn.GELU(),
+            nn.Linear(16, 1),
+        )
+        nn.init.zeros_(self.residual[-1].weight)
+        nn.init.zeros_(self.residual[-1].bias)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        if features.ndim != 2 or features.size(1) != 4:
+            raise ValueError("BMR residual gate要求4维摘要特征。")
+        base_step = self.base_gate(features)
+        delta = self.max_delta * torch.tanh(self.residual(features)).squeeze(-1)
+        return (base_step + delta).clamp(0.0, 1.5)
+
+
 def tangent_transport(
     base: torch.Tensor, value: torch.Tensor, step: torch.Tensor
 ) -> torch.Tensor:

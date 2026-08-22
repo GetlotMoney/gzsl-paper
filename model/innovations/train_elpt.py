@@ -22,6 +22,7 @@ from model.innovations.elpt import (
 from model.innovations.tst import (
     TangentStepGate,
     NeighborhoodResidualGate,
+    SummaryResidualGate,
     bidirectional_centroid_contrastive_loss,
     centroid_alignment_loss,
     centroid_contrastive_loss,
@@ -181,7 +182,7 @@ def load_config(path: Path):
         "V2-TRY-035",
         "V2-TRY-036",
     } and raw["idea_id"] == "IDEA-010"
-    valid_bmr = raw["attempt_id"] in {"V2-TRY-037", "V2-TRY-038"} and raw["idea_id"] == "IDEA-011"
+    valid_bmr = raw["attempt_id"] in {"V2-TRY-037", "V2-TRY-038", "V2-TRY-039"} and raw["idea_id"] == "IDEA-011"
     if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr or valid_bmr):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
@@ -307,7 +308,8 @@ def load_config(path: Path):
         if (
             raw["transport_mode"] != "tangent"
             or raw["gate_feature_mode"] != "summary"
-            or raw["gate_architecture"] != "direct"
+            or raw["gate_architecture"]
+            != ("bilevel_residual" if raw["attempt_id"] == "V2-TRY-039" else "direct")
             or raw["gate_training_mode"] != "bilevel_first_order"
             or float(raw["inner_lr"]) != 0.01
             or float(raw["centroid_alignment_weight"]) != 0.0
@@ -318,18 +320,35 @@ def load_config(path: Path):
         ):
             raise ValueError("BMR首次TRY身份不匹配。")
         expected_mode = (
-            "outer_only" if raw["attempt_id"] == "V2-TRY-037" else "pcgrad_seen_outer"
+            "pcgrad_seen_outer" if raw["attempt_id"] == "V2-TRY-038" else "outer_only"
         )
-        expected_seen_weight = 0.0 if raw["attempt_id"] == "V2-TRY-037" else 1.0
+        expected_seen_weight = 1.0 if raw["attempt_id"] == "V2-TRY-038" else 0.0
         if (
             raw["meta_gradient_mode"] != expected_mode
             or float(raw["seen_gradient_weight"]) != expected_seen_weight
         ):
             raise ValueError("BMR梯度合并模式与TRY身份不匹配。")
+        if raw["attempt_id"] == "V2-TRY-039" and (
+            raw["gate_architecture"] != "bilevel_residual"
+            or not raw["parent_gate_model"]
+            or not raw["parent_gate_model_sha256"]
+            or float(raw["max_residual_step"]) != 0.1
+        ):
+            raise ValueError("BMR补救2必须使用冻结TST Gate的有界残差。")
     return raw, sha256_file(path)
 
 
 def _make_gate(config, input_dim, device):
+    if config["gate_architecture"] == "bilevel_residual":
+        path = Path(config["parent_gate_model"])
+        if sha256_file(path) != config["parent_gate_model_sha256"]:
+            raise ValueError("BMR父TST gate SHA不匹配。")
+        payload = torch.load(path, map_location="cpu", weights_only=False)
+        base_gate = TangentStepGate(input_dim=4, max_step=1.5)
+        base_gate.load_state_dict(payload["gate_state_dict"], strict=True)
+        return SummaryResidualGate(
+            base_gate, max_delta=float(config["max_residual_step"])
+        ).to(device)
     if config["gate_architecture"] == "neighborhood_residual":
         path = Path(config["parent_gate_model"])
         if sha256_file(path) != config["parent_gate_model_sha256"]:

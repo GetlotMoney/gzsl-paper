@@ -10,7 +10,7 @@ from model.innovations.train_elpt import (
     _pcgrad_merge,
     load_config,
 )
-from model.innovations.tst import TangentStepGate
+from model.innovations.tst import SummaryResidualGate, TangentStepGate
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,3 +49,19 @@ def test_pcgrad_removes_conflict_and_rescue_config():
     assert config["attempt_id"] == "V2-TRY-038"
     assert config["meta_gradient_mode"] == "pcgrad_seen_outer"
     assert config["seen_gradient_weight"] == 1.0
+
+
+def test_bmr_residual_starts_at_tst_and_rescue2_config():
+    base = TangentStepGate(input_dim=4)
+    residual = SummaryResidualGate(base, max_delta=0.1)
+    features = torch.randn(10, 4, generator=torch.Generator().manual_seed(83))
+    assert torch.equal(residual(features), base(features))
+    residual(features).mean().backward()
+    assert all(parameter.grad is None for parameter in residual.base_gate.parameters())
+    assert any(parameter.grad is not None for parameter in residual.residual.parameters())
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_039_bmr_rescue2_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-039"
+    assert config["gate_architecture"] == "bilevel_residual"
+    assert config["max_residual_step"] == 0.1
