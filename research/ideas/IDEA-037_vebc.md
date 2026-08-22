@@ -13,8 +13,8 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过EBC最高
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-118 / TG-VPR + TST + NTR + CCGR + CRA + VPA
-current_attempt: V2-TRY-120
-last_attempt: V2-TRY-119
+current_attempt: none
+last_attempt: V2-TRY-120
 last_decision: rescue
 ```
 
@@ -23,3 +23,5 @@ VEBC的fold正反ridge只使用pseudo-seen视觉中心，gamma梯度只来自see
 ## V2-TRY-119结果
 
 第6轮得到`U=76.674461%`、`S=84.529251%`、`H=80.410490%`、`ZS=87.125778%`，首次超过80并证明VPA/EBC互补；但gamma=`0.247979`接近0.25上限。补救1保持结构与边界，仅将gamma学习率降到0.0025以细化最优区间。
+
+V2-TRY-120降低学习率后在第18轮仍达到gamma=`0.248014`并复现同一H，说明0.25边界压在有效最优区间。补救2保持细学习率，将max_gamma扩大到0.30，使约0.2425的诊断最优落入边界内部。

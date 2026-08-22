@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 80.410490
 current_best_observation_seed: VEBC_training_seed_17_saturated_candidate
-completed_try_count: 119
+completed_try_count: 120
 minimum_required_try_count: 50
 ```
 
@@ -154,6 +154,8 @@ EBC已正式登记为`V2-INNOVATION-006 / supported auxiliary`，包含4seed结�
 VPA属性→视觉中心反向ridge在seed17把ZS提高`0.906229`、H提高`0.095400`，但U下降`1.013190`，单独低于EBC。当前累计118组，下一步检验VPA类内增益与EBC域间平衡是否互补。
 
 VEBC组合VPA类内判别与EBC域间平衡，在seed17达到`U/S/H/ZS=76.674461/84.529251/80.410490/87.125778%`并首次超过80；gamma接近0.25上限，当前为饱和候选。累计119组，补救1降低gamma学习率细化最优区间。
+
+VEBC降低gamma学习率后仍在训练后期贴近0.25边界并复现`H=80.410490%`，补救1未解决饱和。当前累计120组，补救2扩大边界到0.30，使有效gamma成为内部解。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
