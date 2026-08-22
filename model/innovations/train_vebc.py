@@ -40,9 +40,10 @@ class TeeStream:
 def load_config(path):
     path=Path(path).resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
     if not isinstance(config,dict) or actual!=CONFIG_KEYS: raise ValueError(f"VEBC配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if config["schema_version"]!="gzsl-paper.vebc.v1" or config["attempt_id"] not in ("V2-TRY-119","V2-TRY-120") or config["idea_id"]!="IDEA-037": raise ValueError("VEBC首次TRY身份错误。")
-    expected_lr=0.0025 if config["attempt_id"]=="V2-TRY-120" else 0.01
-    if int(config["epochs"])!=20 or int(config["batch_half"])!=32 or float(config["lr"])!=expected_lr or float(config["weight_decay"])!=0.0 or float(config["forward_ridge"])!=0.01 or float(config["reverse_ridge"])!=0.01 or float(config["max_beta"])!=20.0 or float(config["max_vpa_beta"])!=20.0 or float(config["max_gamma"])!=0.25: raise ValueError("VEBC训练参数错误。")
+    if config["schema_version"]!="gzsl-paper.vebc.v1" or config["attempt_id"] not in ("V2-TRY-119","V2-TRY-120","V2-TRY-121") or config["idea_id"]!="IDEA-037": raise ValueError("VEBC首次TRY身份错误。")
+    expected_lr=0.0025 if config["attempt_id"] in ("V2-TRY-120","V2-TRY-121") else 0.01
+    expected_gamma=0.3 if config["attempt_id"]=="V2-TRY-121" else 0.25
+    if int(config["epochs"])!=20 or int(config["batch_half"])!=32 or float(config["lr"])!=expected_lr or float(config["weight_decay"])!=0.0 or float(config["forward_ridge"])!=0.01 or float(config["reverse_ridge"])!=0.01 or float(config["max_beta"])!=20.0 or float(config["max_vpa_beta"])!=20.0 or float(config["max_gamma"])!=expected_gamma: raise ValueError("VEBC训练参数错误。")
     return config,sha256_file(path)
 
 
