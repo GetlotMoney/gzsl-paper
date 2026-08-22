@@ -17,7 +17,7 @@ current_attempt: none
 last_attempt: V2-TRY-134
 last_decision: promote_auxiliary_training_refinement
 experiment_ref: V2-INNOVATION-008
-current_tune: V2-TRY-135
+current_tune: none
 ```
 
 JBEC的正反ridge只用pseudo-seen中心重建，两个残差的梯度只来自seen图像；true-unseen图像不进入训练。该实验只检验辅助模块联合优化。
@@ -29,3 +29,5 @@ JBEC的正反ridge只用pseudo-seen中心重建，两个残差的梯度只来自
 ## 四训练seed支持结论
 
 seed7/17/27/37的H为`80.045741/80.482768/80.437363/80.227127%`，H mean/min/max/range=`80.298250/80.045741/80.482768/0.437026`；相对VEBC四个seed均为正增益`0.008688–0.128678`，beta/gamma残差均未饱和。IDEA-038标记`supported`辅助训练细化；推理结构不新增模块，不计论文核心创新。
+
+gamma残差范围扩大到0.10后seed17达到`H=80.506168%`，仅比可靠0.05条件高`0.032088`，gamma残差使用到`0.094047`。该结果保留为单seed调参观察，不追加多seed，正式可靠条件继续固定0.05。

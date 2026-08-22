@@ -12,6 +12,7 @@ status: supported
 paper_core_innovation: false
 question: 在VEBC父解附近联合训练VPA beta与seen gamma残差能否稳定获得增益
 source_attempts: [V2-TRY-132, V2-TRY-131, V2-TRY-133, V2-TRY-134]
+tune_attempts: [V2-TRY-135]
 module:
   module_id: JBEC
   name: Joint Bidirectional Episodic Calibration

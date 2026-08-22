@@ -21,9 +21,9 @@ target_supported_innovations: 3
 supported_innovations: 3
 current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
-current_best_observation_H: 80.482768
-current_best_observation_seed: JBEC_training_seed_17_tiny_gain
-completed_try_count: 134
+current_best_observation_H: 80.506168
+current_best_observation_seed: JBEC_seed17_gamma_residual_tune_observation
+completed_try_count: 135
 minimum_required_try_count: 50
 ```
 
@@ -174,6 +174,8 @@ JBEC在VEBC父解附近联合微调beta/gamma，seed17仅提高H `0.008688`到`8
 JBEC在seed7/17/27/37上的H为`80.045741/80.482768/80.437363/80.227127%`，mean/range=`80.298250/0.437026`，四个seed相对VEBC均为正增益且残差非饱和。当前累计134组；JBEC可靠成立为不增加推理模块的辅助训练细化。
 
 JBEC已正式登记为`V2-INNOVATION-008 / supported auxiliary training`，包含4seed配置、结果与SHA及HTML框架图。
+
+JBEC gamma残差范围0.10的seed17调参观察达到`H=80.506168%`，但只比4seed可靠条件最高高`0.032088`且接近残差边界，停止该轴、不追加多seed。当前累计135组；最高可靠结果仍为0.05条件`80.482768%`。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
