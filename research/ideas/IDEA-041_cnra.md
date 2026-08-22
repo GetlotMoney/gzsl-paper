@@ -13,7 +13,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过JBEC父�
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-131 / TG-VPR + TST + NTR + CCGR + CRA + VPA + JBEC
-current_attempt: none
+current_attempt: V2-TRY-139..141
 last_attempt: V2-TRY-138
 last_decision: run_reliability_seeds
 ```

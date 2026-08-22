@@ -28,7 +28,7 @@ class TeeStream:
 def load_config(path):
     path=Path(path).resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
     if not isinstance(config,dict) or actual!=CONFIG_KEYS: raise ValueError(f"CNRA配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if config["schema_version"]!="gzsl-paper.cnra.v1" or config["attempt_id"]!="V2-TRY-138" or config["idea_id"]!="IDEA-041": raise ValueError("CNRA首次TRY身份错误。")
+    if config["schema_version"]!="gzsl-paper.cnra.v1" or config["attempt_id"] not in ("V2-TRY-138","V2-TRY-139","V2-TRY-140","V2-TRY-141") or config["idea_id"]!="IDEA-041": raise ValueError("CNRA首次TRY身份错误。")
     if int(config["epochs"])!=20 or int(config["batch_size"])!=256 or float(config["lr"])!=0.01 or float(config["weight_decay"])!=0.0 or float(config["max_beta"])!=5.0: raise ValueError("CNRA训练参数错误。")
     return config,sha256_file(path)
 
