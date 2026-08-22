@@ -13,8 +13,8 @@ from model.innovations.ccgr import ClassConditionedGeometricGenerator, tangent_d
 from model.innovations.daln import DensityAwareLogitNormalizer, prototype_density_features
 from model.innovations.dpt import text_resultant_lengths
 from model.innovations.elpt import VariableClassTGVPR, fixed_class_folds
-from model.innovations.train_elpt import FrozenPrototypeClassifier, _candidate_prototypes
-from model.innovations.tst import TangentStepGate
+from model.innovations.train_elpt import FrozenPrototypeClassifier, _candidate_prototypes, _fold_package, _load_fold_checkpoint
+from model.innovations.tst import TangentStepGate, tangent_transport
 from model.tg_vpr_h1 import train as h1
 from tools.reproducibility import configure_reproducibility
 from tools.run_contract import atomic_write_json, current_code_commit, prepare_output_dir, require_clean_code_tree
@@ -22,6 +22,7 @@ from tools.runtime import sha256_file
 
 
 CONFIG_KEYS={"schema_version","attempt_id","idea_id","framework_id","base_config","base_checkpoint","base_checkpoint_sha256","ntr_gate_model","ntr_gate_model_sha256","ccgr_model","ccgr_model_sha256","seed","epochs","batch_size","lr","weight_decay","max_log_scale","parent_metrics_percent"}
+CONFIG_KEYS_V2=CONFIG_KEYS|{"training_objective","fold_checkpoint_dir","batch_half"}
 
 
 class TeeStream:
@@ -35,10 +36,16 @@ class TeeStream:
 
 def load_config(path:Path):
     path=path.resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
-    if not isinstance(config,dict) or actual!=CONFIG_KEYS: raise ValueError(f"DALN配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if config["schema_version"]!="gzsl-paper.daln.v1" or config["attempt_id"]!="V2-TRY-072" or config["idea_id"]!="IDEA-021": raise ValueError("DALN首次TRY身份错误。")
-    if int(config["epochs"])!=10 or int(config["batch_size"])!=64 or float(config["lr"])!=0.01 or float(config["weight_decay"])!=0.0 or float(config["max_log_scale"])!=0.1: raise ValueError("DALN训练参数错误。")
+    expected=CONFIG_KEYS_V2 if isinstance(config,dict) and config.get("schema_version")=="gzsl-paper.daln.v2" else CONFIG_KEYS
+    if not isinstance(config,dict) or actual!=expected: raise ValueError(f"DALN配置字段错误；缺少={sorted(expected-actual)}，多出={sorted(actual-expected)}。")
+    if config["schema_version"] not in ("gzsl-paper.daln.v1","gzsl-paper.daln.v2") or config["attempt_id"] not in ("V2-TRY-072","V2-TRY-073") or config["idea_id"]!="IDEA-021": raise ValueError("DALN首次TRY身份错误。")
+    expected_epochs=10 if config["attempt_id"]=="V2-TRY-072" else 20
+    if int(config["epochs"])!=expected_epochs or int(config["batch_size"])!=64 or float(config["lr"])!=0.01 or float(config["weight_decay"])!=0.0 or float(config["max_log_scale"])!=0.1: raise ValueError("DALN训练参数错误。")
     if set(config["parent_metrics_percent"])!={"U","S","H","ZS"}: raise ValueError("DALN父指标不完整。")
+    config.setdefault("training_objective","seen_ce"); config.setdefault("fold_checkpoint_dir",None); config.setdefault("batch_half",32)
+    expected_objective="seen_ce" if config["attempt_id"]=="V2-TRY-072" else "pseudo_unseen_episode"
+    if config["training_objective"]!=expected_objective: raise ValueError("DALN训练目标错误。")
+    if config["attempt_id"]=="V2-TRY-073" and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32): raise ValueError("DALN episode配置错误。")
     return config,sha256_file(path)
 
 
@@ -63,8 +70,22 @@ def run(config_path:Path,output_dir:Path,expected_commit:str):
     with (output_dir/"config.snapshot.yaml").open("x",encoding="utf-8") as handle: yaml.safe_dump(config,handle,allow_unicode=True,sort_keys=False)
     log_handle=(output_dir/"training.log").open("x",encoding="utf-8",buffering=1); original_stdout=sys.stdout; sys.stdout=TeeStream(sys.stdout,log_handle)
     try:
-        seed=int(config["seed"]); configure_reproducibility(seed,strict_determinism=True,deterministic_warn_only=False); tensors={name:torch.load(paths[name],map_location="cpu",weights_only=True) for name in ("sentence_embeds","train_features","train_labels")}; labels=tensors["train_labels"].long(); seenclasses=torch.unique(labels,sorted=True); allclasses=torch.arange(200); unseenclasses=allclasses[~torch.isin(allclasses,seenclasses)]; checkpoint=torch.load(checkpoint_path,map_location="cpu",weights_only=False); centroids=h1.visual_centroids(tensors["train_features"],labels,seenclasses); parent=VariableClassTGVPR(tensors["sentence_embeds"],seenclasses,centroids,dropout=base_config["dropout"],inner_ratio=base_config["inner_ratio"],outer_ratio=base_config["outer_ratio"],temperature=base_config["temperature"]); parent.load_state_dict(checkpoint["model_state_dict"],strict=True); parent=parent.to(device).eval(); gate=_load_gate(config,device); ntr,_=_candidate_prototypes(parent,gate,seenclasses,unseenclasses,device,"top5_vector",fixed_class_folds(seenclasses),"tangent"); base=parent.base_prototypes(); value=parent.value_candidate(allclasses.to(device)); roles=parent.semantic_group_vectors(); basis=tangent_direction_basis(base,value,roles); sim=base@base.index_select(0,seenclasses.to(device)).T; top5=sim.topk(5,dim=1).values; features=torch.stack(((base*value).sum(-1),(value-base).norm(dim=-1),text_resultant_lengths(tensors["sentence_embeds"]).to(device),top5.mean(1)),dim=1); ccgr=ClassConditionedGeometricGenerator(ntr,basis,features,unseenclasses,parent.scale(),hidden_dim=32,max_magnitude=0.2,initial_magnitude=0.02).to(device); payload=torch.load(Path(config["ccgr_model"]),map_location="cpu",weights_only=False); ccgr.load_state_dict(payload["model_state_dict"],strict=True); ccgr.eval(); prototypes=ccgr.prototypes().detach(); model=DensityAwareLogitNormalizer(prototypes,prototype_density_features(prototypes),seenclasses,parent.scale(),max_log_scale=config["max_log_scale"]).to(device); optimizer=torch.optim.Adam(model.parameters(),lr=float(config["lr"]),weight_decay=0.0); mapping=torch.full((200,),-1,dtype=torch.long); mapping[seenclasses]=torch.arange(150); generator=torch.Generator(device="cpu").manual_seed(seed); history=[]
+        seed=int(config["seed"]); configure_reproducibility(seed,strict_determinism=True,deterministic_warn_only=False); tensors={name:torch.load(paths[name],map_location="cpu",weights_only=True) for name in ("sentence_embeds","train_features","train_labels")}; labels=tensors["train_labels"].long(); seenclasses=torch.unique(labels,sorted=True); allclasses=torch.arange(200); unseenclasses=allclasses[~torch.isin(allclasses,seenclasses)]; checkpoint=torch.load(checkpoint_path,map_location="cpu",weights_only=False); centroids=h1.visual_centroids(tensors["train_features"],labels,seenclasses); parent=VariableClassTGVPR(tensors["sentence_embeds"],seenclasses,centroids,dropout=base_config["dropout"],inner_ratio=base_config["inner_ratio"],outer_ratio=base_config["outer_ratio"],temperature=base_config["temperature"]); parent.load_state_dict(checkpoint["model_state_dict"],strict=True); parent=parent.to(device).eval(); gate=_load_gate(config,device); folds=fixed_class_folds(seenclasses); ntr,_=_candidate_prototypes(parent,gate,seenclasses,unseenclasses,device,"top5_vector",folds,"tangent"); base=parent.base_prototypes(); value=parent.value_candidate(allclasses.to(device)); roles=parent.semantic_group_vectors(); basis=tangent_direction_basis(base,value,roles); sim=base@base.index_select(0,seenclasses.to(device)).T; top5=sim.topk(5,dim=1).values; text_resultant=text_resultant_lengths(tensors["sentence_embeds"]).to(device); features=torch.stack(((base*value).sum(-1),(value-base).norm(dim=-1),text_resultant,top5.mean(1)),dim=1); ccgr=ClassConditionedGeometricGenerator(ntr,basis,features,unseenclasses,parent.scale(),hidden_dim=32,max_magnitude=0.2,initial_magnitude=0.02).to(device); payload=torch.load(Path(config["ccgr_model"]),map_location="cpu",weights_only=False); ccgr.load_state_dict(payload["model_state_dict"],strict=True); ccgr.eval(); prototypes=ccgr.prototypes().detach(); model=DensityAwareLogitNormalizer(prototypes,prototype_density_features(prototypes),seenclasses,parent.scale(),max_log_scale=config["max_log_scale"]).to(device); optimizer=torch.optim.Adam(model.parameters(),lr=float(config["lr"]),weight_decay=0.0); mapping=torch.full((200,),-1,dtype=torch.long); mapping[seenclasses]=torch.arange(150); generator=torch.Generator(device="cpu").manual_seed(seed); history=[]; packages=[]
+        if config["training_objective"]=="pseudo_unseen_episode":
+            for fold_id,(ps,pu) in enumerate(folds):
+                fold_model=_load_fold_checkpoint(fold_id,ps,tensors["sentence_embeds"],tensors["train_features"],labels,base_config,device,config["fold_checkpoint_dir"]); package=_fold_package(fold_model,ps,pu,tensors,seenclasses,device,"top5_vector")
+                with torch.no_grad():
+                    fb=package["base_all"].to(device); ff=package["fold_full"].to(device).clone(); fva=fold_model.value_candidate(allclasses.to(device)); fr=fold_model.semantic_group_vectors(); fbas=tangent_direction_basis(fb,fva,fr); support=fb.index_select(0,ps.to(device)); ft5=(fb@support.T).topk(5,dim=1).values; ffeat=torch.stack(((fb*fva).sum(-1),(fva-fb).norm(dim=-1),text_resultant,ft5.mean(1)),dim=1); step=gate(package["gate_features"].to(device)); pu_d=pu.to(device); ff[pu_d]=tangent_transport(fb.index_select(0,pu_d),package["value"].to(device),step); generated=ccgr.generate_external(ff,fbas,ffeat); ff[pu_d]=generated.index_select(0,pu_d); package["ccgr_all"]=ff; package["density"]=prototype_density_features(ff); package["reference_classes"]=ps
+                packages.append(package); del fold_model
+            generators=[torch.Generator(device="cpu").manual_seed(seed*23000+i) for i in range(3)]; half=int(config["batch_half"])
         for epoch in range(1,int(config["epochs"])+1):
+            if config["training_objective"]=="pseudo_unseen_episode":
+                loss_sum=0.0; count=0
+                for fold_id,package in enumerate(packages):
+                    steps=min(package["seen_indices"].numel()//half,package["unseen_indices"].numel()//half)
+                    for _ in range(steps):
+                        g=generators[fold_id]; si=package["seen_indices"][torch.randperm(package["seen_indices"].numel(),generator=g)[:half]]; ui=package["unseen_indices"][torch.randperm(package["unseen_indices"].numel(),generator=g)[:half]]; indices=torch.cat((si,ui)); images=tensors["train_features"][indices].to(device).float(); targets=mapping[labels[indices]].to(device); scaled=model.prototypes_external(package["ccgr_all"],package["density"],package["reference_classes"]); competition=scaled.index_select(0,seenclasses.to(device)); logits=F.normalize(images,dim=-1)@competition.T*package["scale"].to(device); loss=F.cross_entropy(logits,targets); optimizer.zero_grad(set_to_none=True); loss.backward(); optimizer.step(); loss_sum+=float(loss.detach()); count+=1
+                confidence=model.class_confidence().detach(); row={"epoch":epoch,"ce":loss_sum/count,"confidence_min":float(confidence.min()),"confidence_max":float(confidence.max()),"ratio":float(confidence.max()/confidence.min())}; history.append(row); print(f"epoch={epoch} ce={row['ce']:.6f} confidence=[{row['confidence_min']:.6f},{row['confidence_max']:.6f}]"); continue
             permutation=torch.randperm(labels.numel(),generator=generator); loss_sum=0.0; count=0
             for start in range(0,labels.numel(),int(config["batch_size"])):
                 indices=permutation[start:start+int(config["batch_size"])]; images=tensors["train_features"][indices].to(device).float(); targets=mapping[labels[indices]].to(device); loss=F.cross_entropy(model.logits(images,seenclasses),targets); optimizer.zero_grad(set_to_none=True); loss.backward(); optimizer.step(); loss_sum+=float(loss.detach())*indices.numel(); count+=indices.numel()

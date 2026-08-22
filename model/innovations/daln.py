@@ -52,12 +52,22 @@ class DensityAwareLogitNormalizer(nn.Module):
         nn.init.zeros_(self.gate[-1].weight)
         nn.init.zeros_(self.gate[-1].bias)
 
-    def class_confidence(self):
-        features = (self.density_features - self.feature_mean) / self.feature_std
+    def confidence_external(self, density_features, reference_classes):
+        features = (density_features - self.feature_mean) / self.feature_std
         log_scale = self.max_log_scale * torch.tanh(self.gate(features)).squeeze(-1)
-        seen = self.seenclasses.to(log_scale.device)
-        log_scale = log_scale - log_scale.index_select(0, seen).mean()
+        reference = reference_classes.to(log_scale.device)
+        log_scale = log_scale - log_scale.index_select(0, reference).mean()
         return torch.exp(log_scale)
+
+    def class_confidence(self):
+        return self.confidence_external(self.density_features, self.seenclasses)
+
+    def prototypes_external(
+        self, parent_prototypes, density_features, reference_classes
+    ):
+        return F.normalize(parent_prototypes, dim=-1) * self.confidence_external(
+            density_features, reference_classes
+        ).unsqueeze(-1)
 
     def prototypes(self, *, enabled=True):
         if not enabled:
