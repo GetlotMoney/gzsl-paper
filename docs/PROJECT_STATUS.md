@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 79.791176
 current_best_observation_seed: EBC_training_seed_17
-completed_try_count: 117
+completed_try_count: 118
 minimum_required_try_count: 50
 ```
 
@@ -150,6 +150,8 @@ EBC收紧gamma上限到0.15后达到`U/S/H/ZS=76.813483/83.009040/79.791176/86.2
 EBC在seed7/17/27/37上的H为`79.748697/79.791176/79.649150/79.675166%`，mean/range=`79.716047/0.142025`，四个seed均提高H且gamma非饱和。当前累计117组；EBC可靠成立为CRA后的辅助输出平衡层，不增加论文核心创新数量。
 
 EBC已正式登记为`V2-INNOVATION-006 / supported auxiliary`，包含4seed结果、0.2饱和对照、完整配置与SHA以及HTML框架图。
+
+VPA属性→视觉中心反向ridge在seed17把ZS提高`0.906229`、H提高`0.095400`，但U下降`1.013190`，单独低于EBC。当前累计118组，下一步检验VPA类内增益与EBC域间平衡是否互补。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

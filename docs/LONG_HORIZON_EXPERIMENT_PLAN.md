@@ -8,7 +8,7 @@ supported_innovations: [TG-VPR, TST, CCGR]
 current_best_observation: V2-TRY-114 / TG-VPR + TST + NTR + CCGR + CRA + EBC
 current_best_H: 79.791176
 current_best_seed: EBC_training_seed_17
-completed_try_count: 117
+completed_try_count: 118
 minimum_total_try_count: 50
 target_best_H: 78.0
 evaluation_protocol: test_selected_inductive_gzsl
