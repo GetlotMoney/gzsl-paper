@@ -25,3 +25,5 @@ def test_ccgr_magnitude_tune_configs():
     c15,_=load_config(ROOT/"config/tries/v2_try_066_ccgr_mag015_seed7.yaml"); c20,_=load_config(ROOT/"config/tries/v2_try_067_ccgr_mag020_seed7.yaml"); assert c15["max_magnitude"]==0.15; assert c20["max_magnitude"]==0.2
 def test_eaml_margin_config():
     config,_=load_config(ROOT/"config/tries/v2_try_074_eaml_seed7.yaml"); assert config["idea_id"]=="IDEA-022"; assert config["pseudo_unseen_margin"]==0.1; assert config["max_magnitude"]==0.2
+def test_ccgr_epoch_selection_config():
+    config,_=load_config(ROOT/"config/tries/v2_try_077_ccgr_epoch_select_seed7.yaml"); assert config["attempt_id"]=="V2-TRY-077"; assert config["select_each_epoch"] is True; assert config["max_magnitude"]==0.2
