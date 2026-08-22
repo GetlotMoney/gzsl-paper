@@ -47,11 +47,12 @@ class ClassConditionedGeometricGenerator(nn.Module):
             "parent_prototypes", F.normalize(parent_prototypes.detach(), dim=-1)
         )
         self.register_buffer("direction_basis", direction_basis.detach())
-        self.register_buffer("class_features", class_features.detach().float())
-        self.register_buffer("feature_mean", class_features.mean(dim=0, keepdim=True))
+        frozen_features = class_features.detach().float()
+        self.register_buffer("class_features", frozen_features)
+        self.register_buffer("feature_mean", frozen_features.mean(dim=0, keepdim=True))
         self.register_buffer(
             "feature_std",
-            class_features.std(dim=0, keepdim=True, unbiased=False).clamp_min(1e-6),
+            frozen_features.std(dim=0, keepdim=True, unbiased=False).clamp_min(1e-6),
         )
         self.register_buffer("target_classes", target_classes.detach().cpu().long())
         self.register_buffer("_scale", scale.detach().clone())
