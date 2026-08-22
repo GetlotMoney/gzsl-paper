@@ -88,6 +88,13 @@ def test_tst_multiseed_configs_train_own_folds():
         assert config["fold_checkpoint_dir"] is None
 
 
+def test_tst_seed9_config_trains_own_folds():
+    config, _ = load_config(ROOT / "config/tries/v2_try_051_tst_seed9.yaml")
+    assert config["attempt_id"] == "V2-TRY-051"
+    assert config["seed"] == 9
+    assert config["fold_checkpoint_dir"] is None
+
+
 def test_centroid_alignment_and_cata_config():
     generator = torch.Generator().manual_seed(53)
     prototypes = torch.randn(8, 768, generator=generator, requires_grad=True)
