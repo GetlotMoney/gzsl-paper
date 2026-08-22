@@ -1,0 +1,21 @@
+# IDEA-041：CNRA类名残差对齐
+
+```yaml
+idea_id: IDEA-041
+source_type: independent_class_name_semantics
+evidence_refs: [V2-INNOVATION-008, V2-TRY-131]
+base_commit: 4bf093a2279143f17d4f10b1a0671cfb2d313f15
+problem: TG-VPR使用长视觉描述，标准CLIP类名文本原型未进入最终logits，可能保留独立的类别身份线索。
+hypothesis: 在冻结JBEC上训练一个类名CLIP logit残差beta，可提高ZS与H且不依赖人工attributes的新权重。
+core_change: 加载200类CLIP类名embedding，只训练范围+-5的单一beta；beta=0严格回到JBEC。
+success_condition: seed17 H超过80.482768%，U/S任一下降不超过2个百分点，beta不饱和。
+failure_condition: 首次TRY和最多3次方法级补救后仍不超过JBEC父条件。
+status: testing
+paper_core_innovation: false
+parent_condition: V2-TRY-131 / TG-VPR + TST + NTR + CCGR + CRA + VPA + JBEC
+current_attempt: V2-TRY-138
+last_attempt: none
+last_decision: none
+```
+
+CNRA的类名embedding可用于全部类别，beta梯度只来自seen图像；true-unseen图像不进入训练。类名CLIP融合已有广泛先例，当前只检验互补性。
