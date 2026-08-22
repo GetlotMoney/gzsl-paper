@@ -13,9 +13,13 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-078 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-081
-last_attempt: none
-last_decision: none
+current_attempt: none
+last_attempt: V2-TRY-081
+last_decision: rescue
 ```
 
 训练仍只使用seen图像和三折pseudo-unseen；true-unseen图像只用于项目允许的official-test逐epoch选择，不进入梯度。若未超过当前CCGR，不晋级、不建立正式Experiment或HTML图。
+
+## V2-TRY-081结果
+
+完整top-5输入在第3轮得到`U=74.827987%`、`S=80.504769%`、`H=77.562646%`、`ZS=81.904709%`。相对当前最高TRY-078，U提高`0.133896`但H低`0.010036`，说明邻域细节有信号，直接从随机初始化重训却轻微破坏了原有4维好解。补救1改为从TRY-078做函数等价的8维初始化，再只允许训练带来可验证的增量；official-test选择包含epoch 0，避免训练后退。
