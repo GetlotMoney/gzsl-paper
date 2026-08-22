@@ -13,9 +13,9 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最
 status: supported
 paper_core_innovation: false
 parent_condition: V2-TRY-086 / TG-VPR + TST + NTR + CCGR + SDM
-current_attempt: V2-TRY-097
-last_attempt: V2-TRY-096
-last_decision: drop_SDM_from_final_combination
+current_attempt: none
+last_attempt: V2-TRY-097
+last_decision: promote
 ```
 
 属性来自当前CUB `att_splits.mat`，不是旧仓库知识；ridge和beta训练都只使用seen图像。只读official-test上界扫描曾达到`H=79.385635%`，只作为动机，不计正式结果；正式TRY必须由训练得到beta并继续披露`test_used_for_selection=true`。
@@ -31,3 +31,7 @@ seed7/17/27/37的ARA H为`79.330716/79.307063/79.253171/79.280845%`，相对各�
 ## SDM-off消融
 
 关闭SDM后ARA得到`U=74.236083%`、`S=85.303891%`、`H=79.386082%`、`ZS=86.028028%`，比含SDM的TRY-092 H高`0.079019`并成为新最高。SDM与ARA组合时冗余，最终候选删除SDM；ARA相对纯CCGR仍提高H `1.813400`。下一步关闭CCGR验证ARA与类别条件原型的互补性。
+
+## CCGR-off消融与结构结论
+
+关闭CCGR、保留NTR+ARA得到`H=78.967987%`，比完整CCGR+ARA低`0.418095`，证明CCGR在属性残差存在时仍提供独立类别几何增益。最终组合删除SDM、保留CCGR与ARA，结构逻辑为结构化描述→安全迁移→类别几何→显式属性残差。

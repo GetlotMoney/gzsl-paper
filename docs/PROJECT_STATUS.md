@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 79.386082
 current_best_observation_seed: ARA_training_seed_17_without_SDM
-completed_try_count: 96
+completed_try_count: 97
 minimum_required_try_count: 50
 ```
 
@@ -114,6 +114,8 @@ SDM联合对角/低秩优化同样降低训练loss却不能提高official H，�
 ARA在seed7/17/27/37上全部超过79%，H mean/min/max/range=`79.292949/79.253171/79.330716/0.077545`，相对各自SDM父条件均提高至少`1.667857`。当前累计95组，稳定78%目标已达成但项目按owner要求继续；下一步完成SDM-off消融、正式结果目录与HTML框架图，再继续新组合而不提前结束。
 
 ARA的SDM-off消融达到`H=79.386082%`，比含SDM高`0.079019`，证明SDM在最终组合中冗余；最终候选简化为TG-VPR→TST/NTR/CCGR→ARA。当前累计96组，下一步做CCGR-off交互消融，再正式化结果与HTML框架图。
+
+ARA的CCGR-off消融得到`H=78.967987%`，比完整CCGR+ARA低`0.418095`，证明CCGR仍有独立贡献。当前累计97组，最终候选固定删除SDM、保留TG-VPR→TST/NTR→CCGR→ARA；开始正式化ARA实验目录、参数矩阵与HTML框架图。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
