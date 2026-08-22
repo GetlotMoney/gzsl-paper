@@ -16,6 +16,7 @@ parent_condition: V2-TRY-131 / TG-VPR + TST + NTR + CCGR + CRA + VPA + JBEC
 current_attempt: none
 last_attempt: V2-TRY-141
 last_decision: promote_auxiliary
+experiment_ref: V2-INNOVATION-009
 ```
 
 CNRA的类名embedding可用于全部类别，beta梯度只来自seen图像；true-unseen图像不进入训练。类名CLIP融合已有广泛先例，当前只检验互补性。

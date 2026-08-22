@@ -185,6 +185,8 @@ CNRA把独立CLIP类名原型作为JBEC残差，seed17达到`U/S/H/ZS=77.406234/
 
 CNRA在seed7/17/27/37上的H为`80.288043/80.712565/80.519916/80.530291%`，mean/range=`80.512704/0.424522`，四个seed均提高JBEC父H且beta非饱和。当前累计141组；CNRA可靠成立为独立类名语义辅助分支。
 
+CNRA已正式登记为`V2-INNOVATION-009 / supported auxiliary`，包含类名cache SHA、4seed配置与结果、模型/日志/指标SHA和HTML框架图。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

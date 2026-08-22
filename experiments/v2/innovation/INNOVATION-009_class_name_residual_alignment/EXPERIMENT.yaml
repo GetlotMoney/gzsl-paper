@@ -1,0 +1,32 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-009
+idea_id: IDEA-041
+evidence_refs: [V2-INNOVATION-008, V2-TRY-138]
+framework_id: FRAMEWORK-V2
+base_commit: 4bf093a2279143f17d4f10b1a0671cfb2d313f15
+code_commits:
+  seed17: bb0e66e3364fae56aef61663541fc2f891a727c5
+  multiseed: f04bafcf7d79cb9a2a8c433a34b1c176eb7514ec
+title: Class-Name Residual Alignment
+status: supported
+paper_core_innovation: false
+question: 标准CLIP类名文本原型能否为长描述和属性路径提供稳定独立残差
+source_attempts: [V2-TRY-139, V2-TRY-138, V2-TRY-140, V2-TRY-141]
+module:
+  module_id: CNRA
+  name: Class-Name Residual Alignment
+  purpose: 补充TG-VPR长描述中可能弱化的直接类别身份语义
+  inputs: [JBEC父logits, CLIP图像特征, 200类CLIP类名embedding]
+  output: 父logits与类名相似度残差之和
+  formula: logits=logits_JBEC+beta_name*cos(x,t_class_name)
+  switches: {max_beta: 5.0}
+  baseline_off_behavior: beta_name=0时严格回到JBEC
+  parent_condition: TG-VPR + TST + NTR + CCGR + CRA + VPA + JBEC
+  training: 冻结全部父模型，只用seen CE训练单一beta
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+primary_reporting: highest_seed_H_with_multiseed_range
+framework_diagram: framework_diagram.html
+decision: auxiliary_semantic_residual_not_fourth_core_innovation
+novelty_claim: none

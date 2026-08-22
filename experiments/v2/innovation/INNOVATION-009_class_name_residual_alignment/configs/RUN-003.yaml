@@ -1,0 +1,20 @@
+schema_version: gzsl-paper.cnra.v1
+attempt_id: V2-TRY-140
+idea_id: IDEA-041
+framework_id: FRAMEWORK-V2
+base_config: config/tg_vpr_h1.yaml
+ccgr_model: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-079/ccgr_model.pth
+ccgr_model_sha256: 606b2d5819d777e0b1d471fcf0b45229bce05313ff69e1d5a553342b98e623e4
+vpa_model: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-123/vpa_model.pth
+vpa_model_sha256: d3f8a45a5cfc13d68317690274b48ca761ba46f7aa18110a5fcc7860f2fc9cf8
+jbec_model: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-133/jbec_model.pth
+jbec_model_sha256: b5d040dff419a0cbdea14819cc9e8ead81bd7a176a38d69a82d00b6bd1ac1155
+class_name_embeddings: data/cache/CUB_class_text_embeds.pt
+class_name_embeddings_sha256: 80c28bd79351d8dcef30bf34479322f01bc333a2eac534e2a08ff25b9b3c2a3e
+seed: 27
+epochs: 20
+batch_size: 256
+lr: 0.01
+weight_decay: 0.0
+max_beta: 5.0
+parent_metrics_percent: {U: 77.03788876533508, S: 84.1507077217102, H: 80.43736346460906, ZS: 87.04577684402466}

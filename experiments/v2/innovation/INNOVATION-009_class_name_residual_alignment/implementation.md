@@ -1,0 +1,3 @@
+# 实现说明
+
+类名embedding固定为SHA `80c28bd79351d8dcef30bf34479322f01bc333a2eac534e2a08ff25b9b3c2a3e`。父JBEC全部冻结，仅训练一个有界beta；true-unseen图像不进入梯度。
