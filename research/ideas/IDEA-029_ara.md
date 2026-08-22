@@ -10,12 +10,12 @@ hypothesis: 用seen图像闭式学习CLIP到属性空间的ridge映射，再把�
 core_change: 冻结TG-VPR/TST/NTR/CCGR/SDM；ridge只用7057张seen训练图像拟合312维属性，单一有界beta再用seen CE训练，推理时与主logit相加。
 success_condition: seed17最高H达到78.0%，U/S任一下降不超过2个百分点，beta不饱和。
 failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最高结果。
-status: testing
+status: supported
 paper_core_innovation: false
 parent_condition: V2-TRY-086 / TG-VPR + TST + NTR + CCGR + SDM
-current_attempt: V2-TRY-093..095
-last_attempt: V2-TRY-092
-last_decision: run_reliability_seeds
+current_attempt: none
+last_attempt: V2-TRY-095
+last_decision: promote_after_ablation
 ```
 
 属性来自当前CUB `att_splits.mat`，不是旧仓库知识；ridge和beta训练都只使用seen图像。只读official-test上界扫描曾达到`H=79.385635%`，只作为动机，不计正式结果；正式TRY必须由训练得到beta并继续披露`test_used_for_selection=true`。
@@ -23,3 +23,7 @@ last_decision: run_reliability_seeds
 ## V2-TRY-092结果
 
 训练式ARA在第7轮得到`U=73.954368%`、`S=85.495055%`、`H=79.307063%`、`ZS=86.089158%`，相对SDM父条件的`Delta H=+1.694075`并首次超过78%；learned beta=`13.706591`，未触及20的边界。当前仅为seed17成立，必须继续运行父CCGR/SDM seed7/27/37并完成module-off消融后才能标记supported。
+
+## 四训练seed支持结论
+
+seed7/17/27/37的ARA H为`79.330716/79.307063/79.253171/79.280845%`，相对各自SDM父条件提高`1.769812/1.694075/1.667857/1.776917`；H mean/min/max/range=`79.292949/79.253171/79.330716/0.077545`。4/4 seed稳定超过79%，IDEA-029标记`supported`；仍保持`paper_core_innovation=false`，待SDM-off消融和相关工作核对后再决定论文叙事归属。
