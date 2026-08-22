@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 79.448210
 current_best_observation_seed: CRA_training_seed_17
-completed_try_count: 104
+completed_try_count: 107
 minimum_required_try_count: 50
 ```
 
@@ -130,6 +130,8 @@ CARA样本条件beta Gate在seed17得到最高观察`H=79.404922%`，但残差st
 SFA把八角色描述压缩为64维跨类语义因子后仍发生seen过拟合，所有非零beta均降低H，已止损。当前累计103组；下一实验保留独立人工属性证据，但把ridge训练单位从图像改为类别视觉中心，降低类内噪声。
 
 CRA用150个seen类别视觉中心替代7057张图像拟合属性ridge，在seed17达到`U/S/H/ZS=75.319785/84.055454/79.448210/86.219549%`，四项均高于CCGR并成为新最高。当前累计104组，继续运行seed7/27/37可靠性，单seed暂不晋级。
+
+CRA在seed7/17/27/37上得到H `79.377682/79.448210/79.346923/79.336822%`，mean/range=`79.377409/0.111388`，且每个seed的U/S/ZS都高于CCGR父条件。当前累计107组；CRA可靠成立并替代普通ARA作为最终辅助结构，但不增加论文核心创新数量。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

@@ -10,12 +10,12 @@ hypothesis: 用150个seen视觉中心等权拟合属性ridge，可去除类内�
 core_change: ARA的ridge训练输入从全部seen图像改为每类一个归一化视觉中心；CCGR、属性、beta训练和评估保持不变。
 success_condition: seed17 H超过79.386082%，U/S任一下降不超过2个百分点，beta不饱和。
 failure_condition: 首次TRY和最多3次方法级补救后仍不超过ARA最终父条件。
-status: testing
+status: supported
 paper_core_innovation: false
 parent_condition: V2-TRY-096 / TG-VPR + TST + NTR + CCGR + ARA
-current_attempt: V2-TRY-105..107
-last_attempt: V2-TRY-104
-last_decision: run_reliability_seeds
+current_attempt: none
+last_attempt: V2-TRY-107
+last_decision: promote_auxiliary
 ```
 
 CRA的视觉中心和beta训练只使用seen图像；true-unseen图像不进入梯度。该实验只检验ARA的训练统计，不新增论文核心模块。
@@ -23,3 +23,7 @@ CRA的视觉中心和beta训练只使用seen图像；true-unseen图像不进入�
 ## V2-TRY-104结果
 
 类别中心ridge在第8轮得到`U=75.319785%`、`S=84.055454%`、`H=79.448210%`、`ZS=86.219549%`，相对CCGR四项全部提高，并超过普通ARA最终最高。learned beta=`10.494793`，未饱和。当前需在父CCGR Gate seed7/27/37上复现后才能标记supported。
+
+## 四训练seed支持结论
+
+seed7/17/27/37的H为`79.377682/79.448210/79.346923/79.336822%`，H mean/min/max/range=`79.377409/79.336822/79.448210/0.111388`；U/S/ZS四个seed均高于各自CCGR父条件。IDEA-033标记`supported`，作为ARA的更稳训练统计替代普通图像级ridge，仍是辅助增强而非论文第四核心创新。
