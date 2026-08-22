@@ -36,8 +36,9 @@ class TeeStream:
 def load_config(path:Path):
     path=path.resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
     if not isinstance(config,dict) or actual!=CONFIG_KEYS: raise ValueError(f"EDC配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if config["schema_version"]!="gzsl-paper.edc.v1" or config["attempt_id"]!="V2-TRY-070" or config["idea_id"]!="IDEA-020": raise ValueError("EDC首次TRY身份错误。")
-    if int(config["epochs"])!=20 or int(config["batch_half"])!=32 or float(config["lr"])!=0.001 or float(config["weight_decay"])!=0.0001 or float(config["max_correction"])!=0.2: raise ValueError("EDC训练参数错误。")
+    if config["schema_version"] not in ("gzsl-paper.edc.v1","gzsl-paper.edc.v2") or config["attempt_id"] not in ("V2-TRY-070","V2-TRY-071") or config["idea_id"]!="IDEA-020": raise ValueError("EDC首次TRY身份错误。")
+    expected_max=0.2 if config["attempt_id"]=="V2-TRY-070" else 0.05
+    if int(config["epochs"])!=20 or int(config["batch_half"])!=32 or float(config["lr"])!=0.001 or float(config["weight_decay"])!=0.0001 or float(config["max_correction"])!=expected_max: raise ValueError("EDC训练参数错误。")
     if set(config["parent_metrics_percent"])!={"U","S","H","ZS"}: raise ValueError("EDC父指标不完整。")
     return config,sha256_file(path)
 
