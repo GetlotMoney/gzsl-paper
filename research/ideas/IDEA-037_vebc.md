@@ -1,0 +1,21 @@
+# IDEA-037：VEBC视觉原型偏置校准
+
+```yaml
+idea_id: IDEA-037
+source_type: complementary_supported_auxiliaries
+evidence_refs: [V2-TRY-118, V2-INNOVATION-006]
+base_commit: 3ca778fbc09808c564f7c0d86ceb2b4f6fa9e0d8
+problem: VPA显著提高ZS但降低U，EBC能提高U且不改变ZS，两者具有正交作用。
+hypothesis: 在重建VPA的pseudo-unseen episode中训练seen偏置gamma，可同时保留VPA类内判别和EBC域间平衡，使H超过79.79。
+core_change: EBC每折父logit从CRA改为CRA+属性视觉原型VPA；gamma上限0.25，其余episode与边界保持不变。
+success_condition: seed17 H超过79.791176%，U/S任一下降不超过2个百分点，gamma不饱和。
+failure_condition: 首次TRY和最多3次方法级补救后仍不超过EBC最高结果。
+status: testing
+paper_core_innovation: false
+parent_condition: V2-TRY-118 / TG-VPR + TST + NTR + CCGR + CRA + VPA
+current_attempt: V2-TRY-119
+last_attempt: none
+last_decision: none
+```
+
+VEBC的fold正反ridge只使用pseudo-seen视觉中心，gamma梯度只来自seen图像；true-unseen图像不进入训练。VPA与EBC均为辅助组合，不增加论文核心创新数量。
