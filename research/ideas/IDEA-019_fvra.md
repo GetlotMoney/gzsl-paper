@@ -10,10 +10,12 @@ hypothesis: 在固定CCGR原型下训练零初始化低秩图像特征残差，�
 core_change: 冻结TG-VPR/TST/NTR/CCGR，训练768-64-768图像特征残差adapter；一致性权重0.1，关闭时回到CCGR。
 success_condition: seed7相对CCGR最高H提高至少0.20个百分点，U和S各自下降不超过2个百分点，视觉残差不爆炸。
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
-status: testing
+status: rejected
 paper_core_innovation: false
 parent_condition: V2-TRY-067 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-069
+current_attempt: none
+last_attempt: V2-TRY-069
+last_decision: drop
 ```
 
 FVRA只使用seen训练图像更新adapter；true-unseen图像在训练结束后才加载，CLIP主干和所有文本原型模块冻结。
@@ -21,3 +23,7 @@ FVRA只使用seen训练图像更新adapter；true-unseen图像在训练结束后
 ## V2-TRY-068结果
 
 seen CE显著下降，但视觉残差mean/max达到`0.496306/0.762622`，`S`提高而`U`下降`19.189996`，发生严重seen过拟合。补救1增加每图残差L2上限`0.1`，并把特征一致性权重提高到`1.0`。
+
+## V2-TRY-069结果与止损
+
+残差L2上限`0.1`且一致性权重`1.0`后，`S`仍提高、`U`下降`3.859198`，相对CCGR `Delta H=-0.891627`。seen图像监督对视觉adapter存在系统性unseen偏置，IDEA-019提前止损。

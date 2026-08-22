@@ -49,7 +49,8 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-016 / SVPG语义到视觉原型生成（rejected，seen视觉映射存在unseen域偏置）
       ├─ rejected_branch：IDEA-017 / ORT正交残差迁移（rejected，子空间与补空间均无增益）
       ├─ innovation_slot_3：IDEA-018 / CCGR类别条件几何生成（supported，paper_core_innovation）
-      ├─ target_78_branch：IDEA-019 / FVRA视觉特征残差适配（testing）
+      ├─ rejected_branch：IDEA-019 / FVRA视觉特征残差适配（rejected，seen视觉适配系统性伤害U）
+      ├─ target_78_branch：待样本条件联合竞争候选
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：四seed mean已通过；seed7仍差0.038637个百分点
