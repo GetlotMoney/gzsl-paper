@@ -21,6 +21,7 @@ from tools.runtime import sha256_file
 
 CONFIG_KEYS={"schema_version","attempt_id","idea_id","framework_id","base_config","base_checkpoint","base_checkpoint_sha256","tst_gate_model","tst_gate_model_sha256","seed","epochs","batch_size","lr","weight_decay","hidden_dim","residual_scale","topology_weight","parent_metrics_percent"}
 CONFIG_KEYS_V2=CONFIG_KEYS|{"training_objective","apply_scope"}
+CONFIG_KEYS_V3=CONFIG_KEYS_V2|{"max_residual_norm"}
 
 
 class TeeStream:
@@ -34,17 +35,21 @@ class TeeStream:
 
 def load_config(path:Path):
     path=path.resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
-    expected=CONFIG_KEYS_V2 if isinstance(config,dict) and config.get("schema_version")=="gzsl-paper.svpg.v2" else CONFIG_KEYS
+    schema=config.get("schema_version") if isinstance(config,dict) else None
+    expected=CONFIG_KEYS_V3 if schema=="gzsl-paper.svpg.v3" else (CONFIG_KEYS_V2 if schema=="gzsl-paper.svpg.v2" else CONFIG_KEYS)
     if not isinstance(config,dict) or actual!=expected: raise ValueError(f"SVPG配置字段错误；缺少={sorted(expected-actual)}，多出={sorted(actual-expected)}。")
-    if config["schema_version"] not in ("gzsl-paper.svpg.v1","gzsl-paper.svpg.v2") or config["attempt_id"] not in ("V2-TRY-053","V2-TRY-054") or config["idea_id"]!="IDEA-016": raise ValueError("SVPG首次TRY身份错误。")
+    if config["schema_version"] not in ("gzsl-paper.svpg.v1","gzsl-paper.svpg.v2","gzsl-paper.svpg.v3") or config["attempt_id"] not in ("V2-TRY-053","V2-TRY-054","V2-TRY-055") or config["idea_id"]!="IDEA-016": raise ValueError("SVPG首次TRY身份错误。")
     expected_epochs=20 if config["attempt_id"]=="V2-TRY-053" else 200
     if int(config["epochs"])!=expected_epochs or int(config["batch_size"])!=64 or float(config["lr"])!=0.001 or float(config["weight_decay"])!=0.0001: raise ValueError("SVPG训练参数错误。")
     if int(config["hidden_dim"])!=128 or float(config["residual_scale"])!=0.1 or float(config["topology_weight"])!=0.1: raise ValueError("SVPG模块参数错误。")
     if set(config["parent_metrics_percent"])!={"U","S","H","ZS"}: raise ValueError("SVPG父指标不完整。")
     config.setdefault("training_objective","seen_image_ce"); config.setdefault("apply_scope","all_classes")
+    config.setdefault("max_residual_norm",None)
     expected_objective="seen_image_ce" if config["attempt_id"]=="V2-TRY-053" else "seen_centroid_alignment"
     expected_scope="all_classes" if config["attempt_id"]=="V2-TRY-053" else "unseen_only"
     if config["training_objective"]!=expected_objective or config["apply_scope"]!=expected_scope: raise ValueError("SVPG训练目标或应用范围错误。")
+    expected_bound=0.2 if config["attempt_id"]=="V2-TRY-055" else None
+    if config["max_residual_norm"]!=expected_bound: raise ValueError("SVPG残差边界与TRY身份错误。")
     return config,sha256_file(path)
 
 
@@ -69,7 +74,7 @@ def run(config_path:Path,output_dir:Path,expected_commit:str):
     with (output_dir/"config.snapshot.yaml").open("x",encoding="utf-8") as handle: yaml.safe_dump(config,handle,allow_unicode=True,sort_keys=False)
     log_handle=(output_dir/"training.log").open("x",encoding="utf-8",buffering=1); original_stdout=sys.stdout; sys.stdout=TeeStream(sys.stdout,log_handle)
     try:
-        seed=int(config["seed"]); configure_reproducibility(seed,strict_determinism=True,deterministic_warn_only=False); tensors={name:torch.load(paths[name],map_location="cpu",weights_only=True) for name in ("sentence_embeds","train_features","train_labels")}; labels=tensors["train_labels"].long(); seenclasses=torch.unique(labels,sorted=True); allclasses=torch.arange(200); unseenclasses=allclasses[~torch.isin(allclasses,seenclasses)]; checkpoint=torch.load(checkpoint_path,map_location="cpu",weights_only=False); centroids=h1.visual_centroids(tensors["train_features"],labels,seenclasses); parent=VariableClassTGVPR(tensors["sentence_embeds"],seenclasses,centroids,dropout=base_config["dropout"],inner_ratio=base_config["inner_ratio"],outer_ratio=base_config["outer_ratio"],temperature=base_config["temperature"]); parent.load_state_dict(checkpoint["model_state_dict"],strict=True); parent=parent.to(device).eval(); gate=_load_gate(config,device); tst_prototypes,_=_candidate_prototypes(parent,gate,seenclasses,unseenclasses,device,"summary",fixed_class_folds(seenclasses),"tangent"); target_classes=unseenclasses if config["apply_scope"]=="unseen_only" else None; model=SemanticVisualPrototypeGenerator(tst_prototypes,parent.scale(),hidden_dim=config["hidden_dim"],residual_scale=config["residual_scale"],target_classes=target_classes).to(device); optimizer=torch.optim.Adam(model.parameters(),lr=float(config["lr"]),weight_decay=float(config["weight_decay"])); mapping=torch.full((200,),-1,dtype=torch.long); mapping[seenclasses]=torch.arange(150); generator=torch.Generator(device="cpu").manual_seed(seed); history=[]
+        seed=int(config["seed"]); configure_reproducibility(seed,strict_determinism=True,deterministic_warn_only=False); tensors={name:torch.load(paths[name],map_location="cpu",weights_only=True) for name in ("sentence_embeds","train_features","train_labels")}; labels=tensors["train_labels"].long(); seenclasses=torch.unique(labels,sorted=True); allclasses=torch.arange(200); unseenclasses=allclasses[~torch.isin(allclasses,seenclasses)]; checkpoint=torch.load(checkpoint_path,map_location="cpu",weights_only=False); centroids=h1.visual_centroids(tensors["train_features"],labels,seenclasses); parent=VariableClassTGVPR(tensors["sentence_embeds"],seenclasses,centroids,dropout=base_config["dropout"],inner_ratio=base_config["inner_ratio"],outer_ratio=base_config["outer_ratio"],temperature=base_config["temperature"]); parent.load_state_dict(checkpoint["model_state_dict"],strict=True); parent=parent.to(device).eval(); gate=_load_gate(config,device); tst_prototypes,_=_candidate_prototypes(parent,gate,seenclasses,unseenclasses,device,"summary",fixed_class_folds(seenclasses),"tangent"); target_classes=unseenclasses if config["apply_scope"]=="unseen_only" else None; model=SemanticVisualPrototypeGenerator(tst_prototypes,parent.scale(),hidden_dim=config["hidden_dim"],residual_scale=config["residual_scale"],target_classes=target_classes,max_residual_norm=config["max_residual_norm"]).to(device); optimizer=torch.optim.Adam(model.parameters(),lr=float(config["lr"]),weight_decay=float(config["weight_decay"])); mapping=torch.full((200,),-1,dtype=torch.long); mapping[seenclasses]=torch.arange(150); generator=torch.Generator(device="cpu").manual_seed(seed); history=[]
         for epoch in range(1,int(config["epochs"])+1):
             if config["training_objective"]=="seen_centroid_alignment":
                 generated=model.generated_all(); generated_seen=generated.index_select(0,seenclasses.to(device)); alignment=1.0-(generated_seen*centroids.to(device)).sum(dim=-1).mean(); topo=topology_loss(tst_prototypes,generated); loss=alignment+float(config["topology_weight"])*topo; optimizer.zero_grad(set_to_none=True); loss.backward(); optimizer.step(); stats=model.residual_stats(); row={"epoch":epoch,"loss":float(loss.detach()),"alignment":float(alignment.detach()),"topology":float(topo.detach()),"residual":stats}; history.append(row)

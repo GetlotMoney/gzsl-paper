@@ -18,6 +18,7 @@ class SemanticVisualPrototypeGenerator(nn.Module):
         hidden_dim: int = 128,
         residual_scale: float = 0.1,
         target_classes: torch.Tensor | None = None,
+        max_residual_norm: float | None = None,
     ):
         super().__init__()
         if tuple(parent_prototypes.shape) != (200, 768):
@@ -27,6 +28,9 @@ class SemanticVisualPrototypeGenerator(nn.Module):
         )
         self.register_buffer("_scale", scale.detach().clone())
         self.residual_scale = float(residual_scale)
+        self.max_residual_norm = (
+            None if max_residual_norm is None else float(max_residual_norm)
+        )
         target = (
             torch.empty(0, dtype=torch.long)
             if target_classes is None
@@ -41,10 +45,17 @@ class SemanticVisualPrototypeGenerator(nn.Module):
         nn.init.zeros_(self.adapter[-1].weight)
         nn.init.zeros_(self.adapter[-1].bias)
 
+    def residual_vectors(self):
+        residual = self.residual_scale * self.adapter(self.parent_prototypes)
+        if self.max_residual_norm is not None:
+            norm = residual.norm(dim=-1, keepdim=True).clamp_min(1e-12)
+            residual = residual * (self.max_residual_norm / norm).clamp(max=1.0)
+        return residual
+
     def generated_all(self):
-        residual = self.adapter(self.parent_prototypes)
+        residual = self.residual_vectors()
         return F.normalize(
-            self.parent_prototypes + self.residual_scale * residual, dim=-1
+            self.parent_prototypes + residual, dim=-1
         )
 
     def prototypes(self, *, enabled=True):
@@ -71,6 +82,6 @@ class SemanticVisualPrototypeGenerator(nn.Module):
         return F.normalize(image_features.float(), dim=-1) @ prototypes.T * self.scale()
 
     def residual_stats(self):
-        residual = self.residual_scale * self.adapter(self.parent_prototypes)
+        residual = self.residual_vectors()
         norm = residual.norm(dim=-1)
         return {"mean": float(norm.mean()), "max": float(norm.max())}
