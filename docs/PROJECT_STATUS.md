@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 77.572682
 current_best_observation_seed: gate_training_seed_17_on_data_seed_7
-completed_try_count: 81
+completed_try_count: 82
 minimum_required_try_count: 50
 ```
 
@@ -92,6 +92,8 @@ CGFG生成式GZSL出现synthetic-unseen域失真，平衡分类器仍极端偏�
 CCGR Gate训练seed 7/17/27/37的逐epoch最佳H为`77.547270/77.572682/77.560640/77.503927%`，range仅`0.068755`，确认约`77.55%`的平台不是优化随机性造成；当前累计80组，最高为训练seed17的`77.572682%`。下一主线把完整top-5类别邻域关系输入CCGR，使生成方向同时感知“最相近的是谁”和“相似度分布”，而不是继续重复随机种子。
 
 NG-CCGR完整top-5输入得到`H=77.562646%`，仅比当前最高低`0.010036`，同时U提高`0.133896`；方向有信号但随机初始化破坏了原有好解。当前累计81组，补救1将从TRY-078函数等价初始化8维模型并把epoch 0纳入选择。
+
+NG-CCGR补救1在epoch 0精确复现`77.572682%`，但20轮邻域残差更新均降低H，确认top-5排序细节不是当前瓶颈并提前止损。当前累计82组，最高不变；下一候选转向不同目标，不再修改CCGR邻域输入。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
