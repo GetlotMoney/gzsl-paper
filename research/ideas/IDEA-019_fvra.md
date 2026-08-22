@@ -13,7 +13,11 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-067 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-068
+current_attempt: V2-TRY-069
 ```
 
 FVRA只使用seen训练图像更新adapter；true-unseen图像在训练结束后才加载，CLIP主干和所有文本原型模块冻结。
+
+## V2-TRY-068结果
+
+seen CE显著下降，但视觉残差mean/max达到`0.496306/0.762622`，`S`提高而`U`下降`19.189996`，发生严重seen过拟合。补救1增加每图残差L2上限`0.1`，并把特征一致性权重提高到`1.0`。
