@@ -1,0 +1,32 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-005
+idea_id: IDEA-033
+evidence_refs: [PAPER-002, PAPER-003, V2-INNOVATION-004, V2-TRY-104]
+framework_id: FRAMEWORK-V2
+base_commit: dc072b4e2db142630c1560203e83047a57f1daf1
+code_commits:
+  seed17: c20f734cf910325ade95f2a8ef25c353c57f56fb
+  multiseed: 4fd4e4e7db4e87bedc85dd07e8eb12e171158e83
+title: Centroid Ridge Alignment
+status: supported
+paper_core_innovation: false
+question: 类别级视觉中心能否比图像级样本更可靠地拟合显式属性ridge并稳定提高U/S/H/ZS
+source_attempts: [V2-TRY-105, V2-TRY-104, V2-TRY-106, V2-TRY-107]
+module:
+  module_id: CRA
+  name: Centroid Ridge Alignment
+  purpose: 用每类一个视觉中心等权拟合属性映射，避免图像级ridge吸收类内噪声
+  inputs: [150个seen视觉中心, CCGR类别原型, CUB标准312维类别属性]
+  output: CCGR主logit与类别中心属性残差logit之和
+  formula: W=(C_seen^T C_seen + 0.01I)^-1 C_seen^T A_seen; logits=logits_CCGR + beta*cos(Norm(xW),A_c)
+  switches: {ridge_source: class_centroids, ridge: 0.01, max_beta: 20.0, sdm_enabled: false}
+  baseline_off_behavior: beta=0时严格回到CCGR；ridge_source=all_images时回到ARA统计
+  parent_condition: TG-VPR + TST + NTR + CCGR
+  training: 150个seen视觉中心闭式拟合W；7057张seen图像CE训练beta 20轮
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+primary_reporting: highest_seed_H_with_multiseed_range
+framework_diagram: framework_diagram.html
+decision: auxiliary_refinement_not_fourth_core_innovation
+novelty_claim: none

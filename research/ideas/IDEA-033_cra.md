@@ -16,6 +16,7 @@ parent_condition: V2-TRY-096 / TG-VPR + TST + NTR + CCGR + ARA
 current_attempt: none
 last_attempt: V2-TRY-107
 last_decision: promote_auxiliary
+experiment_ref: V2-INNOVATION-005
 ```
 
 CRA的视觉中心和beta训练只使用seen图像；true-unseen图像不进入梯度。该实验只检验ARA的训练统计，不新增论文核心模块。

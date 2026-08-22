@@ -133,6 +133,8 @@ CRA用150个seen类别视觉中心替代7057张图像拟合属性ridge，在seed
 
 CRA在seed7/17/27/37上得到H `79.377682/79.448210/79.346923/79.336822%`，mean/range=`79.377409/0.111388`，且每个seed的U/S/ZS都高于CCGR父条件。当前累计107组；CRA可靠成立并替代普通ARA作为最终辅助结构，但不增加论文核心创新数量。
 
+CRA已正式登记为`V2-INNOVATION-005 / supported auxiliary`，包含4seed配置、结果与SHA、实现说明和HTML框架图；ARA实验保留为父统计，不删除历史。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
