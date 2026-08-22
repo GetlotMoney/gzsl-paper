@@ -13,7 +13,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-028 / TG-VPR + TST + NTR
-current_attempt: V2-TRY-061
+current_attempt: V2-TRY-062_to_065
 ```
 
 CCGR生成方向全部来自目标类别文本；true-unseen图像在训练结束后才加载。关闭CCGR时严格回到NTR父框架。
@@ -29,3 +29,7 @@ episodic CCGR得到`H=77.237120%`，相对NTR提高`0.150584`并成为当前最�
 ## V2-TRY-060结果
 
 unseen平衡CCGR得到`U=74.429679%`、`S=80.583262%`、`H=77.384331%`、`ZS=81.815892%`，相对NTR四项全部提高且`Delta H=+0.297795`，达到核心创新增益门槛并成为当前最高。部分类别幅度仍顶到`0.1`，最后一次补救增加`0.01`幅度平方约束，验证提升是否依赖边界饱和。
+
+## V2-TRY-061结果与结构冻结
+
+幅度平方约束得到`H=77.218921%`，低于TRY-060；但U/S/ZS仍均高于NTR，说明CCGR机制有效而非单一指标偶然。正式冻结最佳TRY-060结构，在seed5/6/8/9上复用各自NTR父条件训练CCGR Gate。
