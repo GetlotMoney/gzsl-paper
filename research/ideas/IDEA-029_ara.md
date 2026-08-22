@@ -13,8 +13,8 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最
 status: supported
 paper_core_innovation: false
 parent_condition: V2-TRY-086 / TG-VPR + TST + NTR + CCGR + SDM
-current_attempt: V2-TRY-098..100
-last_attempt: V2-TRY-097
+current_attempt: none
+last_attempt: V2-TRY-100
 last_decision: promote
 ```
 
@@ -35,3 +35,7 @@ seed7/17/27/37的ARA H为`79.330716/79.307063/79.253171/79.280845%`，相对各�
 ## CCGR-off消融与结构结论
 
 关闭CCGR、保留NTR+ARA得到`H=78.967987%`，比完整CCGR+ARA低`0.418095`，证明CCGR在属性残差存在时仍提供独立类别几何增益。最终组合删除SDM、保留CCGR与ARA，结构逻辑为结构化描述→安全迁移→类别几何→显式属性残差。
+
+## 最终无SDM结构四seed
+
+seed7/17/27/37的H为`79.334907/79.386082/79.265577/79.280845%`，H mean/min/max/range=`79.316853/79.265577/79.386082/0.120505`；U mean=`73.933692`，S mean=`85.546258`，ZS mean=`86.032633`。4/4 seed均稳定超过79.26，最终组合可靠性成立。
