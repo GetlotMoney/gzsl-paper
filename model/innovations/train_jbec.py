@@ -41,7 +41,7 @@ class TeeStream:
 def load_config(path):
     path=Path(path).resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
     if not isinstance(config,dict) or actual!=CONFIG_KEYS: raise ValueError(f"JBEC配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if config["schema_version"]!="gzsl-paper.jbec.v1" or config["attempt_id"]!="V2-TRY-131" or config["idea_id"]!="IDEA-038": raise ValueError("JBEC首次TRY身份错误。")
+    if config["schema_version"]!="gzsl-paper.jbec.v1" or config["attempt_id"] not in ("V2-TRY-131","V2-TRY-132","V2-TRY-133","V2-TRY-134") or config["idea_id"]!="IDEA-038": raise ValueError("JBEC首次TRY身份错误。")
     if int(config["epochs"])!=20 or int(config["batch_half"])!=32 or float(config["lr"])!=0.001 or float(config["weight_decay"])!=0.0001 or float(config["forward_ridge"])!=0.01 or float(config["reverse_ridge"])!=0.01 or float(config["max_beta"])!=20.0 or float(config["max_vpa_beta"])!=20.0 or float(config["max_gamma"])!=0.3 or float(config["max_beta_residual"])!=2.0 or float(config["max_gamma_residual"])!=0.05: raise ValueError("JBEC训练参数错误。")
     return config,sha256_file(path)
 
