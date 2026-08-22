@@ -65,3 +65,13 @@ def test_bmr_residual_starts_at_tst_and_rescue2_config():
     assert config["attempt_id"] == "V2-TRY-039"
     assert config["gate_architecture"] == "bilevel_residual"
     assert config["max_residual_step"] == 0.1
+
+
+def test_first_order_update_ignores_frozen_parent_gate():
+    gate = SummaryResidualGate(TangentStepGate(input_dim=4), max_delta=0.1)
+    features = torch.randn(7, 4, generator=torch.Generator().manual_seed(84))
+    adapted = _first_order_adapted_parameters(
+        gate, gate(features).square().mean(), 0.01
+    )
+    assert adapted
+    assert all(name.startswith("residual.") for name in adapted)

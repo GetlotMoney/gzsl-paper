@@ -654,7 +654,11 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
 
 
 def _first_order_adapted_parameters(gate, inner_loss, inner_lr):
-    parameters = dict(gate.named_parameters())
+    parameters = {
+        name: parameter
+        for name, parameter in gate.named_parameters()
+        if parameter.requires_grad
+    }
     gradients = torch.autograd.grad(
         inner_loss, tuple(parameters.values()), create_graph=False
     )
@@ -740,7 +744,11 @@ def _train_gate_bilevel(packages, tensors, config, device, seed, print_log):
                 outer_targets = label_map[
                     tensors["train_labels"].long()[outer_indices]
                 ].to(device)
-                parameters = dict(gate.named_parameters())
+                parameters = {
+                    name: parameter
+                    for name, parameter in gate.named_parameters()
+                    if parameter.requires_grad
+                }
                 inner_logits, _, _ = _bilevel_logits(
                     package,
                     gate,
@@ -772,7 +780,11 @@ def _train_gate_bilevel(packages, tensors, config, device, seed, print_log):
                     raise FloatingPointError("BMR内外层loss非有限。")
                 optimizer.zero_grad(set_to_none=True)
                 if config["meta_gradient_mode"] == "pcgrad_seen_outer":
-                    named_parameters = tuple(gate.named_parameters())
+                    named_parameters = tuple(
+                        (name, parameter)
+                        for name, parameter in gate.named_parameters()
+                        if parameter.requires_grad
+                    )
                     outer_gradients = torch.autograd.grad(
                         outer_loss,
                         tuple(parameter for _, parameter in named_parameters),
