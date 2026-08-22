@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 79.404922
 current_best_observation_seed: ARA_seed17_global_beta_retune_observation
-completed_try_count: 102
+completed_try_count: 103
 minimum_required_try_count: 50
 ```
 
@@ -126,6 +126,8 @@ ARA已正式登记为`V2-INNOVATION-004 / supported auxiliary`，目录包含4se
 ARA相关工作已重新核对：CVPR 2017已有视觉→属性ridge回归与多语义模态融合，CVPR 2020已有细粒度GZSL属性对齐，CVPR 2025已有视觉/语义prompt协作。ARA继续作为稳定辅助增强，不作算法原创或第四个核心创新claim；论文卡为PAPER-002至004。
 
 CARA样本条件beta Gate在seed17得到最高观察`H=79.404922%`，但残差std仅`0.003790`，几乎退化为全局beta微调，未通过机制门槛。该结果只作为test-selected调参观察，CARA不成立、不正式晋级；当前累计102组。
+
+SFA把八角色描述压缩为64维跨类语义因子后仍发生seen过拟合，所有非零beta均降低H，已止损。当前累计103组；下一实验保留独立人工属性证据，但把ridge训练单位从图像改为类别视觉中心，降低类内噪声。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

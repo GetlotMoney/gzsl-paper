@@ -62,6 +62,7 @@ V2-H-PLUS-3PP
       ├─ auxiliary_branch：IDEA-029 / ARA属性残差对齐（supported辅助，4seed H≥79.26，已有工作先例不作原创claim）
       ├─ rejected_branch：IDEA-030 / DRA描述残差对齐（rejected，重复描述语义导致seen过拟合）
       ├─ revised_branch：IDEA-031 / CARA置信度属性残差（revised，Gate退化为近常数，仅保留beta微调观察）
+      ├─ rejected_branch：IDEA-032 / SFA语义因子对齐（rejected，压缩描述因子仍seen过拟合）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：最终CCGR+ARA四训练seed H=79.265577至79.386082，稳定超过78
