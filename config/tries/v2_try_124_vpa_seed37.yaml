@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.vpa.v1
+attempt_id: V2-TRY-124
+idea_id: IDEA-036
+framework_id: FRAMEWORK-V2
+base_config: config/tg_vpr_h1.yaml
+ccgr_model: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-080/ccgr_model.pth
+ccgr_model_sha256: ab6ecc14c7e15328f51ca98f4cbd80698ae168aaaba356c2f4937fb050914eda
+cra_model: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-107/ara_model.pth
+cra_model_sha256: 706b383a6569e8a8cffa49db3ab443da36c4bf5afad371adda7d46cd77e84bb7
+seed: 37
+epochs: 20
+batch_size: 256
+lr: 0.01
+weight_decay: 0.0
+forward_ridge: 0.01
+reverse_ridge: 0.01
+max_beta: 20.0
+parent_metrics_percent: {U: 75.13312697410583, S: 84.03878808021545, H: 79.33682186868155, ZS: 86.14012002944946}

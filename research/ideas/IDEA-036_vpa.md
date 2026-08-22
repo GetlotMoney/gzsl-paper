@@ -13,7 +13,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过CRA父条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-104 / TG-VPR + TST + NTR + CCGR + CRA
-current_attempt: none
+current_attempt: V2-TRY-122..124
 last_attempt: V2-TRY-118
 last_decision: test_EBC_combination
 ```
