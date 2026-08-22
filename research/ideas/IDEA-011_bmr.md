@@ -16,7 +16,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-038
+current_attempt: V2-TRY-039
 ```
 
 BMR内外层都只使用150个seen训练类构造的episode；true-unseen图像在所有Gate训练结束后才加载。关闭双层更新时回到TST的联合Gate训练。
@@ -24,3 +24,7 @@ BMR内外层都只使用150个seen训练类构造的episode；true-unseen图像�
 ## V2-TRY-037结果
 
 首次双层更新使`U`相对TST提高`3.296584`、`ZS`提高`1.388496`，但`S`下降`4.392850`，最终`H=76.530440%`、`Delta H=-0.454105`。诊断为外层pseudo-unseen元梯度压过seen保留目标。补救1显式计算seen与outer梯度，冲突时使用PCGrad投影后再合并。
+
+## V2-TRY-038结果
+
+PCGrad条件从第2轮起冲突率为`1.0`，最终步长均值`1.499258`并饱和到上限，`H=63.138895%`。补救2冻结可靠TST Gate，只允许双层元更新学习范围`+-0.1`的残差步长，避免离开TST安全邻域。
