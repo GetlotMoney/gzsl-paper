@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 79.448210
 current_best_observation_seed: CRA_training_seed_17
-completed_try_count: 111
+completed_try_count: 112
 minimum_required_try_count: 50
 ```
 
@@ -140,6 +140,8 @@ CCRA类别beta Gate产生真实类别差异，但所有非零epoch H均低于CRA
 CRA ridge正则检查`0.01/0.1/1.0`对应H `79.448210/79.340503/77.699950%`，确认0.01最佳并关闭该参数轴。当前累计110组，最高可靠结果不变。
 
 CRA第111组确定性重跑逐位复现第104组U/S/H/ZS，并完整生成`training.log / metrics.json / model_best.pth / checkpoint_last.pth / data_fingerprints.json`。最佳模型别名与`ara_model.pth` SHA一致，正式输出契约已验证。当前累计111组。
+
+CRA第112组完成真实SIGTERM恢复：中断发生于epoch 5日志写出后、checkpoint替换前，有效原子checkpoint为epoch 4；恢复到全新目录后state/history/metrics/best epoch与同代码未中断运行完全一致。当前累计112组，单机跨目录resume已验证；尚无第二物理机器用于跨主机验证。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

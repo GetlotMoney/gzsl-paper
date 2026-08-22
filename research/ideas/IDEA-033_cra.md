@@ -19,6 +19,7 @@ last_decision: promote_auxiliary
 experiment_ref: V2-INNOVATION-005
 current_tune: none
 output_contract_verified: V2-TRY-111
+resume_verified: V2-TRY-112
 ```
 
 CRA的视觉中心和beta训练只使用seen图像；true-unseen图像不进入梯度。该实验只检验ARA的训练统计，不新增论文核心模块。
@@ -36,3 +37,5 @@ seed7/17/27/37的H为`79.377682/79.448210/79.346923/79.336822%`，H mean/min/max
 seed17下`ridge=0.01/0.1/1.0`的H为`79.448210/79.340503/77.699950%`。0.1略增U但损失S与ZS，1.0明显欠拟合；参数轴固定为0.01并停止扫描。
 
 V2-TRY-111在新输出契约下逐位复现V2-TRY-104指标，并生成`model_best.pth`、`checkpoint_last.pth`及其SHA；CRA正式训练输出已标准化。
+
+V2-TRY-112在epoch 5日志后收到真实SIGTERM，原子checkpoint保持在完整epoch 4；从新输出目录恢复后重放epoch 5至20。恢复运行与同代码未中断运行的state tensor、history、U/S/H/ZS和best epoch全部一致。
