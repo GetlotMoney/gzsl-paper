@@ -20,3 +20,5 @@ def test_ara_final_sdm_off_reliability_configs():
     expected={"098":7,"099":27,"100":37}
     for suffix,seed in expected.items():
         config,_=load_config(ROOT/f"config/tries/v2_try_{suffix}_ara_sdm_off_seed{seed}.yaml"); assert config["seed"]==seed and config["sdm_enabled"] is False and config["ccgr_model_sha256"]
+def test_cra_centroid_ridge_config():
+    config,_=load_config(ROOT/"config/tries/v2_try_104_cra_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-104" and config["ridge_source"]=="class_centroids" and config["sdm_enabled"] is False
