@@ -46,6 +46,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-014 / MPR多角色原型判别（rejected，角色证据无可靠增益）
       ├─ rejected_branch：IDEA-015 / PGO梯度冲突优化（rejected，投影仅改变U/S权衡）
       ├─ reliability_branch：TG-VPR/TST/NTR新增seed9（下一RUN）
+      ├─ innovation_slot_3：IDEA-016 / SVPG语义到视觉原型生成（testing）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：四seed mean已通过；seed7仍差0.038637个百分点
