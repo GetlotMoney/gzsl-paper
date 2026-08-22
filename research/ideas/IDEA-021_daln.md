@@ -13,7 +13,11 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-067 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-072
+current_attempt: V2-TRY-073
 ```
 
 DALN密度只由类别原型计算，Gate只用seen图像训练；true-unseen图像在训练结束后才加载。
+
+## V2-TRY-072结果
+
+密度Gate使`U`提高`0.539619`、`ZS`提高`0.370640`，但`S`下降`0.709808`，相对CCGR `Delta H=-0.039483`。密度特征有判别信号，失败来自seen CE偏置；补救1改用三折pseudo-unseen episode训练同一Gate。

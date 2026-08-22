@@ -23,7 +23,7 @@ current_seed7_H: 77.384331
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 77.459931
 current_best_observation_seed: 7
-completed_try_count: 71
+completed_try_count: 72
 minimum_required_try_count: 50
 ```
 
@@ -76,6 +76,8 @@ CCGR幅度Tune在0.15/0.20处达到`77.459608/77.459931%`后平台化；全局ma
 FVRA视觉特征适配在无界和L2上限0.1两种条件下都系统性提高S并伤害U，已止损。当前累计69组有效实验，最高仍为CCGR幅度0.20的`H=77.459931%`；下一主线转向样本条件的seen/unseen联合竞争建模。
 
 EDC样本条件竞争在校正范围0.2和0.05下都只改变U/S权衡并降低H，已止损。当前累计71组有效实验，最高仍为`H=77.459931%`；下一主线转向类别条件温度与能量归一化。
+
+DALN密度Gate提高U与ZS但seen CE导致S下降，H仅低于父条件`0.039483`；该方向保留并转入pseudo-unseen episode训练。当前累计72组，最高仍为`77.459931%`。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
