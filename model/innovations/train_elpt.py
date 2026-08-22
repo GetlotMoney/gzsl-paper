@@ -81,6 +81,7 @@ OPTIONAL_CONFIG_KEYS = {
     "meta_gradient_mode",
     "seen_gradient_weight",
     "fold_strategy",
+    "gradient_normalization",
 }
 
 
@@ -145,6 +146,7 @@ def load_config(path: Path):
     raw.setdefault("meta_gradient_mode", "outer_only")
     raw.setdefault("seen_gradient_weight", 0.0)
     raw.setdefault("fold_strategy", "fixed_mod3")
+    raw.setdefault("gradient_normalization", "none")
     if raw["schema_version"] not in (
         "gzsl-paper.elpt.v1",
         "gzsl-paper.tst.v1",
@@ -159,6 +161,7 @@ def load_config(path: Path):
         "gzsl-paper.ntr-dispersion.v1",
         "gzsl-paper.bmr.v1",
         "gzsl-paper.pgo.v1",
+        "gzsl-paper.pgo.v2",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -192,7 +195,7 @@ def load_config(path: Path):
         "V2-TRY-039",
         "V2-TRY-040",
     } and raw["idea_id"] == "IDEA-011"
-    valid_pgo = raw["attempt_id"] == "V2-TRY-048" and raw["idea_id"] == "IDEA-015"
+    valid_pgo = raw["attempt_id"] in {"V2-TRY-048", "V2-TRY-049"} and raw["idea_id"] == "IDEA-015"
     if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr or valid_bmr or valid_pgo):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
@@ -376,6 +379,9 @@ def load_config(path: Path):
             or set(parent) != {"U", "S", "H", "ZS"}
         ):
             raise ValueError("PGO首次TRY身份不匹配。")
+        expected_normalization = "none" if raw["attempt_id"] == "V2-TRY-048" else "unit_global_norm"
+        if raw["gradient_normalization"] != expected_normalization:
+            raise ValueError("PGO梯度归一化模式与TRY身份不匹配。")
     return raw, sha256_file(path)
 
 
@@ -730,7 +736,16 @@ def _pcgrad_merge(primary_gradients, anchor_gradients, anchor_weight=1.0):
     return merged, conflict
 
 
-def _symmetric_pcgrad_merge(first_gradients, second_gradients):
+def _symmetric_pcgrad_merge(first_gradients, second_gradients, normalize=False):
+    if normalize:
+        first_norm = torch.sqrt(
+            sum(first.square().sum() for first in first_gradients).clamp_min(1e-12)
+        )
+        second_norm = torch.sqrt(
+            sum(second.square().sum() for second in second_gradients).clamp_min(1e-12)
+        )
+        first_gradients = tuple(first / first_norm for first in first_gradients)
+        second_gradients = tuple(second / second_norm for second in second_gradients)
     dot = sum(
         (first * second).sum()
         for first, second in zip(first_gradients, second_gradients)
@@ -810,7 +825,9 @@ def _train_gate_pcgrad_joint(packages, tensors, config, device, seed, print_log)
                 seen_gradients = torch.autograd.grad(seen_loss, parameters)
                 unseen_gradients = torch.autograd.grad(unseen_loss, parameters)
                 merged, conflict = _symmetric_pcgrad_merge(
-                    seen_gradients, unseen_gradients
+                    seen_gradients,
+                    unseen_gradients,
+                    normalize=(config["gradient_normalization"] == "unit_global_norm"),
                 )
                 optimizer.zero_grad(set_to_none=True)
                 for parameter, gradient in zip(parameters, merged):
@@ -1455,6 +1472,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "meta_gradient_mode": config["meta_gradient_mode"],
             "seen_gradient_weight": float(config["seen_gradient_weight"]),
             "fold_strategy": config["fold_strategy"],
+            "gradient_normalization": config["gradient_normalization"],
             "parent_metrics_percent": config["parent_metrics_percent"],
             "delta_vs_parent_percent_points": parent_delta,
             "success": success,

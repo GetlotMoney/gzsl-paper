@@ -108,3 +108,16 @@ def test_symmetric_pcgrad_and_pgo_config():
     config, _ = load_config(ROOT / "config/tries/v2_try_048_pgo_seed7.yaml")
     assert config["idea_id"] == "IDEA-015"
     assert config["gate_training_mode"] == "pcgrad_joint_residual"
+
+
+def test_unit_normalized_pcgrad_and_pgo_rescue_config():
+    first = (torch.tensor([-10.0, 0.0]),)
+    second = (torch.tensor([1.0, 0.0]),)
+    merged, conflict = _symmetric_pcgrad_merge(first, second, normalize=True)
+    assert conflict is True
+    assert torch.isfinite(merged[0]).all()
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_049_pgo_rescue1_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-049"
+    assert config["gradient_normalization"] == "unit_global_norm"
