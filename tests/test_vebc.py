@@ -7,3 +7,7 @@ def test_vebc_fine_lr_rescue_config():
     config,_=load_config(ROOT/"config/tries/v2_try_120_vebc_rescue1_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-120" and config["lr"]==0.0025
 def test_vebc_interior_gamma_rescue_config():
     config,_=load_config(ROOT/"config/tries/v2_try_121_vebc_rescue2_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-121" and config["lr"]==0.0025 and config["max_gamma"]==0.3
+def test_vebc_reliability_configs_bind_vpa_parents():
+    expected={"125":7,"126":27,"127":37}
+    for suffix,seed in expected.items():
+        config,_=load_config(ROOT/f"config/tries/v2_try_{suffix}_vebc_seed{seed}.yaml"); assert config["seed"]==seed and config["max_gamma"]==0.3 and config["vpa_model_sha256"]

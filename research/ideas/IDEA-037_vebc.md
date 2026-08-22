@@ -13,7 +13,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过EBC最高
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-118 / TG-VPR + TST + NTR + CCGR + CRA + VPA
-current_attempt: none
+current_attempt: V2-TRY-125..127
 last_attempt: V2-TRY-121
 last_decision: run_parent_and_combination_reliability
 ```
