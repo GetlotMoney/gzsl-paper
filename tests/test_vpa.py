@@ -13,3 +13,5 @@ def test_vpa_reliability_configs_bind_cra_parents():
     expected={"122":7,"123":27,"124":37}
     for suffix,seed in expected.items():
         config,_=load_config(ROOT/f"config/tries/v2_try_{suffix}_vpa_seed{seed}.yaml"); assert config["seed"]==seed and config["cra_model_sha256"] and config["ccgr_model_sha256"]
+def test_vpa_reverse_ridge_tune_configs():
+    c01,_=load_config(ROOT/"config/tries/v2_try_128_vpa_reverse01_seed17.yaml"); c1,_=load_config(ROOT/"config/tries/v2_try_129_vpa_reverse1_seed17.yaml"); assert c01["reverse_ridge"]==0.1 and c1["reverse_ridge"]==1.0

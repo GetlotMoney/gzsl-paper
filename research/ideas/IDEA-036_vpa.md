@@ -16,6 +16,7 @@ parent_condition: V2-TRY-104 / TG-VPR + TST + NTR + CCGR + CRA
 current_attempt: none
 last_attempt: V2-TRY-124
 last_decision: promote_auxiliary_after_combination_reliability
+current_tune: V2-TRY-128..129
 ```
 
 VPA的正反ridge和beta训练都只使用seen类别中心或seen图像；true-unseen图像不进入梯度。语义→视觉ridge已有论文先例，因此只检验本框架中的组合价值。
