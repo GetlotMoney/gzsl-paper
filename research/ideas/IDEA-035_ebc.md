@@ -10,12 +10,12 @@ hypothesis: 在三折pseudo-unseen episode中训练单一seen logit扣减gamma�
 core_change: 冻结TG-VPR/TST/NTR/CCGR/CRA，只训练一个范围+-0.2的全局gamma；每折ridge仅用pseudo-seen视觉中心拟合。
 success_condition: seed17 H超过79.448210%，U/S任一下降不超过2个百分点，gamma不饱和。
 failure_condition: 首次TRY和最多3次方法级补救后仍不超过CRA父条件。
-status: testing
+status: supported
 paper_core_innovation: false
 parent_condition: V2-TRY-104 / TG-VPR + TST + NTR + CCGR + CRA
-current_attempt: V2-TRY-115..117
-last_attempt: V2-TRY-114
-last_decision: run_reliability_seeds
+current_attempt: none
+last_attempt: V2-TRY-117
+last_decision: promote_auxiliary
 ```
 
 EBC训练只使用seen类构造pseudo-seen/pseudo-unseen episode；true-unseen图像不进入gamma梯度。只读上界仅作动机，正式结果必须来自训练gamma。
@@ -27,3 +27,7 @@ EBC训练只使用seen类构造pseudo-seen/pseudo-unseen episode；true-unseen�
 ## V2-TRY-114结果
 
 max_gamma=0.15时第2轮得到`U=76.813483%`、`S=83.009040%`、`H=79.791176%`、`ZS=86.219549%`，相对CRA提高H `0.342966`；gamma=`0.142321`未触及边界，成功门槛通过。继续运行父CRA seed7/27/37可靠性。
+
+## 四训练seed支持结论
+
+seed7/17/27/37的H为`79.748697/79.791176/79.649150/79.675166%`，H mean/min/max/range=`79.716047/79.649150/79.791176/0.142025`；四个seed相对CRA均提高H `0.302227–0.371015`，gamma范围`0.128084–0.142321`且均不饱和。IDEA-035标记`supported`辅助，不作为第四个论文核心创新。
