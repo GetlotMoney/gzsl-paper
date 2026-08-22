@@ -191,6 +191,8 @@ CNRA已正式登记为`V2-INNOVATION-009 / supported auxiliary`，包含类名ca
 
 三项核心创新新颖性边界已重新核对PAPER-005至008：TG-VPR不得声称首次GPT描述prompt，TST不得声称首次超球面/测地线prototype transport，CCGR不得声称首次动态或双prototype。允许的窄claim已固定在`docs/CORE_INNOVATION_CLAIM_BOUNDARIES.md`。
 
+TG-VPR新颖性审计进一步加入PAPER-009/010：结构化、对比式LLM视觉描述及用细粒度图像适配VLM均有先例；TG-VPR只保留固定三角色共享Value重参数化与topology约束的组合claim。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

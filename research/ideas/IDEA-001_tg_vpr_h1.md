@@ -7,6 +7,8 @@ source_type: paper
 evidence_refs:
   - PAPER-001
   - PAPER-004
+  - PAPER-009
+  - PAPER-010
 base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
 framework: FRAMEWORK-V2
 paper_role: innovation_slot_1_candidate
