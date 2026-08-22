@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 80.712565
 current_best_observation_seed: CNRA_training_seed_17
-completed_try_count: 138
+completed_try_count: 141
 minimum_required_try_count: 50
 ```
 
@@ -182,6 +182,8 @@ ADMA属性对角度量产生真实维度差异，但所有非零epoch均降低H�
 NGVF训练得到负eta，与单位球面归一化融合假设方向相反；其`H=80.495362%`微小观察不作为机制成功，已止损。当前累计137组，最高可靠结构仍为JBEC。
 
 CNRA把独立CLIP类名原型作为JBEC残差，seed17达到`U/S/H/ZS=77.406234/84.313953/80.712565/87.423056%`，四项同时提高且beta非饱和。当前累计138组，继续其余seed可靠性，单seed暂不晋级。
+
+CNRA在seed7/17/27/37上的H为`80.288043/80.712565/80.519916/80.530291%`，mean/range=`80.512704/0.424522`，四个seed均提高JBEC父H且beta非饱和。当前累计141组；CNRA可靠成立为独立类名语义辅助分支。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
