@@ -67,6 +67,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-034 / CCRA类别条件属性融合（rejected，残差有差异但持续降低H）
       ├─ auxiliary_branch：IDEA-035 / EBC episodic偏置校准（supported辅助，4seed稳定提高H）
       ├─ auxiliary_branch：IDEA-036 / VPA属性视觉原型残差（supported辅助，4seed稳定提高H与ZS）
+      ├─ auxiliary_branch：IDEA-037 / VEBC视觉原型偏置校准（supported辅助，4seed组合H mean超过80）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：最终CCGR+ARA四训练seed H=79.265577至79.386082，稳定超过78
