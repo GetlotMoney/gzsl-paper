@@ -5,10 +5,10 @@
 ```yaml
 base_framework: FRAMEWORK-V2 / TG-VPR-H1
 supported_innovations: [TG-VPR, TST, CCGR]
-current_best_observation: V2-TRY-135 / JBEC gamma residual tune
-current_best_H: 80.506168
-current_best_seed: JBEC_seed17_gamma_residual_tune_observation
-completed_try_count: 137
+current_best_observation: V2-TRY-138 / JBEC + class-name CLIP residual
+current_best_H: 80.712565
+current_best_seed: CNRA_training_seed_17
+completed_try_count: 138
 minimum_total_try_count: 50
 target_best_H: 78.0
 evaluation_protocol: test_selected_inductive_gzsl

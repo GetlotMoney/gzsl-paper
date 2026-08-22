@@ -21,9 +21,9 @@ target_supported_innovations: 3
 supported_innovations: 3
 current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
-current_best_observation_H: 80.506168
-current_best_observation_seed: JBEC_seed17_gamma_residual_tune_observation
-completed_try_count: 137
+current_best_observation_H: 80.712565
+current_best_observation_seed: CNRA_training_seed_17
+completed_try_count: 138
 minimum_required_try_count: 50
 ```
 
@@ -180,6 +180,8 @@ JBEC gamma残差范围0.10的seed17调参观察达到`H=80.506168%`，但只比4
 ADMA属性对角度量产生真实维度差异，但所有非零epoch均降低H，已止损。当前累计136组，最高可靠结构继续保持JBEC `H=80.482768%`。
 
 NGVF训练得到负eta，与单位球面归一化融合假设方向相反；其`H=80.495362%`微小观察不作为机制成功，已止损。当前累计137组，最高可靠结构仍为JBEC。
+
+CNRA把独立CLIP类名原型作为JBEC残差，seed17达到`U/S/H/ZS=77.406234/84.313953/80.712565/87.423056%`，四项同时提高且beta非饱和。当前累计138组，继续其余seed可靠性，单seed暂不晋级。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
