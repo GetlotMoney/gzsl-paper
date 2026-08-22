@@ -4,7 +4,12 @@ from pathlib import Path
 
 import torch
 
-from model.innovations.dpt import DistributionalPrototypeClassifier, text_resultant_lengths
+from model.innovations.dpt import (
+    AdaptiveDistributionalPrototypeClassifier,
+    DistributionalPrototypeClassifier,
+    text_resultant_lengths,
+    text_uncertainty_features,
+)
 from model.innovations.train_dpt import load_config
 
 
@@ -47,3 +52,21 @@ def test_dpt_config_and_training_boundary():
     assert config["max_gamma"] == 2.0
     source = (ROOT / "model/innovations/train_dpt.py").read_text(encoding="utf-8")
     assert source.index("for epoch in range") < source.index("# official test严格在DPT训练结束后加载。")
+
+
+def test_adaptive_dpt_starts_off_and_rescue_config():
+    generator = torch.Generator().manual_seed(93)
+    sentences = torch.randn(200, 8, 768, generator=generator)
+    parent = torch.randn(200, 768, generator=generator)
+    model = AdaptiveDistributionalPrototypeClassifier(
+        parent, text_uncertainty_features(sentences), torch.tensor(10.0)
+    )
+    assert torch.equal(model.class_confidence(), torch.ones(200))
+    images = torch.randn(6, 768, generator=generator)
+    torch.nn.functional.cross_entropy(model.logits(images), torch.arange(6)).backward()
+    assert any(parameter.grad is not None for parameter in model.gate.parameters())
+    config, _ = load_config(
+        ROOT / "config/tries/v2_try_042_dpt_rescue1_seed7.yaml"
+    )
+    assert config["attempt_id"] == "V2-TRY-042"
+    assert config["confidence_mode"] == "adaptive_gate"

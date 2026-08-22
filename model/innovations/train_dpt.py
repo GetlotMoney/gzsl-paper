@@ -10,8 +10,10 @@ import torch.nn.functional as F
 import yaml
 
 from model.innovations.dpt import (
+    AdaptiveDistributionalPrototypeClassifier,
     DistributionalPrototypeClassifier,
     text_resultant_lengths,
+    text_uncertainty_features,
 )
 from model.innovations.elpt import VariableClassTGVPR, fixed_class_folds
 from model.innovations.train_elpt import FrozenPrototypeClassifier, _candidate_prototypes
@@ -34,6 +36,7 @@ CONFIG_KEYS = {
     "batch_size", "lr", "weight_decay", "max_gamma", "initial_gamma",
     "parent_metrics_percent",
 }
+CONFIG_KEYS_V2 = CONFIG_KEYS | {"confidence_mode", "max_log_scale"}
 
 
 class TeeStream:
@@ -49,11 +52,12 @@ def load_config(path: Path):
     path = path.resolve()
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
-        raise ValueError(f"DPT配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if config["schema_version"] != "gzsl-paper.dpt.v1":
+    expected = CONFIG_KEYS_V2 if isinstance(config, dict) and config.get("schema_version") == "gzsl-paper.dpt.v2" else CONFIG_KEYS
+    if not isinstance(config, dict) or actual != expected:
+        raise ValueError(f"DPT配置字段错误；缺少={sorted(expected-actual)}，多出={sorted(actual-expected)}。")
+    if config["schema_version"] not in ("gzsl-paper.dpt.v1", "gzsl-paper.dpt.v2"):
         raise ValueError("DPT schema错误。")
-    if config["attempt_id"] != "V2-TRY-041" or config["idea_id"] != "IDEA-012":
+    if config["attempt_id"] not in ("V2-TRY-041", "V2-TRY-042") or config["idea_id"] != "IDEA-012":
         raise ValueError("DPT首次TRY身份错误。")
     if config["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("DPT父框架错误。")
@@ -65,6 +69,13 @@ def load_config(path: Path):
         raise ValueError("DPT gamma身份错误。")
     if set(config["parent_metrics_percent"]) != {"U", "S", "H", "ZS"}:
         raise ValueError("DPT父指标不完整。")
+    config.setdefault("confidence_mode", "global_resultant")
+    config.setdefault("max_log_scale", 0.1)
+    expected_mode = "global_resultant" if config["attempt_id"] == "V2-TRY-041" else "adaptive_gate"
+    if config["confidence_mode"] != expected_mode:
+        raise ValueError("DPT置信模式与TRY身份不匹配。")
+    if float(config["max_log_scale"]) != 0.1:
+        raise ValueError("DPT自适应log尺度固定为0.1。")
     return config, sha256_file(path)
 
 
@@ -124,13 +135,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             parent, gate, seenclasses, unseenclasses, device,
             "summary", fixed_class_folds(seenclasses), "tangent"
         )
-        model = DistributionalPrototypeClassifier(
-            tst_prototypes,
-            text_resultant_lengths(tensors["sentence_embeds"]).to(device),
-            seenclasses,
-            parent.scale(),
-            max_gamma=config["max_gamma"], initial_gamma=config["initial_gamma"],
-        ).to(device)
+        if config["confidence_mode"] == "adaptive_gate":
+            model = AdaptiveDistributionalPrototypeClassifier(
+                tst_prototypes,
+                text_uncertainty_features(tensors["sentence_embeds"]).to(device),
+                parent.scale(),
+                max_log_scale=config["max_log_scale"],
+            ).to(device)
+        else:
+            model = DistributionalPrototypeClassifier(
+                tst_prototypes,
+                text_resultant_lengths(tensors["sentence_embeds"]).to(device),
+                seenclasses,
+                parent.scale(),
+                max_gamma=config["max_gamma"], initial_gamma=config["initial_gamma"],
+            ).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=float(config["lr"]), weight_decay=0.0)
         mapping = torch.full((200,), -1, dtype=torch.long)
         mapping[seenclasses] = torch.arange(150)
@@ -147,20 +166,26 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
                 loss = F.cross_entropy(model.logits(features, seenclasses), targets)
                 optimizer.zero_grad(set_to_none=True)
                 loss.backward()
-                if not torch.isfinite(model.raw_gamma.grad):
-                    raise FloatingPointError("DPT gamma梯度非有限。")
+                if any(
+                    parameter.grad is not None and not torch.isfinite(parameter.grad).all()
+                    for parameter in model.parameters()
+                ):
+                    raise FloatingPointError("DPT梯度非有限。")
                 optimizer.step()
                 loss_sum += float(loss.detach()) * indices.numel()
                 count += indices.numel()
             confidence = model.class_confidence().detach()
+            gamma_value = (
+                float(model.gamma().detach()) if hasattr(model, "gamma") else None
+            )
             row = {
                 "epoch": epoch, "train_ce": loss_sum / count,
-                "gamma": float(model.gamma().detach()),
+                "gamma": gamma_value,
                 "confidence_min": float(confidence.min()),
                 "confidence_max": float(confidence.max()),
             }
             history.append(row)
-            print(f"epoch={epoch} ce={row['train_ce']:.6f} gamma={row['gamma']:.6f} confidence=[{row['confidence_min']:.6f},{row['confidence_max']:.6f}]")
+            print(f"epoch={epoch} ce={row['train_ce']:.6f} gamma={row['gamma']} confidence=[{row['confidence_min']:.6f},{row['confidence_max']:.6f}]")
         payload = {"attempt_id": config["attempt_id"], "code_commit": code_commit, "config": config, "model_state_dict": copy.deepcopy(model.state_dict()), "history": history}
         torch.save(payload, output_dir / "distribution_model.pth")
 
@@ -173,8 +198,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
         delta = {key: candidate_metrics[key] - float(config["parent_metrics_percent"][key]) for key in ("U", "S", "H", "ZS")}
         confidence = model.class_confidence().detach()
         confidence_stats = {"min": float(confidence.min()), "max": float(confidence.max()), "ratio": float(confidence.max()/confidence.min())}
-        gamma = float(model.gamma().detach())
-        success = delta["H"] >= 0.20 and delta["U"] >= -2.0 and delta["S"] >= -2.0 and gamma < 1.96 and confidence_stats["ratio"] < 1.5
+        gamma = float(model.gamma().detach()) if hasattr(model, "gamma") else None
+        gamma_safe = gamma is None or gamma < 1.96
+        success = delta["H"] >= 0.20 and delta["U"] >= -2.0 and delta["S"] >= -2.0 and gamma_safe and confidence_stats["ratio"] < 1.5
         atomic_write_json(output_dir / "data_fingerprints.json", {"files": input_sha})
         metrics = {
             "attempt_id": config["attempt_id"], "idea_id": config["idea_id"],
@@ -187,6 +213,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "candidate_metrics_percent": candidate_metrics,
             "delta_vs_parent_percent_points": delta,
             "learned_gamma": gamma, "confidence_stats": confidence_stats,
+            "confidence_mode": config["confidence_mode"],
             "success": success,
             "distribution_model_sha256": sha256_file(output_dir / "distribution_model.pth"),
         }

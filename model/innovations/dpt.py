@@ -14,6 +14,22 @@ def text_resultant_lengths(sentence_embeds: torch.Tensor) -> torch.Tensor:
     return sentences.mean(dim=1).norm(dim=-1).clamp_min(1e-6)
 
 
+def text_uncertainty_features(sentence_embeds: torch.Tensor) -> torch.Tensor:
+    sentences = F.normalize(sentence_embeds.detach().float(), dim=-1)
+    mean = F.normalize(sentences.mean(dim=1), dim=-1)
+    cosine = (sentences * mean.unsqueeze(1)).sum(dim=-1)
+    resultant = sentences.mean(dim=1).norm(dim=-1)
+    return torch.stack(
+        (
+            resultant,
+            cosine.mean(dim=1),
+            cosine.std(dim=1, unbiased=False),
+            cosine.min(dim=1).values,
+        ),
+        dim=1,
+    )
+
+
 class DistributionalPrototypeClassifier(nn.Module):
     """用八描述合向量长度建模类别文本原型置信度。"""
 
@@ -53,6 +69,61 @@ class DistributionalPrototypeClassifier(nn.Module):
     def class_confidence(self) -> torch.Tensor:
         centered_log = self.resultant_lengths.log() - self.seen_log_reference
         return torch.exp(self.gamma() * centered_log)
+
+    def prototypes(self, *, enabled: bool = True) -> torch.Tensor:
+        if not enabled:
+            return self.parent_prototypes
+        return self.parent_prototypes * self.class_confidence().unsqueeze(-1)
+
+    def scale(self) -> torch.Tensor:
+        return self._scale
+
+    def logits(self, image_features: torch.Tensor, class_ids=None) -> torch.Tensor:
+        prototypes = self.prototypes()
+        if class_ids is not None:
+            prototypes = prototypes.index_select(0, class_ids.to(prototypes.device))
+        return F.normalize(image_features.float(), dim=-1) @ prototypes.T * self.scale()
+
+
+class AdaptiveDistributionalPrototypeClassifier(nn.Module):
+    """从类别文本不确定性预测有界logit尺度。"""
+
+    def __init__(
+        self,
+        parent_prototypes: torch.Tensor,
+        uncertainty_features: torch.Tensor,
+        scale: torch.Tensor,
+        *,
+        max_log_scale: float = 0.1,
+    ):
+        super().__init__()
+        if tuple(parent_prototypes.shape) != (200, 768):
+            raise ValueError("自适应DPT父原型必须是[200,768]。")
+        if tuple(uncertainty_features.shape) != (200, 4):
+            raise ValueError("自适应DPT文本特征必须是[200,4]。")
+        self.register_buffer(
+            "parent_prototypes", F.normalize(parent_prototypes.detach(), dim=-1)
+        )
+        features = uncertainty_features.detach().float()
+        self.register_buffer("feature_mean", features.mean(dim=0, keepdim=True))
+        self.register_buffer(
+            "feature_std", features.std(dim=0, keepdim=True, unbiased=False).clamp_min(1e-6)
+        )
+        self.register_buffer("uncertainty_features", features)
+        self.register_buffer("_scale", scale.detach().clone())
+        self.max_log_scale = float(max_log_scale)
+        self.gate = nn.Sequential(
+            nn.Linear(4, 16),
+            nn.GELU(),
+            nn.Linear(16, 1),
+        )
+        nn.init.zeros_(self.gate[-1].weight)
+        nn.init.zeros_(self.gate[-1].bias)
+
+    def class_confidence(self) -> torch.Tensor:
+        normalized = (self.uncertainty_features - self.feature_mean) / self.feature_std
+        log_scale = self.max_log_scale * torch.tanh(self.gate(normalized)).squeeze(-1)
+        return torch.exp(log_scale)
 
     def prototypes(self, *, enabled: bool = True) -> torch.Tensor:
         if not enabled:
