@@ -10,12 +10,12 @@ hypothesis: 在VEBC最优点附近用pseudo-unseen episode联合微调beta与gam
 core_change: 冻结所有特征、原型和正反ridge，只训练beta范围+-2与gamma范围+-0.05的两个零初始化残差。
 success_condition: seed17 H超过80.474080%，U/S任一下降不超过2个百分点，两个残差均不饱和。
 failure_condition: 首次TRY和最多3次方法级补救后仍不超过VEBC父条件。
-status: testing
+status: supported
 paper_core_innovation: false
 parent_condition: V2-TRY-121 / TG-VPR + TST + NTR + CCGR + CRA + VPA + EBC
-current_attempt: V2-TRY-132..134
-last_attempt: V2-TRY-131
-last_decision: run_reliability_seeds
+current_attempt: none
+last_attempt: V2-TRY-134
+last_decision: promote_auxiliary_training_refinement
 ```
 
 JBEC的正反ridge只用pseudo-seen中心重建，两个残差的梯度只来自seen图像；true-unseen图像不进入训练。该实验只检验辅助模块联合优化。
@@ -23,3 +23,7 @@ JBEC的正反ridge只用pseudo-seen中心重建，两个残差的梯度只来自
 ## V2-TRY-131结果
 
 第20轮得到`U=77.045119%`、`S=84.241509%`、`H=80.482768%`、`ZS=87.227464%`，相对VEBC仅提高H `0.008688`；beta/gamma残差=`1.562304/0.047924`，均接近各自98%门槛。按预注册条件通过但效应极小，必须完成其余seed后再判断是否保留。
+
+## 四训练seed支持结论
+
+seed7/17/27/37的H为`80.045741/80.482768/80.437363/80.227127%`，H mean/min/max/range=`80.298250/80.045741/80.482768/0.437026`；相对VEBC四个seed均为正增益`0.008688–0.128678`，beta/gamma残差均未饱和。IDEA-038标记`supported`辅助训练细化；推理结构不新增模块，不计论文核心创新。
