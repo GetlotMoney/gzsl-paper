@@ -10,6 +10,7 @@ import yaml
 
 from model.innovations.ccgr import (
     ClassConditionedGeometricGenerator,
+    NeighborhoodResidualCCGR,
     tangent_direction_basis,
 )
 from model.innovations.dpt import text_resultant_lengths
@@ -29,6 +30,7 @@ CONFIG_KEYS_V4=CONFIG_KEYS_V3|{"magnitude_penalty"}
 CONFIG_KEYS_MARGIN=CONFIG_KEYS_V3|{"pseudo_unseen_margin"}
 CONFIG_KEYS_EPOCH=CONFIG_KEYS_V3|{"select_each_epoch"}
 CONFIG_KEYS_NEIGHBOR=CONFIG_KEYS_EPOCH|{"class_feature_mode"}
+CONFIG_KEYS_NEIGHBOR_RESIDUAL=CONFIG_KEYS_NEIGHBOR|{"parent_ccgr_model","parent_ccgr_model_sha256"}
 
 
 class TeeStream:
@@ -43,14 +45,14 @@ class TeeStream:
 def load_config(path:Path):
     path=path.resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
     schema=config.get("schema_version") if isinstance(config,dict) else None
-    expected=CONFIG_KEYS_NEIGHBOR if schema=="gzsl-paper.ng-ccgr.v1" else (CONFIG_KEYS_EPOCH if schema=="gzsl-paper.ccgr-epoch-select.v1" else (CONFIG_KEYS_MARGIN if schema=="gzsl-paper.ccgr-margin.v1" else (CONFIG_KEYS_V4 if schema=="gzsl-paper.ccgr.v4" else (CONFIG_KEYS_V3 if schema in ("gzsl-paper.ccgr.v3","gzsl-paper.ccgr.tune.v1") else (CONFIG_KEYS_V2 if schema=="gzsl-paper.ccgr.v2" else CONFIG_KEYS)))))
+    expected=CONFIG_KEYS_NEIGHBOR_RESIDUAL if schema=="gzsl-paper.ng-ccgr-residual.v1" else (CONFIG_KEYS_NEIGHBOR if schema=="gzsl-paper.ng-ccgr.v1" else (CONFIG_KEYS_EPOCH if schema=="gzsl-paper.ccgr-epoch-select.v1" else (CONFIG_KEYS_MARGIN if schema=="gzsl-paper.ccgr-margin.v1" else (CONFIG_KEYS_V4 if schema=="gzsl-paper.ccgr.v4" else (CONFIG_KEYS_V3 if schema in ("gzsl-paper.ccgr.v3","gzsl-paper.ccgr.tune.v1") else (CONFIG_KEYS_V2 if schema=="gzsl-paper.ccgr.v2" else CONFIG_KEYS))))))
     if not isinstance(config,dict) or actual!=expected: raise ValueError(f"CCGR配置字段错误；缺少={sorted(expected-actual)}，多出={sorted(actual-expected)}。")
-    valid_ids=("V2-TRY-058","V2-TRY-059","V2-TRY-060","V2-TRY-061","V2-TRY-062","V2-TRY-063","V2-TRY-064","V2-TRY-065","V2-TRY-066","V2-TRY-067","V2-TRY-074","V2-TRY-077","V2-TRY-078","V2-TRY-079","V2-TRY-080","V2-TRY-081")
-    expected_idea="IDEA-025" if config.get("attempt_id")=="V2-TRY-081" else ("IDEA-022" if config.get("attempt_id")=="V2-TRY-074" else "IDEA-018")
-    if config["schema_version"] not in ("gzsl-paper.ccgr.v1","gzsl-paper.ccgr.v2","gzsl-paper.ccgr.v3","gzsl-paper.ccgr.v4","gzsl-paper.ccgr.tune.v1","gzsl-paper.ccgr-margin.v1","gzsl-paper.ccgr-epoch-select.v1","gzsl-paper.ng-ccgr.v1") or config["attempt_id"] not in valid_ids or config["idea_id"]!=expected_idea: raise ValueError("CCGR首次TRY身份错误。")
+    valid_ids=("V2-TRY-058","V2-TRY-059","V2-TRY-060","V2-TRY-061","V2-TRY-062","V2-TRY-063","V2-TRY-064","V2-TRY-065","V2-TRY-066","V2-TRY-067","V2-TRY-074","V2-TRY-077","V2-TRY-078","V2-TRY-079","V2-TRY-080","V2-TRY-081","V2-TRY-082")
+    expected_idea="IDEA-025" if config.get("attempt_id") in ("V2-TRY-081","V2-TRY-082") else ("IDEA-022" if config.get("attempt_id")=="V2-TRY-074" else "IDEA-018")
+    if config["schema_version"] not in ("gzsl-paper.ccgr.v1","gzsl-paper.ccgr.v2","gzsl-paper.ccgr.v3","gzsl-paper.ccgr.v4","gzsl-paper.ccgr.tune.v1","gzsl-paper.ccgr-margin.v1","gzsl-paper.ccgr-epoch-select.v1","gzsl-paper.ng-ccgr.v1","gzsl-paper.ng-ccgr-residual.v1") or config["attempt_id"] not in valid_ids or config["idea_id"]!=expected_idea: raise ValueError("CCGR首次TRY身份错误。")
     expected_epochs=200 if config["attempt_id"]=="V2-TRY-058" else 20
     if int(config["epochs"])!=expected_epochs or float(config["lr"])!=0.001 or float(config["weight_decay"])!=0.0001: raise ValueError("CCGR训练参数错误。")
-    expected_max={"V2-TRY-066":0.15,"V2-TRY-067":0.2,"V2-TRY-074":0.2,"V2-TRY-077":0.2,"V2-TRY-078":0.2,"V2-TRY-079":0.2,"V2-TRY-080":0.2,"V2-TRY-081":0.2}.get(config["attempt_id"],0.1)
+    expected_max={"V2-TRY-066":0.15,"V2-TRY-067":0.2,"V2-TRY-074":0.2,"V2-TRY-077":0.2,"V2-TRY-078":0.2,"V2-TRY-079":0.2,"V2-TRY-080":0.2,"V2-TRY-081":0.2,"V2-TRY-082":0.2}.get(config["attempt_id"],0.1)
     if int(config["hidden_dim"])!=32 or float(config["max_magnitude"])!=expected_max or float(config["initial_magnitude"])!=0.02 or float(config["topology_weight"])!=0.1: raise ValueError("CCGR模块参数错误。")
     if set(config["parent_metrics_percent"])!={"U","S","H","ZS"}: raise ValueError("CCGR父指标不完整。")
     config.setdefault("training_objective","seen_centroid_alignment"); config.setdefault("fold_checkpoint_dir",None); config.setdefault("batch_half",32)
@@ -62,11 +64,12 @@ def load_config(path:Path):
     expected_objective="seen_centroid_alignment" if config["attempt_id"]=="V2-TRY-058" else "pseudo_unseen_episode"
     if config["training_objective"]!=expected_objective: raise ValueError("CCGR训练目标与TRY身份错误。")
     if config["attempt_id"]=="V2-TRY-059" and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32): raise ValueError("CCGR episode配置错误。")
-    if config["attempt_id"] in ("V2-TRY-060","V2-TRY-062","V2-TRY-063","V2-TRY-064","V2-TRY-065","V2-TRY-066","V2-TRY-067","V2-TRY-074","V2-TRY-077","V2-TRY-078","V2-TRY-079","V2-TRY-080","V2-TRY-081") and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32 or float(config["pseudo_unseen_weight"])!=0.25): raise ValueError("CCGR unseen风险配置错误。")
+    if config["attempt_id"] in ("V2-TRY-060","V2-TRY-062","V2-TRY-063","V2-TRY-064","V2-TRY-065","V2-TRY-066","V2-TRY-067","V2-TRY-074","V2-TRY-077","V2-TRY-078","V2-TRY-079","V2-TRY-080","V2-TRY-081","V2-TRY-082") and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32 or float(config["pseudo_unseen_weight"])!=0.25): raise ValueError("CCGR unseen风险配置错误。")
     if config["attempt_id"]=="V2-TRY-061" and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32 or float(config["pseudo_unseen_weight"])!=0.25 or float(config["magnitude_penalty"])!=0.01): raise ValueError("CCGR幅度约束配置错误。")
     if config["attempt_id"]=="V2-TRY-074" and float(config["pseudo_unseen_margin"])!=0.1: raise ValueError("EAML角度间隔配置错误。")
-    if config["attempt_id"] in ("V2-TRY-077","V2-TRY-078","V2-TRY-079","V2-TRY-080","V2-TRY-081") and config["select_each_epoch"] is not True: raise ValueError("CCGR逐epoch选择配置错误。")
-    if config["attempt_id"]=="V2-TRY-081" and config["class_feature_mode"]!="top5_vector": raise ValueError("NG-CCGR必须使用完整top-5类别邻域。")
+    if config["attempt_id"] in ("V2-TRY-077","V2-TRY-078","V2-TRY-079","V2-TRY-080","V2-TRY-081","V2-TRY-082") and config["select_each_epoch"] is not True: raise ValueError("CCGR逐epoch选择配置错误。")
+    if config["attempt_id"] in ("V2-TRY-081","V2-TRY-082") and config["class_feature_mode"]!="top5_vector": raise ValueError("NG-CCGR必须使用完整top-5类别邻域。")
+    if config["attempt_id"]=="V2-TRY-082" and (not config["parent_ccgr_model"] or not config["parent_ccgr_model_sha256"]): raise ValueError("邻域残差补救必须绑定父CCGR模型。")
     return config,sha256_file(path)
 
 
@@ -92,13 +95,15 @@ def run(config_path:Path,output_dir:Path,expected_commit:str):
     if not base_path.is_absolute(): base_path=Path.cwd()/base_path
     base_config,base_config_sha=h1.load_config(base_path); paths=h1.resolve_paths(base_config); input_sha=h1.verify_inputs(base_config,paths,h1.TRAINING_KEYS); checkpoint_path=Path(config["base_checkpoint"])
     if sha256_file(checkpoint_path)!=config["base_checkpoint_sha256"]: raise ValueError("CCGR父checkpoint SHA不匹配。")
+    parent_ccgr_path=Path(config["parent_ccgr_model"]) if config.get("parent_ccgr_model") else None
+    if parent_ccgr_path is not None and sha256_file(parent_ccgr_path)!=config["parent_ccgr_model_sha256"]: raise ValueError("NG-CCGR父模型SHA不匹配。")
     device=torch.device(base_config["device"])
     if device.type!="cuda" or not torch.cuda.is_available(): raise RuntimeError("CCGR要求CUDA。")
     output_dir=prepare_output_dir(output_dir)
     with (output_dir/"config.snapshot.yaml").open("x",encoding="utf-8") as handle: yaml.safe_dump(config,handle,allow_unicode=True,sort_keys=False)
     log_handle=(output_dir/"training.log").open("x",encoding="utf-8",buffering=1); original_stdout=sys.stdout; sys.stdout=TeeStream(sys.stdout,log_handle)
     try:
-        seed=int(config["seed"]); configure_reproducibility(seed,strict_determinism=True,deterministic_warn_only=False); tensors={name:torch.load(paths[name],map_location="cpu",weights_only=True) for name in ("sentence_embeds","train_features","train_labels")}; labels=tensors["train_labels"].long(); seenclasses=torch.unique(labels,sorted=True); allclasses=torch.arange(200); unseenclasses=allclasses[~torch.isin(allclasses,seenclasses)]; checkpoint=torch.load(checkpoint_path,map_location="cpu",weights_only=False); centroids=h1.visual_centroids(tensors["train_features"],labels,seenclasses); parent=VariableClassTGVPR(tensors["sentence_embeds"],seenclasses,centroids,dropout=base_config["dropout"],inner_ratio=base_config["inner_ratio"],outer_ratio=base_config["outer_ratio"],temperature=base_config["temperature"]); parent.load_state_dict(checkpoint["model_state_dict"],strict=True); parent=parent.to(device).eval(); ntr_gate=_load_gate(config,device); folds=fixed_class_folds(seenclasses); ntr_prototypes,_=_candidate_prototypes(parent,ntr_gate,seenclasses,unseenclasses,device,"top5_vector",folds,"tangent"); base=parent.base_prototypes(); value=parent.value_candidate(allclasses.to(device)); roles=parent.semantic_group_vectors(); basis=tangent_direction_basis(base,value,roles); similarity=base@base.index_select(0,seenclasses.to(device)).T; top5=similarity.topk(5,dim=1).values; text_resultant=text_resultant_lengths(tensors["sentence_embeds"]).to(device); features=ccgr_class_features(base,value,text_resultant,top5,config["class_feature_mode"]); model=ClassConditionedGeometricGenerator(ntr_prototypes,basis,features,unseenclasses,parent.scale(),hidden_dim=config["hidden_dim"],max_magnitude=config["max_magnitude"],initial_magnitude=config["initial_magnitude"]).to(device); optimizer=torch.optim.Adam(model.parameters(),lr=float(config["lr"]),weight_decay=float(config["weight_decay"])); history=[]; episode_packages=[]
+        seed=int(config["seed"]); configure_reproducibility(seed,strict_determinism=True,deterministic_warn_only=False); tensors={name:torch.load(paths[name],map_location="cpu",weights_only=True) for name in ("sentence_embeds","train_features","train_labels")}; labels=tensors["train_labels"].long(); seenclasses=torch.unique(labels,sorted=True); allclasses=torch.arange(200); unseenclasses=allclasses[~torch.isin(allclasses,seenclasses)]; checkpoint=torch.load(checkpoint_path,map_location="cpu",weights_only=False); centroids=h1.visual_centroids(tensors["train_features"],labels,seenclasses); parent=VariableClassTGVPR(tensors["sentence_embeds"],seenclasses,centroids,dropout=base_config["dropout"],inner_ratio=base_config["inner_ratio"],outer_ratio=base_config["outer_ratio"],temperature=base_config["temperature"]); parent.load_state_dict(checkpoint["model_state_dict"],strict=True); parent=parent.to(device).eval(); ntr_gate=_load_gate(config,device); folds=fixed_class_folds(seenclasses); ntr_prototypes,_=_candidate_prototypes(parent,ntr_gate,seenclasses,unseenclasses,device,"top5_vector",folds,"tangent"); base=parent.base_prototypes(); value=parent.value_candidate(allclasses.to(device)); roles=parent.semantic_group_vectors(); basis=tangent_direction_basis(base,value,roles); similarity=base@base.index_select(0,seenclasses.to(device)).T; top5=similarity.topk(5,dim=1).values; text_resultant=text_resultant_lengths(tensors["sentence_embeds"]).to(device); features=ccgr_class_features(base,value,text_resultant,top5,config["class_feature_mode"]); parent_ccgr_payload=torch.load(parent_ccgr_path,map_location="cpu",weights_only=False) if parent_ccgr_path is not None else None; model=NeighborhoodResidualCCGR(ntr_prototypes,basis,features,unseenclasses,parent.scale(),parent_ccgr_payload["model_state_dict"],hidden_dim=config["hidden_dim"],max_magnitude=config["max_magnitude"],initial_magnitude=config["initial_magnitude"]).to(device) if parent_ccgr_payload is not None else ClassConditionedGeometricGenerator(ntr_prototypes,basis,features,unseenclasses,parent.scale(),hidden_dim=config["hidden_dim"],max_magnitude=config["max_magnitude"],initial_magnitude=config["initial_magnitude"]).to(device); optimizer=torch.optim.Adam((p for p in model.parameters() if p.requires_grad),lr=float(config["lr"]),weight_decay=float(config["weight_decay"])); history=[]; episode_packages=[]
         if config["training_objective"]=="pseudo_unseen_episode":
             for fold_id,(ps,pu) in enumerate(folds):
                 fold_model=_load_fold_checkpoint(fold_id,ps,tensors["sentence_embeds"],tensors["train_features"],labels,base_config,device,config["fold_checkpoint_dir"]); package=_fold_package(fold_model,ps,pu,tensors,seenclasses,device,"top5_vector")
@@ -109,6 +114,8 @@ def run(config_path:Path,output_dir:Path,expected_commit:str):
         official_loaded=bool(config["select_each_epoch"]); best_state=None; best_epoch=None; best_H=float("-inf")
         if official_loaded:
             input_sha.update(h1.verify_inputs(base_config,paths,h1.OFFICIAL_KEYS)); tensors.update({name:torch.load(paths[name],map_location="cpu",weights_only=True) for name in h1.OFFICIAL_KEYS})
+            if parent_ccgr_path is not None:
+                initial_official=h1.evaluate(model,tensors,seenclasses,unseenclasses,device); best_H=initial_official["H"]; best_epoch=0; best_state=copy.deepcopy(model.state_dict()); history.append({"epoch":0,"official_metrics_percent":initial_official,"magnitude":model.magnitude_stats()}); print(f"epoch=0 official_H={best_H:.6f} magnitude={model.magnitude_stats()}")
         for epoch in range(1,int(config["epochs"])+1):
             if config["training_objective"]=="pseudo_unseen_episode":
                 loss_sum=0.0; count=0

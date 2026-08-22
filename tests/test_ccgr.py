@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 import torch
-from model.innovations.ccgr import ClassConditionedGeometricGenerator,tangent_direction_basis
+from model.innovations.ccgr import ClassConditionedGeometricGenerator,NeighborhoodResidualCCGR,tangent_direction_basis
 from model.innovations.train_ccgr import ccgr_class_features,load_config
 ROOT=Path(__file__).resolve().parents[1]
 def test_ccgr_basis_and_unseen_only_application():
@@ -38,3 +38,10 @@ def test_ng_ccgr_top5_vector_features():
     basis=tangent_direction_basis(base,value,torch.randn(200,3,768,generator=g)); model=ClassConditionedGeometricGenerator(base,basis,vector_features,torch.arange(150,200),torch.tensor(10.0)); assert model.trunk[0].in_features==8
 def test_ng_ccgr_config():
     config,_=load_config(ROOT/"config/tries/v2_try_081_ng_ccgr_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-081"; assert config["idea_id"]=="IDEA-025"; assert config["class_feature_mode"]=="top5_vector"; assert config["select_each_epoch"] is True
+def test_neighborhood_residual_starts_exactly_at_parent():
+    g=torch.Generator().manual_seed(29); base=torch.randn(200,768,generator=g); value=torch.randn(200,768,generator=g); roles=torch.randn(200,3,768,generator=g); top5=torch.rand(200,5,generator=g); resultant=torch.rand(200,generator=g); vector=ccgr_class_features(base,value,resultant,top5,"top5_vector"); mean=ccgr_class_features(base,value,resultant,top5,"top5_mean"); basis=tangent_direction_basis(base,value,roles); unseen=torch.arange(150,200); parent=ClassConditionedGeometricGenerator(base,basis,mean,unseen,torch.tensor(10.0),max_magnitude=0.2)
+    with torch.no_grad():
+        for parameter in parent.parameters(): parameter.normal_(0.0,0.05)
+    residual=NeighborhoodResidualCCGR(base,basis,vector,unseen,torch.tensor(10.0),parent.state_dict()); assert torch.equal(parent.generated_all(),residual.generated_all()); assert [name for name,p in residual.named_parameters() if p.requires_grad]==["neighborhood_residual.weight"]
+def test_neighborhood_residual_config():
+    config,_=load_config(ROOT/"config/tries/v2_try_082_ng_ccgr_rescue1_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-082"; assert config["parent_ccgr_model_sha256"]; assert config["class_feature_mode"]=="top5_vector"

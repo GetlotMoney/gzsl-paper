@@ -13,7 +13,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-078 / TG-VPR + TST + NTR + CCGR
-current_attempt: none
+current_attempt: V2-TRY-082
 last_attempt: V2-TRY-081
 last_decision: rescue
 ```
