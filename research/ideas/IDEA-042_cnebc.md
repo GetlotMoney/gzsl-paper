@@ -13,9 +13,13 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过CNRA父�
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-138 / TG-VPR + TST + NTR + CCGR + CRA + VPA + JBEC + CNRA
-current_attempt: V2-TRY-142
-last_attempt: none
-last_decision: none
+current_attempt: none
+last_attempt: V2-TRY-142
+last_decision: run_reliability_seeds
 ```
 
 CNEBC每折正反ridge仅使用pseudo-seen中心，额外gamma梯度只来自seen图像；true-unseen图像不进入训练。该方向只是最终辅助平衡细化。
+
+## V2-TRY-142结果
+
+第3轮得到`U=77.844131%`、`S=84.026349%`、`H=80.817183%`、`ZS=87.423056%`，相对CNRA提高H `0.104618`；gamma残差=`0.049823`未饱和。继续运行父CNRA seed7/27/37可靠性。

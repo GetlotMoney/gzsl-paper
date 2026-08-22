@@ -21,9 +21,9 @@ target_supported_innovations: 3
 supported_innovations: 3
 current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
-current_best_observation_H: 80.712565
-current_best_observation_seed: CNRA_training_seed_17
-completed_try_count: 141
+current_best_observation_H: 80.817183
+current_best_observation_seed: CNEBC_training_seed_17
+completed_try_count: 142
 minimum_required_try_count: 50
 ```
 
@@ -186,6 +186,8 @@ CNRA把独立CLIP类名原型作为JBEC残差，seed17达到`U/S/H/ZS=77.406234/
 CNRA在seed7/17/27/37上的H为`80.288043/80.712565/80.519916/80.530291%`，mean/range=`80.512704/0.424522`，四个seed均提高JBEC父H且beta非饱和。当前累计141组；CNRA可靠成立为独立类名语义辅助分支。
 
 CNRA已正式登记为`V2-INNOVATION-009 / supported auxiliary`，包含类名cache SHA、4seed配置与结果、模型/日志/指标SHA和HTML框架图。
+
+CNEBC在CNRA后训练额外episodic seen偏置，seed17达到`U/S/H/ZS=77.844131/84.026349/80.817183/87.423056%`，gamma残差非饱和并成为新最高。当前累计142组，继续其余seed可靠性。
 
 完整最高seed链式消融已建立为`V2-ABLATION-002`：TG-VPR→TST/NTR→CCGR构成三核心创新主干，CRA/VPA/JBEC/CNRA统一归入辅助语义证据头；H从`74.023182%`逐层提高到`80.712565%`，总增益`6.689383`个百分点。
 
