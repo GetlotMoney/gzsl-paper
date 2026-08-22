@@ -51,7 +51,7 @@ V2-H-PLUS-3PP
       ├─ innovation_slot_3：IDEA-018 / CCGR类别条件几何生成（supported，paper_core_innovation）
       ├─ rejected_branch：IDEA-019 / FVRA视觉特征残差适配（rejected，seen视觉适配系统性伤害U）
       ├─ rejected_branch：IDEA-020 / EDC样本条件联合竞争（rejected，样本margin仅改变U/S权衡）
-      ├─ target_78_branch：待类别条件温度/能量候选
+      ├─ target_78_branch：IDEA-021 / DALN原型密度感知归一化（testing）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：四seed mean已通过；seed7仍差0.038637个百分点
