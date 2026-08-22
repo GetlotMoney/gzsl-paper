@@ -1,6 +1,7 @@
 schema_version: gzsl-paper.experiment.v1
 experiment_id: V2-INNOVATION-002
 idea_id: IDEA-005
+evidence_refs: [PAPER-005, PAPER-006, V2-TRY-006, V2-TRY-009]
 framework_id: FRAMEWORK-V2
 base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
 code_commits:
@@ -26,3 +27,5 @@ test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: framework_diagram.html
 decision: paper_core_innovation
+novelty_claim: inductive_target_text_tangent_transport
+not_claimed: [first_hyperspherical_prototype, first_geodesic_interpolation, first_prototype_transport]

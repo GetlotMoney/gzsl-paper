@@ -1,6 +1,7 @@
 schema_version: gzsl-paper.experiment.v1
 experiment_id: V2-INNOVATION-003
 idea_id: IDEA-018
+evidence_refs: [PAPER-007, PAPER-008, V2-TRY-055, V2-TRY-057]
 framework_id: FRAMEWORK-V2
 base_commit: 42cd4457a65f89023ff342ba13679471d5db0942
 code_commits:
@@ -27,3 +28,5 @@ unseen_images_used_for_gradient: false
 primary_reporting: highest_seed_H_with_multiseed_range
 framework_diagram: framework_diagram.html
 decision: paper_core_innovation
+novelty_claim: target_class_four_text_tangent_generator
+not_claimed: [first_dynamic_semantic_prototype, first_dual_prototype, first_visual_augmented_prototype]

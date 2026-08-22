@@ -189,6 +189,8 @@ CNRA已正式登记为`V2-INNOVATION-009 / supported auxiliary`，包含类名ca
 
 完整最高seed链式消融已建立为`V2-ABLATION-002`：TG-VPR→TST/NTR→CCGR构成三核心创新主干，CRA/VPA/JBEC/CNRA统一归入辅助语义证据头；H从`74.023182%`逐层提高到`80.712565%`，总增益`6.689383`个百分点。
 
+三项核心创新新颖性边界已重新核对PAPER-005至008：TG-VPR不得声称首次GPT描述prompt，TST不得声称首次超球面/测地线prototype transport，CCGR不得声称首次动态或双prototype。允许的窄claim已固定在`docs/CORE_INNOVATION_CLAIM_BOUNDARIES.md`。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

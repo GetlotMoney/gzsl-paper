@@ -8,6 +8,8 @@ evidence_refs:
   - V2-TRY-007
   - V2-TRY-008
   - V2-TRY-009
+  - PAPER-005
+  - PAPER-006
 base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
 problem: ELPT凸混合出现强正指标但迁移系数越过预注册安全范围，限制alpha后又饱和并损害S。
 hypothesis: 只沿Mean8单位球面的切向分量迁移，可以保留原型的径向身份并学习足够的类别方向变化。
@@ -16,6 +18,7 @@ success_condition: seed7相对V2基线DeltaH不低于0.20个百分点、U提高�
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
 status: supported
 paper_core_innovation: true
+novelty_claim: inductive_target_text_tangent_transport_not_first_hyperspherical_transport
 parent_condition: FRAMEWORK-V2 / V2-CONFIRM-001 / RUN-001
 current_attempt: none
 last_attempt: V2-TRY-018

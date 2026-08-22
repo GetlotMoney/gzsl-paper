@@ -6,10 +6,12 @@ status: supported
 source_type: paper
 evidence_refs:
   - PAPER-001
+  - PAPER-004
 base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
 framework: FRAMEWORK-V2
 paper_role: innovation_slot_1_candidate
 paper_core_innovation: true
+novelty_claim: fixed_role_group_reparameterization_not_first_GPT_description_prompting
 method_name_candidate: TG-VPR
 experiment_ref: experiments/v2/evidence/legacy_h1
 framework_baseline_ref: V2-CONFIRM-001/RUN-001

@@ -109,6 +109,8 @@ status: proposed | testing | supported | revised | rejected
 
 ## 进入实验
 
+当前三项核心创新的允许与禁止claim见[`docs/CORE_INNOVATION_CLAIM_BOUNDARIES.md`](../docs/CORE_INNOVATION_CLAIM_BOUNDARIES.md)。
+
 正式 Innovation 实验的 `EXPERIMENT.yaml` 必须包含：
 
 ```yaml
