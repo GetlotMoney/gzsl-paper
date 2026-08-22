@@ -13,7 +13,7 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-054
+current_attempt: V2-TRY-055
 ```
 
 SVPG只用seen图像训练共享映射；unseen原型只通过相同网络前向生成，true-unseen图像在训练结束后才加载。
@@ -21,3 +21,7 @@ SVPG只用seen图像训练共享映射；unseen原型只通过相同网络前向
 ## V2-TRY-053结果
 
 共享残差使`U`提高`1.175797`，但seen原型也被改写，`S`下降`2.555877`，相对TST `Delta H=-0.596587`。补救1改为用seen视觉中心训练共享映射，但推理时只改写unseen原型，seen原型保持TST不变。
+
+## V2-TRY-054结果
+
+seen中心对齐把生成残差范数推到mean/max=`1.452803/2.166056`，unseen原型过度移动并夺走全部seen预测，`S=0`。补救2增加每类残差L2上限`0.2`，保留unseen-only应用但禁止离开TST安全邻域。
