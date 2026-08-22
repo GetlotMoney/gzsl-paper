@@ -10,10 +10,12 @@ hypothesis: 将TST切向方向与seen残差PCA子空间投影进行有界混合�
 core_change: 每个fold从pseudo-seen原型残差学习rank-32正交子空间，训练一个混合系数调整TST完整切向与子空间投影；mix=0严格回到TST。
 success_condition: seed7相对TG-VPR+TST最高H提高至少0.20个百分点，U和S各自下降不超过2个百分点，mix不饱和。
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
-status: testing
+status: rejected
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-057
+current_attempt: none
+last_attempt: V2-TRY-057
+last_decision: drop
 ```
 
 ORT子空间只由seen或pseudo-seen训练原型残差建立；true-unseen图像在训练结束后才加载。
@@ -21,3 +23,7 @@ ORT子空间只由seen或pseudo-seen训练原型残差建立；true-unseen图像
 ## V2-TRY-056结果
 
 共享子空间mix降到`0.055600`且四项均略降，`Delta H=-0.088396`，说明seen残差主子空间不是直接可迁移信号。补救1把该子空间解释为seen域偏置，从TST切向中减去其投影并保留正交补空间。
+
+## V2-TRY-057结果与止损
+
+正交补mix收敛到`0.000730`，U/S/H/ZS与TST逐位一致。训练同时拒绝seen残差主子空间和其补空间，说明该残差分解没有unseen迁移价值；IDEA-017提前止损。

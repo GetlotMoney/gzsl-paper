@@ -23,7 +23,7 @@ current_seed7_H: 76.984545
 current_multiseed_mean_H: 76.866245
 current_best_observation_H: 77.086536
 current_best_observation_seed: 7
-completed_try_count: 55
+completed_try_count: 57
 minimum_required_try_count: 50
 ```
 
@@ -60,6 +60,8 @@ owner已更新成绩口径：主结果报告最高seed，mean/range只用于判�
 seed9后续结果：TST `H=76.698446%`，NTR `H=76.795441%`。NTR相对TST四项均提高，`Delta H=+0.096995`；五seed最高仍为seed7 `77.086536%`，范围约`0.543209`。当前累计52组有效实验，稳定78%+尚未实现。
 
 当前累计55组有效实验。BMR、DPT、SGT、MPR、PGO与SVPG均已按真实失败模式止损；其中SVPG再次证明直接把seen视觉映射施加给unseen会造成严重联合竞争偏置。稳定78%+仍未实现，下一主线转向正交残差与类别条件生成。
+
+当前累计57组有效实验。正交残差主子空间与补空间均被训练关闭，ORT已止损；全局共享SVPG和低秩ORT共同证明seen视觉偏置不能整体迁移给unseen。下一主线必须使用类别条件机制，稳定78%+仍未实现。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
