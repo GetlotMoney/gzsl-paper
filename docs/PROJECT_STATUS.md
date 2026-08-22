@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 79.386082
 current_best_observation_seed: ARA_training_seed_17_without_SDM
-completed_try_count: 100
+completed_try_count: 101
 minimum_required_try_count: 50
 ```
 
@@ -120,6 +120,8 @@ ARA的CCGR-off消融得到`H=78.967987%`，比完整CCGR+ARA低`0.418095`，证�
 最终无SDM的CCGR+ARA结构在seed7/17/27/37上得到H `79.334907/79.386082/79.265577/79.280845%`，mean/range=`79.316853/0.120505`，4/4 seed均超过79.26。当前累计100组真实实验；继续正式化ARA、完整消融与后续创新，不因达到78%提前结束。
 
 ARA已正式登记为`V2-INNOVATION-004 / supported auxiliary`，目录包含4seed最终结果、SDM-off与CCGR-off消融、完整配置、模型/日志/指标SHA和HTML框架图；它不计为第四个论文核心创新。
+
+不依赖人工attributes的DRA尝试出现明确seen过拟合：beta增大、训练loss下降，但所有非零epoch official H均下降，最终选回CCGR父模型并提前止损。当前累计101组，说明ARA增益来自独立显式属性证据而非重复编码GPT描述。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
