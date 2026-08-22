@@ -26,3 +26,5 @@ def test_cra_reliability_configs():
     expected={"105":7,"106":27,"107":37}
     for suffix,seed in expected.items():
         config,_=load_config(ROOT/f"config/tries/v2_try_{suffix}_cra_seed{seed}.yaml"); assert config["seed"]==seed and config["ridge_source"]=="class_centroids" and config["ccgr_model_sha256"]
+def test_cra_ridge_tune_configs():
+    c01,_=load_config(ROOT/"config/tries/v2_try_109_cra_ridge01_seed17.yaml"); c1,_=load_config(ROOT/"config/tries/v2_try_110_cra_ridge1_seed17.yaml"); assert c01["ridge"]==0.1 and c1["ridge"]==1.0
