@@ -13,9 +13,9 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最
 status: supported
 paper_core_innovation: false
 parent_condition: V2-TRY-086 / TG-VPR + TST + NTR + CCGR + SDM
-current_attempt: V2-TRY-096
-last_attempt: V2-TRY-095
-last_decision: promote_after_ablation
+current_attempt: none
+last_attempt: V2-TRY-096
+last_decision: drop_SDM_from_final_combination
 ```
 
 属性来自当前CUB `att_splits.mat`，不是旧仓库知识；ridge和beta训练都只使用seen图像。只读official-test上界扫描曾达到`H=79.385635%`，只作为动机，不计正式结果；正式TRY必须由训练得到beta并继续披露`test_used_for_selection=true`。
@@ -27,3 +27,7 @@ last_decision: promote_after_ablation
 ## 四训练seed支持结论
 
 seed7/17/27/37的ARA H为`79.330716/79.307063/79.253171/79.280845%`，相对各自SDM父条件提高`1.769812/1.694075/1.667857/1.776917`；H mean/min/max/range=`79.292949/79.253171/79.330716/0.077545`。4/4 seed稳定超过79%，IDEA-029标记`supported`；仍保持`paper_core_innovation=false`，待SDM-off消融和相关工作核对后再决定论文叙事归属。
+
+## SDM-off消融
+
+关闭SDM后ARA得到`U=74.236083%`、`S=85.303891%`、`H=79.386082%`、`ZS=86.028028%`，比含SDM的TRY-092 H高`0.079019`并成为新最高。SDM与ARA组合时冗余，最终候选删除SDM；ARA相对纯CCGR仍提高H `1.813400`。下一步关闭CCGR验证ARA与类别条件原型的互补性。
