@@ -14,3 +14,7 @@ def test_low_rank_sdm_config():
     config,_=load_config(ROOT/"config/tries/v2_try_087_sdm_rescue1_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-087"; assert config["subspace_rank"]==64; assert config["parent_sdm_model_sha256"]
 def test_joint_low_rank_sdm_config_and_trainable_base():
     config,_=load_config(ROOT/"config/tries/v2_try_088_sdm_rescue2_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-088" and config["train_base_metric"] is True; base=SymmetricDiagonalMetric(); model=SymmetricLowRankMetric(base,torch.eye(64,768),freeze_base_metric=False); assert {name for name,p in model.named_parameters() if p.requires_grad}=={"raw_subspace_log_weight","base_metric.raw_log_weight"}
+def test_sdm_reliability_configs_bind_own_parent():
+    expected={"089":7,"090":27,"091":37}
+    for suffix,seed in expected.items():
+        config,_=load_config(ROOT/f"config/tries/v2_try_{suffix}_sdm_seed{seed}.yaml"); assert config["seed"]==seed; assert config["ccgr_model_sha256"]; assert config["schema_version"]=="gzsl-paper.sdm.v1"
