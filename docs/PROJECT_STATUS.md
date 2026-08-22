@@ -21,7 +21,7 @@ target_supported_innovations: 3
 supported_innovations: 3
 current_seed7_H: 77.384331
 current_multiseed_mean_H: 77.066040
-current_best_observation_H: 77.384331
+current_best_observation_H: 77.459931
 current_best_observation_seed: 7
 completed_try_count: 65
 minimum_required_try_count: 50
@@ -70,6 +70,8 @@ episodic CCGR进一步达到`H=77.237120%`，相对NTR提高`0.150584`，成为�
 unseen平衡CCGR进一步达到`H=77.384331%`，相对NTR提高`0.297795`且U/S/ZS全部提高，首次达到新核心创新增益门槛。当前仍需完成幅度非饱和补救、多seed和正式消融，78%目标尚未达到。
 
 CCGR已在seed5/6/7/8/9上全部提高H，最高`77.384331%`、range=`0.708975`，已晋级论文核心创新3。当前三项核心创新为TG-VPR、TST和CCGR；NTR作为TST到CCGR之间的邻域路由实现保留。稳定78%+仍未达到，后续继续组合与新目标优化。
+
+CCGR幅度Tune在0.15/0.20处达到`77.459608/77.459931%`后平台化；全局margin只读诊断上限约`77.52193%`。继续从视觉特征适配角度寻找78%+，不再扩大CCGR幅度。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
