@@ -23,7 +23,7 @@ current_seed7_H: 77.384331
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 77.459931
 current_best_observation_seed: 7
-completed_try_count: 74
+completed_try_count: 75
 minimum_required_try_count: 50
 ```
 
@@ -82,6 +82,8 @@ DALN密度Gate提高U与ZS但seen CE导致S下降，H仅低于父条件`0.039483
 DALN在seen CE与pseudo-unseen episode两条训练路径下均未提高H，已止损。当前累计73组，下一主线使用pseudo-unseen角度间隔直接扩大类间边界。
 
 EAML角度间隔及CCGR/EAML原型ensemble均未超过`77.459931%`，已止损。当前累计74组，下一主线转向内层pseudo-seen、外层pseudo-unseen的元学习视觉适配。
+
+MFRA元学习视觉adapter仍提高U并严重降低S，已止损。当前累计75组，下一主线转为条件视觉分布生成与200类平衡分类的新框架。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

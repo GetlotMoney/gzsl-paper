@@ -10,10 +10,16 @@ hypothesis: 内层pseudo-seen临时更新、外层pseudo-unseen元损失更新�
 core_change: 固定CCGR 0.20原型，训练有界768-64-768 feature adapter；每步一阶内外层更新，一致性权重1.0。
 success_condition: seed7相对CCGR最高H提高至少0.20个百分点，U/S任一下降不超过2个百分点，残差不饱和。
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
-status: testing
+status: rejected
 paper_core_innovation: false
 parent_condition: V2-TRY-067 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-075
+current_attempt: none
+last_attempt: V2-TRY-075
+last_decision: drop
 ```
 
 MFRA内外层都只使用150个seen类构造的episode；true-unseen图像在训练结束后才加载。
+
+## V2-TRY-075结果与止损
+
+MFRA提高`U=+1.566821`与`ZS=+0.254178`，但`S`下降`4.090500`，相对CCGR `Delta H=-1.135278`。即使使用pseudo-unseen外层目标和0.1残差边界，视觉adapter仍产生seen/unseen域偏置，IDEA-023止损。
