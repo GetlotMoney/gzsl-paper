@@ -18,12 +18,12 @@ paper_primary_framework: FRAMEWORK-V2
 paper_baseline_H: 74.023182
 paper_target_H: 78.0
 target_supported_innovations: 3
-supported_innovations: 2
-current_seed7_H: 76.984545
-current_multiseed_mean_H: 76.866245
+supported_innovations: 3
+current_seed7_H: 77.384331
+current_multiseed_mean_H: 77.066040
 current_best_observation_H: 77.384331
 current_best_observation_seed: 7
-completed_try_count: 57
+completed_try_count: 65
 minimum_required_try_count: 50
 ```
 
@@ -68,6 +68,8 @@ CCGR类别条件文本几何生成在seed7得到`H=77.100834%`，比NTR提高`0.
 episodic CCGR进一步达到`H=77.237120%`，相对NTR提高`0.150584`，成为当前最高观察；仍未达到78%，且U/S偏向需要继续补救。
 
 unseen平衡CCGR进一步达到`H=77.384331%`，相对NTR提高`0.297795`且U/S/ZS全部提高，首次达到新核心创新增益门槛。当前仍需完成幅度非饱和补救、多seed和正式消融，78%目标尚未达到。
+
+CCGR已在seed5/6/7/8/9上全部提高H，最高`77.384331%`、range=`0.708975`，已晋级论文核心创新3。当前三项核心创新为TG-VPR、TST和CCGR；NTR作为TST到CCGR之间的邻域路由实现保留。稳定78%+仍未达到，后续继续组合与新目标优化。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

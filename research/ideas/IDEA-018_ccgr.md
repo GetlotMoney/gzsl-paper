@@ -10,10 +10,13 @@ hypothesis: 每类只在Value/local/unique/overall四个文本切向方向内生
 core_change: 以TG-VPR+TST+NTR为父框架，训练4维类别几何到四方向权重及最大0.1幅度的Gate；训练用seen视觉中心，推理只改写unseen。
 success_condition: seed7相对NTR最高H提高至少0.20个百分点，U和S各自下降不超过2个百分点，幅度不饱和。
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
-status: testing
-paper_core_innovation: false
+status: supported
+paper_core_innovation: true
 parent_condition: V2-TRY-028 / TG-VPR + TST + NTR
-current_attempt: V2-TRY-062_to_065
+current_attempt: none
+last_attempt: V2-TRY-065
+last_decision: promote
+experiment_ref: V2-INNOVATION-003
 ```
 
 CCGR生成方向全部来自目标类别文本；true-unseen图像在训练结束后才加载。关闭CCGR时严格回到NTR父框架。
@@ -33,3 +36,7 @@ unseen平衡CCGR得到`U=74.429679%`、`S=80.583262%`、`H=77.384331%`、`ZS=81.
 ## V2-TRY-061结果与结构冻结
 
 幅度平方约束得到`H=77.218921%`，低于TRY-060；但U/S/ZS仍均高于NTR，说明CCGR机制有效而非单一指标偶然。正式冻结最佳TRY-060结构，在seed5/6/8/9上复用各自NTR父条件训练CCGR Gate。
+
+## 五seed支持结论
+
+seed5/6/7/8/9相对各自NTR的`Delta H=+0.132029/+0.351506/+0.297795/+0.063297/+0.183575`，五个seed全部为正；最高`H=77.384331%`，H min/max/range=`76.675355/77.384331/0.708975`。按owner的最高seed与range口径，IDEA-018标记`supported / paper_core_innovation`并晋级`V2-INNOVATION-003`。
