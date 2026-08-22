@@ -23,7 +23,7 @@ current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
 current_best_observation_H: 77.612988
 current_best_observation_seed: gate_training_seed_17_on_data_seed_7
-completed_try_count: 86
+completed_try_count: 87
 minimum_required_try_count: 50
 ```
 
@@ -102,6 +102,8 @@ CCGR-HEO权重0.1的非零训练轮次最高仅`77.560640%`，仍未超过父模
 只读错误分解显示seen/unseen跨域错误为`12.82/11.30%`，而域内错误为`6.50/14.00%`，剩余主要不对称来自unseen细粒度混淆。针对该问题的CCGR-LBS仍无非零epoch超过父模型并止损。当前累计85组；下一路线必须改变训练阶段或表示结构，不再从TRY-078继续追加loss。
 
 SDM对图像和原型同步学习有界对角度量，在第2轮得到`H=77.612988%`与`ZS=82.173079%`，相对父模型提高`0.040306/0.335044`并成为新最高。当前累计86组，仍未达到78%；下一补救保留对称共享度量，增加零初始化的受控低秩维度交互。
+
+SDM冻结对角基的rank-64低秩补救loss持续下降，但所有非零epoch均低于父模型，说明发生pseudo-episode过拟合。当前累计87组；补救2只解除对角基冻结，让对角与低秩权重联合补偿。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

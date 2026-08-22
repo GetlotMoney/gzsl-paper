@@ -13,8 +13,8 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最
 status: testing
 paper_core_innovation: false
 parent_condition: V2-TRY-078 / TG-VPR + TST + NTR + CCGR
-current_attempt: V2-TRY-087
-last_attempt: V2-TRY-086
+current_attempt: none
+last_attempt: V2-TRY-087
 last_decision: rescue
 ```
 
@@ -23,3 +23,7 @@ SDM只用150个seen类的三折pseudo-unseen episode训练；true-unseen图像�
 ## V2-TRY-086结果
 
 第2轮得到`U=74.652368%`、`S=80.818135%`、`H=77.612988%`、`ZS=82.173079%`，相对TRY-078的`Delta H=+0.040306`并成为新最高；ZS提高`0.335044`，说明共享度量确实增强了域内细粒度判别。权重范围`[0.955329,1.021291]`远未触及边界，瓶颈是纯对角度量无法表达维度交互。补救1将保持对称变换和零初始化，增加受控低秩交互。
+
+## V2-TRY-087结果
+
+冻结对角度量后训练rank-64低秩主方向，loss从`0.724616`降到`0.686161`，说明低秩参数实际更新；但所有非零epoch均低于父模型，最高仅`77.552835%`，最终选回epoch 0。失败来自低秩方向无法由冻结对角基补偿。补救2保持rank、学习率和边界不变，只允许对角与低秩权重联合更新。
