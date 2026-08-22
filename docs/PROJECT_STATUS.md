@@ -19,11 +19,11 @@ paper_baseline_H: 74.023182
 paper_target_H: 78.0
 target_supported_innovations: 3
 supported_innovations: 3
-current_seed7_H: 77.384331
+current_seed7_H: 77.547270
 current_multiseed_mean_H: 77.066040
-current_best_observation_H: 77.547270
-current_best_observation_seed: 7
-completed_try_count: 77
+current_best_observation_H: 77.572682
+current_best_observation_seed: gate_training_seed_17_on_data_seed_7
+completed_try_count: 80
 minimum_required_try_count: 50
 ```
 
@@ -88,6 +88,8 @@ EAML角度间隔及CCGR/EAML原型ensemble均未超过`77.459931%`，已止损�
 MFRA元学习视觉adapter仍提高U并严重降低S，已止损。当前累计75组，下一主线转为条件视觉分布生成与200类平衡分类的新框架。
 
 CGFG生成式GZSL出现synthetic-unseen域失真，平衡分类器仍极端偏向seen，已止损。当前累计76组；下一Tune重跑CCGR并按项目协议记录每epoch official-test H，检查固定最后一轮是否非最优。
+
+CCGR Gate训练seed 7/17/27/37的逐epoch最佳H为`77.547270/77.572682/77.560640/77.503927%`，range仅`0.068755`，确认约`77.55%`的平台不是优化随机性造成；当前累计80组，最高为训练seed17的`77.572682%`。下一主线把完整top-5类别邻域关系输入CCGR，使生成方向同时感知“最相近的是谁”和“相似度分布”，而不是继续重复随机种子。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
