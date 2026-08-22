@@ -42,7 +42,7 @@ def load_config(path:Path):
     schema=config.get("schema_version") if isinstance(config,dict) else None
     expected=CONFIG_KEYS_V4 if schema=="gzsl-paper.ccgr.v4" else (CONFIG_KEYS_V3 if schema=="gzsl-paper.ccgr.v3" else (CONFIG_KEYS_V2 if schema=="gzsl-paper.ccgr.v2" else CONFIG_KEYS))
     if not isinstance(config,dict) or actual!=expected: raise ValueError(f"CCGR配置字段错误；缺少={sorted(expected-actual)}，多出={sorted(actual-expected)}。")
-    if config["schema_version"] not in ("gzsl-paper.ccgr.v1","gzsl-paper.ccgr.v2","gzsl-paper.ccgr.v3","gzsl-paper.ccgr.v4") or config["attempt_id"] not in ("V2-TRY-058","V2-TRY-059","V2-TRY-060","V2-TRY-061") or config["idea_id"]!="IDEA-018": raise ValueError("CCGR首次TRY身份错误。")
+    if config["schema_version"] not in ("gzsl-paper.ccgr.v1","gzsl-paper.ccgr.v2","gzsl-paper.ccgr.v3","gzsl-paper.ccgr.v4") or config["attempt_id"] not in ("V2-TRY-058","V2-TRY-059","V2-TRY-060","V2-TRY-061","V2-TRY-062","V2-TRY-063","V2-TRY-064","V2-TRY-065") or config["idea_id"]!="IDEA-018": raise ValueError("CCGR首次TRY身份错误。")
     expected_epochs=200 if config["attempt_id"]=="V2-TRY-058" else 20
     if int(config["epochs"])!=expected_epochs or float(config["lr"])!=0.001 or float(config["weight_decay"])!=0.0001: raise ValueError("CCGR训练参数错误。")
     if int(config["hidden_dim"])!=32 or float(config["max_magnitude"])!=0.1 or float(config["initial_magnitude"])!=0.02 or float(config["topology_weight"])!=0.1: raise ValueError("CCGR模块参数错误。")
@@ -53,7 +53,7 @@ def load_config(path:Path):
     expected_objective="seen_centroid_alignment" if config["attempt_id"]=="V2-TRY-058" else "pseudo_unseen_episode"
     if config["training_objective"]!=expected_objective: raise ValueError("CCGR训练目标与TRY身份错误。")
     if config["attempt_id"]=="V2-TRY-059" and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32): raise ValueError("CCGR episode配置错误。")
-    if config["attempt_id"]=="V2-TRY-060" and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32 or float(config["pseudo_unseen_weight"])!=0.25): raise ValueError("CCGR unseen风险配置错误。")
+    if config["attempt_id"] in ("V2-TRY-060","V2-TRY-062","V2-TRY-063","V2-TRY-064","V2-TRY-065") and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32 or float(config["pseudo_unseen_weight"])!=0.25): raise ValueError("CCGR unseen风险配置错误。")
     if config["attempt_id"]=="V2-TRY-061" and (not config["fold_checkpoint_dir"] or int(config["batch_half"])!=32 or float(config["pseudo_unseen_weight"])!=0.25 or float(config["magnitude_penalty"])!=0.01): raise ValueError("CCGR幅度约束配置错误。")
     return config,sha256_file(path)
 
