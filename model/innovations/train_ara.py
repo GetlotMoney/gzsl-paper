@@ -38,7 +38,7 @@ def load_config(path):
     path=Path(path).resolve(); config=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(config) if isinstance(config,dict) else set()
     expected=CONFIG_KEYS_V4 if isinstance(config,dict) and config.get("schema_version")=="gzsl-paper.ara.v4" else (CONFIG_KEYS_V3 if isinstance(config,dict) and config.get("schema_version")=="gzsl-paper.ara.v3" else (CONFIG_KEYS_V2 if isinstance(config,dict) and config.get("schema_version")=="gzsl-paper.ara.v2" else CONFIG_KEYS))
     if not isinstance(config,dict) or actual!=expected: raise ValueError(f"ARA配置字段错误；缺少={sorted(expected-actual)}，多出={sorted(actual-expected)}。")
-    if config["schema_version"] not in ("gzsl-paper.ara.v1","gzsl-paper.ara.v2","gzsl-paper.ara.v3","gzsl-paper.ara.v4") or config["attempt_id"] not in ("V2-TRY-092","V2-TRY-093","V2-TRY-094","V2-TRY-095","V2-TRY-096","V2-TRY-097","V2-TRY-098","V2-TRY-099","V2-TRY-100","V2-TRY-104") or config["idea_id"] not in ("IDEA-029","IDEA-033"): raise ValueError("ARA首次TRY身份错误。")
+    if config["schema_version"] not in ("gzsl-paper.ara.v1","gzsl-paper.ara.v2","gzsl-paper.ara.v3","gzsl-paper.ara.v4") or config["attempt_id"] not in ("V2-TRY-092","V2-TRY-093","V2-TRY-094","V2-TRY-095","V2-TRY-096","V2-TRY-097","V2-TRY-098","V2-TRY-099","V2-TRY-100","V2-TRY-104","V2-TRY-105","V2-TRY-106","V2-TRY-107") or config["idea_id"] not in ("IDEA-029","IDEA-033"): raise ValueError("ARA首次TRY身份错误。")
     if int(config["epochs"])!=20 or int(config["batch_size"])!=256 or float(config["lr"])!=0.01 or float(config["weight_decay"])!=0.0 or float(config["ridge"])!=0.01 or float(config["max_beta"])!=20.0: raise ValueError("ARA训练参数错误。")
     if set(config["parent_metrics_percent"])!={"U","S","H","ZS"}: raise ValueError("ARA父指标不完整。")
     config.setdefault("sdm_enabled",True)
@@ -46,7 +46,7 @@ def load_config(path):
     config.setdefault("ridge_source","all_images")
     if config["attempt_id"] in ("V2-TRY-096","V2-TRY-098","V2-TRY-099","V2-TRY-100") and config["sdm_enabled"] is not False: raise ValueError("ARA最终结构必须关闭SDM。")
     if config["attempt_id"]=="V2-TRY-097" and (config["sdm_enabled"] is not False or config["ccgr_enabled"] is not False): raise ValueError("ARA的CCGR-off消融配置错误。")
-    if config["attempt_id"]=="V2-TRY-104" and (config["ridge_source"]!="class_centroids" or config["sdm_enabled"] is not False or config["idea_id"]!="IDEA-033"): raise ValueError("CRA类别中心ridge配置错误。")
+    if config["attempt_id"] in ("V2-TRY-104","V2-TRY-105","V2-TRY-106","V2-TRY-107") and (config["ridge_source"]!="class_centroids" or config["sdm_enabled"] is not False or config["idea_id"]!="IDEA-033"): raise ValueError("CRA类别中心ridge配置错误。")
     return config,sha256_file(path)
 
 
