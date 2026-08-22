@@ -49,3 +49,5 @@ def test_harmonic_episode_loss_balances_both_groups():
     logits=torch.tensor([[2.0,0.0],[0.0,2.0],[1.0,0.0],[0.0,1.0]],requires_grad=True); targets=torch.tensor([0,1,0,1]); loss,seen,unseen=harmonic_episode_loss(logits,targets,2); assert 0<loss<1; assert seen>unseen; loss.backward(); assert logits.grad is not None and torch.isfinite(logits.grad).all()
 def test_ccgr_heo_config():
     config,_=load_config(ROOT/"config/tries/v2_try_083_ccgr_heo_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-083"; assert config["idea_id"]=="IDEA-026"; assert config["harmonic_weight"]==1.0; assert config["parent_ccgr_model_sha256"]
+def test_ccgr_heo_conservative_config():
+    config,_=load_config(ROOT/"config/tries/v2_try_084_ccgr_heo_rescue1_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-084"; assert config["idea_id"]=="IDEA-026"; assert config["harmonic_weight"]==0.1
