@@ -8,7 +8,7 @@ supported_innovations: [TG-VPR, TST, CCGR]
 current_best_observation: V2-TRY-135 / JBEC gamma residual tune
 current_best_H: 80.506168
 current_best_seed: JBEC_seed17_gamma_residual_tune_observation
-completed_try_count: 136
+completed_try_count: 137
 minimum_total_try_count: 50
 target_best_H: 78.0
 evaluation_protocol: test_selected_inductive_gzsl
