@@ -13,7 +13,11 @@ failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条
 status: testing
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-046
+current_attempt: V2-TRY-047
 ```
 
 MPR只使用seen图像训练融合强度；三组unseen角色原型完全来自文本，true-unseen图像在训练结束后才加载。
+
+## V2-TRY-046结果
+
+soft-best多角色证据相对TST仅`Delta H=+0.001218`，但ZS提高`0.040007`且U/S未受损，说明方向存在但信号过小。补救1增加local/unique/overall三个零均值全局可靠性偏置，让模型学习角色相对可信度。
