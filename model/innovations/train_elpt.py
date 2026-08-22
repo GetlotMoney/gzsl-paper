@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import yaml
+from torch.func import functional_call
 
 from model.innovations.elpt import (
     ELPTGate,
@@ -73,6 +74,8 @@ OPTIONAL_CONFIG_KEYS = {
     "parent_gate_model",
     "parent_gate_model_sha256",
     "max_residual_step",
+    "gate_training_mode",
+    "inner_lr",
 }
 
 
@@ -132,6 +135,8 @@ def load_config(path: Path):
     raw.setdefault("parent_gate_model", None)
     raw.setdefault("parent_gate_model_sha256", None)
     raw.setdefault("max_residual_step", 0.1)
+    raw.setdefault("gate_training_mode", "joint_balanced_ce")
+    raw.setdefault("inner_lr", 0.01)
     if raw["schema_version"] not in (
         "gzsl-paper.elpt.v1",
         "gzsl-paper.tst.v1",
@@ -144,6 +149,7 @@ def load_config(path: Path):
         "gzsl-paper.ntr.v1",
         "gzsl-paper.ntr-residual.v1",
         "gzsl-paper.ntr-dispersion.v1",
+        "gzsl-paper.bmr.v1",
     ):
         raise ValueError("ELPT schema错误。")
     valid_elpt = raw["attempt_id"] in {"V2-TRY-006", "V2-TRY-007", "V2-TRY-008", "V2-TRY-009"} and raw["idea_id"] == "IDEA-002"
@@ -171,7 +177,8 @@ def load_config(path: Path):
         "V2-TRY-035",
         "V2-TRY-036",
     } and raw["idea_id"] == "IDEA-010"
-    if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr):
+    valid_bmr = raw["attempt_id"] == "V2-TRY-037" and raw["idea_id"] == "IDEA-011"
+    if not (valid_elpt or valid_tst or valid_cata or valid_purl or valid_ntr or valid_bmr):
         raise ValueError("ELPT首次TRY身份不匹配。")
     if raw["framework_id"] != "FRAMEWORK-V2":
         raise ValueError("ELPT只接受FRAMEWORK-V2。")
@@ -291,6 +298,21 @@ def load_config(path: Path):
             raw["gate_architecture"] != "direct" or not raw["fold_checkpoint_dir"]
         ):
             raise ValueError("NTR补救2必须使用5维离散度gate并复用fold权重。")
+    if valid_bmr:
+        parent = raw["parent_metrics_percent"]
+        if (
+            raw["transport_mode"] != "tangent"
+            or raw["gate_feature_mode"] != "summary"
+            or raw["gate_architecture"] != "direct"
+            or raw["gate_training_mode"] != "bilevel_first_order"
+            or float(raw["inner_lr"]) != 0.01
+            or float(raw["centroid_alignment_weight"]) != 0.0
+            or float(raw["pseudo_unseen_ce_weight"]) != 0.0
+            or not raw["fold_checkpoint_dir"]
+            or not isinstance(parent, dict)
+            or set(parent) != {"U", "S", "H", "ZS"}
+        ):
+            raise ValueError("BMR首次TRY身份不匹配。")
     return raw, sha256_file(path)
 
 
@@ -505,6 +527,8 @@ def _fold_package(
 
 
 def _train_gate(packages, tensors, config, device, seed, print_log):
+    if config["gate_training_mode"] == "bilevel_first_order":
+        return _train_gate_bilevel(packages, tensors, config, device, seed, print_log)
     if int(config["gate_initialization_ensemble"]) > 1:
         return _train_gate_initialization_ensemble(
             packages, tensors, config, device, seed, print_log
@@ -594,6 +618,122 @@ def _train_gate(packages, tensors, config, device, seed, print_log):
                 total_loss += float(loss.detach())
                 total_steps += 1
         print_log(f"gate_epoch={epoch} loss={total_loss/total_steps:.6f}")
+    return gate.eval()
+
+
+def _first_order_adapted_parameters(gate, inner_loss, inner_lr):
+    parameters = dict(gate.named_parameters())
+    gradients = torch.autograd.grad(
+        inner_loss, tuple(parameters.values()), create_graph=False
+    )
+    return {
+        name: parameter - float(inner_lr) * gradient.detach()
+        for (name, parameter), gradient in zip(parameters.items(), gradients)
+    }
+
+
+def _bilevel_logits(package, gate, gate_parameters, images, seenclasses, device, config):
+    base_all = package["base_all"].to(device)
+    final_all = package["fold_full"].to(device).clone()
+    coefficient = functional_call(
+        gate, gate_parameters, (package["gate_features"].to(device),)
+    )
+    pseudo_unseen = package["pseudo_unseen"].to(device)
+    final_all[pseudo_unseen] = _transport(
+        base_all.index_select(0, pseudo_unseen),
+        package["value"].to(device),
+        coefficient,
+        config["transport_mode"],
+    )
+    competition = final_all.index_select(0, seenclasses.to(device))
+    logits = F.normalize(images, dim=-1) @ competition.T * package["scale"].to(device)
+    return logits, base_all, competition
+
+
+def _train_gate_bilevel(packages, tensors, config, device, seed, print_log):
+    gate = _make_gate(config, _gate_input_dim(config["gate_feature_mode"]), device)
+    optimizer = torch.optim.Adam(
+        gate.parameters(),
+        lr=float(config["gate_lr"]),
+        weight_decay=float(config["gate_weight_decay"]),
+    )
+    seenclasses = packages[0]["seenclasses"]
+    label_map = torch.full((200,), -1, dtype=torch.long)
+    label_map[seenclasses] = torch.arange(150)
+    half = int(config["gate_batch_half"])
+    generators = [
+        torch.Generator(device="cpu").manual_seed(seed * 11000 + fold_id)
+        for fold_id in range(3)
+    ]
+    for epoch in range(1, int(config["gate_epochs"]) + 1):
+        gate.train()
+        inner_sum = outer_sum = 0.0
+        step_count = 0
+        for fold_id, package in enumerate(packages):
+            seen_indices = package["seen_indices"]
+            unseen_indices = package["unseen_indices"]
+            steps = min(seen_indices.numel() // half, unseen_indices.numel() // half)
+            for _ in range(steps):
+                generator = generators[fold_id]
+                inner_indices = seen_indices[
+                    torch.randperm(seen_indices.numel(), generator=generator)[:half]
+                ]
+                outer_indices = unseen_indices[
+                    torch.randperm(unseen_indices.numel(), generator=generator)[:half]
+                ]
+                inner_images = tensors["train_features"][inner_indices].to(device).float()
+                outer_images = tensors["train_features"][outer_indices].to(device).float()
+                inner_targets = label_map[
+                    tensors["train_labels"].long()[inner_indices]
+                ].to(device)
+                outer_targets = label_map[
+                    tensors["train_labels"].long()[outer_indices]
+                ].to(device)
+                parameters = dict(gate.named_parameters())
+                inner_logits, _, _ = _bilevel_logits(
+                    package,
+                    gate,
+                    parameters,
+                    inner_images,
+                    seenclasses,
+                    device,
+                    config,
+                )
+                inner_loss = F.cross_entropy(inner_logits, inner_targets)
+                adapted = _first_order_adapted_parameters(
+                    gate, inner_loss, config["inner_lr"]
+                )
+                outer_logits, base_all, competition = _bilevel_logits(
+                    package,
+                    gate,
+                    adapted,
+                    outer_images,
+                    seenclasses,
+                    device,
+                    config,
+                )
+                outer_ce = F.cross_entropy(outer_logits, outer_targets)
+                topology = topology_loss(
+                    base_all.index_select(0, seenclasses.to(device)), competition
+                )
+                outer_loss = outer_ce + float(config["topology_weight"]) * topology
+                if not torch.isfinite(inner_loss) or not torch.isfinite(outer_loss):
+                    raise FloatingPointError("BMR内外层loss非有限。")
+                optimizer.zero_grad(set_to_none=True)
+                outer_loss.backward()
+                if any(
+                    parameter.grad is not None and not torch.isfinite(parameter.grad).all()
+                    for parameter in gate.parameters()
+                ):
+                    raise FloatingPointError("BMR gate梯度非有限。")
+                optimizer.step()
+                inner_sum += float(inner_loss.detach())
+                outer_sum += float(outer_loss.detach())
+                step_count += 1
+        print_log(
+            f"bmr_epoch={epoch} inner_ce={inner_sum/step_count:.6f} "
+            f"outer_loss={outer_sum/step_count:.6f}"
+        )
     return gate.eval()
 
 
@@ -1073,6 +1213,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str):
             "gate_architecture": config["gate_architecture"],
             "parent_gate_model_sha256": config["parent_gate_model_sha256"],
             "max_residual_step": float(config["max_residual_step"]),
+            "gate_training_mode": config["gate_training_mode"],
+            "inner_lr": float(config["inner_lr"]),
             "parent_metrics_percent": config["parent_metrics_percent"],
             "delta_vs_parent_percent_points": parent_delta,
             "success": success,

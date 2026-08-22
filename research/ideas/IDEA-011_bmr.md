@@ -1,0 +1,22 @@
+# IDEA-011：BMR双层元路由
+
+```yaml
+idea_id: IDEA-011
+source_type: first_principles_training_analysis
+evidence_refs:
+  - V2-INNOVATION-002
+  - V2-TRY-026
+  - V2-TRY-027
+base_commit: 0b919b14f052ec5e3f99378383e94053a2cf45ae
+problem: TST把pseudo-seen和pseudo-unseen放在同一联合CE中，PURL又证明简单增加pseudo-unseen权重会过度纠偏，说明两个目标需要参数更新层级上的分离。
+hypothesis: 先用pseudo-seen对Gate做临时内层更新，再只用pseudo-unseen外层损失更新原始Gate，可以直接优化“内层未见类”的泛化，同时保留seen竞争约束。
+core_change: Gate训练改为一阶双层元更新；原型公式、TST切空间迁移、数据划分和推理路径保持不变。
+success_condition: seed7相对TG-VPR+TST的最高H提高至少0.20个百分点，U和S各自下降不超过2个百分点，步长与角位移不越过TST安全门槛。
+failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
+status: testing
+paper_core_innovation: false
+parent_condition: V2-INNOVATION-002 / TG-VPR + TST
+current_attempt: V2-TRY-037
+```
+
+BMR内外层都只使用150个seen训练类构造的episode；true-unseen图像在所有Gate训练结束后才加载。关闭双层更新时回到TST的联合Gate训练。
