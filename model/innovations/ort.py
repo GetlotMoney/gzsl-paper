@@ -30,12 +30,19 @@ def orthogonal_transport(
     step: torch.Tensor,
     basis: torch.Tensor,
     mix: torch.Tensor,
+    projection_mode: str = "shared",
 ) -> torch.Tensor:
     base = F.normalize(base, dim=-1)
     value = F.normalize(value, dim=-1)
     tangent = value - (value * base).sum(dim=-1, keepdim=True) * base
     projected = (tangent @ basis.T) @ basis
-    blended = (1.0 - mix) * tangent + mix * projected
+    if projection_mode == "shared":
+        alternative = projected
+    elif projection_mode == "complement":
+        alternative = tangent - projected
+    else:
+        raise ValueError("未知ORT投影模式。")
+    blended = (1.0 - mix) * tangent + mix * alternative
     return F.normalize(base + step.unsqueeze(-1) * blended, dim=-1)
 
 
