@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 import torch
 from model.innovations.ccgr import ClassConditionedGeometricGenerator,NeighborhoodResidualCCGR,tangent_direction_basis
-from model.innovations.train_ccgr import ccgr_class_features,harmonic_episode_loss,load_config
+from model.innovations.train_ccgr import ccgr_class_features,harmonic_episode_loss,local_boundary_loss,load_config
 ROOT=Path(__file__).resolve().parents[1]
 def test_ccgr_basis_and_unseen_only_application():
     g=torch.Generator().manual_seed(141); base=torch.randn(200,768,generator=g); value=torch.randn(200,768,generator=g); roles=torch.randn(200,3,768,generator=g); basis=tangent_direction_basis(base,value,roles); assert basis.shape==(200,4,768); features=torch.randn(200,4,generator=g,requires_grad=True); unseen=torch.arange(150,200); model=ClassConditionedGeometricGenerator(base,basis,features,unseen,torch.tensor(10.0)); changed=model.prototypes(); parent=model.prototypes(enabled=False); assert torch.equal(changed[:150],parent[:150]); assert not torch.equal(changed[150:],parent[150:]); optimizer=torch.optim.SGD(model.parameters(),lr=0.01)
@@ -51,3 +51,7 @@ def test_ccgr_heo_config():
     config,_=load_config(ROOT/"config/tries/v2_try_083_ccgr_heo_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-083"; assert config["idea_id"]=="IDEA-026"; assert config["harmonic_weight"]==1.0; assert config["parent_ccgr_model_sha256"]
 def test_ccgr_heo_conservative_config():
     config,_=load_config(ROOT/"config/tries/v2_try_084_ccgr_heo_rescue1_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-084"; assert config["idea_id"]=="IDEA-026"; assert config["harmonic_weight"]==0.1
+def test_local_boundary_loss_targets_hardest_wrong_class():
+    generated=torch.eye(4); centroids=torch.stack((torch.tensor([0.8,0.6,0.,0.]),torch.tensor([0.7,0.714,0.,0.]))); loss=local_boundary_loss(generated,centroids,torch.tensor([0,1]),0.02); assert loss>0; loss.backward() if loss.requires_grad else None
+def test_ccgr_lbs_config():
+    config,_=load_config(ROOT/"config/tries/v2_try_085_ccgr_lbs_seed17.yaml"); assert config["attempt_id"]=="V2-TRY-085"; assert config["idea_id"]=="IDEA-027"; assert config["hard_negative_weight"]==0.1; assert config["hard_negative_margin"]==0.02
