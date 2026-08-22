@@ -41,7 +41,8 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-009 / PURL pseudo-unseen风险重加权（rejected，持续过度纠偏）
       ├─ auxiliary_branch：IDEA-010 / NTR邻域感知切空间路由（revised，当前最高观察，非核心创新）
       ├─ rejected_branch：IDEA-011 / BMR双层元路由（rejected，4个方法条件用尽）
-      ├─ innovation_slot_3：IDEA-012 / DPT分布式原型置信度（testing）
+      ├─ rejected_branch：IDEA-012 / DPT分布式原型置信度（rejected，文本不确定性无正增益）
+      ├─ innovation_slot_3：IDEA-013 / SGT语义图残差迁移（下一候选）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：四seed mean已通过；seed7仍差0.038637个百分点

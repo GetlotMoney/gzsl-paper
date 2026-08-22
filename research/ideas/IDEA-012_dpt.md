@@ -13,10 +13,12 @@ hypothesis: 八条描述归一化合向量的长度可以作为vMF式集中度�
 core_change: 在TG-VPR+TST原型上增加类别文本集中度置信因子，训练一个有界全局gamma控制其作用强度；gamma关闭时严格回到TST。
 success_condition: seed7相对TG-VPR+TST最高H提高至少0.20个百分点，U和S各自下降不超过2个百分点，gamma与置信度比例不饱和。
 failure_condition: 首次TRY和最多3次方法级补救后仍不满足成功条件。
-status: testing
+status: rejected
 paper_core_innovation: false
 parent_condition: V2-INNOVATION-002 / TG-VPR + TST
-current_attempt: V2-TRY-043
+current_attempt: none
+last_attempt: V2-TRY-043
+last_decision: drop
 ```
 
 DPT的类别置信度只来自八条文本描述，gamma只用seen训练图像学习；true-unseen图像在训练结束后才加载。关闭DPT时逐位回到TST原型logits。
@@ -28,3 +30,7 @@ DPT的类别置信度只来自八条文本描述，gamma只用seen训练图像�
 ## V2-TRY-042结果
 
 自适应Gate把所有类别置信度学成几乎相同的`1.105`，ratio仅`1.000049`，指标仍逐位等于TST。补救2对log尺度做seen均值中心化，强制seen置信度几何平均为1，删除统一放大捷径，只保留类别相对差异。
+
+## V2-TRY-043结果与止损
+
+中心化Gate产生`[0.991933,1.021476]`的类别差异，但相对TST `Delta H=-0.060319`、ZS下降`0.193882`。八描述内部离散度不能可靠预测视觉原型置信度；继续做多分量将与MPR重复，因此IDEA-012提前止损并标记`rejected`。
