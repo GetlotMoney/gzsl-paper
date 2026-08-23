@@ -16,6 +16,7 @@ from model.innovations.gpes import (
     SemanticGatedPairSelector,
     TextOnlyGatedPairSelector,
     TriadicCompetitionPairSelector,
+    TrustRegionRoleDisagreementScaleSelector,
     semantic_neighbor_adjacency,
     reciprocal_neighbor_confidence,
     pair_role_distance_weights,
@@ -519,6 +520,39 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.srdss.v1")
         self.assertEqual(config["training_scope"], "freeze_snps_train_scale_only")
         self.assertIn("snps_model_sha256", config)
+
+    def test_trust_region_rdss_initializes_parent_and_penalizes_drift(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        base_weight = torch.randn(12)
+        base_bias = torch.randn(())
+        model = TrustRegionRoleDisagreementScaleSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(13), torch.ones(13), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+            base_selector_weight=base_weight,
+            base_selector_bias=base_bias,
+            base_feature_mean=torch.zeros(12),
+            base_feature_std=torch.ones(12),
+        )
+        features = torch.randn(4, 13)
+        expected = 0.5 * torch.tanh(features[:, :12] @ base_weight + base_bias)
+        self.assertTrue(torch.allclose(model.pair_delta(features), expected))
+        self.assertEqual(float(model.trust_region_loss().detach()), 0.0)
+        with torch.no_grad():
+            model.selector_weight[0].add_(0.1)
+        self.assertGreater(float(model.trust_region_loss().detach()), 0.0)
+
+    def test_trdss_config_binds_trust_region(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-080_trdss/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.trdss.v1")
+        self.assertEqual(config["training_scope"], "snps_initialized_joint_trust_region")
+        self.assertEqual(config["trust_region_weight"], 0.1)
 
 
 if __name__ == "__main__":

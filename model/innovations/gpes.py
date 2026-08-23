@@ -617,3 +617,59 @@ class StagedRoleDisagreementScaleSelector(RoleDisagreementScaleSelector):
             "margin_threshold": float(self.margin_threshold),
             "margin_temperature": self.margin_temperature,
         }
+
+
+class TrustRegionRoleDisagreementScaleSelector(RoleDisagreementScaleSelector):
+    """从SNPS初始化13维联合训练，并约束旧12维留在父权重邻域。"""
+
+    def __init__(
+        self,
+        *args,
+        base_selector_weight: torch.Tensor,
+        base_selector_bias: torch.Tensor,
+        base_feature_mean: torch.Tensor,
+        base_feature_std: torch.Tensor,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        if self.feature_dim != 13 or tuple(base_selector_weight.shape) != (12,):
+            raise ValueError("TR-RDSS要求13维输入和12维父权重。")
+        if not torch.allclose(
+            self.feature_mean[:12].cpu(), base_feature_mean.float().cpu(), atol=1e-6
+        ) or not torch.allclose(
+            self.feature_std[:12].cpu(), base_feature_std.float().cpu(), atol=1e-6
+        ):
+            raise ValueError("TR-RDSS前12维特征统计未复现SNPS父模型。")
+        with torch.no_grad():
+            self.selector_weight[:12].copy_(base_selector_weight.float())
+            self.selector_weight[12].zero_()
+            self.selector_bias.copy_(base_selector_bias.float().reshape(()))
+        self.register_buffer(
+            "base_selector_weight", base_selector_weight.detach().float()
+        )
+        self.register_buffer(
+            "base_selector_bias", base_selector_bias.detach().float().reshape(())
+        )
+
+    def trust_region_loss(self) -> torch.Tensor:
+        return (
+            (self.selector_weight[:12] - self.base_selector_weight).square().mean()
+            + (self.selector_bias - self.base_selector_bias).square()
+        )
+
+    def stats(self) -> dict[str, object]:
+        base_stats = super().stats()
+        base_stats.update(
+            {
+                "role_scale_weight": float(self.selector_weight[12].detach()),
+                "base_weight_drift": float(
+                    (self.selector_weight[:12] - self.base_selector_weight)
+                    .detach()
+                    .norm()
+                ),
+                "base_bias_drift": float(
+                    (self.selector_bias - self.base_selector_bias).detach().abs()
+                ),
+            }
+        )
+        return base_stats

@@ -458,6 +458,8 @@ RDSS seed7达到`U/S/H/ZS=76.914233/80.009395/78.431289/84.020644%`，相对SDCR
 
 S-RDSS seed5初始态精确复现SNPS top-3 `H=78.466710%`，且仅一个尺度参数可训练；完整运行后所有非零尺度状态均更差，best保持`scale_weight=0 / selected iteration=-1`。分阶段边界有效，但尺度不能独立叠加，IDEA-113拒绝且不追加seed7。当前累计204组。
 
+下一实验`V2-INNOVATION-080 / TR-RDSS`在冻结与从零联合训练之间取中间方案：从SNPS top-3初始化13维selector，联合训练但对旧12维权重和偏置增加固定0.1信赖域约束。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

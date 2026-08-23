@@ -81,5 +81,6 @@
 | V2-INNOVATION-077 | IDEA-111 | ETPC错误定向成对修正 | rejected（best退回父模型） | `INNOVATION-077_etpc/` |
 | V2-INNOVATION-078 | IDEA-112 | RDSS角色分歧尺度选择器 | revised highest-seed（H=78.555039；分阶段补救待做） | `INNOVATION-078_rdss/` |
 | V2-INNOVATION-079 | IDEA-113 | S-RDSS分阶段角色尺度选择器 | rejected（best退回冻结SNPS父模型） | `INNOVATION-079_srdss/` |
+| V2-INNOVATION-080 | IDEA-114 | TR-RDSS信赖域角色尺度选择器 | planned（SNPS初始化+旧权重约束） | `INNOVATION-080_trdss/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
