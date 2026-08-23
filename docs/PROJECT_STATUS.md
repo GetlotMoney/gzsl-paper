@@ -350,6 +350,8 @@ PGSD用train-only patch可靠性加权SDCR训练，样本权重std=`0.110662`但
 
 CPGSD把patch可靠性中心化到mean=`1.0`、std=`0.068121`且保持有界，但所有条件仍低于父模型，best退回`H=78.320510%`。结合SPCR推理叠加失败，说明当前patch信息既不能直接加入SDCR推理，也不能改善其训练权重；IDEA-088拒绝并关闭patch结合轴。当前累计164组。
 
+`SDCR_ERROR_AUDIT_001`复现最高可靠SDCR，并确认主错误不是单向seen/unseen偏置，而是Warbler、Sparrow、Cormorant等同族细粒度竞争；两个最差unseen类在ZSL空间仍仅`5%/14%`。下一方向从类名族群构造类内身份残差，不再调全局bias。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
