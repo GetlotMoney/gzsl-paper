@@ -53,5 +53,6 @@
 | V2-INNOVATION-049 | IDEA-083 | FSDM完整语义链共享对角度量 | rejected（seen度量学习产生域偏置） | `INNOVATION-049_fsdm/` |
 | V2-INNOVATION-050 | IDEA-084 | JSCF联合语义协调微调 | rejected（三种训练边界均退回父模型） | `INNOVATION-050_jscf/` |
 | V2-INNOVATION-051 | IDEA-085 | CLCR跨LLM互补语义残差 | rejected（Claude与SDCR直接叠加无互补） | `INNOVATION-051_clcr/` |
+| V2-INNOVATION-052 | IDEA-086 | SPCR句子—局部patch互补残差 | planned（SDCR + CCPE top2） | `INNOVATION-052_spcr/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
