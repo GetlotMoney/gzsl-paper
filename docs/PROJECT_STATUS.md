@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 168
+completed_try_count: 169
 minimum_required_try_count: 50
 ```
 
@@ -359,6 +359,8 @@ TWLS保持族群均值并统一缩放族内logit差值，但正alpha约0.25使H�
 TPLD使用非均匀成对affinity（平均熵`0.731696`）对族内logit做高通，但正alpha约0.22仍使H降到约`76.9%`，best退回`H=78.320510%`与alpha=0。固定图结构轴关闭；下一方向只对top2同族且低margin样本动态调用独立证据。当前累计167组。
 
 AGCT只对top2同族低margin样本使用Claude二选一证据，seed5达到`U/S/H/ZS=76.647568/80.107862/78.339523/83.888441%`，比SDCR提高H `0.019013`。门槛只由train seen错误margin生成，official gate非零且beta不饱和；因增益很小，追加seed7判断可靠性。当前累计168组。
+
+AGCT seed7达到`U/S/H/ZS=76.647568/80.107862/78.339523/83.854544%`，相对父模型H提高`0.036667`。两seed均正且最高H完全一致，AGCT作为supported辅助候选保留；按owner规则当前主成绩取`78.339523%`。增益弱且U/ZS略降，不作核心创新。当前累计169组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
