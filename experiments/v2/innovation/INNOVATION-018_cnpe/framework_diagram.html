@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-018 CNPE</title></head>
 <body>
 <h1>CNPE：按seen参考分布归一化局部证据</h1>
-<p><strong>Base commit：</strong>a6d27bc782963353a704a1c6bf4a9301e794962e；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>a6d27bc782963353a704a1c6bf4a9301e794962e；<strong>RUN-001 code commit：</strong>ea80ee2f8351b68e4b06d172b012b5b1dc61fea1。</p>
 <h2>父路径</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC，输出[B,200]父logits。CNPE替代CCPE局部分支。</p>
 <h2>类别归一化局部证据</h2>
 <pre>raw_score_ic = mean(top2_n cos(patch_in, orthogonal_local_text_c))
