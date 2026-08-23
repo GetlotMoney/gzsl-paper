@@ -17,7 +17,9 @@ development_evaluation_protocol: xlsa17_class_disjoint_gzsl_validation
 final_evaluation_protocol: xlsa17_ps_gzsl_after_validation_freeze
 historical_exploration_protocol: test_selected_inductive_gzsl
 paper_primary_framework: FRAMEWORK-V2
-standard_final_test_H: pending
+standard_final_no_expert_H: 74.971312
+standard_final_expert_H: 78.751611
+standard_final_expert_delta_H: 3.780300
 historical_v2_baseline_H: 74.023182
 paper_target_H: 78.0
 target_supported_innovations: 3
@@ -40,6 +42,8 @@ owner已将来源身份`INNOVATION-MODULE-1 / TG-VPR-H1`提升为独立正式框
 `V2-CONFIRM-002`曾验证单RUN固定epoch与完整样本遍历，但没有采用类别不相交validation，且结构受历史official test探索影响，因此只保留为协议纠正过程证据，不是标准GZSL最终结果。旧`77.612988%`无专家属性结果属于test-selected探索观察，使用专家属性的80+链全部不进入论文主成绩。
 
 标准协议审计后，开发选模已进一步纠正为xlsa17类别不相交validation。`V2-TUNE-001`仅用100个开发seen类训练，以50个validation-unseen类和固定seen图像holdout选择epoch：无专家路线最终选择RUN-001，`H_val=76.472964`（epoch 24，topology 0.1）；专家312维属性路线选择RUN-006，`H_val=77.556001`（epoch 22，topology 0.2）。两条路线均`official_test_loaded=false`；遗留CLIP缓存来源仍不完整，所以暂不具备最终test资格。
+
+owner随后明确授权`V2-CONFIRM-003`执行冻结配置最终评估。两条路线均在完整trainval 150类/7,057张图像上从头重训，并在checkpoint写入后各调用一次official test：无专家`U/S/H/ZS=73.071939/76.972061/74.971312/80.278075%`；专家属性`77.935892/79.584587/78.751611/84.862840%`，H提高`3.780300`并达到78目标。由于方法结构受历史test探索影响且CLIP缓存来源不完整，仍必须标记`strict_blind_claim_eligible=false`，不能写成从未接触test的盲测。
 
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 

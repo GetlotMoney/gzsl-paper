@@ -6,8 +6,10 @@
 - [x] `V2-TUNE-001`划分固定为3724张梯度图像、978张val-seen、2355张val-unseen；official test不加载。
 - [x] 无专家路线validation H=`76.472964`；专家312维属性路线H=`77.556001`，各自validation调优后Delta=`+1.083037`。
 - [x] 两条路线都只使用来源一致的CLIP缓存；专家属性开关是唯一条件差异。
+- [x] `V2-CONFIRM-003`按validation冻结配置完成最终重训/test：无专家H=`74.971312`，专家H=`78.751611`，Delta=`+3.780300`。
+- [x] 两条最终RUN各只调用一次official test，`test_used_for_selection=false`；结果不用于回改当前方法。
 - [x] 旧test-selected结果只作探索观察；人工专家属性链不进入论文主结果。
-- [ ] 只在validation继续调参，冻结配置并补齐CLIP缓存身份后才能进入trainval最终重训。
+- [ ] 补齐遗留CLIP缓存准确checkpoint/预处理来源；当前结果保持`strict_blind_claim_eligible=false`。
 
 以下旧清单保留为历史执行记录，其中test-selected或专家属性成绩不再代表当前论文主结果。
 

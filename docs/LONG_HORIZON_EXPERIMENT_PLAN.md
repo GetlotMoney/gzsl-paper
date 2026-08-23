@@ -8,6 +8,9 @@ supported_innovations: [TG-VPR, TST, CCGR]
 current_no_expert_validation_H: 76.472964
 current_expert_validation_H: 77.556001
 current_expert_validation_delta_H: 1.083037
+final_no_expert_H: 74.971312
+final_expert_H: 78.751611
+final_expert_delta_H: 3.780300
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
 completed_try_count: 147
