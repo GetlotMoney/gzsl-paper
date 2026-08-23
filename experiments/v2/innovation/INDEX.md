@@ -18,6 +18,6 @@
 | V2-INNOVATION-014 | IDEA-048 | LPSR局部patch-文本残差 | rejected（H仅+0.003747且方向错误） | `INNOVATION-014_lpsr/` |
 | V2-INNOVATION-015 | IDEA-049 | CCPE每类独立局部patch证据 | supported candidate（当前无专家H=77.666533） | `INNOVATION-015_ccpe/` |
 | V2-INNOVATION-016 | IDEA-050 | SCPE空间一致局部patch证据 | rejected（低于CCPE） | `INNOVATION-016_scpe/` |
-| V2-INNOVATION-017 | IDEA-051 | MPPE六局部部位独立patch证据 | planned | `INNOVATION-017_mppe/` |
+| V2-INNOVATION-017 | IDEA-051 | MPPE六局部部位独立patch证据 | rejected（六路噪声累积） | `INNOVATION-017_mppe/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

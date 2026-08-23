@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-017 MPPE</title></head>
 <body>
 <h1>MPPE：六个局部部位分别寻找patch</h1>
-<p><strong>Base commit：</strong>3f24e61b292ef7d95fdc6131244b2709740908f4；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>3f24e61b292ef7d95fdc6131244b2709740908f4；<strong>RUN-001 code commit：</strong>2e4f9c0cea403ad7c68592b6c0d5ffbb260726ae。</p>
 <h2>父路径</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC，输出[B,200]父logits。MPPE替代CCPE/SCPE局部分支，不叠加旧局部权重。</p>
 <h2>多部位局部证据</h2>
 <pre>part_text_cr = orthogonalize(sentence_cr, class_name_c), r=1..6

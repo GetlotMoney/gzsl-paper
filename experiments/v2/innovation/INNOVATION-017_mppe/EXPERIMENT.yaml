@@ -4,15 +4,15 @@ idea_id: IDEA-051
 framework_id: FRAMEWORK-V2
 title: Multi-Part Patch Evidence
 base_commit: 3f24e61b292ef7d95fdc6131244b2709740908f4
-code_commit: null
-status: planned
+code_commit: 2e4f9c0cea403ad7c68592b6c0d5ffbb260726ae
+status: rejected_multi_part_noise
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-017_mppe/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 2e4f9c0cea403ad7c68592b6c0d5ffbb260726ae
     config_ref: experiments/v2/innovation/INNOVATION-017_mppe/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-017_mppe/RUN-001
-    status: planned
+    status: completed

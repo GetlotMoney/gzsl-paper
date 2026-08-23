@@ -252,6 +252,8 @@ CCPE让每个类别用正交局部文本独立选择top patch。top8/top4仅为�
 
 SCPE给CCPE top2增加24×24空间邻近权重后最高H仅`77.535935%`，低于CCPE。固定空间一致性与六句描述覆盖多个分散鸟体部位的语义不匹配，IDEA-050已拒绝；下一局部方向改为每个局部句子独立寻找patch。
 
+MPPE让六个局部句子分别取最大patch后，所有非零beta均降低H，best退回SEBC关闭态`77.518382%`。常见羽色/背景伪匹配被六路累积，IDEA-051已拒绝；下一方向保留CCPE top2并利用seen图像参考分布消除类别文本公共偏置。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
