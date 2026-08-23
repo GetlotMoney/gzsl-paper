@@ -58,6 +58,8 @@ def load_config(path: Path):
         expected_keys = COMMON_CONFIG_KEYS | {
             "consistency_weight", "distill_temperature"
         }
+    elif schema == "gzsl-paper.wsdr.v1":
+        expected_keys = COMMON_CONFIG_KEYS | {"candidate_masks"}
     else:
         expected_keys = COMMON_CONFIG_KEYS
     if not isinstance(config, dict) or actual != expected_keys:
@@ -69,6 +71,7 @@ def load_config(path: Path):
         "gzsl-paper.sdcr.v1": ("V2-INNOVATION-041", "IDEA-075"),
         "gzsl-paper.sdcr.v2": ("V2-INNOVATION-041", "IDEA-075"),
         "gzsl-paper.sdcc.v1": ("V2-INNOVATION-042", "IDEA-076"),
+        "gzsl-paper.wsdr.v1": ("V2-INNOVATION-043", "IDEA-077"),
     }
     identity = identity_by_schema.get(config["schema_version"])
     if (
@@ -106,6 +109,8 @@ def load_config(path: Path):
         or float(config["distill_temperature"]) != 1.0
     ):
         raise ValueError("SDCC一致性权重/温度错误。")
+    if schema == "gzsl-paper.wsdr.v1" and int(config["candidate_masks"]) != 2:
+        raise ValueError("WSDR candidate_masks必须为2。")
     return config, sha256_file(path)
 
 
@@ -233,10 +238,25 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             base = normalized @ prototypes.index_select(0, class_ids).T * scale
             parent_logits = sdrs(base, images, class_ids)
             parent_logits = calibrator(parent_logits, seen_mask)
-            logits = model(parent_logits, images, class_ids)
-            for role in model.last_masked_roles:
-                mask_counts[role] += 1
-            ce_loss = F.cross_entropy(logits, targets)
+            if config["schema_version"] == "gzsl-paper.wsdr.v1":
+                candidate_roles = torch.randperm(8, device=device)[:2]
+                candidate_losses = []
+                for role_tensor in candidate_roles:
+                    role = int(role_tensor.item())
+                    candidate_logits = model(
+                        parent_logits, images, class_ids, mask_roles=[role]
+                    )
+                    candidate_losses.append(
+                        F.cross_entropy(candidate_logits, targets)
+                    )
+                    mask_counts[role] += 1
+                ce_loss = torch.stack(candidate_losses).max()
+                logits = candidate_logits
+            else:
+                logits = model(parent_logits, images, class_ids)
+                for role in model.last_masked_roles:
+                    mask_counts[role] += 1
+                ce_loss = F.cross_entropy(logits, targets)
             kl_loss = model.kl_to_base()
             if config["schema_version"] == "gzsl-paper.sdcc.v1":
                 with torch.no_grad():

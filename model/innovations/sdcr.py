@@ -46,10 +46,18 @@ class SentenceDropoutConservativeRouting(nn.Module):
     def full_sentence_weights(self) -> torch.Tensor:
         return torch.softmax(self.base_log_weights + self.weight_residual(), dim=0)
 
-    def active_sentence_weights(self) -> torch.Tensor:
+    def active_sentence_weights(
+        self, mask_roles: list[int] | None = None
+    ) -> torch.Tensor:
         logits = self.base_log_weights + self.weight_residual()
         if self.training:
-            roles = torch.randperm(8, device=logits.device)[: self.drop_count]
+            roles = (
+                torch.as_tensor(mask_roles, device=logits.device, dtype=torch.long)
+                if mask_roles is not None
+                else torch.randperm(8, device=logits.device)[: self.drop_count]
+            )
+            if roles.numel() != self.drop_count or roles.unique().numel() != roles.numel():
+                raise ValueError("mask_roles数量必须等于drop_count且不可重复。")
             logits = logits.clone()
             logits[roles] = -1e9
             self.last_masked_roles = [int(role) for role in roles.cpu()]
@@ -66,8 +74,14 @@ class SentenceDropoutConservativeRouting(nn.Module):
             * (weights.clamp_min(1e-8).log() - self.base_log_weights)
         ).sum()
 
-    def prototypes(self, *, use_dropout: bool) -> torch.Tensor:
-        weights = self.active_sentence_weights() if use_dropout else self.full_sentence_weights()
+    def prototypes(
+        self, *, use_dropout: bool, mask_roles: list[int] | None = None
+    ) -> torch.Tensor:
+        weights = (
+            self.active_sentence_weights(mask_roles)
+            if use_dropout
+            else self.full_sentence_weights()
+        )
         mixed = torch.einsum("r,crd->cd", weights, self.sentence_embeddings)
         mixed = F.normalize(mixed, dim=-1)
         names = self.class_name_prototypes
@@ -91,10 +105,13 @@ class SentenceDropoutConservativeRouting(nn.Module):
         images: torch.Tensor,
         class_ids: torch.Tensor | None = None,
         enabled: bool = True,
+        mask_roles: list[int] | None = None,
     ) -> torch.Tensor:
         if not enabled:
             return parent_logits
-        residual = self.prototypes(use_dropout=self.training)
+        residual = self.prototypes(
+            use_dropout=self.training, mask_roles=mask_roles
+        )
         if class_ids is not None:
             residual = residual.index_select(0, class_ids.to(residual.device))
         residual_logits = F.normalize(images.float(), dim=-1) @ residual.T

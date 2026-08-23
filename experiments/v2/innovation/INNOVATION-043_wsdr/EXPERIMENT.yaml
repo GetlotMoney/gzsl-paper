@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-043
+idea_id: IDEA-077
+framework_id: FRAMEWORK-V2
+title: Worst-of-Two Sentence Dropout Routing
+base_commit: d4fc2c2f8a2a5f5421fb52ae9c000207367c85bf
+code_commit: null
+status: planned
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-043_wsdr/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-043_wsdr/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-043_wsdr/RUN-001
+    status: planned
