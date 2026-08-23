@@ -31,5 +31,10 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-004.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-058_agct/RUN-004
     status: completed_positive
+  - run_id: RUN-005
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-005.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-058_agct/RUN-005
+    status: planned
     attempt_no: RESCUE-2
     attempt_no: RESCUE-1
