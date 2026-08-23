@@ -42,6 +42,14 @@ class NCSRTest(unittest.TestCase):
         self.assertEqual(config["max_gamma"], 5.0)
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_rescue_config_only_lowers_learning_rate(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-047_ncsr/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["learning_rate"], 0.001)
+        self.assertEqual(config["neighbor_k"], 5)
+        self.assertEqual(config["max_gamma"], 5.0)
+
 
 if __name__ == "__main__":
     unittest.main()

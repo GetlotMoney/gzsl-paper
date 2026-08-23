@@ -16,3 +16,9 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-047_ncsr/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-047_ncsr/RUN-001
     status: completed_failed_parent_only
+  - run_id: RUN-002
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-047_ncsr/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-047_ncsr/RUN-002
+    status: planned
+    attempt_no: RESCUE-1

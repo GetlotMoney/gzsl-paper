@@ -81,7 +81,7 @@ def load_config(path: Path):
         or int(config["niters"]) != 28228
         or int(config["report_interval"]) != 141
         or config["optimizer"] != "Adam"
-        or float(config["learning_rate"]) != 0.01
+        or float(config["learning_rate"]) not in (0.01, 0.001)
         or float(config["weight_decay"]) != 0.0
     ):
         raise ValueError("NCSR训练参数错误。")
