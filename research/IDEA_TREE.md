@@ -73,7 +73,7 @@ V2-H-PLUS-3PP
       ├─ auxiliary_branch：IDEA-047 / SEBC seen内部episode竞争去偏置（supported，当前无专家H=77.518382，复用EBC机制）
       ├─ rejected_branch：IDEA-048 / LPSR局部patch-文本残差（rejected，class-agnostic平均丢失定位）
       ├─ supported_candidate：IDEA-049 / CCPE每类独立局部patch证据（H=77.666533，新颖性待检索）
-      ├─ testing_branch：IDEA-050 / SCPE空间一致局部patch证据（testing，抑制分散伪匹配）
+      ├─ rejected_branch：IDEA-050 / SCPE空间一致局部patch证据（rejected，多部位不要求相邻）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

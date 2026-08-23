@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-016 SCPE</title></head>
 <body>
 <h1>SCPE：空间一致的类别条件patch证据</h1>
-<p><strong>Base commit：</strong>06d28c77ee032cd32e81e356797df6f7a5781c29；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>06d28c77ee032cd32e81e356797df6f7a5781c29；<strong>RUN-001 code commit：</strong>5276a9e8f785a5ab1ec12db4369e78549882cd79。</p>
 <h2>父路径</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC，输出父logits[B,200]。SCPE作为CCPE的替代局部分支，不叠加CCPE权重。</p>
 <h2>空间一致局部证据</h2>
 <pre>sim_bnc = cos(patch_bn, orthogonal_local_text_c)

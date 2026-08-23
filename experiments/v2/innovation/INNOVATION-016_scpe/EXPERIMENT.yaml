@@ -4,15 +4,15 @@ idea_id: IDEA-050
 framework_id: FRAMEWORK-V2
 title: Spatially Coherent Patch Evidence
 base_commit: 06d28c77ee032cd32e81e356797df6f7a5781c29
-code_commit: null
-status: planned
+code_commit: 5276a9e8f785a5ab1ec12db4369e78549882cd79
+status: rejected_spatial_assumption
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-016_scpe/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 5276a9e8f785a5ab1ec12db4369e78549882cd79
     config_ref: experiments/v2/innovation/INNOVATION-016_scpe/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-016_scpe/RUN-001
-    status: planned
+    status: completed
