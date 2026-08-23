@@ -43,6 +43,21 @@ def reciprocal_neighbor_confidence(
     return confidence
 
 
+def pair_role_distance_weights(
+    role_sentence_prototypes: torch.Tensor, class_pairs: torch.Tensor
+) -> torch.Tensor:
+    """按两类在八个语义角色上的余弦距离生成均值为1的pair权重。"""
+    if tuple(role_sentence_prototypes.shape) != (200, 8, 768):
+        raise ValueError("pair角色原型必须是[200,8,768]。")
+    if class_pairs.ndim != 2 or class_pairs.shape[1] != 2:
+        raise ValueError("class_pairs必须是[N,2]。")
+    normalized = F.normalize(role_sentence_prototypes.float(), dim=-1)
+    first = normalized.index_select(0, class_pairs[:, 0].long())
+    second = normalized.index_select(0, class_pairs[:, 1].long())
+    distance = (1.0 - (first * second).sum(dim=-1)).clamp_min(0.0)
+    return distance / distance.mean(dim=1, keepdim=True).clamp_min(1e-6)
+
+
 class GatedPairEvidenceSelector(nn.Module):
     """用parent margin与三种证据差值学习top1/top2成对校正。"""
 
@@ -477,4 +492,29 @@ class TriadicCompetitionPairSelector(SemanticNeighborPairSelector):
             global_ids,
             related,
             torch.cat((features, third_gap.unsqueeze(1)), dim=1),
+        )
+
+
+class PairDiscriminativeRoleSelector(SemanticNeighborPairSelector):
+    """按当前类别对的角色文本距离重加权图像角色分歧。"""
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top, global_ids, related, features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        weights = pair_role_distance_weights(
+            self.role_sentence_prototypes, global_ids
+        )
+        weighted_roles = features[:, -8:] * weights
+        return (
+            top,
+            global_ids,
+            related,
+            torch.cat((features[:, :-8], weighted_roles), dim=1),
         )

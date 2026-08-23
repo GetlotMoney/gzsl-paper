@@ -440,6 +440,8 @@ TCPS首次启动因patch-free schema漏接线在创建输出目录前失败，�
 
 TCPS seed7达到`U/S/H/ZS=76.748145/80.184466/78.428683/83.953416%`，比稳定SNPS top-3低`0.017417`；TCPS相对top-3增量在seed5/7一正一负，IDEA-109拒绝并停止第三类上下文轴。当前累计199组。
 
+下一实验`V2-INNOVATION-076 / PDRS`固定稳定SNPS top-3图，不再增加全局竞争特征；对当前top1/top2类别对计算八角色文本余弦距离，并以每pair均值1的权重重加权对应图像角色分歧，让不同pair关注不同判别角色。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

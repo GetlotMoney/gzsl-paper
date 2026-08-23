@@ -7,6 +7,7 @@ from model.innovations.gpes import (
     CenteredRoleGatedPairSelector,
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
+    PairDiscriminativeRoleSelector,
     ReciprocalSemanticNeighborPairSelector,
     RoleAwareGatedPairSelector,
     SemanticNeighborPairSelector,
@@ -15,6 +16,7 @@ from model.innovations.gpes import (
     TriadicCompetitionPairSelector,
     semantic_neighbor_adjacency,
     reciprocal_neighbor_confidence,
+    pair_role_distance_weights,
 )
 from model.innovations.train_gpes import (
     class_balanced_pair_weights,
@@ -408,6 +410,40 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.tcps.v1")
         self.assertEqual(config["semantic_neighbor_k"], 3)
         self.assertEqual(config["context_feature"], "top2_minus_top3_margin")
+
+    def test_pair_role_distance_weights_have_pairwise_mean_one(self):
+        prototypes = torch.randn(200, 8, 768)
+        pairs = torch.tensor([[0, 1], [2, 3], [4, 5]])
+        weights = pair_role_distance_weights(prototypes, pairs)
+        self.assertEqual(tuple(weights.shape), (3, 8))
+        self.assertTrue(torch.allclose(
+            weights.mean(dim=1), torch.ones(3), atol=1e-5
+        ))
+        self.assertTrue(bool((weights >= 0).all()))
+
+    def test_pair_discriminative_selector_keeps_twelve_features(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        model = PairDiscriminativeRoleSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(12), torch.ones(12), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+        )
+        _, _, _, features = model._top2_context(
+            torch.randn(2, 200), torch.randn(2, 768), None, torch.arange(200)
+        )
+        self.assertEqual(tuple(features.shape), (2, 12))
+
+    def test_pdrs_config_binds_pair_role_weighting(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-076_pdrs/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.pdrs.v1")
+        self.assertEqual(config["semantic_neighbor_k"], 3)
+        self.assertEqual(config["pair_role_weighting"], "cosine_distance_mean1")
 
 
 if __name__ == "__main__":
