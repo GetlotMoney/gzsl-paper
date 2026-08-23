@@ -416,6 +416,8 @@ SNPS seed5达到`U/S/H/ZS=76.916498/80.109864/78.480710/84.056246%`，相对SDCR
 
 SNPS seed7达到`U/S/H/ZS=76.781482/80.059534/78.386251/83.953416%`，相对SDCR仍提高H `0.083396`，但比同seed C-RGWPS低`0.026458`。两seed绝对H范围仅`0.094459`，按owner口径最高取seed5 `78.480710%`；语义近邻增量跨seed不一致，SNPS只保留为最高成绩候选，不作独立核心创新。当前累计191组。
 
+SNPS方法级RESCUE-1为`V2-INNOVATION-073 / M-SNPS`：把union top-5语义边收紧为mutual top-5，只保留双方互为近邻的稳定关系，检验能否维持最高H并消除跨seed增量方向不一致。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

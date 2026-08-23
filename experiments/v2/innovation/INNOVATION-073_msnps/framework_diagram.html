@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-073 M-SNPS</title></head>
+<body>
+<h1>M-SNPS：互为语义近邻的成对选择器</h1>
+<p><strong>Base commit：</strong>2e78bae9b101761b2c0ad7854bc54d6ec13c6983；<strong>RUN-001 code commit：</strong>pre-run后绑定。</p>
+<pre>SDCR文本原型余弦图
+→ 每类top-5有向边
+→ 只保留 i∈top5(j) 且 j∈top5(i)
+→ 与suffix同族关系取并集
+→ C-RGWPS 12维中心化角色证据
+→ Linear(12,1) pair修正
+→ 200-way U/S/H；50-way ZS</pre>
+<p>相对SNPS唯一变化：语义邻接由任一方向top-5改为双方互为top-5，过滤单向近邻噪声。seen训练、Chen-style评估和patch-free边界不变。</p>
+</body></html>

@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 
 def semantic_neighbor_adjacency(
-    prototypes: torch.Tensor, neighbor_k: int
+    prototypes: torch.Tensor, neighbor_k: int, *, mutual_only: bool = False
 ) -> torch.Tensor:
     """由固定语义原型构建无向top-k邻接，不包含自身。"""
     if prototypes.ndim != 2 or prototypes.shape[0] != 200:
@@ -17,9 +17,9 @@ def semantic_neighbor_adjacency(
     similarity = normalized @ normalized.T
     similarity.fill_diagonal_(-torch.inf)
     neighbors = similarity.topk(int(neighbor_k), dim=1).indices
-    adjacency = torch.zeros((200, 200), dtype=torch.bool, device=prototypes.device)
-    adjacency.scatter_(1, neighbors, True)
-    adjacency = adjacency | adjacency.T
+    directed = torch.zeros((200, 200), dtype=torch.bool, device=prototypes.device)
+    directed.scatter_(1, neighbors, True)
+    adjacency = directed & directed.T if mutual_only else directed | directed.T
     adjacency.fill_diagonal_(False)
     return adjacency
 

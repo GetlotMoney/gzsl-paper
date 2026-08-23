@@ -285,11 +285,16 @@ class GPESTest(unittest.TestCase):
         self.assertNotIn("patch_inputs", config)
 
     def test_semantic_neighbor_adjacency_is_symmetric_without_self_edges(self):
-        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 5)
+        prototypes = torch.randn(200, 32)
+        adjacency = semantic_neighbor_adjacency(prototypes, 5)
+        mutual = semantic_neighbor_adjacency(prototypes, 5, mutual_only=True)
         self.assertEqual(tuple(adjacency.shape), (200, 200))
         self.assertTrue(torch.equal(adjacency, adjacency.T))
         self.assertFalse(bool(adjacency.diagonal().any()))
         self.assertTrue(bool(adjacency.sum(dim=1).ge(5).all()))
+        self.assertTrue(torch.equal(mutual, mutual.T))
+        self.assertFalse(bool(mutual.diagonal().any()))
+        self.assertTrue(bool((mutual <= adjacency).all()))
 
     def test_semantic_neighbor_selector_expands_suffix_gate(self):
         groups = torch.full((200,), -1)
@@ -316,6 +321,14 @@ class GPESTest(unittest.TestCase):
         )
         self.assertEqual(config["schema_version"], "gzsl-paper.snps.v1")
         self.assertEqual(config["semantic_neighbor_k"], 5)
+        self.assertNotIn("patch_inputs", config)
+
+    def test_msnps_config_uses_mutual_top5(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-073_msnps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.msnps.v1")
+        self.assertEqual(config["semantic_neighbor_rule"], "mutual_top5")
         self.assertNotIn("patch_inputs", config)
 
 
