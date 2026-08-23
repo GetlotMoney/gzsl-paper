@@ -9,3 +9,4 @@ core_change: T-GWPS训练/推理与线性selector不变，只新增短类名差�
 success_condition: H大于patch-free AGCT 78.357224且不读取patch；两seed可复现后supported。
 failure_condition: H不超过AGCT、类名特征重复父margin或selector退回零。
 experiment: V2-INNOVATION-069
+interim_result: seed5 patch-free H=78.368367，超过AGCT 0.011143；追加seed7。
