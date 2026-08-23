@@ -60,6 +60,14 @@ class MGSRTest(unittest.TestCase):
         self.assertEqual(config["coefficient_l2_weight"], 0.05)
         self.assertEqual(config["max_logit_residual"], 0.25)
 
+    def test_final_rescue_reduces_only_l2_weight(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-046_rmgsr/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["coefficient_l2_weight"], 0.005)
+        self.assertEqual(config["max_logit_residual"], 0.25)
+        self.assertEqual(config["random_seed"], 5)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -94,9 +94,9 @@ def load_config(path: Path):
         raise ValueError("MGSR训练参数错误。")
     if schema == "gzsl-paper.rmgsr.v1" and (
         float(config["max_logit_residual"]) != 0.25
-        or float(config["coefficient_l2_weight"]) != 0.05
+        or float(config["coefficient_l2_weight"]) not in (0.05, 0.005)
     ):
-        raise ValueError("R-MGSR必须使用0.05系数L2和±0.25残差上限。")
+        raise ValueError("R-MGSR必须使用预注册系数L2和±0.25残差上限。")
     return config, sha256_file(path)
 
 
