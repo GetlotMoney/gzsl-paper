@@ -1,6 +1,6 @@
 # IDEA-107：Mutual Semantic Neighborhood Pair Selector
 
-status: testing
+status: supported
 problem: SNPS的union top-5约800条边，增量在seed5/7一正一负，可能含单向相似噪声。
 hypothesis: 只保留双方互为top-5的稳定语义邻居，可维持seed5收益并修复跨seed不一致。
 evidence_refs: IDEA-106最高H=78.480710但相对C-RGWPS增量跨seed不一致；SNPS语义图边数约800。
@@ -10,4 +10,5 @@ success_condition: seed5 H大于同seed C-RGWPS 78.393178，且若追加seed7则
 failure_condition: H不超过C-RGWPS或仍出现跨seed增量方向不一致。
 experiment: V2-INNOVATION-073
 paper_core_innovation: false
-interim_result: seed5 patch-free H=78.459247，相对C-RGWPS +0.066069、低于SNPS 0.021463；追加seed7检验稳定性。
+result: seed5/seed7 patch-free H=78.459247/78.426898，相对同seed C-RGWPS +0.066069/+0.014189，两seed同号且自身范围0.032349。
+decision: mutual top-5修复了SNPS增量跨seed不一致，保留为稳定辅助候选；相关工作检索前不作核心原创claim。
