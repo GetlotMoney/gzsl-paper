@@ -52,16 +52,24 @@ def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    expected_keys = (
+        CONFIG_KEYS | {"coefficient_l2_weight"}
+        if schema == "gzsl-paper.rmgsr.v1"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"MGSR配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"MGSR配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
-    if (
-        config["schema_version"] != "gzsl-paper.mgsr.v1"
-        or config["experiment_id"] != "V2-INNOVATION-045"
-        or config["idea_id"] != "IDEA-079"
-    ):
+    identity = {
+        "gzsl-paper.mgsr.v1": ("V2-INNOVATION-045", "IDEA-079"),
+        "gzsl-paper.rmgsr.v1": ("V2-INNOVATION-046", "IDEA-080"),
+    }.get(schema)
+    if identity is None or (
+        config["experiment_id"], config["idea_id"]
+    ) != identity:
         raise ValueError("MGSR身份错误。")
     if (
         config["evaluation_protocol"] != EVALUATION_PROTOCOL
@@ -84,6 +92,11 @@ def load_config(path: Path):
         or float(config["weight_decay"]) != 0.0
     ):
         raise ValueError("MGSR训练参数错误。")
+    if schema == "gzsl-paper.rmgsr.v1" and (
+        float(config["max_logit_residual"]) != 0.25
+        or float(config["coefficient_l2_weight"]) != 0.05
+    ):
+        raise ValueError("R-MGSR必须使用0.05系数L2和±0.25残差上限。")
     return config, sha256_file(path)
 
 
@@ -227,7 +240,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             logits = model(logits, images, class_ids)
             ce_loss = F.cross_entropy(logits, targets)
             kl_loss = model.kl_to_base(class_ids)
-            loss = ce_loss + float(config["kl_weight"]) * kl_loss
+            coefficient_l2_loss = model.raw_geometry_coefficients.square().mean()
+            loss = (
+                ce_loss
+                + float(config["kl_weight"]) * kl_loss
+                + float(config.get("coefficient_l2_weight", 0.0))
+                * coefficient_l2_loss
+            )
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
             require_finite_gradients(model)
@@ -245,6 +264,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "loss": float(loss.detach()),
                         "ce_loss": float(ce_loss.detach()),
                         "kl_loss": float(kl_loss.detach()),
+                        "coefficient_l2_loss": float(coefficient_l2_loss.detach()),
                         "official_metrics_percent": metrics,
                         "routing_stats": stats,
                     }

@@ -1,0 +1,20 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-046
+idea_id: IDEA-080
+framework_id: FRAMEWORK-V2
+title: Regularized Multi-Geometry Sentence Routing
+base_commit: 5cedbf0a1996e49f61480461297568166395c74f
+code_commit: null
+status: planned
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+rescue_of: V2-INNOVATION-045
+attempt_no: RESCUE-2
+framework_diagram: experiments/v2/innovation/INNOVATION-046_rmgsr/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-046_rmgsr/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-046_rmgsr/RUN-001
+    status: planned

@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,class_variation,weight_min,weight_max,residual_min,residual_max,test_used_for_selection,output_uri,decision
+RUN-001,,experiments/v2/innovation/INNOVATION-046_rmgsr/configs/RUN-001.yaml,f481d974d61cd13ba30dfd3e6613478ef8a6f199efe882d1fe26618529b4ae20,5,planned,,,,,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-046_rmgsr/RUN-001,pending
