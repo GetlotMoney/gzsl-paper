@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,pair_count,output_norm,output_bias,test_used_for_selection,output_uri,decision
+RUN-001,,experiments/v2/innovation/INNOVATION-067_nps/configs/RUN-001.yaml,8389869abe79198dcb7de050d31998541c08b1c775d7e0615ad59a4485f8a5d1,5,planned,,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-067_nps/RUN-001,pending

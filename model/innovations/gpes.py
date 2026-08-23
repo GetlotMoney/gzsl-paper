@@ -140,3 +140,39 @@ class GatedPairEvidenceSelector(nn.Module):
         output = logits.clone()
         output.scatter_add_(1, top.indices, correction)
         return output
+
+
+class NonlinearGatedPairSelector(GatedPairEvidenceSelector):
+    """用4→8→1小型MLP学习证据差值的非线性交互。"""
+
+    def __init__(self, *args, hidden_dim: int = 8, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        del self.selector_weight
+        del self.selector_bias
+        self.selector = nn.Sequential(
+            nn.Linear(4, int(hidden_dim)),
+            nn.GELU(),
+            nn.Linear(int(hidden_dim), 1),
+        )
+        nn.init.zeros_(self.selector[-1].weight)
+        nn.init.zeros_(self.selector[-1].bias)
+        self.hidden_dim = int(hidden_dim)
+
+    def pair_delta(self, raw_features: torch.Tensor) -> torch.Tensor:
+        normalized = (raw_features.float() - self.feature_mean) / self.feature_std
+        raw = self.selector(normalized).squeeze(1)
+        return self.max_delta * torch.tanh(raw)
+
+    def stats(self) -> dict[str, object]:
+        return {
+            "hidden_dim": self.hidden_dim,
+            "first_layer_weight_norm": float(
+                self.selector[0].weight.detach().norm()
+            ),
+            "output_weight_norm": float(
+                self.selector[-1].weight.detach().norm()
+            ),
+            "output_bias": float(self.selector[-1].bias.detach()),
+            "margin_threshold": float(self.margin_threshold),
+            "margin_temperature": self.margin_temperature,
+        }

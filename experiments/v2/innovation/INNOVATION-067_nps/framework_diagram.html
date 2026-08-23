@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-067 NPS</title></head>
+<body>
+<h1>NPS：非线性成对证据选择器</h1>
+<p><strong>Base commit：</strong>47ddadb73e4f21c80b18624301f03478bc46be88；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<pre>GWPS四维标准化特征
+→ Linear(4,8) → GELU → Linear(8,1) → tanh×0.5 pair delta
+最后一层零初始化，初始严格复现SDCR</pre>
+<p>训练pair、soft gate、pair CE与推理边界复用GWPS；唯一改动是selector由线性5参数升级为小型非线性交互。</p>
+</body></html>

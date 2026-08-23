@@ -3,7 +3,10 @@ import unittest
 
 import torch
 
-from model.innovations.gpes import GatedPairEvidenceSelector
+from model.innovations.gpes import (
+    GatedPairEvidenceSelector,
+    NonlinearGatedPairSelector,
+)
 from model.innovations.train_gpes import (
     class_balanced_pair_weights,
     extract_pair_examples,
@@ -161,6 +164,27 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.egpes.v1")
         self.assertEqual(config["threshold_quantile"], 0.25)
         self.assertEqual(config["pair_training_quantile"], 0.5)
+
+    def test_nonlinear_selector_starts_at_exact_zero_output(self):
+        groups = torch.arange(200) // 2
+        model = NonlinearGatedPairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(4), torch.ones(4), 0.5,
+            hidden_dim=8,
+        )
+        pair = torch.tensor([[1.0, 0.9], [0.7, 0.6]])
+        features = torch.randn(2, 4)
+        self.assertTrue(torch.equal(model.corrected_pair_logits(pair, features), pair))
+        self.assertEqual(model.hidden_dim, 8)
+        self.assertEqual(float(model.selector[-1].weight.detach().abs().sum()), 0.0)
+
+    def test_nps_config_binds_hidden_dim(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-067_nps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.nps.v1")
+        self.assertEqual(config["selector_hidden_dim"], 8)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,10 @@ import torch.nn.functional as F
 import yaml
 
 from model.innovations.ebc import EpisodicBiasCalibration
-from model.innovations.gpes import GatedPairEvidenceSelector
+from model.innovations.gpes import (
+    GatedPairEvidenceSelector,
+    NonlinearGatedPairSelector,
+)
 from model.innovations.lpsr import orthogonal_local_text_residuals
 from model.innovations.sdcr import SentenceDropoutConservativeRouting
 from model.innovations.tigr import taxonomic_suffix_group_ids
@@ -77,7 +80,9 @@ def load_config(path: Path):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    if schema == "gzsl-paper.egpes.v1":
+    if schema == "gzsl-paper.nps.v1":
+        expected_keys = CONFIG_KEYS | {"pair_training_scope", "selector_hidden_dim"}
+    elif schema == "gzsl-paper.egpes.v1":
         expected_keys = CONFIG_KEYS | {"pair_training_quantile"}
     elif schema in ("gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1"):
         expected_keys = CONFIG_KEYS | {"pair_training_scope", "pair_class_balance"}
@@ -96,6 +101,7 @@ def load_config(path: Path):
         "gzsl-paper.bgwps.v1": ("V2-INNOVATION-064", "IDEA-098"),
         "gzsl-paper.mbgwps.v1": ("V2-INNOVATION-065", "IDEA-099"),
         "gzsl-paper.egpes.v1": ("V2-INNOVATION-066", "IDEA-100"),
+        "gzsl-paper.nps.v1": ("V2-INNOVATION-067", "IDEA-101"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -130,7 +136,8 @@ def load_config(path: Path):
     ):
         raise ValueError("GPES训练参数错误。")
     if schema in (
-        "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1"
+        "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
+        "gzsl-paper.nps.v1",
     ) and config[
         "pair_training_scope"
     ] != "all_same_group_top2_soft_gate":
@@ -147,6 +154,10 @@ def load_config(path: Path):
         "pair_training_quantile"
     ]) != 0.5:
         raise ValueError("E-GPES训练pair门槛必须为50分位。")
+    if schema == "gzsl-paper.nps.v1" and int(config[
+        "selector_hidden_dim"
+    ]) != 8:
+        raise ValueError("NPS hidden_dim必须为8。")
     return config, sha256_file(path)
 
 
@@ -378,7 +389,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         pair_logits_list, feature_list, target_list, pair_weight_list = [], [], [], []
         hard_margin_only = config["schema_version"] not in (
             "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1",
-            "gzsl-paper.mbgwps.v1",
+            "gzsl-paper.mbgwps.v1", "gzsl-paper.nps.v1",
         )
         for start in range(0, features.shape[0], 512):
             images = features[start : start + 512].to(device).float()
@@ -444,18 +455,26 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "training_threshold": float(pair_training_threshold),
             "training_threshold_stats": pair_training_threshold_stats,
         }
-        model = GatedPairEvidenceSelector(
-            sdcr.prototypes(use_dropout=False).detach(),
-            float(sdcr_payload["fixed_beta"]),
-            claude_orth,
-            merge_orth,
-            group_ids,
-            threshold,
-            float(config["margin_temperature"]),
-            feature_mean,
-            feature_std,
-            float(config["max_delta"]),
-        ).to(device)
+        model_class = (
+            NonlinearGatedPairSelector
+            if config["schema_version"] == "gzsl-paper.nps.v1"
+            else GatedPairEvidenceSelector
+        )
+        model_kwargs = {
+            "sdcr_prototypes": sdcr.prototypes(use_dropout=False).detach(),
+            "sdcr_beta": float(sdcr_payload["fixed_beta"]),
+            "claude_prototypes": claude_orth,
+            "merge_prototypes": merge_orth,
+            "group_ids": group_ids,
+            "margin_threshold": threshold,
+            "margin_temperature": float(config["margin_temperature"]),
+            "feature_mean": feature_mean,
+            "feature_std": feature_std,
+            "max_delta": float(config["max_delta"]),
+        }
+        if config["schema_version"] == "gzsl-paper.nps.v1":
+            model_kwargs["hidden_dim"] = int(config["selector_hidden_dim"])
+        model = model_class(**model_kwargs).to(device)
         optimizer = torch.optim.Adam(
             model.parameters(),
             lr=float(config["learning_rate"]),
