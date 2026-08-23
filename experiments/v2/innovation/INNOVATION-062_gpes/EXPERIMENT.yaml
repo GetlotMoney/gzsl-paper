@@ -12,7 +12,13 @@ unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-062_gpes/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 4b2d1eb00c8d1b119e73a4c8e0d9e3d86d423b11
     config_ref: experiments/v2/innovation/INNOVATION-062_gpes/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-062_gpes/RUN-001
+    status: failed_runtime
+    failure_mode: precomputed pair tensors retained frozen parent graph
+  - run_id: RUN-001-RERUN-001
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-062_gpes/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-062_gpes/RUN-001-RERUN-001
     status: planned

@@ -54,7 +54,9 @@ class GPESTest(unittest.TestCase):
         self.assertIsNotNone(model.selector_weight.grad)
 
     def test_extract_pair_examples_keeps_only_gated_top2_targets(self):
-        logits = torch.tensor([[1.0, 0.9, 0.0], [1.0, 0.9, 0.0]])
+        logits = torch.tensor(
+            [[1.0, 0.9, 0.0], [1.0, 0.9, 0.0]], requires_grad=True
+        )
         images = torch.randn(2, 4)
         patch = torch.randn(2, 3)
         targets = torch.tensor([1, 2])
@@ -68,6 +70,8 @@ class GPESTest(unittest.TestCase):
         )
         self.assertEqual(package[3], 1)
         self.assertEqual(int(package[2][0]), 1)
+        self.assertFalse(package[0].requires_grad)
+        self.assertFalse(package[1].requires_grad)
 
     def test_config_binds_pair_ce_and_four_features(self):
         config, _ = load_config(

@@ -142,9 +142,9 @@ def extract_pair_examples(
     )
     pair_targets = top.indices[:, 1].eq(targets).long()
     return (
-        top.values[selected].cpu(),
-        features[selected].cpu(),
-        pair_targets[selected].cpu(),
+        top.values[selected].detach().cpu(),
+        features[selected].detach().cpu(),
+        pair_targets[selected].detach().cpu(),
         int(selected.sum()),
     )
 
@@ -261,6 +261,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             calibrator_payload["calibrator_state_dict"], strict=True
         )
         calibrator.eval()
+        for parameter in calibrator.parameters():
+            parameter.requires_grad_(False)
         casr_payload = torch.load(
             Path(config["casr_model"]), map_location="cpu", weights_only=False
         )
