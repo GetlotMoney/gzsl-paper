@@ -4,7 +4,11 @@ import unittest
 import torch
 
 from model.innovations.gpes import GatedPairEvidenceSelector
-from model.innovations.train_gpes import extract_pair_examples, load_config
+from model.innovations.train_gpes import (
+    class_balanced_pair_weights,
+    extract_pair_examples,
+    load_config,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -111,6 +115,26 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(
             config["pair_training_scope"], "all_same_group_top2_soft_gate"
         )
+
+    def test_balanced_pair_weights_equalize_label_mass(self):
+        targets = torch.tensor([0, 0, 0, 1])
+        weights, class_weights = class_balanced_pair_weights(
+            targets, torch.ones(4)
+        )
+        self.assertGreater(float(class_weights[1]), float(class_weights[0]))
+        self.assertAlmostEqual(
+            float(weights[targets == 0].sum()),
+            float(weights[targets == 1].sum()),
+            places=6,
+        )
+        self.assertAlmostEqual(float(weights.mean()), 1.0, places=6)
+
+    def test_bgwps_config_binds_inverse_frequency_balance(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-064_bgwps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.bgwps.v1")
+        self.assertEqual(config["pair_class_balance"], "inverse_frequency")
 
 
 if __name__ == "__main__":

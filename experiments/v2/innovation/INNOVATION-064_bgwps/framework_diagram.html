@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-064 B-GWPS</title></head>
+<body>
+<h1>B-GWPS：类别平衡soft-gate pair选择器</h1>
+<p><strong>Base commit：</strong>4f4522335ad7a442002b2e75877239a820d927ee；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<pre>GWPS pair权重
+× inverse_frequency(pair target是top1/top2)
+→ 归一化mean=1
+→ weighted pair CE训练同一5参数selector</pre>
+<p>相对GWPS只平衡pair标签；训练pair、四特征、soft gate和推理结构不变。</p>
+</body></html>

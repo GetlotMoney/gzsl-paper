@@ -56,16 +56,31 @@ CONFIG_KEYS = {
 }
 
 
+def class_balanced_pair_weights(
+    pair_targets: torch.Tensor, soft_weights: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor]:
+    counts = torch.bincount(pair_targets.long(), minlength=2).float()
+    if bool((counts == 0).any()):
+        raise ValueError("B-GWPS pair标签必须同时包含top1/top2真类。")
+    class_weights = pair_targets.numel() / (2.0 * counts)
+    combined = soft_weights.float() * class_weights.index_select(
+        0, pair_targets.long()
+    )
+    combined = combined / combined.mean().clamp_min(1e-8)
+    return combined, class_weights
+
+
 def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    expected_keys = (
-        CONFIG_KEYS | {"pair_training_scope"}
-        if schema == "gzsl-paper.gwps.v1"
-        else CONFIG_KEYS
-    )
+    if schema == "gzsl-paper.bgwps.v1":
+        expected_keys = CONFIG_KEYS | {"pair_training_scope", "pair_class_balance"}
+    elif schema == "gzsl-paper.gwps.v1":
+        expected_keys = CONFIG_KEYS | {"pair_training_scope"}
+    else:
+        expected_keys = CONFIG_KEYS
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"GPES配置字段错误；缺少={sorted(expected_keys-actual)}，"
@@ -74,6 +89,7 @@ def load_config(path: Path):
     identity = {
         "gzsl-paper.gpes.v1": ("V2-INNOVATION-062", "IDEA-096"),
         "gzsl-paper.gwps.v1": ("V2-INNOVATION-063", "IDEA-097"),
+        "gzsl-paper.bgwps.v1": ("V2-INNOVATION-064", "IDEA-098"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -107,10 +123,14 @@ def load_config(path: Path):
         or float(config["weight_decay"]) != 0.0001
     ):
         raise ValueError("GPES训练参数错误。")
-    if schema == "gzsl-paper.gwps.v1" and config[
+    if schema in ("gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1") and config[
         "pair_training_scope"
     ] != "all_same_group_top2_soft_gate":
         raise ValueError("GWPS必须使用全同族top2与soft gate加权。")
+    if schema == "gzsl-paper.bgwps.v1" and config[
+        "pair_class_balance"
+    ] != "inverse_frequency":
+        raise ValueError("B-GWPS必须使用pair标签逆频率平衡。")
     return config, sha256_file(path)
 
 
@@ -325,7 +345,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         mapping[seen_classes] = torch.arange(150)
         ids = seen_classes.to(device)
         pair_logits_list, feature_list, target_list, pair_weight_list = [], [], [], []
-        hard_margin_only = config["schema_version"] != "gzsl-paper.gwps.v1"
+        hard_margin_only = config["schema_version"] not in (
+            "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1"
+        )
         for start in range(0, features.shape[0], 512):
             images = features[start : start + 512].to(device).float()
             parent_logits = F.normalize(images, dim=-1) @ parent.prototypes().index_select(0, ids).T * parent.scale()
@@ -355,6 +377,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         pair_features = torch.cat(feature_list)
         pair_targets = torch.cat(target_list)
         pair_weights = torch.cat(pair_weight_list)
+        pair_class_weights = torch.ones(2)
+        if config["schema_version"] == "gzsl-paper.bgwps.v1":
+            pair_weights, pair_class_weights = class_balanced_pair_weights(
+                pair_targets, pair_weights
+            )
         if pair_targets.numel() < 50 or pair_targets.unique().numel() != 2:
             raise ValueError("GPES成对训练样本不足或标签退化。")
         feature_mean = pair_features.mean(dim=0)
@@ -366,6 +393,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "feature_std": [float(value) for value in feature_std],
             "pair_weight_mean": float(pair_weights.mean()),
             "pair_weight_std": float(pair_weights.std(unbiased=False)),
+            "pair_class_weights": [
+                float(value) for value in pair_class_weights
+            ],
         }
         model = GatedPairEvidenceSelector(
             sdcr.prototypes(use_dropout=False).detach(),
