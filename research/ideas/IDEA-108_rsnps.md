@@ -10,3 +10,4 @@ success_condition: seed5 H大于稳定top-3 78.466710或最高top-5 78.480710；
 failure_condition: H不超过top-3、U/S任一下降超过2个百分点或置信度退化。
 experiment: V2-INNOVATION-074
 paper_core_innovation: false
+interim_result: seed5 patch-free H=78.476148，相对稳定top-3 +0.009438、距最高top-5仅-0.004562；追加seed7。

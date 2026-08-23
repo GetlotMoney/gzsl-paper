@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 195
+completed_try_count: 196
 minimum_required_try_count: 50
 ```
 
@@ -429,6 +429,8 @@ SNPS RESCUE-2 union top-3 seed5达到`U/S/H/ZS=76.883179/80.116844/78.466710/84.
 SNPS RESCUE-2 union top-3 seed7达到`U/S/H/ZS=76.847547/80.112571/78.446100/83.987880%`，相对C-RGWPS提高H `0.033391`且超过mutual top-5 `0.019202`。top-3两seedH范围仅`0.020610`并都高于C-RGWPS，固定为SNPS家族稳定结构；union top-5 seed5 `78.480710%`继续作为owner口径最高成绩。当前累计195组。
 
 SNPS方法级RESCUE-3为`V2-INNOVATION-074 / R-SNPS`：top-5互为邻居权重1、单向邻居权重0.5，并同时缩放训练pair loss与推理delta；这是语义图轴最后一次补救，失败后不再调整图密度或权重。
+
+R-SNPS seed5达到`U/S/H/ZS=76.876497/80.143785/78.476148/84.015107%`，相对稳定top-3提高H `0.009438`、距最高union top-5仅`0.004562`。798条边中202条mutual、596条one-way；追加seed7决定是否替代top-3。当前累计196组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
