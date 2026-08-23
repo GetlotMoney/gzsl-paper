@@ -140,7 +140,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-114 / TR-RDSS信赖域角色尺度选择器（只改善seed5）
       ├─ rejected_branch：IDEA-115 / RVPS角色投票成对选择器（多数投票无增益）
       ├─ rejected_branch：IDEA-116 / CSDS跨来源分歧选择器（新增特征被忽略）
-      ├─ testing_branch：IDEA-117 / RUGS角色不确定性门控选择器（planned，只衰减不改方向）
+      ├─ rejected_branch：IDEA-117 / RUGS角色不确定性门控选择器（不确定性方向与seen CE相反）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）
