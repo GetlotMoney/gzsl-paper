@@ -118,7 +118,7 @@ V2-H-PLUS-3PP
       ├─ supported_candidate：IDEA-092 / AGCT歧义门控跨LLM二选一（25分位两seed，最高H=78.357224）
       ├─ rejected_branch：IDEA-093 / CCTB反共识二选一（gate过稀无效果）
       ├─ rejected_branch：IDEA-094 / MAGT多源歧义门控二选一（双文本源重复）
-      ├─ testing_branch：IDEA-095 / AGPT歧义门控局部patch二选一（testing，异质视觉证据）
+      ├─ rejected_branch：IDEA-095 / AGPT歧义门控局部patch二选一（局部视觉tie-break无效）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

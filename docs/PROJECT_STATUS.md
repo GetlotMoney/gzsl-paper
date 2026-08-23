@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 175
+completed_try_count: 176
 minimum_required_try_count: 50
 ```
 
@@ -373,6 +373,8 @@ AGCT 25分位seed7达到`U/S/H/ZS=76.647568/80.107862/78.339523/83.854544%`，�
 AGCT温度0.05条件与0.1条件最高指标逐项相同，未产生额外收益。最终结构固定25分位、温度0.1并关闭参数轴；当前最高可靠H保持`78.357224%`。下一方向在同一窄门控内联合学习Claude与merge两种tie-breaker，不再改变gate。当前累计174组。
 
 MAGT在固定AGCT窄gate内联合Claude与merge，但两源原型余弦高达`0.980766`，所有双beta非零条件均降低H，best退回父模型。IDEA-094拒绝；下一歧义证据改用异质的本地patch，只在低margin top2内启用。当前累计175组。
+
+AGPT在25分位gate内使用top2局部patch二选一，但所有非零patch beta都降低H，best退回父模型。局部patch的全局叠加、训练加权和歧义tie-break三种路径均失败，IDEA-095拒绝并关闭patch轴。下一步做gated样本source-oracle审计。当前累计176组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

@@ -4,15 +4,15 @@ idea_id: IDEA-095
 framework_id: FRAMEWORK-V2
 title: Ambiguity-Gated Patch Tie-Breaker
 base_commit: b850a3dd2f45d01e510f7c652912f56d94c9b477
-code_commit: null
-status: planned
+code_commit: b2d276498b9eb2bce1c0cefce0c499d6a986fd9b
+status: rejected_patch_tie_break_harm
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-061_agpt/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: b2d276498b9eb2bce1c0cefce0c499d6a986fd9b
     config_ref: experiments/v2/innovation/INNOVATION-061_agpt/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-061_agpt/RUN-001
-    status: planned
+    status: completed_failed_parent_only
