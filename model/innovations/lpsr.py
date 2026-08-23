@@ -25,6 +25,26 @@ def orthogonal_local_text_residuals(
     return residual
 
 
+def local_text_orthogonal_reliability(
+    sentence_embeddings: torch.Tensor,
+    class_name_prototypes: torch.Tensor,
+    seen_class_ids: torch.Tensor,
+) -> torch.Tensor:
+    if tuple(sentence_embeddings.shape) != (200, 8, 768):
+        raise ValueError("八角色语义必须是[200,8,768]。")
+    names = F.normalize(class_name_prototypes.detach().float(), dim=-1)
+    local = F.normalize(
+        sentence_embeddings.detach().float().to(names.device)[:, :6].mean(dim=1),
+        dim=-1,
+    )
+    residual = local - (local * names).sum(dim=-1, keepdim=True) * names
+    strength = residual.norm(dim=-1)
+    seen_values = strength.index_select(0, seen_class_ids.to(strength.device))
+    center = seen_values.mean()
+    scale = seen_values.std(unbiased=False).clamp_min(1e-6)
+    return ((strength - center) / (2.0 * scale)).clamp(-1.0, 1.0)
+
+
 def orthogonal_part_text_residuals(
     sentence_embeddings: torch.Tensor,
     class_name_prototypes: torch.Tensor,

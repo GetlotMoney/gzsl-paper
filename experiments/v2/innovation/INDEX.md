@@ -23,5 +23,6 @@
 | V2-INNOVATION-019 | IDEA-053 | DSPE绝对与相对双尺度patch证据 | rejected（联合与分阶段均失败） | `INNOVATION-019_dspe/` |
 | V2-INNOVATION-020 | IDEA-054 | PCME局部patch分数共识边际 | rejected（方向合理但无增益） | `INNOVATION-020_pcme/` |
 | V2-INNOVATION-021 | IDEA-055 | ECPE episode训练的CCPE | rejected（fold方向相反） | `INNOVATION-021_ecpe/` |
+| V2-INNOVATION-022 | IDEA-056 | CRPE类别语义可靠性patch缩放 | planned | `INNOVATION-022_crpe/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

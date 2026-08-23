@@ -241,3 +241,50 @@ class PatchConsensusMarginEvidence(nn.Module):
         if mean.shape != parent_logits.shape or gap.shape != parent_logits.shape:
             raise ValueError("共识patch证据与父logits形状不一致。")
         return parent_logits + self.absolute_beta() * mean + self.gap_beta() * gap
+
+
+class ClassReliabilityPatchEvidence(nn.Module):
+    """按局部文本独立语义强度微调固定CCPE类别权重。"""
+
+    def __init__(
+        self,
+        reliability: torch.Tensor,
+        max_absolute_beta: float = 10.0,
+        max_delta_beta: float = 2.0,
+    ) -> None:
+        super().__init__()
+        if tuple(reliability.shape) != (200,):
+            raise ValueError("类别可靠性必须是[200]。")
+        self.register_buffer("reliability", reliability.detach().float())
+        self.max_absolute_beta = float(max_absolute_beta)
+        self.max_delta_beta = float(max_delta_beta)
+        self.raw_absolute_beta = nn.Parameter(torch.zeros(()))
+        self.raw_delta_beta = nn.Parameter(torch.zeros(()))
+
+    def absolute_beta(self) -> torch.Tensor:
+        return self.max_absolute_beta * torch.tanh(self.raw_absolute_beta)
+
+    def delta_beta(self) -> torch.Tensor:
+        return self.max_delta_beta * torch.tanh(self.raw_delta_beta)
+
+    def class_beta(self, class_ids: torch.Tensor | None = None) -> torch.Tensor:
+        reliability = self.reliability
+        if class_ids is not None:
+            reliability = reliability.index_select(0, class_ids.to(reliability.device))
+        return self.absolute_beta() + self.delta_beta() * reliability
+
+    def forward(
+        self,
+        parent_logits: torch.Tensor,
+        patch_scores: torch.Tensor,
+        class_ids: torch.Tensor | None = None,
+        enabled: bool = True,
+    ) -> torch.Tensor:
+        if not enabled:
+            return parent_logits
+        scores = patch_scores
+        if class_ids is not None and scores.shape[1] != parent_logits.shape[1]:
+            scores = scores.index_select(1, class_ids.to(scores.device))
+        if scores.shape != parent_logits.shape:
+            raise ValueError("可靠性patch证据与父logits形状不一致。")
+        return parent_logits + scores * self.class_beta(class_ids).unsqueeze(0)
