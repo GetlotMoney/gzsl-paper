@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 169
+completed_try_count: 170
 minimum_required_try_count: 50
 ```
 
@@ -361,6 +361,8 @@ TPLD使用非均匀成对affinity（平均熵`0.731696`）对族内logit做高�
 AGCT只对top2同族低margin样本使用Claude二选一证据，seed5达到`U/S/H/ZS=76.647568/80.107862/78.339523/83.888441%`，比SDCR提高H `0.019013`。门槛只由train seen错误margin生成，official gate非零且beta不饱和；因增益很小，追加seed7判断可靠性。当前累计168组。
 
 AGCT seed7达到`U/S/H/ZS=76.647568/80.107862/78.339523/83.854544%`，相对父模型H提高`0.036667`。两seed均正且最高H完全一致，AGCT作为supported辅助候选保留；按owner规则当前主成绩取`78.339523%`。增益弱且U/ZS略降，不作核心创新。当前累计169组。
+
+CCTB只保留Claude与SDCR共识的AGCT样本，gate均值降至seen/unseen=`0.072010/0.093413`；beta升到正4.57仍不改变任何official指标，best退回父模型。IDEA-093拒绝。下一步仅对AGCT本身做一次75分位门槛覆盖率补救。当前累计170组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

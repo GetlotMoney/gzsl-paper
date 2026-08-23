@@ -4,15 +4,15 @@ idea_id: IDEA-093
 framework_id: FRAMEWORK-V2
 title: Consensus-Contrarian Tie-Breaker
 base_commit: 1a7294ab515970cc20f6a4aeef2530cf6dc2a1ad
-code_commit: null
-status: planned
+code_commit: ca929b2bd49c4a5eb4b73ff3c5c01b2f73bf1c98
+status: rejected_gate_too_sparse_no_effect
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-059_cctb/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: ca929b2bd49c4a5eb4b73ff3c5c01b2f73bf1c98
     config_ref: experiments/v2/innovation/INNOVATION-059_cctb/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-059_cctb/RUN-001
-    status: planned
+    status: completed_failed_parent_only
