@@ -62,6 +62,10 @@ def load_config(path: Path):
             "V2-INNOVATION-029", "IDEA-063", "claude_embeddings",
             77.82913952565472,
         ),
+        "gzsl-paper.omlr.v1": (
+            "V2-INNOVATION-031", "IDEA-065", "merge_embeddings",
+            78.0721851209539,
+        ),
     }
     identity = identity_by_schema.get(config.get("schema_version")) if isinstance(config, dict) else None
     cache_key = identity[2] if identity is not None else "unknown_embeddings"
@@ -192,7 +196,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         class_names = torch.load(
             Path(config["class_name_embeddings"]), map_location="cpu", weights_only=True
         ).to(device)
-        if config["schema_version"] == "gzsl-paper.oclr.v1":
+        if config["schema_version"] in ("gzsl-paper.oclr.v1", "gzsl-paper.omlr.v1"):
             normalized_names = F.normalize(class_names.float(), dim=-1)
             normalized_residual = F.normalize(names.float(), dim=-1)
             names = F.normalize(
