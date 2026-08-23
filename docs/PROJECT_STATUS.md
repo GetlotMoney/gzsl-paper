@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 202
+completed_try_count: 203
 minimum_required_try_count: 50
 ```
 
@@ -451,6 +451,8 @@ ETPC seed5完整运行后best严格退回父模型`H=78.320510%`、selected iter
 下一实验`V2-INNOVATION-078 / RDSS`固定稳定SNPS top-3图，在12维中心化角色输入后新增归一化前八角色差值标准差，恢复被单位方差处理丢弃的样本级角色分歧尺度。
 
 RDSS seed5达到`U/S/H/ZS=76.915932/80.265528/78.555039/84.053975%`，相对稳定SNPS top-3提高H `0.088329`、相对原最高SNPS top-5提高`0.074329`，成为新的patch-free最高。raw role std权重为负，表明角色分歧越大修正越保守；追加seed7验证。当前累计202组。
+
+RDSS seed7达到`U/S/H/ZS=76.914233/80.009395/78.431289/84.020644%`，相对SDCR提高H `0.128433`但比稳定SNPS top-3低`0.014811`。尺度权重两seed均为负，机制方向一致；联合重训旧12维造成父权重扰动。按owner口径最高取seed5 `78.555039%`，下一Experiment分阶段冻结SNPS top-3选择器、只训练尺度系数。当前累计203组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

@@ -1,6 +1,6 @@
 # IDEA-112：Role Disagreement Scale Selector
 
-status: testing
+status: revised
 problem: C-RGWPS把每个样本的八角色差值标准化为单位方差，保留相对方向但丢失原始角色分歧幅度。
 hypothesis: 增加归一化前八角色差值的标准差，可提供样本级语义证据可靠性并提高稳定SNPS H。
 evidence_refs: IDEA-105中心化角色方向稳定有效；IDEA-109第三类全局上下文无效；IDEA-110 pair文本幅度加权过强。
@@ -10,4 +10,5 @@ success_condition: seed5 H大于稳定SNPS top-3 78.466710；正提升后追加s
 failure_condition: H不超过top-3、尺度特征退化或U/S任一下降超过2个百分点。
 experiment: V2-INNOVATION-078
 paper_core_innovation: false
-interim_result: seed5 U/S/H/ZS四项全升，patch-free H=78.555039；raw role std权重为负，追加seed7。
+result: seed5/seed7 H=78.555039/78.431289；尺度权重均为负，但相对top-3增量+0.088329/-0.014811。
+decision: 保留最高seed观察；新增分阶段Experiment冻结SNPS旧12维，只训练尺度系数，检验是否消除父权重扰动。
