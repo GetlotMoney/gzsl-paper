@@ -62,14 +62,15 @@
 
 ## 训练与测试
 
-- 标准开发使用xlsa17类别不相交划分：`train_loc`的100类用于梯度训练，`val_loc`的50类只用于validation选结构、参数和epoch。
-- validation-unseen图像不得进入梯度；三折、冻结或多阶段训练本身允许，但只能使用开发训练/validation边界，不能访问official test。
-- 开发选定后冻结方法、参数、epoch和seed，再使用`trainval_loc`的150类/7,057张图像重新训练。
-- official `test_seen_loc/test_unseen_loc`只能在最终checkpoint完成后评估，不得用于回改方法；记录`test_used_for_selection: false`。
+- owner选择的论文主协议为`chen_shiming_code_aligned_test_selected_gzsl`：使用`trainval_loc`的150类/7,057张图像训练，并反复评估official test选择整模型最大H。
+- Chen-style固定披露`test_used_for_selection: true / unseen_images_used_for_gradient: false / strict_blind_claim: false`，不得描述为Xian validation-first或blind-test。
+- 首个Chen-style主实验固定端到端联合训练，TG-VPR、TST/NTR、CCGR和可选属性残差不得分别使用test选择checkpoint；只有整套模型H参与best选择。
+- 分阶段训练允许作为后续新Experiment，但必须记录冻结边界；若每阶段分别看test，额外标记`nested_official_test_selection: true`。
+- TransZero代码对齐采样固定为batch 50、200名义epoch、28,228次更新、每步独立`randperm(7057)[:50]`、每141步official评估。
 - CLIP与经典ResNet-101属于不同视觉特征设置，必须记录准确checkpoint、预处理和缓存生成脚本，并只与相同骨干基线直接比较。
-- 旧实验若使用official test选择参数、epoch、模型或seed，必须保持`test_used_for_selection: true`并明确标记为test-informed探索结果。
+- 现有validation-first结果继续保留为严格协议对照，不删除、不覆盖。
 - U/S/H 使用 200 类联合竞争；ZS 使用 50 个 unseen 类竞争。
-- 已经受历史official test反馈影响的方法必须披露`historical_test_informed_architecture: true`；单次RUN不读test不能消除历史影响。
+- 所有Chen-style结果必须保存完整official评估历史、best-H对应同一checkpoint的U/S/H/ZS及独立best-ZS观察，不能跨checkpoint拼接数字。
 
 ## 交付
 

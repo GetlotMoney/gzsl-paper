@@ -108,20 +108,19 @@ test_used_for_selection,log_uri,model_uri,decision
 4. `control`：module-off、shuffle、wrong-role 等机制控制。
 5. `repeat`：值得保留后再跑其他 seed。
 
-新的论文主结果不得根据official test选择参数、epoch、模型或seed。开发RUN使用类别不相交validation并标记：
+owner选择的论文主结果采用Chen-style公开代码对齐协议，每次RUN标记：
 
 ```yaml
-evaluation_protocol: xlsa17_class_disjoint_gzsl_validation
-validation_used_for_selection: true
-test_used_for_selection: false
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
 unseen_images_used_for_gradient: false
+strict_blind_claim: false
 ```
 
-开发阶段使用`train_loc`训练、`val_loc`作为validation-unseen；若按H选择模型，还必须固定保留开发seen图像计算validation-seen。选定后在`trainval_loc`重训，official test只在最终checkpoint完成后评估。历史RUN若使用official test选模，继续记录为`test_selected_inductive_gzsl / test_used_for_selection: true`，只能作为探索结果。
+默认代码对齐条件为batch 50、200名义epoch、`niters=ntrain*epochs//batch_size`、`report_interval=niters//epochs`、每步独立随机抽样、每个report interval评估official test并按完整模型H保存best。端到端RUN只允许整模型选模；分阶段嵌套test选择必须另建Experiment并显式披露。现有validation-first RUN保留为严格协议对照。
 
 ## 多seed成绩口径
 
-- seed必须在开发RUN前固定；最终seed集合在official test前一次性冻结，不得看到结果后改报最高seed。
-- 追加seed用于稳定性判断时必须全部报告，并计算`mean / min / max / range`；最高seed只能作为分布描述，不能替代预注册主seed。
-- 新论文核心创新原则上要求相对准确父条件在预注册主seed上`Delta H >= 0.20`个百分点，并由追加seed排除明显偶然性；更小增益只作为辅助模块或观察。
-- 最终多seedRUN使用validation已选定的epoch或训练日程；official test结果必须全部报告，不得用于新一轮调参。
+- 首个Chen-style主RUN固定使用TransZero CUB配置seed 5；追加seed必须全部报告并计算`mean / min / max / range`。
+- owner内部主成绩可引用最高seed，但必须同时列出全部seed与波动，不得隐藏失败seed。
+- 新论文核心创新原则上要求相对准确父条件`Delta H >= 0.20`个百分点；更小增益只作为辅助模块或观察。

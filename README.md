@@ -13,15 +13,15 @@
 
 ## 评估协议
 
-新的论文主结果使用xlsa17类别不相交validation协议：
+owner选择的论文主结果使用Chen-style test-selected inductive GZSL：
 
-1. 开发阶段只使用`train_loc`的100类训练，并以类别不相交的`val_loc` 50类选择结构、参数和epoch。
-2. validation图像不进入梯度；三折、冻结和多阶段训练允许，但只能发生在开发训练/validation范围内。
-3. 选择冻结后，使用`trainval_loc`的150类、7,057张图像重新训练最终模型。
-4. official test只在最终checkpoint完成后评估，不用于回改方法。
-5. U/S/H在200类联合空间计算，ZS在50个unseen类空间计算。
+1. 使用`trainval_loc`的150类、7,057张图像训练；unseen图像不进入梯度。
+2. 每步独立随机抽50张，训练28,228次更新，相当于200名义epoch。
+3. 每141步评估official test，并根据整套模型official H保存best checkpoint。
+4. U/S/H在200类联合空间计算，ZS在50个unseen类空间计算。
+5. 固定披露`test_used_for_selection: true`，不描述为blind-test。
 
-新主结果记录`validation_used_for_selection: true / test_used_for_selection: false`。历史test-selected结果继续保留，但只能作为探索观察。CLIP-based与经典ResNet-101 GZSL分开报告，不能直接混表比较。
+现有validation-first结果继续作为更严格协议对照。CLIP-based与经典ResNet-101 GZSL分开报告，不能直接混表比较。
 
 ## 运行
 

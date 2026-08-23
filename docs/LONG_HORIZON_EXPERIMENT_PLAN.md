@@ -16,13 +16,13 @@ historical_out_of_scope_expert_attribute_H: 80.817183
 completed_try_count: 147
 minimum_total_try_count: 50
 target_best_H: 78.0
-evaluation_protocol: xlsa17_class_disjoint_gzsl_validation
-validation_used_for_selection: true
-test_used_for_selection: false
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+strict_blind_claim: false
 unseen_images_used_for_gradient: false
 ```
 
-开发阶段固定seed 7并只根据类别不相交validation选择结构、参数和epoch。最终seed集合必须在official test前冻结并全部报告，不能看到结果后改报最高seed。所有新核心创新必须提供同validation协议module-off消融、准确父条件、训练边界和HTML框架图。本文档后续旧阶段保留为历史搜索记录；其中test-selected路线不再作为当前论文主结果。
+论文主协议现固定为Chen-style：首RUN seed 5、trainval训练、每141步official test、整模型H选择best，必须披露`test_used_for_selection=true`。模块不分别取最大；分阶段嵌套选择必须另建Experiment。validation-first结果保留为严格对照。所有新核心创新仍须提供准确父条件、module-off消融、训练边界和HTML框架图。
 
 ## 第一性原理框架
 

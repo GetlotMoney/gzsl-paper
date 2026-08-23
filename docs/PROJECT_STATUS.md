@@ -13,8 +13,8 @@ frameworks:
     branch: framework/v2
     tag: v2
     status: baseline_completed_single_seed
-development_evaluation_protocol: xlsa17_class_disjoint_gzsl_validation
-final_evaluation_protocol: xlsa17_ps_gzsl_after_validation_freeze
+paper_main_evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+strict_protocol_comparison: xlsa17_validation_then_final
 historical_exploration_protocol: test_selected_inductive_gzsl
 paper_primary_framework: FRAMEWORK-V2
 standard_final_no_expert_H: 74.971312
@@ -44,6 +44,8 @@ owner已将来源身份`INNOVATION-MODULE-1 / TG-VPR-H1`提升为独立正式框
 标准协议审计后，开发选模已进一步纠正为xlsa17类别不相交validation。`V2-TUNE-001`仅用100个开发seen类训练，以50个validation-unseen类和固定seen图像holdout选择epoch：无专家路线最终选择RUN-001，`H_val=76.472964`（epoch 24，topology 0.1）；专家312维属性路线选择RUN-006，`H_val=77.556001`（epoch 22，topology 0.2）。两条路线均`official_test_loaded=false`；遗留CLIP缓存来源仍不完整，所以暂不具备最终test资格。
 
 owner随后明确授权`V2-CONFIRM-003`执行冻结配置最终评估。两条路线均在完整trainval 150类/7,057张图像上从头重训，并在checkpoint写入后各调用一次official test：无专家`U/S/H/ZS=73.071939/76.972061/74.971312/80.278075%`；专家属性`77.935892/79.584587/78.751611/84.862840%`，H提高`3.780300`并达到78目标。由于方法结构受历史test探索影响且CLIP缓存来源不完整，仍必须标记`strict_blind_claim_eligible=false`，不能写成从未接触test的盲测。
+
+owner进一步选择陈使明TransZero公开代码对齐的test-selected方式作为论文主协议。`V2-CONFIRM-004`已预注册端到端联合训练：batch 50、seed 5、Adam `1e-4`、28,228次更新、每141步official test、仅根据完整模型H保存best；无专家与专家路线串行执行。该协议固定披露`test_used_for_selection=true / strict_blind_claim=false`，V2-CONFIRM-003继续作为validation-first严格对照。
 
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 

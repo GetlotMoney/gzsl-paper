@@ -1,0 +1,41 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-CONFIRM-004
+slug: chen_style_end_to_end
+kind: confirmation
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+framework_diagram: docs/CHEN_STYLE_TRAINING_FLOW.drawio
+base_commit: 124559f53bcaa0a14fbebcd4b4d4657e4fbf459d
+code_commit: null
+research_question: TG-VPR/TST/NTR/CCGR端到端联合训练在Chen-style test-selected协议下能否达到无专家3个百分点目标和专家H大于等于78？
+status: planned
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+training_strategy: end_to_end_joint
+selection_scope: whole_model_only
+protocol_reference:
+  repository: https://github.com/shiming-chen/TransZero
+  training_file: train_cub.py
+  config_file: wandb_config/cub_gzsl.yaml
+server:
+  ssh_host: lab4090
+  gpu: 1
+  repository: /data/lby/projects/cv_project/gzsl-paper
+  output_root: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-004_chen_style_end_to_end
+runs:
+  - run_id: RUN-001
+    condition: no_expert_end_to_end
+    code_commit: null
+    seed: 5
+    config_ref: experiments/v2/confirmation/CONFIRM-004_chen_style_end_to_end/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-004_chen_style_end_to_end/RUN-001
+    status: planned
+  - run_id: RUN-002
+    condition: expert_end_to_end
+    code_commit: null
+    seed: 5
+    config_ref: experiments/v2/confirmation/CONFIRM-004_chen_style_end_to_end/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-004_chen_style_end_to_end/RUN-002
+    status: planned
