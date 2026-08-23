@@ -10,6 +10,7 @@ from model.innovations.gpes import (
     PairDiscriminativeRoleSelector,
     ReciprocalSemanticNeighborPairSelector,
     RoleDisagreementScaleSelector,
+    RoleVotePairSelector,
     RoleAwareGatedPairSelector,
     SemanticNeighborPairSelector,
     StagedRoleDisagreementScaleSelector,
@@ -553,6 +554,32 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.trdss.v1")
         self.assertEqual(config["training_scope"], "snps_initialized_joint_trust_region")
         self.assertEqual(config["trust_region_weight"], 0.1)
+
+    def test_role_vote_selector_adds_bounded_signed_vote(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        model = RoleVotePairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(13), torch.ones(13), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+        )
+        _, _, _, features = model._top2_context(
+            torch.randn(3, 200), torch.randn(3, 768), None, torch.arange(200)
+        )
+        self.assertEqual(tuple(features.shape), (3, 13))
+        self.assertTrue(bool((features[:, -1].abs() <= 1).all()))
+        self.assertTrue(bool(((features[:, -1] * 4).round() == features[:, -1] * 4).all()))
+
+    def test_rvps_config_binds_signed_vote(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-081_rvps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.rvps.v1")
+        self.assertEqual(config["context_feature"], "signed_role_vote_mean")
+        self.assertEqual(config["semantic_neighbor_k"], 3)
 
 
 if __name__ == "__main__":

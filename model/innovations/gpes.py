@@ -673,3 +673,33 @@ class TrustRegionRoleDisagreementScaleSelector(RoleDisagreementScaleSelector):
             }
         )
         return base_stats
+
+
+class RoleVotePairSelector(SemanticNeighborPairSelector):
+    """增加八角色对top1/top2的有符号多数投票。"""
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top, global_ids, related, features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        role_logits = torch.einsum(
+            "bd,crd->bcr",
+            F.normalize(images.float(), dim=-1),
+            self.role_sentence_prototypes.index_select(0, ids),
+        )
+        role_top2 = role_logits.gather(
+            1, top.indices.unsqueeze(-1).expand(-1, -1, 8)
+        )
+        vote = torch.sign(role_top2[:, 0] - role_top2[:, 1]).mean(dim=1)
+        return (
+            top,
+            global_ids,
+            related,
+            torch.cat((features, vote.unsqueeze(1)), dim=1),
+        )

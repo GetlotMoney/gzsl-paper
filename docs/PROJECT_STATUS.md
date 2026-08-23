@@ -464,6 +464,8 @@ TR-RDSS seed5达到`U/S/H/ZS=76.917648/80.219018/78.533653/84.054536%`，相对S
 
 TR-RDSS seed7完整训练后best严格退回SNPS父模型`H=78.446100%`，role scale weight和旧权重drift均为0。相对父模型增量seed5/7为`+0.066943/+0.000000`，未跨seed成立，IDEA-114拒绝。RDSS seed5最高`78.555039%`继续保留为owner口径主成绩观察，稳定结构仍为SNPS top-3。当前累计206组。
 
+下一实验`V2-INNOVATION-081 / RVPS`固定稳定SNPS top-3图，新增八角色有符号多数投票`mean(sign(top1-top2))`，用鲁棒共识补充中心化角色数值方向。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
