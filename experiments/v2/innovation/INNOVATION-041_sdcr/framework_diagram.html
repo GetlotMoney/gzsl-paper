@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-041 SDCR</title></head>
+<body>
+<h1>SDCR：训练期句子dropout保守路由</h1>
+<p><strong>Base commit：</strong>561dfc4f4e279556ea047dc610adf422ca199d9b；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<h2>推理结构</h2><p>推理与CASR相同：固定OESR beta，使用完整8句全局softmax权重，无新增门控。</p>
+<h2>训练期dropout</h2>
+<pre>full_w = softmax(log(CASR_w) + 0.5 × tanh(residual))
+train_w = renormalize(full_w after masking one random sentence)
+loss = seen CE(train_w) + 0.01 × KL(full_w || CASR_w)</pre>
+<p>残差零初始化，推理初始严格复现CASR。每批恰好mask一句，mask计数写入checkpoint。</p>
+<h2>边界</h2><p>7,057张seen图像、28,228次更新，每141次official test在完整8句推理结构上选best。unseen图像不进入梯度；test_used_for_selection=true。</p>
+</body></html>
