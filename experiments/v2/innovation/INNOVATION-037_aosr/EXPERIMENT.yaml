@@ -4,15 +4,15 @@ idea_id: IDEA-071
 framework_id: FRAMEWORK-V2
 title: Adaptive Orthogonal Sentence Routing
 base_commit: 442b28a44d5c79cbe2aad73c31598b7ccbae7ee4
-code_commit: null
-status: planned
+code_commit: 15e09c78247f138b467f5b77289127076904a3ff
+status: supported_seed5_reliability_pending
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-037_aosr/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 15e09c78247f138b467f5b77289127076904a3ff
     config_ref: experiments/v2/innovation/INNOVATION-037_aosr/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-037_aosr/RUN-001
-    status: planned
+    status: completed
