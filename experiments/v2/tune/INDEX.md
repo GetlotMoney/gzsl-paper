@@ -2,4 +2,4 @@
 
 | Experiment | 目的 | 状态 | 目录 |
 |---|---|---|---|
-| V2-TUNE-001 | 标准类别不相交validation上的无专家/专家双路线 | tuning pair 3 planned | `TUNE-001_standard_clip_validation/` |
+| V2-TUNE-001 | 标准类别不相交validation上的无专家/专家双路线 | topology axis closed | `TUNE-001_standard_clip_validation/` |

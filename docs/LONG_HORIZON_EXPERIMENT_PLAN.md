@@ -6,8 +6,8 @@
 base_framework: FRAMEWORK-V2 / TG-VPR-H1
 supported_innovations: [TG-VPR, TST, CCGR]
 current_no_expert_validation_H: 76.472964
-current_expert_validation_H: 77.517761
-current_expert_validation_delta_H: 1.044797
+current_expert_validation_H: 77.556001
+current_expert_validation_delta_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
 completed_try_count: 147

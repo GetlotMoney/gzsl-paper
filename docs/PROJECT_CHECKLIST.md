@@ -4,7 +4,7 @@
 
 - [x] 标准开发协议改为`train_loc` 100类训练、`val_loc` 50类类别不相交validation选模。
 - [x] `V2-TUNE-001`划分固定为3724张梯度图像、978张val-seen、2355张val-unseen；official test不加载。
-- [x] 无专家路线validation H=`76.472964`；专家312维属性路线H=`77.517761`，Delta=`+1.044797`。
+- [x] 无专家路线validation H=`76.472964`；专家312维属性路线H=`77.556001`，各自validation调优后Delta=`+1.083037`。
 - [x] 两条路线都只使用来源一致的CLIP缓存；专家属性开关是唯一条件差异。
 - [x] 旧test-selected结果只作探索观察；人工专家属性链不进入论文主结果。
 - [ ] 只在validation继续调参，冻结配置并补齐CLIP缓存身份后才能进入trainval最终重训。

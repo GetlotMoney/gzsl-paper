@@ -23,8 +23,8 @@ paper_target_H: 78.0
 target_supported_innovations: 3
 historical_test_selected_supported_innovations: 3
 current_no_expert_validation_H: 76.472964
-current_expert_validation_H: 77.517761
-current_expert_validation_delta_H: 1.044797
+current_expert_validation_H: 77.556001
+current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
 completed_try_count: 147
@@ -39,7 +39,7 @@ owner已将来源身份`INNOVATION-MODULE-1 / TG-VPR-H1`提升为独立正式框
 
 `V2-CONFIRM-002`曾验证单RUN固定epoch与完整样本遍历，但没有采用类别不相交validation，且结构受历史official test探索影响，因此只保留为协议纠正过程证据，不是标准GZSL最终结果。旧`77.612988%`无专家属性结果属于test-selected探索观察，使用专家属性的80+链全部不进入论文主成绩。
 
-标准协议审计后，开发选模已进一步纠正为xlsa17类别不相交validation。`V2-TUNE-001`仅用100个开发seen类训练，以50个validation-unseen类和固定seen图像holdout选择epoch：无专家路线`H_val=76.472964`（epoch 24），专家312维属性路线`H_val=77.517761`（epoch 25），专家增益`+1.044797`。两条RUN均`official_test_loaded=false`；遗留CLIP缓存来源仍不完整，所以暂不具备最终test资格。
+标准协议审计后，开发选模已进一步纠正为xlsa17类别不相交validation。`V2-TUNE-001`仅用100个开发seen类训练，以50个validation-unseen类和固定seen图像holdout选择epoch：无专家路线最终选择RUN-001，`H_val=76.472964`（epoch 24，topology 0.1）；专家312维属性路线选择RUN-006，`H_val=77.556001`（epoch 22，topology 0.2）。两条路线均`official_test_loaded=false`；遗留CLIP缓存来源仍不完整，所以暂不具备最终test资格。
 
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 

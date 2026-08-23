@@ -1,6 +1,6 @@
 # V2-TUNE-001 结果
 
-状态：`tuning_pair3_planned`。
+状态：`topology_axis_closed`。
 
 RUN-001为无专家属性CLIP/GPT文本路线，RUN-002在同一视觉特征和训练协议上增加CUB 312维专家属性残差。
 
@@ -26,3 +26,10 @@ RUN-001为无专家属性CLIP/GPT文本路线，RUN-002在同一视觉特征和�
 RUN-003无专家`H_val=76.397660`，相对RUN-001下降`0.075304`；RUN-004专家`H_val=77.477349`，相对RUN-002下降`0.040412`。两个条件都不保留，`topology_weight=0.1`继续作为当前validation最优。
 
 RUN-005/006对称测试`topology_weight=0.2`；该对完成后关闭此参数轴。
+
+RUN-005无专家`H_val=76.472684`，比RUN-001低`0.000280`且U/ZS更低，因此无专家继续固定`topology_weight=0.1`。RUN-006专家`H_val=77.556001`，比RUN-002高`0.038240`，专家路线选择`topology_weight=0.2`、epoch 22；该微增益只用于调参，不算创新。
+
+topology轴最终选择：
+
+- 无专家：RUN-001，`topology_weight=0.1`，epoch 24，`H_val=76.472964`。
+- 专家：RUN-006，`topology_weight=0.2`，epoch 22，`H_val=77.556001`。
