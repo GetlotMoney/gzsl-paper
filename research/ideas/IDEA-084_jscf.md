@@ -1,6 +1,6 @@
 # IDEA-084：Joint Semantic Coordination Fine-Tuning
 
-status: testing
+status: rejected
 originality_claim: false
 problem: SDRS、SEBC和SDCR按顺序独立训练，各自固定父模块；它们共同改变U/S竞争与语义残差，但从未在同一个loss下协调。
 hypothesis: 冻结TG-VPR/TST-NTR/CCGR主网络，只联合微调SDRS斜率、SEBC偏置和SDCR八句残差共10个参数，可消除顺序训练冲突并超过SDCR。
@@ -12,3 +12,4 @@ failure_condition: H不超过SDCR、任一参数饱和或联合训练只改变U/
 experiment: V2-INNOVATION-050
 interim_result: RUN-001 best退回父模型；SEBC gamma被seen CE持续推高并伤害H，进入冻结SEBC的9参数RESCUE-1。
 rescue_1_result: 冻结SEBC后仍退回父模型，SDRS delta持续下降；最终补救冻结SDRS，只训练SDCR八维权重。
+result: 只训SDCR的最终条件仍退回父模型；三种协调边界均无增益，方向拒绝。
