@@ -4,3 +4,4 @@
 |---|---|---|---|
 | V2-CONFIRM-001 | FRAMEWORK-V2首个新仓库正式CUB基线 | completed | `CONFIRM-001_v2_baseline/` |
 | V2-CONFIRM-002 | 无三折、无阶段冻结、固定第50轮的统一seen训练 | completed; seen-biased gain | `CONFIRM-002_unified_seen_training/` |
+| V2-CONFIRM-003 | validation冻结后的无专家/专家trainval最终评估 | planned | `CONFIRM-003_standard_clip_final/` |
