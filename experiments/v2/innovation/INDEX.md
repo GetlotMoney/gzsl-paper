@@ -46,6 +46,6 @@
 | V2-INNOVATION-042 | IDEA-076 | SDCC句子dropout一致性蒸馏 | rejected（低于SDCR） | `INNOVATION-042_sdcc/` |
 | V2-INNOVATION-043 | IDEA-077 | WSDR二选一最坏句子dropout | rejected（H=78.285486，低于SDCR） | `INNOVATION-043_wsdr/` |
 | V2-INNOVATION-044 | IDEA-078 | IADR重要句优先dropout路由 | rejected（H=78.302856，低于SDCR） | `INNOVATION-044_iadr/` |
-| V2-INNOVATION-045 | IDEA-079 | MGSR多几何类别句子路由 | planned | `INNOVATION-045_mgsr/` |
+| V2-INNOVATION-045 | IDEA-079 | MGSR多几何类别句子路由 | testing（RUN-001 H=78.365239但边界饱和） | `INNOVATION-045_mgsr/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

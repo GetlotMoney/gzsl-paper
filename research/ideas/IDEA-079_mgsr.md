@@ -9,3 +9,4 @@ core_change: 从SDCR完整推理权重起步，新增4个文本几何特征和4�
 success_condition: H大于SDCR最高78.320510，U和S任一项下降不超过2个百分点，class variation大于0.001且最小权重大于0.01。
 failure_condition: H不超过SDCR、class variation近零、权重塌缩或共享规则在unseen上方向相反。
 experiment: V2-INNOVATION-045
+interim_result: RUN-001 H=78.365239高于SDCR 0.044729，类别差异成立但±0.25残差饱和；进入保守上限RESCUE-1。

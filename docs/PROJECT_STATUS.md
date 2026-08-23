@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 149
+completed_try_count: 150
 minimum_required_try_count: 50
 ```
 
@@ -319,6 +319,8 @@ SDCC在SDCR上增加dropout学生到完整教师的一致性KL，最高H仅`78.2
 WSDR每批采样两个不同的单句mask并只反传较大CE，得到`U/S/H/ZS=76.679766/79.959893/78.285486/83.920646%`。权重与mask覆盖均正常，但H低于SDCR `78.320510%`，说明更激进的最坏候选优化没有改善泛化；IDEA-077拒绝并关闭该轴。当前累计148组，Chen-style无专家最高仍为SDCR seed5 `H=78.320510%`。
 
 IADR按当前完整句权重概率选择训练期mask，高权重句实际被更频繁屏蔽且八句全部覆盖；最高`U/S/H/ZS=76.713103/79.959893/78.302856/83.953977%`，仍低于均匀随机SDCR。IDEA-078拒绝并关闭mask采样分布轴。当前累计149组，最高可靠结果仍为SDCR seed5 `H=78.320510%`。
+
+MGSR用4个纯文本几何量和4个跨类共享系数从SDCR生成类别句权重。RUN-001达到`U/S/H/ZS=76.748133/80.051959/78.365239/83.953977%`，H提高`0.044729`且class variation=`0.007255`；但残差触及±0.25边界，只保留正信号并进入±0.10保守补救。当前累计150组，最高可靠结果仍为SDCR，最高新观察为MGSR。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
