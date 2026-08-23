@@ -410,6 +410,8 @@ C-RGWPS seed5达到`U/S/H/ZS=76.782060/80.073357/78.393178/83.886743%`，相对S
 
 C-RGWPS seed7达到`U/S/H/ZS=76.705819/80.197293/78.412709/83.981764%`，相对同seed SDCR提高H `0.109853`、相对S-GWPS提高`0.062018`。两seed均正，C-RGWPS晋级为两seed支持的patch-free辅助候选；最高取seed7 `H=78.412709%`，仅比patch依赖GWPS最高低`0.001537`。当前累计189组。
 
+下一实验`V2-INNOVATION-072 / SNPS`保持C-RGWPS的12维中心化角色选择器，只把关系门控从同类名suffix扩展为“同suffix或固定SDCR文本原型top-5邻居”，覆盖名称不同但语义接近的细粒度混淆；仍不读取patch。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

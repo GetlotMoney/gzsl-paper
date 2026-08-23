@@ -8,8 +8,10 @@ from model.innovations.gpes import (
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
     RoleAwareGatedPairSelector,
+    SemanticNeighborPairSelector,
     SemanticGatedPairSelector,
     TextOnlyGatedPairSelector,
+    semantic_neighbor_adjacency,
 )
 from model.innovations.train_gpes import (
     class_balanced_pair_weights,
@@ -280,6 +282,40 @@ class GPESTest(unittest.TestCase):
             ROOT / "experiments/v2/innovation/INNOVATION-071_crgwps/configs/RUN-001.yaml"
         )
         self.assertEqual(config["schema_version"], "gzsl-paper.crgwps.v1")
+        self.assertNotIn("patch_inputs", config)
+
+    def test_semantic_neighbor_adjacency_is_symmetric_without_self_edges(self):
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 5)
+        self.assertEqual(tuple(adjacency.shape), (200, 200))
+        self.assertTrue(torch.equal(adjacency, adjacency.T))
+        self.assertFalse(bool(adjacency.diagonal().any()))
+        self.assertTrue(bool(adjacency.sum(dim=1).ge(5).all()))
+
+    def test_semantic_neighbor_selector_expands_suffix_gate(self):
+        groups = torch.full((200,), -1)
+        adjacency = torch.zeros(200, 200, dtype=torch.bool)
+        adjacency[0, 1] = adjacency[1, 0] = True
+        model = SemanticNeighborPairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(12), torch.ones(12), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+        )
+        logits = torch.zeros(1, 200)
+        logits[0, 0], logits[0, 1] = 2.0, 1.0
+        _, _, related, _ = model._top2_context(
+            logits, torch.randn(1, 768), None, torch.arange(200)
+        )
+        self.assertTrue(bool(related.item()))
+
+    def test_snps_config_is_patch_free_and_uses_top5(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-072_snps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.snps.v1")
+        self.assertEqual(config["semantic_neighbor_k"], 5)
         self.assertNotIn("patch_inputs", config)
 
 

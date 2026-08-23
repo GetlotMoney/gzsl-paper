@@ -15,13 +15,19 @@ from model.innovations.gpes import (
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
     RoleAwareGatedPairSelector,
+    SemanticNeighborPairSelector,
     SemanticGatedPairSelector,
     TextOnlyGatedPairSelector,
+    semantic_neighbor_adjacency,
 )
 from model.innovations.lpsr import orthogonal_local_text_residuals
 from model.innovations.sdcr import SentenceDropoutConservativeRouting
 from model.innovations.tigr import taxonomic_suffix_group_ids
-from model.innovations.train_agct import derive_train_threshold
+from model.innovations.train_agct import (
+    _base_logits,
+    derive_train_threshold,
+    select_margin_threshold,
+)
 from model.innovations.train_ccpe import _precompute_scores
 from model.innovations.train_chen_style import (
     OFFICIAL_KEYS,
@@ -89,6 +95,7 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.sgwps.v1",
         "gzsl-paper.rgwps.v1",
         "gzsl-paper.crgwps.v1",
+        "gzsl-paper.snps.v1",
     )
 
 
@@ -97,7 +104,15 @@ def load_config(path: Path):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    if schema in (
+    if schema == "gzsl-paper.snps.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {"pair_training_scope", "semantic_neighbor_k"}
+    elif schema in (
         "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
         "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
     ):
@@ -134,6 +149,7 @@ def load_config(path: Path):
         "gzsl-paper.sgwps.v1": ("V2-INNOVATION-069", "IDEA-103"),
         "gzsl-paper.rgwps.v1": ("V2-INNOVATION-070", "IDEA-104"),
         "gzsl-paper.crgwps.v1": ("V2-INNOVATION-071", "IDEA-105"),
+        "gzsl-paper.snps.v1": ("V2-INNOVATION-072", "IDEA-106"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -150,6 +166,7 @@ def load_config(path: Path):
         schema not in (
             "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
             "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
+            "gzsl-paper.snps.v1",
         )
         and config["feature_provenance_complete"] is not False
     ) or config["text_cache_provenance_complete"] is not False:
@@ -159,6 +176,7 @@ def load_config(path: Path):
             schema not in (
                 "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
                 "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
+                "gzsl-paper.snps.v1",
             )
             and (
                 int(config["patch_top_k"]) != 2
@@ -166,7 +184,11 @@ def load_config(path: Path):
             )
         )
         or config["group_rule"] != "class_name_last_token_min2"
-        or config["threshold_source"] != "train_wrong_same_group_margin"
+        or config["threshold_source"] != (
+            "train_wrong_suffix_or_semantic_neighbor_margin"
+            if schema == "gzsl-paper.snps.v1"
+            else "train_wrong_same_group_margin"
+        )
         or float(config["threshold_quantile"]) != 0.25
         or float(config["margin_temperature"]) != 0.1
         or float(config["max_delta"]) != 0.5
@@ -188,6 +210,10 @@ def load_config(path: Path):
         "pair_training_scope"
     ] != "all_same_group_top2_soft_gate":
         raise ValueError("GWPS必须使用全同族top2与soft gate加权。")
+    if schema == "gzsl-paper.snps.v1" and config[
+        "pair_training_scope"
+    ] != "suffix_or_semantic_top5_soft_gate":
+        raise ValueError("SNPS必须使用类名族群并语义top5 soft gate。")
     if schema == "gzsl-paper.bgwps.v1" and config[
         "pair_class_balance"
     ] != "inverse_frequency":
@@ -204,6 +230,10 @@ def load_config(path: Path):
         "selector_hidden_dim"
     ]) != 8:
         raise ValueError("NPS hidden_dim必须为8。")
+    if schema == "gzsl-paper.snps.v1" and int(config[
+        "semantic_neighbor_k"
+    ]) != 5:
+        raise ValueError("SNPS semantic_neighbor_k必须为5。")
     return config, sha256_file(path)
 
 
@@ -222,6 +252,7 @@ def extract_pair_examples(
     extra_prototypes: torch.Tensor | None = None,
     role_prototypes: torch.Tensor | None = None,
     center_role_features: bool = False,
+    pair_adjacency: torch.Tensor | None = None,
 ):
     top = logits.topk(2, dim=1)
     global_ids = ids.index_select(0, top.indices.reshape(-1)).reshape_as(top.indices)
@@ -229,6 +260,11 @@ def extract_pair_examples(
         global_ids.cpu()
     ).to(logits.device)
     same_group = groups[:, 0].eq(groups[:, 1]) & groups[:, 0].ge(0)
+    if pair_adjacency is not None:
+        adjacency = pair_adjacency.to(logits.device)
+        same_group = same_group | adjacency[
+            global_ids[:, 0], global_ids[:, 1]
+        ]
     contains_true = top.indices.eq(targets.unsqueeze(1)).any(dim=1)
     margin = top.values[:, 0] - top.values[:, 1]
     selected = same_group & contains_true
@@ -286,6 +322,57 @@ def extract_pair_examples(
         int(selected.sum()),
         soft_weights[selected].detach().cpu(),
     )
+
+
+@torch.no_grad()
+def derive_relation_threshold(
+    parent,
+    sdrs,
+    calibrator,
+    sdcr,
+    train_features,
+    labels,
+    seen_classes,
+    group_ids,
+    pair_adjacency,
+    device,
+    quantile,
+):
+    """从seen训练错误中为类名族群并语义邻居关系固定margin门槛。"""
+    mapping = torch.full((200,), -1, dtype=torch.long)
+    mapping[seen_classes] = torch.arange(seen_classes.numel())
+    ids = seen_classes.to(device)
+    local_groups = group_ids.index_select(0, seen_classes).to(device)
+    adjacency = pair_adjacency.to(device)
+    margins, related_values, wrongs = [], [], []
+    for start in range(0, train_features.shape[0], 512):
+        images = train_features[start : start + 512].to(device).float()
+        logits = _base_logits(
+            parent, sdrs, calibrator, sdcr, images, ids, seen_classes
+        )
+        top = logits.topk(2, dim=1)
+        global_ids = ids.index_select(0, top.indices.reshape(-1)).reshape_as(
+            top.indices
+        )
+        groups = local_groups.index_select(
+            0, top.indices.reshape(-1)
+        ).reshape_as(top.indices)
+        same_group = groups[:, 0].eq(groups[:, 1]) & groups[:, 0].ge(0)
+        related = same_group | adjacency[global_ids[:, 0], global_ids[:, 1]]
+        targets = mapping[labels[start : start + 512]].to(device)
+        margins.append((top.values[:, 0] - top.values[:, 1]).cpu())
+        related_values.append(related.cpu())
+        wrongs.append(top.indices[:, 0].ne(targets).cpu())
+    stats = select_margin_threshold(
+        torch.cat(margins), torch.cat(related_values), torch.cat(wrongs), quantile
+    )
+    threshold, details = stats
+    details = {
+        **details,
+        "source": "train_wrong_suffix_or_semantic_neighbor",
+        "relation": "suffix_group_or_semantic_top5",
+    }
+    return threshold, details
 
 
 @torch.no_grad()
@@ -351,6 +438,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     text_only = config["schema_version"] in (
         "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
         "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
+        "gzsl-paper.snps.v1",
     )
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
@@ -433,10 +521,23 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         sdcr.load_state_dict(sdcr_payload["sdcr_state_dict"], strict=True)
         sdcr.eval()
         group_ids = taxonomic_suffix_group_ids(load_class_names(paths["att_splits"]))
-        threshold, threshold_stats = derive_train_threshold(
-            parent, sdrs, calibrator, sdcr, features, labels,
-            seen_classes, group_ids, device, float(config["threshold_quantile"])
-        )
+        semantic_adjacency = None
+        if config["schema_version"] == "gzsl-paper.snps.v1":
+            semantic_adjacency = semantic_neighbor_adjacency(
+                sdcr.prototypes(use_dropout=False),
+                int(config["semantic_neighbor_k"]),
+            )
+            threshold, threshold_stats = derive_relation_threshold(
+                parent, sdrs, calibrator, sdcr, features, labels,
+                seen_classes, group_ids, semantic_adjacency, device,
+                float(config["threshold_quantile"]),
+            )
+        else:
+            threshold, threshold_stats = derive_train_threshold(
+                parent, sdrs, calibrator, sdcr, features, labels,
+                seen_classes, group_ids, device,
+                float(config["threshold_quantile"]),
+            )
         pair_training_threshold = threshold
         pair_training_threshold_stats = threshold_stats
         if config["schema_version"] == "gzsl-paper.egpes.v1":
@@ -502,20 +603,24 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     names_n
                     if config["schema_version"] in (
                         "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1",
-                        "gzsl-paper.crgwps.v1",
+                        "gzsl-paper.crgwps.v1", "gzsl-paper.snps.v1",
                     )
                     else None
                 ),
                 role_prototypes=(
                     F.normalize(sentence8.float(), dim=-1)
                     if config["schema_version"] in (
-                        "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1"
+                        "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
+                        "gzsl-paper.snps.v1",
                     )
                     else None
                 ),
                 center_role_features=(
-                    config["schema_version"] == "gzsl-paper.crgwps.v1"
+                    config["schema_version"] in (
+                        "gzsl-paper.crgwps.v1", "gzsl-paper.snps.v1"
+                    )
                 ),
+                pair_adjacency=semantic_adjacency,
             )
             pair_logits_list.append(package[0])
             feature_list.append(package[1])
@@ -559,6 +664,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "inference_threshold": float(threshold),
             "training_threshold": float(pair_training_threshold),
             "training_threshold_stats": pair_training_threshold_stats,
+            "semantic_edge_count": (
+                0
+                if semantic_adjacency is None
+                else int(semantic_adjacency.sum().item() // 2)
+            ),
         }
         if config["schema_version"] == "gzsl-paper.nps.v1":
             model_class = NonlinearGatedPairSelector
@@ -570,6 +680,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = RoleAwareGatedPairSelector
         elif config["schema_version"] == "gzsl-paper.crgwps.v1":
             model_class = CenteredRoleGatedPairSelector
+        elif config["schema_version"] == "gzsl-paper.snps.v1":
+            model_class = SemanticNeighborPairSelector
         else:
             model_class = GatedPairEvidenceSelector
         model_kwargs = {
@@ -588,13 +700,16 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_kwargs["hidden_dim"] = int(config["selector_hidden_dim"])
         if config["schema_version"] in (
             "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1",
-            "gzsl-paper.crgwps.v1",
+            "gzsl-paper.crgwps.v1", "gzsl-paper.snps.v1",
         ):
             model_kwargs["class_name_prototypes"] = names_n
         if config["schema_version"] in (
-            "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1"
+            "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
+            "gzsl-paper.snps.v1",
         ):
             model_kwargs["role_sentence_prototypes"] = sentence8
+        if config["schema_version"] == "gzsl-paper.snps.v1":
+            model_kwargs["semantic_adjacency"] = semantic_adjacency
         model = model_class(**model_kwargs).to(device)
         optimizer = torch.optim.Adam(
             model.parameters(),

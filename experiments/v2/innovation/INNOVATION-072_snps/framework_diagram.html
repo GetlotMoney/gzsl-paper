@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-072 SNPS</title></head>
+<body>
+<h1>SNPS：语义近邻成对选择器</h1>
+<p><strong>Base commit：</strong>e55bf98571dfcef3c90eaad5cc4793d6549c0b77；<strong>RUN-001 code commit：</strong>pre-run后绑定。</p>
+<pre>SDCR八句原型 → 200×200余弦相似度 → 每类固定top-5 → 无向语义邻接
+类名最后词同族 ───────────────────────────────┐
+语义top-5邻居 ────────────────────────────────┤ OR关系门控
+中心化八角色差值 + 四个原有文本特征 ──────────┘
+                         ↓
+            Linear(12,1) bounded pair delta
+                         ↓
+             200-way U/S/H；50-way ZS</pre>
+<p>相对C-RGWPS唯一变化：允许“类名不同但语义原型相近”的top2类别进入相同纠错器；top-5由固定文本原型构建，不读取test图像或patch。</p>
+<p>训练仍只使用7,057张seen图像；unseen图像不进入梯度。official test按陈式协议每141步评估并选最高H，test_used_for_selection=true。</p>
+</body></html>

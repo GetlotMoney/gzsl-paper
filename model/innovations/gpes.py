@@ -5,6 +5,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def semantic_neighbor_adjacency(
+    prototypes: torch.Tensor, neighbor_k: int
+) -> torch.Tensor:
+    """由固定语义原型构建无向top-k邻接，不包含自身。"""
+    if prototypes.ndim != 2 or prototypes.shape[0] != 200:
+        raise ValueError("语义近邻原型必须是[200,D]。")
+    if not 1 <= int(neighbor_k) < 200:
+        raise ValueError("semantic neighbor_k必须位于[1,199]。")
+    normalized = F.normalize(prototypes.detach().float(), dim=-1)
+    similarity = normalized @ normalized.T
+    similarity.fill_diagonal_(-torch.inf)
+    neighbors = similarity.topk(int(neighbor_k), dim=1).indices
+    adjacency = torch.zeros((200, 200), dtype=torch.bool, device=prototypes.device)
+    adjacency.scatter_(1, neighbors, True)
+    adjacency = adjacency | adjacency.T
+    adjacency.fill_diagonal_(False)
+    return adjacency
+
+
 class GatedPairEvidenceSelector(nn.Module):
     """用parent margin与三种证据差值学习top1/top2成对校正。"""
 
@@ -332,3 +351,34 @@ class CenteredRoleGatedPairSelector(RoleAwareGatedPairSelector):
             same_group,
             torch.cat((features[:, :-8], centered), dim=1),
         )
+
+
+class SemanticNeighborPairSelector(CenteredRoleGatedPairSelector):
+    """在类名族群之外，允许固定语义top-k邻居进入成对纠错。"""
+
+    def __init__(
+        self, *args, semantic_adjacency: torch.Tensor, **kwargs
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        if tuple(semantic_adjacency.shape) != (200, 200):
+            raise ValueError("SNPS语义邻接必须是[200,200]。")
+        adjacency = semantic_adjacency.detach().bool().clone()
+        adjacency.fill_diagonal_(False)
+        if not torch.equal(adjacency, adjacency.T):
+            raise ValueError("SNPS语义邻接必须对称。")
+        self.register_buffer("semantic_adjacency", adjacency)
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top, global_ids, same_group, features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        semantic_neighbor = self.semantic_adjacency[
+            global_ids[:, 0], global_ids[:, 1]
+        ]
+        return top, global_ids, same_group | semantic_neighbor, features
