@@ -3,7 +3,11 @@ import unittest
 
 import torch
 
-from model.innovations.train_pgsd import load_config, patch_reliability_weights
+from model.innovations.train_pgsd import (
+    centered_patch_reliability_weights,
+    load_config,
+    patch_reliability_weights,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +33,23 @@ class PGSDTest(unittest.TestCase):
         self.assertEqual(config["patch_top_k"], 2)
         self.assertIn("train_patch", config)
         self.assertFalse(config["unseen_images_used_for_gradient"])
+
+    def test_centered_weights_have_unit_mean_and_fixed_bounds(self):
+        generator = torch.Generator().manual_seed(839)
+        scores = torch.randn(32, 200, generator=generator)
+        labels = torch.arange(32) % 200
+        weights = centered_patch_reliability_weights(scores, labels, 0.25)
+        self.assertAlmostEqual(float(weights.mean()), 1.0, places=6)
+        self.assertGreaterEqual(float(weights.min()), 0.75)
+        self.assertLessEqual(float(weights.max()), 1.25)
+        self.assertGreater(float(weights.std(unbiased=False)), 0.0)
+
+    def test_centered_config_binds_new_experiment(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-054_cpgsd/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.cpgsd.v1")
+        self.assertTrue(config["center_weights"])
 
 
 if __name__ == "__main__":

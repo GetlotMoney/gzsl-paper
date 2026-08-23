@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-054
+idea_id: IDEA-088
+framework_id: FRAMEWORK-V2
+title: Centered Patch-Guided Sentence Dropout
+base_commit: da50d8b84aadfa48810fde4d3b663b10933b7ed0
+code_commit: null
+status: planned
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-054_cpgsd/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-054_cpgsd/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-054_cpgsd/RUN-001
+    status: planned

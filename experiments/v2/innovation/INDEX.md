@@ -55,5 +55,6 @@
 | V2-INNOVATION-051 | IDEA-085 | CLCR跨LLM互补语义残差 | rejected（Claude与SDCR直接叠加无互补） | `INNOVATION-051_clcr/` |
 | V2-INNOVATION-052 | IDEA-086 | SPCR句子—局部patch互补残差 | rejected（patch推理残差破坏SDCR平衡） | `INNOVATION-052_spcr/` |
 | V2-INNOVATION-053 | IDEA-087 | PGSD patch引导句子dropout | rejected（权重均值1.164改变loss尺度） | `INNOVATION-053_pgsd/` |
+| V2-INNOVATION-054 | IDEA-088 | CPGSD中心化patch引导dropout | planned（均值1，patch-free推理） | `INNOVATION-054_cpgsd/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

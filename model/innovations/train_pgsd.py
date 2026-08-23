@@ -66,20 +66,39 @@ def patch_reliability_weights(
     return 1.0 + float(amplitude) * confidence
 
 
+def centered_patch_reliability_weights(
+    patch_scores: torch.Tensor,
+    labels: torch.Tensor,
+    amplitude: float,
+) -> torch.Tensor:
+    raw = patch_reliability_weights(patch_scores, labels, 1.0) - 1.0
+    centered = raw - raw.mean()
+    normalized = centered / centered.abs().max().clamp_min(1e-6)
+    return 1.0 + float(amplitude) * normalized
+
+
 def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    expected_keys = (
+        CONFIG_KEYS | {"center_weights"}
+        if schema == "gzsl-paper.cpgsd.v1"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"PGSD配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"PGSD配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
-    if (
-        config["schema_version"] != "gzsl-paper.pgsd.v1"
-        or config["experiment_id"] != "V2-INNOVATION-053"
-        or config["idea_id"] != "IDEA-087"
-    ):
+    identity = {
+        "gzsl-paper.pgsd.v1": ("V2-INNOVATION-053", "IDEA-087"),
+        "gzsl-paper.cpgsd.v1": ("V2-INNOVATION-054", "IDEA-088"),
+    }.get(schema)
+    if identity is None or (
+        config["experiment_id"], config["idea_id"]
+    ) != identity:
         raise ValueError("PGSD身份错误。")
     if (
         config["evaluation_protocol"] != EVALUATION_PROTOCOL
@@ -104,6 +123,8 @@ def load_config(path: Path):
         or float(config["weight_decay"]) != 0.0
     ):
         raise ValueError("PGSD patch或训练参数错误。")
+    if schema == "gzsl-paper.cpgsd.v1" and config["center_weights"] is not True:
+        raise ValueError("CPGSD必须中心化样本权重。")
     return config, sha256_file(path)
 
 
@@ -214,9 +235,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             chunk_size=int(config["patch_chunk_size"]),
         )
         del train_patches
-        sample_weights = patch_reliability_weights(
-            patch_scores, labels, float(config["reliability_amplitude"])
-        )
+        if config["schema_version"] == "gzsl-paper.cpgsd.v1":
+            sample_weights = centered_patch_reliability_weights(
+                patch_scores, labels, float(config["reliability_amplitude"])
+            )
+        else:
+            sample_weights = patch_reliability_weights(
+                patch_scores, labels, float(config["reliability_amplitude"])
+            )
         weight_stats = {
             "mean": float(sample_weights.mean()),
             "std": float(sample_weights.std(unbiased=False)),

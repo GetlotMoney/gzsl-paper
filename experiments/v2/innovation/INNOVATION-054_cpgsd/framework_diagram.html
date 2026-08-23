@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-054 CPGSD</title></head>
+<body>
+<h1>CPGSD：中心化patch引导句子dropout</h1>
+<p><strong>Base commit：</strong>da50d8b84aadfa48810fde4d3b663b10933b7ed0；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<pre>train-only patch真类置信度 → tanh → 减去全训练集均值 → 最大绝对值归一化
+sample weight = 1 + 0.25×centered confidence
+保证 mean=1，范围[0.75,1.25]
+
+weighted seen CE + 0.01×SDCR KL → 只更新8维句权重
+推理仍为原始SDCR，不读取patch</pre>
+<p>相对PGSD唯一变化是去除CE总尺度偏移；真实unseen图像/patch不进入梯度。</p>
+<p>训练固定batch 50、28,228次更新、每141次official test，整次RUN按完整模型H保存一个best。test_used_for_selection=true；strict_blind_claim=false。</p>
+</body></html>
