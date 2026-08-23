@@ -29,5 +29,6 @@
 | V2-INNOVATION-025 | IDEA-059 | CLEC跨LLM全局与局部组合 | rejected（低于CLRE） | `INNOVATION-025_clec/` |
 | V2-INNOVATION-026 | IDEA-060 | MLRE融合LLM文本残差 | supported weak H candidate（H=77.829140） | `INNOVATION-026_mlre/` |
 | V2-INNOVATION-027 | IDEA-061 | ACLM自适应跨LLM混合 | rejected（退化Claude端点） | `INNOVATION-027_aclm/` |
+| V2-INNOVATION-028 | IDEA-062 | CACM类别自适应跨LLM混合 | planned | `INNOVATION-028_cacm/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

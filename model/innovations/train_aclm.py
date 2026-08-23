@@ -9,7 +9,10 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-from model.innovations.aclm import AdaptiveCrossLLMMixture
+from model.innovations.aclm import (
+    AdaptiveCrossLLMMixture,
+    ClassAdaptiveCrossLLMMixture,
+)
 from model.innovations.ebc import EpisodicBiasCalibration
 from model.innovations.train_chen_style import (
     OFFICIAL_KEYS,
@@ -57,10 +60,15 @@ def load_config(path: Path):
             f"ACLM配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
             f"多出={sorted(actual-CONFIG_KEYS)}。"
         )
+    identity_by_schema = {
+        "gzsl-paper.aclm.v1": ("V2-INNOVATION-027", "IDEA-061"),
+        "gzsl-paper.cacm.v1": ("V2-INNOVATION-028", "IDEA-062"),
+    }
+    identity = identity_by_schema.get(config["schema_version"])
     if (
-        config["schema_version"] != "gzsl-paper.aclm.v1"
-        or config["experiment_id"] != "V2-INNOVATION-027"
-        or config["idea_id"] != "IDEA-061"
+        identity is None
+        or config["experiment_id"] != identity[0]
+        or config["idea_id"] != identity[1]
     ):
         raise ValueError("ACLM身份错误。")
     if (
@@ -171,8 +179,12 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             float(mlre_payload["config"]["max_beta"])
             * torch.tanh(mlre_payload["clre_state_dict"]["raw_beta"].float())
         )
-        model = AdaptiveCrossLLMMixture(
-            claude, merge, clre_beta, mlre_beta
+        model = (
+            ClassAdaptiveCrossLLMMixture(
+                claude, merge, seen_classes.to(device), clre_beta, mlre_beta
+            )
+            if config["schema_version"] == "gzsl-paper.cacm.v1"
+            else AdaptiveCrossLLMMixture(claude, merge, clre_beta, mlre_beta)
         ).to(device)
         optimizer = torch.optim.Adam(
             model.parameters(), lr=float(config["learning_rate"]), weight_decay=0.0
@@ -228,7 +240,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     parent, sdrs, calibrator, model, official,
                     seen_classes, unseen_classes, device
                 )
-                weight = float(model.claude_weight().detach())
+                weight = (
+                    model.weight_stats()
+                    if isinstance(model, ClassAdaptiveCrossLLMMixture)
+                    else float(model.claude_weight().detach())
+                )
                 history.append(
                     {
                         "iteration": iteration,
@@ -256,7 +272,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     )
                 print(
                     f"iter={iteration} H={metrics['H']:.6f} "
-                    f"best_H={best_h:.6f} claude_weight={weight:.6f}"
+                    f"best_H={best_h:.6f} claude_weight={weight}"
                 )
 
         atomic_torch_save(
@@ -286,7 +302,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "merge_embeddings": config["merge_embeddings_sha256"],
             },
         )
-        best_weight = float(torch.sigmoid(best_state["raw_mix"]))
+        if config["schema_version"] == "gzsl-paper.cacm.v1":
+            model.load_state_dict(best_state, strict=True)
+            best_weight = model.weight_stats()
+            best_weight["raw_bias"] = float(best_state["raw_bias"])
+            best_weight["raw_slope"] = float(best_state["raw_slope"])
+        else:
+            best_weight = float(torch.sigmoid(best_state["raw_mix"]))
         metrics = {
             "experiment_id": config["experiment_id"],
             "idea_id": config["idea_id"],
