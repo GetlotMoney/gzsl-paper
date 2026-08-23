@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 178
+completed_try_count: 179
 minimum_required_try_count: 50
 ```
 
@@ -381,6 +381,8 @@ AGPT在25分位gate内使用top2局部patch二选一，但所有非零patch beta
 GPES用四特征共享selector训练25分位同族top2 pair，但train pair仅169个；pair CE下降而official H持续低于父模型，best退回零参数。IDEA-096拒绝为小pair集过拟合。下一独立Experiment扩大到所有同族真类top2 pair，并用soft gate加权。当前累计177组。
 
 GWPS将pair训练集扩至4041并用soft gate加权，seed5达到`U/S/H/ZS=76.735932/80.086303/78.375328/84.009010%`，比AGCT最高提高H `0.018104`。pair标签top1占93.17%，追加seed7验证可靠性。当前累计178组。
+
+GWPS seed7达到`U/S/H/ZS=76.773667/80.126470/78.414246/83.980089%`，相对父模型四项均提高；两seed可靠成立，当前最高可靠H更新为`78.414246%`。因patch provenance不完整，GWPS仅作supported辅助候选。下一实验用类别平衡pair CE修复93% top1标签不平衡。当前累计179组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

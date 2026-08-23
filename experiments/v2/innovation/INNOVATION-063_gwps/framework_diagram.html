@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-063 GWPS</title></head>
 <body>
 <h1>GWPS：soft-gate加权成对选择器</h1>
-<p><strong>Base commit：</strong>161c281c2775197ae89638ee9d3a987c62ec5510；<strong>RUN-001 code commit：</strong>b9129edfad26531fa79d74ae2667decefe8d4205。</p>
+<p><strong>Base commit：</strong>161c281c2775197ae89638ee9d3a987c62ec5510；<strong>RUN-001/002 code commits：</strong>b9129edfad26531fa79d74ae2667decefe8d4205 / e7a8ace2613d3ad2c4cd7fc079e121b24c2b2ab0。</p>
 <pre>训练pair：所有“top2同族且真类在top2”的seen样本
 pair weight = sigmoid((25分位阈值-parent margin)/0.1)
 weighted pair CE训练同一Linear(4,1) selector

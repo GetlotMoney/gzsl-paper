@@ -1,6 +1,7 @@
 # IDEA-097：Gate-Weighted Pair Selector
 
-status: testing
+status: supported
+paper_core_innovation: false
 problem: GPES仅169个硬gate pair，5参数selector对seen过拟合；大量高margin同族top2样本仍可提供证据方向监督。
 hypothesis: 纳入全部同族真类top2 seen pair，并用目标soft gate作为pair CE权重，可扩大训练集又保持低margin重点，从而提高跨域选择泛化并超过AGCT。
 evidence_refs: AGCT_SOURCE_ORACLE_001；IDEA-096暴露169 pair过拟合。
@@ -10,3 +11,4 @@ success_condition: H大于78.357224，pair数量显著大于169、权重非零�
 failure_condition: H不超过AGCT、扩大pair后仍过拟合或高margin样本淹没低margin规则。
 experiment: V2-INNOVATION-063
 interim_result: seed5 H=78.375328、ZS=84.009010，超过AGCT；pair 4041但top1标签占93.17%，追加seed7。
+result: seed7 H=78.414246且U/S/ZS全高于父模型；两seedsupported，patch provenance不完整，不作核心claim。
