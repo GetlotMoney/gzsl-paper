@@ -1,0 +1,75 @@
+schema_version: gzsl-paper.gpes.v1
+experiment_id: V2-INNOVATION-062
+idea_id: IDEA-096
+framework_id: FRAMEWORK-V2
+dataset: CUB
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+feature_provenance_complete: false
+text_cache_provenance_complete: false
+base_model: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-005_chen_style_stagewise/RUN-002/model_best.pth
+base_model_sha256: 4231aba956c3c0ff57a1ac859a6a8748131e2275efcf3bfb63fcced54b32aa99
+sdrs_model: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-012_sdrs/RUN-002/model_best.pth
+sdrs_model_sha256: 788ff97f3e81cba2f9d87c64a8ee81ffde59450c332229a5c8715824516f56d6
+sebc_model: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-013_sebc/RUN-002/model_best.pth
+sebc_model_sha256: 63ff8397718b40d51b2698e2a6fa770cf78cff1913a9c99bc6920b06abe0309b
+casr_model: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-038_casr/RUN-003/model_best.pth
+casr_model_sha256: 281658e2e01aef4ad5d2fa598af0039cc70774a76ec43328399aa2545b6515a7
+sdcr_model: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-041_sdcr/RUN-002/model_best.pth
+sdcr_model_sha256: 53f9065ddd5f32bc02ff4be3ce5db3c7a4eadf5117282b55a672780acec001ae
+parent_metrics_percent: {U: 76.74700021743774, S: 79.95989322662354, H: 78.32051045081242, ZS: 83.95397663116455}
+class_name_embeddings: /data/lby/projects/cv_project/gzsl-paper/data/cache/CUB_class_text_embeds.pt
+class_name_embeddings_sha256: 80c28bd79351d8dcef30bf34479322f01bc333a2eac534e2a08ff25b9b3c2a3e
+eight_sentence_embeddings: /data/lby/projects/cv_project/gzsl-paper/data/cache/CUB_gpt56_8sent_sentence_embeds.pt
+eight_sentence_embeddings_sha256: 8c1a8e27a70681759b22e87412c424b6c9c3a7991ed391b3acc244bbc3a6bca3
+claude_embeddings: /data/lby/projects/cv_project/gzsl-paper/data/cache/CUB_claude_text_embeds.pt
+claude_embeddings_sha256: c549c0c0cc437c05aa42ade516ef8488ded698752e98f1f7888d6a540563a043
+merge_embeddings: /data/lby/projects/cv_project/gzsl-paper/data/cache/CUB_merge_text_embeds.pt
+merge_embeddings_sha256: 304ad6834cb40bd220a066764a3bf39279c072679a83d5aef74012b2b9cfb9f0
+patch_inputs:
+  train: data/cache/CUB_train_patch_features.pt
+  seen: data/cache/CUB_test_seen_patch_features.pt
+  unseen: data/cache/CUB_test_unseen_patch_features.pt
+patch_sha256:
+  train: 244dbf96109362306555c55cf718590a6ffd2f3c5c403127463aff86311aacc2
+  seen: d1a21b3a4797ffa28115ffb22cc6d1e401453d605b99360c731d46e523a794ca
+  unseen: 3ef523a1fe582fa2e1be88f3a975bda64e31a565e69fe001efec2f21fa3b1d77
+patch_top_k: 2
+patch_chunk_size: 16
+group_rule: class_name_last_token_min2
+threshold_source: train_wrong_same_group_margin
+threshold_quantile: 0.25
+margin_temperature: 0.1
+max_delta: 0.5
+device: cuda:0
+random_seed: 5
+batch_size: 50
+epochs: 200
+niters: 28228
+report_interval: 141
+optimizer: Adam
+learning_rate: 0.001
+weight_decay: 0.0001
+inputs:
+  sentence_embeds: data/cache/CUB_gpt55_8role_sentence_embeds.pt
+  train_features: data/cache/CUB_train_features.pt
+  train_labels: data/cache/CUB_train_labels.pt
+  res101: data/xlsa17/data/CUB/res101.mat
+  att_splits: data/xlsa17/data/CUB/att_splits.mat
+  seen_features: data/cache/CUB_test_seen_features.pt
+  seen_labels: data/cache/CUB_test_seen_labels.pt
+  unseen_features: data/cache/CUB_test_unseen_features.pt
+  unseen_labels: data/cache/CUB_test_unseen_labels.pt
+expected_sha256:
+  sentence_embeds: e3b428a3588d4e715910e07472848de4641ddb7e37791edbe6c07f8681213663
+  train_features: a18cefc50ec541027598d742698622f7ddd2ec8687ba797ab1eeeacb743a4fe9
+  train_labels: b1cbf2c128a3a09979852ec5906161a737be58bf4517b18b4f7d16beec06b666
+  res101: 9a97c71951f9ac9f5c3708e6e55386e53f3d433289ed5e87a18b4af2a1a0fca1
+  att_splits: d7f5b4c2cb7853acdce43a9e87607ceed30bdf18c60344be3a266de29b6751e3
+  seen_features: 5af75c696c8d285e35a35cc41eb538017f5452d1eaf13e34fe3ee978e72983c5
+  seen_labels: 06f3f7057b6847fd912544ddb921d0ca3fca96d0888503f3fc87a52f98d3de14
+  unseen_features: 32c1b89edb72a94e27585060ac968f1afc99000a9bd8c42acee8469971fb107e
+  unseen_labels: 7fadd63d51f69cf09cc8107a132d28036b838649b75227a17656eac8640b9c59
+class_order_sha256: 7b6ffe26103bfeb73324f328fac499d6ea7cfadfb2b56448b0df295aca22df38

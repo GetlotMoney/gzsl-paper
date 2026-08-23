@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-062 GPES</title></head>
+<body>
+<h1>GPES：门控成对证据选择器</h1>
+<p><strong>Base commit：</strong>cae6eedcaf2d6ccba81bb402d9f1c0cdb00c0c79；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<pre>train seen中：top2同族、margin≤25分位、真类位于top2
+每个pair四维特征：
+  [parent margin, Claude(top1-top2), merge(top1-top2), patch(top1-top2)]
+             ↓ train统计标准化
+共享Linear(4,1) → bounded delta∈[-0.5,0.5]
+pair logits' = [top1+gate×delta, top2-gate×delta]
+成对CE训练5个参数</pre>
+<p>零初始化严格复现SDCR；official test只用于陈式整模型H选择，真实unseen图像不进入梯度。</p>
+</body></html>
