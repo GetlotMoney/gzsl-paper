@@ -12,5 +12,6 @@
 | V2-INNOVATION-008 | IDEA-038 | JBEC联合双向校准 | retained out-of-scope: attribute parent | `INNOVATION-008_joint_bidirectional_episodic_calibration/` |
 | V2-INNOVATION-009 | IDEA-041 | CNRA类名残差对齐 | retained out-of-scope: attribute parent | `INNOVATION-009_class_name_residual_alignment/` |
 | V2-INNOVATION-010 | IDEA-044 | SCCC样本条件竞争校准 | rejected | `INNOVATION-010_sccc/` |
+| V2-INNOVATION-011 | IDEA-045 | NCRA类名与GPT长描述双语义残差 | planned | `INNOVATION-011_ncra/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
