@@ -15,6 +15,7 @@ class SentenceDropoutConservativeRouting(nn.Module):
         base_sentence_weights: torch.Tensor,
         fixed_beta: float,
         max_logit_residual: float = 0.5,
+        drop_count: int = 1,
     ) -> None:
         super().__init__()
         if tuple(sentence_embeddings.shape) != (200, 8, 768):
@@ -32,8 +33,12 @@ class SentenceDropoutConservativeRouting(nn.Module):
         self.register_buffer("base_log_weights", base.log())
         self.register_buffer("fixed_beta", torch.tensor(float(fixed_beta)))
         self.max_logit_residual = float(max_logit_residual)
+        if int(drop_count) not in (1, 2):
+            raise ValueError("SDCR drop_count只允许1或2。")
+        self.drop_count = int(drop_count)
         self.raw_weight_residual = nn.Parameter(torch.zeros(8))
         self.last_masked_role = -1
+        self.last_masked_roles: list[int] = []
 
     def weight_residual(self) -> torch.Tensor:
         return self.max_logit_residual * torch.tanh(self.raw_weight_residual)
@@ -44,12 +49,14 @@ class SentenceDropoutConservativeRouting(nn.Module):
     def active_sentence_weights(self) -> torch.Tensor:
         logits = self.base_log_weights + self.weight_residual()
         if self.training:
-            role = int(torch.randint(0, 8, (), device=logits.device).item())
+            roles = torch.randperm(8, device=logits.device)[: self.drop_count]
             logits = logits.clone()
-            logits[role] = -1e9
-            self.last_masked_role = role
+            logits[roles] = -1e9
+            self.last_masked_roles = [int(role) for role in roles.cpu()]
+            self.last_masked_role = self.last_masked_roles[0]
         else:
             self.last_masked_role = -1
+            self.last_masked_roles = []
         return torch.softmax(logits, dim=0)
 
     def kl_to_base(self) -> torch.Tensor:

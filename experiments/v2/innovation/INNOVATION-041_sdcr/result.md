@@ -1,6 +1,6 @@
 # V2-INNOVATION-041 结果
 
-状态：`supported_two_seed_weak_gain`。
+状态：`drop2_run_planned`。
 
 RUN-001得到`U/S/H/ZS=76.713103/79.959893/78.302856/83.920079%`，H比CASR高`0.017137`，属于弱增益。推理权重std/min/max=`0.055924/0.049531/0.233719`，未塌缩。
 
@@ -15,3 +15,5 @@ RUN-002得到`U/S/H/ZS=76.747000/79.959893/78.320510/83.953977%`，超过seed5 C
 seed5/7 H=`78.320510/78.302856`，差距`0.017655`且两条链都超过CASR，SDCR可靠成立。按owner规则正式最高取seed5 `H=78.320510`。
 
 RUN-002模型SHA256：`53f9065ddd5f32bc02ff4be3ce5db3c7a4eadf5117282b55a672780acec001ae`；最后checkpoint SHA256：`8c61a107d2aedff8c4396b1706d4ba16f4fefedc510a67932416843bd9602aad`。seed7模型SHA为`d1371389438b2f8b4b65f8735c683bd19ffe54f220ac593ee302d51c4d123773`。
+
+RUN-003只把每个训练batch的mask数量从1增到2，使用seed5 CASR父链；推理仍恢复完整8句。
