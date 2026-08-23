@@ -30,7 +30,7 @@
 | V2-INNOVATION-026 | IDEA-060 | MLRE融合LLM文本残差 | supported weak H candidate（H=77.829140） | `INNOVATION-026_mlre/` |
 | V2-INNOVATION-027 | IDEA-061 | ACLM自适应跨LLM混合 | rejected（退化Claude端点） | `INNOVATION-027_aclm/` |
 | V2-INNOVATION-028 | IDEA-062 | CACM类别自适应跨LLM混合 | rejected（退化常数端点） | `INNOVATION-028_cacm/` |
-| V2-INNOVATION-029 | IDEA-063 | OCLR正交跨LLM语义残差 | supported strong candidate（当前无专家H=78.072185） | `INNOVATION-029_oclr/` |
+| V2-INNOVATION-029 | IDEA-063 | OCLR正交跨LLM语义残差 | supported two-seed strong candidate（最高H=78.072185） | `INNOVATION-029_oclr/` |
 | V2-INNOVATION-030 | IDEA-064 | OGLC正交全局与局部组合 | rejected（低于OCLR） | `INNOVATION-030_oglc/` |
 | V2-INNOVATION-031 | IDEA-065 | OMLR正交merge语义残差 | retained strong secondary（H=78.051283/ZS=84.291506） | `INNOVATION-031_omlr/` |
 

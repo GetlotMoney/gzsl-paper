@@ -9,4 +9,4 @@ core_change: CLRE训练不变，仅把Claude原型替换为对类名方向正交
 success_condition: H大于MLRE最高77.829140，U和S任一项下降不超过2个百分点，beta不饱和。
 failure_condition: H不超过MLRE，或beta达到98%上限。
 experiment: V2-INNOVATION-029
-result: U/S/H/ZS=77.094042/79.075468/78.072185/84.185731%，H比MLRE高约0.243046且beta非饱和；强候选成立，provenance/新颖性待补。
+result: seed5/7 H=78.072185/78.035343，差距仅0.036842且两者均显著超过MLRE；最高仍取seed5，强候选可靠成立，provenance/新颖性待补。

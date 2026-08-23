@@ -18,6 +18,7 @@
 - [x] CCPE首次把类别条件真实patch证据接入V2，top2达到当前无专家最高H=`77.666533`；创新候选成立但新颖性与patch来源仍待核查。
 - [x] CLRE独立Claude描述残差达到新的无专家最高H=`77.808093`且U/S/ZS全提高；候选成立但cache provenance与新颖性仍待核查。
 - [x] OCLR去除Claude中的类名重复方向，达到无专家H=`78.072185`、ZS=`84.185731`，成为当前strong candidate；provenance与新颖性仍待补。
+- [x] OCLR seed7 H=`78.035343`，与seed5差`0.036842`，确认提升非单seed偶然；主成绩继续取最高seed5。
 - [x] 标准开发协议改为`train_loc` 100类训练、`val_loc` 50类类别不相交validation选模。
 - [x] `V2-TUNE-001`划分固定为3724张梯度图像、978张val-seen、2355张val-unseen；official test不加载。
 - [x] 无专家路线validation H=`76.472964`；专家312维属性路线H=`77.556001`，各自validation调优后Delta=`+1.083037`。

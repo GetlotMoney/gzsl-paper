@@ -282,6 +282,8 @@ OGLC叠加OCLR与CCPE后直接H仅`77.335657%`，协调后最高`77.533191%`，�
 
 OMLR正交化merge文本后达到`U/S/H/ZS=76.796263/79.348004/78.051283/84.291506%`，H略低于OCLR但ZS更高；保留为强次级观察，并证明正交化原则跨Claude/merge成立。下一步运行OCLR seed7可靠性，判断最高结果是否偶然。
 
+OCLR seed7达到`U/S/H/ZS=77.127939/78.964353/78.035343/84.219629%`，与seed5最高H只差`0.036842`；两seed均显著超过MLRE，强提升可靠。按owner规则主成绩仍取最高seed5 `H=78.072185`，平均只用于判断偶然性。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

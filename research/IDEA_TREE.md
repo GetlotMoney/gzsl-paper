@@ -86,7 +86,7 @@ V2-H-PLUS-3PP
       ├─ supported_candidate：IDEA-060 / MLRE融合LLM文本残差（最高H=77.829140，ZS低于CLRE）
       ├─ rejected_branch：IDEA-061 / ACLM自适应跨LLM混合（rejected，退化Claude端点）
       ├─ rejected_branch：IDEA-062 / CACM类别自适应跨LLM混合（rejected，退化常数端点）
-      ├─ supported_candidate：IDEA-063 / OCLR正交跨LLM语义残差（H=78.072185，强候选）
+      ├─ supported_candidate：IDEA-063 / OCLR正交跨LLM语义残差（seed5/7均成立，最高H=78.072185）
       ├─ rejected_branch：IDEA-064 / OGLC正交全局与局部组合（rejected，局部破坏OCLR平衡）
       ├─ revised_branch：IDEA-065 / OMLR正交merge语义残差（强次级，H略低/ZS更高）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
