@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Dual-Scale Patch Evidence
 base_commit: 3462a34b2333dce828f12acb8c3303ee99cfa810
 code_commit: 223a6f5ce2edd3a1d9db60ac2cbae68587feb7fd
-status: failed_runtime_engineering_retry_pending
+status: engineering_retry_run002_planned
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -16,3 +16,8 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-019_dspe/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-019_dspe/RUN-001
     status: failed_runtime
+  - run_id: RUN-002
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-019_dspe/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-019_dspe/RUN-002
+    status: planned

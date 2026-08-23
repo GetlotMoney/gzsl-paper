@@ -1,2 +1,3 @@
 run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,absolute_beta,normalized_beta,test_used_for_selection,output_uri,decision
 RUN-001,223a6f5ce2edd3a1d9db60ac2cbae68587feb7fd,experiments/v2/innovation/INNOVATION-019_dspe/configs/RUN-001.yaml,47d9eb3942956f3cc3af99064c176d0e53088460ef819cedaf03ff8adbd89eec,5,failed_runtime,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-019_dspe/RUN-001,engineering_retry_log_format
+RUN-002,,experiments/v2/innovation/INNOVATION-019_dspe/configs/RUN-002.yaml,47d9eb3942956f3cc3af99064c176d0e53088460ef819cedaf03ff8adbd89eec,5,planned,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-019_dspe/RUN-002,pending

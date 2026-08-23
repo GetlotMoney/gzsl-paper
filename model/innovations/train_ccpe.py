@@ -367,7 +367,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     )
                 print(
                     f"iter={iteration} H={metrics['H']:.6f} "
-                    f"best_H={best_h:.6f} beta={beta:.6f}"
+                    f"best_H={best_h:.6f} beta={beta}"
                 )
 
         atomic_torch_save(
