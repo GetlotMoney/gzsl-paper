@@ -10,7 +10,10 @@ import torch.nn.functional as F
 import yaml
 
 from model.innovations.ebc import EpisodicBiasCalibration
-from model.innovations.rsdm import ResidualSymmetricDiagonalMetric
+from model.innovations.rsdm import (
+    FullSemanticSymmetricDiagonalMetric,
+    ResidualSymmetricDiagonalMetric,
+)
 from model.innovations.sdcr import SentenceDropoutConservativeRouting
 from model.innovations.train_chen_style import (
     OFFICIAL_KEYS,
@@ -58,11 +61,13 @@ def load_config(path: Path):
             f"RSDM配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
             f"多出={sorted(actual-CONFIG_KEYS)}。"
         )
-    if (
-        config["schema_version"] != "gzsl-paper.rsdm.v1"
-        or config["experiment_id"] != "V2-INNOVATION-048"
-        or config["idea_id"] != "IDEA-082"
-    ):
+    identity = {
+        "gzsl-paper.rsdm.v1": ("V2-INNOVATION-048", "IDEA-082"),
+        "gzsl-paper.fsdm.v1": ("V2-INNOVATION-049", "IDEA-083"),
+    }.get(config["schema_version"])
+    if identity is None or (
+        config["experiment_id"], config["idea_id"]
+    ) != identity:
         raise ValueError("RSDM身份错误。")
     if (
         config["evaluation_protocol"] != EVALUATION_PROTOCOL
@@ -177,11 +182,24 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         for parameter in sdcr.parameters():
             parameter.requires_grad_(False)
         residual_prototypes = sdcr.prototypes(use_dropout=False).detach()
-        model = ResidualSymmetricDiagonalMetric(
-            residual_prototypes,
-            fixed_beta,
-            float(config["max_log_weight"]),
-        ).to(device)
+        if config["schema_version"] == "gzsl-paper.fsdm.v1":
+            model = FullSemanticSymmetricDiagonalMetric(
+                parent.prototypes().detach(),
+                float(parent.scale().detach()),
+                class_names,
+                sdrs.class_beta().detach(),
+                residual_prototypes,
+                fixed_beta,
+                seen_classes.to(device),
+                float(calibrator.gamma().detach()),
+                float(config["max_log_weight"]),
+            ).to(device)
+        else:
+            model = ResidualSymmetricDiagonalMetric(
+                residual_prototypes,
+                fixed_beta,
+                float(config["max_log_weight"]),
+            ).to(device)
         optimizer = torch.optim.Adam(
             model.parameters(),
             lr=float(config["learning_rate"]),

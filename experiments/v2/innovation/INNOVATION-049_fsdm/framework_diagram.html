@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-049 FSDM</title></head>
+<body>
+<h1>FSDM：完整语义链共享对角度量</h1>
+<p><strong>Base commit：</strong>538d1dae225b17e362d640a07385d60956666e7f；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<pre>图像 image ────────────────┐
+TG主原型 / SDRS类名 / SDCR残差 ─┼─ 同一个正对角度量w ─ 三路cosine
+                               └─ 按原scale、class beta、residual beta组合
+最终logits = TG主logits + SDRS类名logits + SDCR残差logits - 固定SEBC seen偏置
+seen CE只训练共享768维w</pre>
+<p>w初始化全1，严格复现完整SDCR父模型。与RSDM相比，三条原型分支同步变换，避免只改一支破坏尺度平衡；不使用专家属性。</p>
+<p>训练固定batch 50、28,228次更新、每141次official test，整次RUN按完整模型H保存一个best。unseen图像不进入梯度；test_used_for_selection=true；strict_blind_claim=false。</p>
+</body></html>
