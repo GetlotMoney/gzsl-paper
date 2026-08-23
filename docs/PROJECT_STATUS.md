@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 164
+completed_try_count: 165
 minimum_required_try_count: 50
 ```
 
@@ -351,6 +351,8 @@ PGSD用train-only patch可靠性加权SDCR训练，样本权重std=`0.110662`但
 CPGSD把patch可靠性中心化到mean=`1.0`、std=`0.068121`且保持有界，但所有条件仍低于父模型，best退回`H=78.320510%`。结合SPCR推理叠加失败，说明当前patch信息既不能直接加入SDCR推理，也不能改善其训练权重；IDEA-088拒绝并关闭patch结合轴。当前累计164组。
 
 `SDCR_ERROR_AUDIT_001`复现最高可靠SDCR，并确认主错误不是单向seen/unseen偏置，而是Warbler、Sparrow、Cormorant等同族细粒度竞争；两个最差unseen类在ZSL空间仍仅`5%/14%`。下一方向从类名族群构造类内身份残差，不再调全局bias。
+
+TIGR按类别名最后词形成37个族群并覆盖167类，但所有非零类中心差beta均降低H，best退回`H=78.320510%`与beta=0。结合HGCS失败，线性原型空间的组公共/组内身份方向均关闭；下一步改为保持组均值不变的最终logit差值缩放。当前累计165组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
