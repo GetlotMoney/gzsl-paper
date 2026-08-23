@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-014 LPSR</title></head>
 <body>
 <h1>LPSR：局部patch与局部文本残差对齐</h1>
-<p><strong>Base commit：</strong>90a84babdf8b1e782e99165dced3ecf4d2de7279；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>90a84babdf8b1e782e99165dced3ecf4d2de7279；<strong>RUN-001 code commit：</strong>a19264e0f27c9c2f194b29ee04834e8a9c6e0cac（failed_runtime，未训练）。</p>
 <h2>输入</h2>
 <p>父路径：冻结CLS[Ｂ,768] → TG-VPR/TST/CCGR → NCRA → SDRS → SEBC → 父logits[B,200]。新增路径读取冻结patch[B,576,768]以及八角色文本[200,8,768]，不训练CLIP。</p>
 <h2>新增数据流与公式</h2>
