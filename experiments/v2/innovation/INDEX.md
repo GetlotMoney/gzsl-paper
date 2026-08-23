@@ -85,6 +85,6 @@
 | V2-INNOVATION-081 | IDEA-115 | RVPS角色投票成对选择器 | rejected（best退回父模型） | `INNOVATION-081_rvps/` |
 | V2-INNOVATION-082 | IDEA-116 | CSDS跨来源分歧选择器 | rejected（退化为稳定top-3） | `INNOVATION-082_csds/` |
 | V2-INNOVATION-083 | IDEA-117 | RUGS角色不确定性门控选择器 | rejected（gamma全程投影回0） | `INNOVATION-083_rugs/` |
-| V2-INNOVATION-084 | IDEA-118 | NDPS语义邻域密度选择器 | testing（seed5 H=78.478738） | `INNOVATION-084_ndps/` |
+| V2-INNOVATION-084 | IDEA-118 | NDPS语义邻域密度选择器 | rejected（seed7退化为top-3） | `INNOVATION-084_ndps/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
