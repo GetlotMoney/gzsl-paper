@@ -16,3 +16,9 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-050_jscf/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-050_jscf/RUN-001
     status: completed_failed_sebc_drift
+  - run_id: RUN-002
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-050_jscf/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-050_jscf/RUN-002
+    status: planned
+    attempt_no: RESCUE-1

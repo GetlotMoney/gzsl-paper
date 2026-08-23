@@ -57,6 +57,23 @@ class JSCFTest(unittest.TestCase):
         self.assertEqual(config["niters"], 28228)
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_rescue_freezes_sebc_and_keeps_nine_parameters(self):
+        sdrs, calibrator, sdcr = DummySDRS(), DummyCalibrator(), DummySDCR()
+        names = enable_joint_parameters(sdrs, calibrator, sdcr, train_sebc=False)
+        self.assertEqual(names, ["sdrs.raw_slope", "sdcr.raw_weight_residual"])
+        self.assertFalse(calibrator.raw_gamma.requires_grad)
+        trainable = sum(
+            parameter.numel()
+            for module in (sdrs, calibrator, sdcr)
+            for parameter in module.parameters()
+            if parameter.requires_grad
+        )
+        self.assertEqual(trainable, 9)
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-050_jscf/configs/RUN-002.yaml"
+        )
+        self.assertFalse(config["train_sebc"])
+
 
 if __name__ == "__main__":
     unittest.main()
