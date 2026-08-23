@@ -52,20 +52,29 @@ def load_config(path: Path):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    expected_keys = (
-        COMMON_CONFIG_KEYS | {"drop_count"}
-        if schema == "gzsl-paper.sdcr.v2"
-        else COMMON_CONFIG_KEYS
-    )
+    if schema == "gzsl-paper.sdcr.v2":
+        expected_keys = COMMON_CONFIG_KEYS | {"drop_count"}
+    elif schema == "gzsl-paper.sdcc.v1":
+        expected_keys = COMMON_CONFIG_KEYS | {
+            "consistency_weight", "distill_temperature"
+        }
+    else:
+        expected_keys = COMMON_CONFIG_KEYS
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"SDCR配置字段错误；缺少={sorted(expected_keys-actual)}，"
             f"多出={sorted(actual-expected_keys)}。"
         )
+    identity_by_schema = {
+        "gzsl-paper.sdcr.v1": ("V2-INNOVATION-041", "IDEA-075"),
+        "gzsl-paper.sdcr.v2": ("V2-INNOVATION-041", "IDEA-075"),
+        "gzsl-paper.sdcc.v1": ("V2-INNOVATION-042", "IDEA-076"),
+    }
+    identity = identity_by_schema.get(config["schema_version"])
     if (
-        config["schema_version"] not in ("gzsl-paper.sdcr.v1", "gzsl-paper.sdcr.v2")
-        or config["experiment_id"] != "V2-INNOVATION-041"
-        or config["idea_id"] != "IDEA-075"
+        identity is None
+        or config["experiment_id"] != identity[0]
+        or config["idea_id"] != identity[1]
     ):
         raise ValueError("SDCR身份错误。")
     if (
@@ -92,6 +101,11 @@ def load_config(path: Path):
     expected_drop = 2 if schema == "gzsl-paper.sdcr.v2" else 1
     if int(config.get("drop_count", 1)) != expected_drop:
         raise ValueError(f"SDCR drop_count必须为{expected_drop}。")
+    if schema == "gzsl-paper.sdcc.v1" and (
+        float(config["consistency_weight"]) != 0.1
+        or float(config["distill_temperature"]) != 1.0
+    ):
+        raise ValueError("SDCC一致性权重/温度错误。")
     return config, sha256_file(path)
 
 
@@ -217,14 +231,33 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             targets = mapping[labels.index_select(0, indices)].to(device)
             normalized = F.normalize(images, dim=-1)
             base = normalized @ prototypes.index_select(0, class_ids).T * scale
-            logits = sdrs(base, images, class_ids)
-            logits = calibrator(logits, seen_mask)
-            logits = model(logits, images, class_ids)
+            parent_logits = sdrs(base, images, class_ids)
+            parent_logits = calibrator(parent_logits, seen_mask)
+            logits = model(parent_logits, images, class_ids)
             for role in model.last_masked_roles:
                 mask_counts[role] += 1
             ce_loss = F.cross_entropy(logits, targets)
             kl_loss = model.kl_to_base()
-            loss = ce_loss + float(config["kl_weight"]) * kl_loss
+            if config["schema_version"] == "gzsl-paper.sdcc.v1":
+                with torch.no_grad():
+                    model.eval()
+                    teacher_logits = model(
+                        parent_logits.detach(), images, class_ids
+                    )
+                    model.train()
+                temperature = float(config["distill_temperature"])
+                consistency_loss = F.kl_div(
+                    F.log_softmax(logits / temperature, dim=-1),
+                    F.softmax(teacher_logits / temperature, dim=-1),
+                    reduction="batchmean",
+                ) * (temperature ** 2)
+            else:
+                consistency_loss = ce_loss.new_zeros(())
+            loss = (
+                ce_loss
+                + float(config["kl_weight"]) * kl_loss
+                + float(config.get("consistency_weight", 0.0)) * consistency_loss
+            )
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
             require_finite_gradients(model)
@@ -243,6 +276,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "loss": float(loss.detach()),
                         "ce_loss": float(ce_loss.detach()),
                         "kl_loss": float(kl_loss.detach()),
+                        "consistency_loss": float(consistency_loss.detach()),
                         "official_metrics_percent": metrics,
                         "weight_stats": stats,
                         "mask_counts": list(mask_counts),

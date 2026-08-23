@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-042 SDCC</title></head>
+<body>
+<h1>SDCC：句子dropout一致性蒸馏</h1>
+<p><strong>Base commit：</strong>408a122284697d59643052406058790231a13001；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<h2>学生与教师</h2>
+<pre>student_logits = forward(mask one sentence)
+teacher_logits = stop_gradient(forward(all eight sentences))
+loss = seen CE(student)
+     + 0.01 × KL(full_weights || CASR_weights)
+     + 0.1 × KL(teacher_logits || student_logits)</pre>
+<p>温度固定1.0。推理只运行完整8句路径，与SDCR相同，不保留教师分支。</p>
+<h2>边界</h2><p>7,057张seen图像、28,228次更新，每141次在完整8句推理上official test选best。unseen图像不进入梯度；test_used_for_selection=true。</p>
+</body></html>
