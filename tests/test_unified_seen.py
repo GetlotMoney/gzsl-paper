@@ -76,6 +76,16 @@ class UnifiedSeenTrainingTest(unittest.TestCase):
         self.assertNotIn("fixed_class_folds", source)
         self.assertLess(source.index("for epoch in range"), source.index("official test只在全部50轮"))
 
+    def test_tg_vpr_only_control_config(self):
+        config, _ = load_config(
+            ROOT
+            / "experiments/v2/confirmation/CONFIRM-002_unified_seen_training/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["model_variant"], "tg_vpr_only")
+        self.assertEqual(config["random_seed"], 7)
+        self.assertEqual(config["epochs"], 50)
+        self.assertFalse(config["test_used_for_selection"])
+
 
 if __name__ == "__main__":
     unittest.main()

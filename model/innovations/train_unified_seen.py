@@ -10,6 +10,7 @@ import torch.nn.functional as F
 import yaml
 
 from model.innovations.unified_seen import UnifiedSeenPrototypeModel
+from model.tg_vpr_h1 import TGVPRH1FixedEqual
 from model.tg_vpr_h1 import train as h1
 from tools.cub_data import load_cub_split
 from tools.reproducibility import configure_reproducibility
@@ -55,6 +56,7 @@ CONFIG_KEYS = {
     "expected_sha256",
     "class_order_sha256",
 }
+CONTROL_CONFIG_KEYS = CONFIG_KEYS | {"model_variant"}
 
 
 def load_config(path: Path) -> tuple[dict, str]:
@@ -63,12 +65,21 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise FileNotFoundError(f"统一seen训练配置不存在：{path}")
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    expected_keys = (
+        CONTROL_CONFIG_KEYS
+        if isinstance(config, dict)
+        and config.get("schema_version") == "gzsl-paper.unified-seen-control.v1"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"统一seen训练配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"统一seen训练配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
-    if config["schema_version"] != "gzsl-paper.unified-seen.v1":
+    if config["schema_version"] not in (
+        "gzsl-paper.unified-seen.v1",
+        "gzsl-paper.unified-seen-control.v1",
+    ):
         raise ValueError("统一seen训练配置schema错误。")
     if config["experiment_id"] != "V2-CONFIRM-002":
         raise ValueError("统一seen训练实验身份错误。")
@@ -90,6 +101,9 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("统一seen训练固定topology权重0.1。")
     if [int(stage["epochs"]) for stage in config["lr_stages"]] != [20, 20, 10]:
         raise ValueError("统一seen训练固定20/20/10学习率阶段。")
+    config.setdefault("model_variant", "unified")
+    if config["model_variant"] not in ("unified", "tg_vpr_only"):
+        raise ValueError("统一seen训练只支持unified或tg_vpr_only。")
     return config, sha256_file(path)
 
 
@@ -111,15 +125,18 @@ def full_epoch_batches(
     return batches
 
 
-def _gradient_group_norms(model: UnifiedSeenPrototypeModel) -> dict[str, float]:
-    groups = {
-        "tg_vpr": model.tg_vpr.parameters(),
-        "transport": list(model.transport_trunk.parameters())
-        + list(model.transport_head.parameters()),
-        "generator": list(model.generator_trunk.parameters())
-        + list(model.generator_weight_head.parameters())
-        + list(model.generator_magnitude_head.parameters()),
-    }
+def _gradient_group_norms(model) -> dict[str, float]:
+    if isinstance(model, UnifiedSeenPrototypeModel):
+        groups = {
+            "tg_vpr": model.tg_vpr.parameters(),
+            "transport": list(model.transport_trunk.parameters())
+            + list(model.transport_head.parameters()),
+            "generator": list(model.generator_trunk.parameters())
+            + list(model.generator_weight_head.parameters())
+            + list(model.generator_magnitude_head.parameters()),
+        }
+    else:
+        groups = {"tg_vpr": model.parameters()}
     result = {}
     for name, parameters in groups.items():
         values = [
@@ -129,6 +146,19 @@ def _gradient_group_norms(model: UnifiedSeenPrototypeModel) -> dict[str, float]:
         ]
         result[name] = float(torch.stack(values).norm()) if values else 0.0
     return result
+
+
+def _model_diagnostics(model) -> dict[str, float]:
+    if isinstance(model, UnifiedSeenPrototypeModel):
+        return model.diagnostics()
+    return {
+        "transport_step_mean": 0.0,
+        "transport_step_std": 0.0,
+        "transport_step_max_abs": 0.0,
+        "generator_magnitude_mean": 0.0,
+        "generator_magnitude_std": 0.0,
+        "generator_magnitude_max_abs": 0.0,
+    }
 
 
 def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
@@ -174,31 +204,46 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         centroids = h1.visual_centroids(
             tensors["train_features"], labels, seenclasses
         )
-        model = UnifiedSeenPrototypeModel(
-            tensors["sentence_embeds"],
-            seenclasses,
-            centroids,
-            dropout=float(config["dropout"]),
-            inner_ratio=float(config["inner_ratio"]),
-            outer_ratio=float(config["outer_ratio"]),
-            temperature=float(config["temperature"]),
-            transport_hidden_dim=int(config["transport_hidden_dim"]),
-            generator_hidden_dim=int(config["generator_hidden_dim"]),
-            max_transport_step=float(config["max_transport_step"]),
-            max_generator_magnitude=float(config["max_generator_magnitude"]),
-        ).to(device)
+        model_kwargs = {
+            "dropout": float(config["dropout"]),
+            "inner_ratio": float(config["inner_ratio"]),
+            "outer_ratio": float(config["outer_ratio"]),
+            "temperature": float(config["temperature"]),
+        }
+        if config["model_variant"] == "unified":
+            model = UnifiedSeenPrototypeModel(
+                tensors["sentence_embeds"],
+                seenclasses,
+                centroids,
+                transport_hidden_dim=int(config["transport_hidden_dim"]),
+                generator_hidden_dim=int(config["generator_hidden_dim"]),
+                max_transport_step=float(config["max_transport_step"]),
+                max_generator_magnitude=float(config["max_generator_magnitude"]),
+                **model_kwargs,
+            ).to(device)
+        else:
+            model = TGVPRH1FixedEqual(
+                tensors["sentence_embeds"],
+                seenclasses,
+                centroids,
+                **model_kwargs,
+            ).to(device)
         initial_model_state = copy.deepcopy(model.state_dict())
         model.eval()
-        with torch.no_grad():
-            initial = model.prototype_stages()
-            if not torch.allclose(
-                initial["tg_vpr"], initial["transported"], atol=1e-6, rtol=1e-6
-            ):
-                raise RuntimeError("统一迁移必须从TG-VPR数值等价初始化。")
-            if not torch.allclose(
-                initial["tg_vpr"], initial["final"], atol=1e-6, rtol=1e-6
-            ):
-                raise RuntimeError("统一生成器必须从TG-VPR数值等价初始化。")
+        if isinstance(model, UnifiedSeenPrototypeModel):
+            with torch.no_grad():
+                initial = model.prototype_stages()
+                if not torch.allclose(
+                    initial["tg_vpr"],
+                    initial["transported"],
+                    atol=1e-6,
+                    rtol=1e-6,
+                ):
+                    raise RuntimeError("统一迁移必须从TG-VPR数值等价初始化。")
+                if not torch.allclose(
+                    initial["tg_vpr"], initial["final"], atol=1e-6, rtol=1e-6
+                ):
+                    raise RuntimeError("统一生成器必须从TG-VPR数值等价初始化。")
 
         optimizer = torch.optim.Adam(
             model.parameters(),
@@ -224,6 +269,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         first_batch_gradient_norms = None
 
         print(f"实验：{config['experiment_id']}")
+        print(f"条件：{config['model_variant']}")
         print(f"代码commit：{code_commit}")
         print(f"配置SHA-256：{config_sha}")
         print("训练协议：50轮全seen遍历；official test仅训练结束后加载一次")
@@ -274,7 +320,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             if sample_count != 7057:
                 raise RuntimeError("每个epoch必须完整消费7057张seen图像。")
             scheduler.step()
-            diagnostics = model.diagnostics()
+            diagnostics = _model_diagnostics(model)
             row = {
                 "epoch": epoch,
                 "train_loss": loss_sum / sample_count,
@@ -299,6 +345,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         checkpoint = {
             "experiment_id": config["experiment_id"],
             "run_id": run_id,
+            "model_variant": config["model_variant"],
             "code_commit": code_commit,
             "config": config,
             "config_sha256": config_sha,
@@ -335,7 +382,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         ):
             raise RuntimeError("official split与训练类划分不一致。")
         metrics = h1.evaluate(model, tensors, seenclasses, unseenclasses, device)
-        diagnostics = model.diagnostics()
+        diagnostics = _model_diagnostics(model)
         atomic_write_json(output_dir / "data_fingerprints.json", {"files": input_sha})
         atomic_write_json(
             output_dir / "metrics.json",
@@ -343,6 +390,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "experiment_id": config["experiment_id"],
                 "run_id": run_id,
                 "framework_id": config["framework_id"],
+                "model_variant": config["model_variant"],
                 "evaluation_protocol": EVALUATION_PROTOCOL,
                 "test_used_for_selection": False,
                 "official_test_evaluations": 1,
