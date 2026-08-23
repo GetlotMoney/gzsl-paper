@@ -268,6 +268,8 @@ LVPG从seen真类patch中心ridge生成200类局部视觉原型后，beta被推�
 
 CLRE把独立Claude描述原型作为SEBC残差，RUN-001达到`U/S/H/ZS=75.997263/79.707325/77.808093/83.523118%`，相对SEBC四项同时提高，并超过CCPE成为当前无专家最高。IDEA-058作为supported候选保留；Claude cache准确prompt/编码模型provenance与相关工作仍待补齐，暂不作原创claim。
 
+CLEC直接叠加CLRE与CCPE得到H `77.569776%`，训练局部比例后最高`77.648045%`，均低于CLRE。两分支在当前表示下不互补，IDEA-059已拒绝；下一方向测试与GPT/Claude均不同的merge文本原型，不再叠加patch分支。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
