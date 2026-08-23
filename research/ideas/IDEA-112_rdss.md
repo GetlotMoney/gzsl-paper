@@ -10,3 +10,4 @@ success_condition: seed5 H大于稳定SNPS top-3 78.466710；正提升后追加s
 failure_condition: H不超过top-3、尺度特征退化或U/S任一下降超过2个百分点。
 experiment: V2-INNOVATION-078
 paper_core_innovation: false
+interim_result: seed5 U/S/H/ZS四项全升，patch-free H=78.555039；raw role std权重为负，追加seed7。
