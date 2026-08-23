@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Local Patch-Semantic Residual
 base_commit: 90a84babdf8b1e782e99165dced3ecf4d2de7279
 code_commit: a19264e0f27c9c2f194b29ee04834e8a9c6e0cac
-status: failed_runtime_engineering_retry_pending
+status: engineering_retry_run002_planned
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -16,3 +16,8 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-014_lpsr/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-014_lpsr/RUN-001
     status: failed_runtime
+  - run_id: RUN-002
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-014_lpsr/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-014_lpsr/RUN-002
+    status: planned

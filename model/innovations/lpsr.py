@@ -45,7 +45,8 @@ class LocalPatchSemanticResidual(nn.Module):
             raise ValueError("类名原型必须是[200,768]。")
         names = F.normalize(class_name_prototypes.detach().float(), dim=-1)
         local = F.normalize(
-            sentence_embeddings.detach().float()[:, :6].mean(dim=1), dim=-1
+            sentence_embeddings.detach().float().to(names.device)[:, :6].mean(dim=1),
+            dim=-1,
         )
         projection = (local * names).sum(dim=-1, keepdim=True) * names
         residual = F.normalize(local - projection, dim=-1)
