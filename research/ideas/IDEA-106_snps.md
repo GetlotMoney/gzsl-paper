@@ -10,3 +10,4 @@ success_condition: seed5 H大于同seed C-RGWPS 78.393178；正提升后追加se
 failure_condition: H不超过C-RGWPS、best退回关闭态或新增关系导致U/S任一下降超过2个百分点。
 experiment: V2-INNOVATION-072
 paper_core_innovation: false
+interim_result: seed5 U/S/H/ZS四项均超过父模型，patch-free H=78.480710，相对C-RGWPS +0.087533；追加seed7。

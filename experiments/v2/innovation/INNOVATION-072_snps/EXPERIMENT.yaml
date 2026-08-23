@@ -4,15 +4,15 @@ idea_id: IDEA-106
 framework_id: FRAMEWORK-V2
 title: Semantic Neighborhood Pair Selector
 base_commit: e55bf98571dfcef3c90eaad5cc4793d6549c0b77
-code_commit: null
-status: planned
+code_commit: 29b801d33e835ba6af202335120977ba295dbef8
+status: testing_seed7_reliability
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-072_snps/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 29b801d33e835ba6af202335120977ba295dbef8
     config_ref: experiments/v2/innovation/INNOVATION-072_snps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-072_snps/RUN-001
-    status: planned
+    status: completed_positive
