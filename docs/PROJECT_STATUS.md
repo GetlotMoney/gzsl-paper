@@ -64,6 +64,8 @@ V2-CONFIRM-005 RESCUE-2步长上限0.75得到`H=75.830543%`，低于0.5条件，
 
 V2-CONFIRM-006完成后H=`75.948676%`，比CONFIRM-005最佳低`0.058172`，拒绝。失败原因是父TG-VPR已见全部150类，简单pseudo样本加权不构成class-exclusive迁移；下一Experiment必须训练三个仅见100类的fold父模型。
 
+`V2-CONFIRM-007`已开始实现真正class-exclusive：1个完整150类TG父模型供推理，3个仅见100类的fold TG父模型供共享TST/NTR+CCGR训练；每折另外50类从未进入该fold父模型梯度。fold训练不使用official test，只有完整推理模型参与Chen-style整模型H选模。
+
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 
 ## 当前待办
