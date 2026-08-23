@@ -1,9 +1,11 @@
 # V2-INNOVATION-037 结果
 
-状态：`supported_seed5_reliability_pending`。
+状态：`reliability_seed7_planned`。
 
 RUN-001得到`U/S/H/ZS=76.445878/80.058682/78.210580/83.652842%`，相对OESR H提高`0.104768`，成为当前最高H。U下降`0.269485`、S提高`0.511086`，均在预注册边界内。
 
 best句子权重为`[0.012587, 0.353058, 0.121260, 0.107798, 0.025099, 0.018921, 0.185677, 0.175600]`，std=`0.107490`、min=`0.012587`，满足非近常数且不塌缩门槛。
 
 最佳位于iteration=`1551`。模型SHA256：`77b95e78087e2e4a674c4dde8150cfaa37907b2c2f1375775d5ed03cd957269c`；最后checkpoint SHA256：`b812cdcfc09197f0976157cc88fc616bf8ca2e1ae1959fdf1c39186a60d68c34`。追加seed7可靠性后再决定最终身份。
+
+RUN-002使用OESR seed7正式best作为父模型，并把AOSR随机seed改为7；其余结构、数据和训练协议不变。

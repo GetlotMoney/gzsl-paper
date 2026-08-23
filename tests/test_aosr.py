@@ -31,6 +31,16 @@ class AOSRTest(unittest.TestCase):
         )
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_seed7_chain_binds_seed7_oesr(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-037_aosr/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["random_seed"], 7)
+        self.assertEqual(
+            config["oesr_model_sha256"],
+            "2cbc9d6860c398ce938833e345fffaae6bc71b5cff6accc7dd304132c15a7bb2",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
