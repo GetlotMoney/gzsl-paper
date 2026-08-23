@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 190
+completed_try_count: 191
 minimum_required_try_count: 50
 ```
 
@@ -413,6 +413,8 @@ C-RGWPS seed7达到`U/S/H/ZS=76.705819/80.197293/78.412709/83.981764%`，相对�
 下一实验`V2-INNOVATION-072 / SNPS`保持C-RGWPS的12维中心化角色选择器，只把关系门控从同类名suffix扩展为“同suffix或固定SDCR文本原型top-5邻居”，覆盖名称不同但语义接近的细粒度混淆；仍不读取patch。
 
 SNPS seed5达到`U/S/H/ZS=76.916498/80.109864/78.480710/84.056246%`，相对SDCR四项全升、相对C-RGWPS提高H `0.087533`，成为当前绝对最高且patch-free的H。语义关系含798条无向边，有效pair从4041增至4691；追加seed7判断可靠性。当前累计190组。
+
+SNPS seed7达到`U/S/H/ZS=76.781482/80.059534/78.386251/83.953416%`，相对SDCR仍提高H `0.083396`，但比同seed C-RGWPS低`0.026458`。两seed绝对H范围仅`0.094459`，按owner口径最高取seed5 `78.480710%`；语义近邻增量跨seed不一致，SNPS只保留为最高成绩候选，不作独立核心创新。当前累计191组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
