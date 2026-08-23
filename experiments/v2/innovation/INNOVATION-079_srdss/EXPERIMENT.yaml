@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-079
+idea_id: IDEA-113
+framework_id: FRAMEWORK-V2
+title: Staged Role Disagreement Scale Selector
+base_commit: f5338971c61d60b05eabd0a7a495999354299a9a
+code_commit: null
+status: planned
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-079_srdss/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-079_srdss/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-079_srdss/RUN-001
+    status: planned

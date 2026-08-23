@@ -550,3 +550,70 @@ class RoleDisagreementScaleSelector(SemanticNeighborPairSelector):
             related,
             torch.cat((features, role_scale.unsqueeze(1)), dim=1),
         )
+
+
+class StagedRoleDisagreementScaleSelector(RoleDisagreementScaleSelector):
+    """冻结已训练12维SNPS选择器，只训练新增角色尺度系数。"""
+
+    def __init__(
+        self,
+        *args,
+        base_selector_weight: torch.Tensor,
+        base_selector_bias: torch.Tensor,
+        base_feature_mean: torch.Tensor,
+        base_feature_std: torch.Tensor,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        if self.feature_dim != 13:
+            raise ValueError("S-RDSS输入必须是13维。")
+        if tuple(base_selector_weight.shape) != (12,):
+            raise ValueError("S-RDSS父selector_weight必须是[12]。")
+        if tuple(base_feature_mean.shape) != (12,) or tuple(
+            base_feature_std.shape
+        ) != (12,):
+            raise ValueError("S-RDSS父特征统计必须是[12]。")
+        if not torch.allclose(
+            self.feature_mean[:12].cpu(), base_feature_mean.float().cpu(), atol=1e-6
+        ) or not torch.allclose(
+            self.feature_std[:12].cpu(), base_feature_std.float().cpu(), atol=1e-6
+        ):
+            raise ValueError("S-RDSS前12维特征统计未复现SNPS父模型。")
+        del self.selector_weight
+        del self.selector_bias
+        self.register_buffer(
+            "base_selector_weight", base_selector_weight.detach().float()
+        )
+        self.register_buffer(
+            "base_selector_bias", base_selector_bias.detach().float().reshape(())
+        )
+        self.register_buffer(
+            "base_feature_mean", base_feature_mean.detach().float()
+        )
+        self.register_buffer(
+            "base_feature_std", base_feature_std.detach().float().clamp_min(1e-6)
+        )
+        self.scale_weight = nn.Parameter(torch.zeros(()))
+
+    def pair_delta(self, raw_features: torch.Tensor) -> torch.Tensor:
+        base_features = (
+            raw_features[:, :12].float() - self.base_feature_mean
+        ) / self.base_feature_std
+        scale_feature = (
+            raw_features[:, 12].float() - self.feature_mean[12]
+        ) / self.feature_std[12]
+        raw = (
+            base_features @ self.base_selector_weight
+            + self.base_selector_bias
+            + scale_feature * self.scale_weight
+        )
+        return self.max_delta * torch.tanh(raw)
+
+    def stats(self) -> dict[str, object]:
+        return {
+            "scale_weight": float(self.scale_weight.detach()),
+            "base_selector_weight_norm": float(self.base_selector_weight.norm()),
+            "base_selector_bias": float(self.base_selector_bias),
+            "margin_threshold": float(self.margin_threshold),
+            "margin_temperature": self.margin_temperature,
+        }

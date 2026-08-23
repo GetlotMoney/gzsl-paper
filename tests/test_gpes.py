@@ -12,6 +12,7 @@ from model.innovations.gpes import (
     RoleDisagreementScaleSelector,
     RoleAwareGatedPairSelector,
     SemanticNeighborPairSelector,
+    StagedRoleDisagreementScaleSelector,
     SemanticGatedPairSelector,
     TextOnlyGatedPairSelector,
     TriadicCompetitionPairSelector,
@@ -486,6 +487,38 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.rdss.v1")
         self.assertEqual(config["context_feature"], "raw_role_difference_std")
         self.assertEqual(config["semantic_neighbor_k"], 3)
+
+    def test_staged_rdss_trains_only_scale_and_reproduces_base_delta(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        base_weight = torch.randn(12)
+        base_bias = torch.randn(())
+        model = StagedRoleDisagreementScaleSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(13), torch.ones(13), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+            base_selector_weight=base_weight,
+            base_selector_bias=base_bias,
+            base_feature_mean=torch.zeros(12),
+            base_feature_std=torch.ones(12),
+        )
+        features = torch.randn(4, 13)
+        expected = 0.5 * torch.tanh(features[:, :12] @ base_weight + base_bias)
+        self.assertTrue(torch.allclose(model.pair_delta(features), expected))
+        self.assertEqual(
+            [name for name, _ in model.named_parameters()], ["scale_weight"]
+        )
+
+    def test_srdss_config_binds_frozen_snps_parent(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-079_srdss/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.srdss.v1")
+        self.assertEqual(config["training_scope"], "freeze_snps_train_scale_only")
+        self.assertIn("snps_model_sha256", config)
 
 
 if __name__ == "__main__":

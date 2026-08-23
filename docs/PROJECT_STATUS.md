@@ -454,6 +454,8 @@ RDSS seed5达到`U/S/H/ZS=76.915932/80.265528/78.555039/84.053975%`，相对稳�
 
 RDSS seed7达到`U/S/H/ZS=76.914233/80.009395/78.431289/84.020644%`，相对SDCR提高H `0.128433`但比稳定SNPS top-3低`0.014811`。尺度权重两seed均为负，机制方向一致；联合重训旧12维造成父权重扰动。按owner口径最高取seed5 `78.555039%`，下一Experiment分阶段冻结SNPS top-3选择器、只训练尺度系数。当前累计203组。
 
+下一实验`V2-INNOVATION-079 / S-RDSS`加载各seed稳定SNPS top-3 checkpoint，冻结12维selector权重、偏置与特征统计，只训练一个raw role std系数；初始态必须精确复现SNPS父指标。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
