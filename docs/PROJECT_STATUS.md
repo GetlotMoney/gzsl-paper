@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 206
+completed_try_count: 207
 minimum_required_try_count: 50
 ```
 
@@ -465,6 +465,8 @@ TR-RDSS seed5达到`U/S/H/ZS=76.917648/80.219018/78.533653/84.054536%`，相对S
 TR-RDSS seed7完整训练后best严格退回SNPS父模型`H=78.446100%`，role scale weight和旧权重drift均为0。相对父模型增量seed5/7为`+0.066943/+0.000000`，未跨seed成立，IDEA-114拒绝。RDSS seed5最高`78.555039%`继续保留为owner口径主成绩观察，稳定结构仍为SNPS top-3。当前累计206组。
 
 下一实验`V2-INNOVATION-081 / RVPS`固定稳定SNPS top-3图，新增八角色有符号多数投票`mean(sign(top1-top2))`，用鲁棒共识补充中心化角色数值方向。
+
+RVPS seed5完整运行后best严格退回父模型`H=78.320510%`、selected iteration=`-1`。signed role vote分布有效但所有非零selector均更差，说明多数投票重复已有角色方向并强化seen偏好；IDEA-115拒绝且不追加seed7。当前累计207组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
