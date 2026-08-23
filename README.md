@@ -13,14 +13,15 @@
 
 ## 评估协议
 
-项目使用 `test_selected_inductive_gzsl`：
+新的论文主结果使用 `fixed_epoch_inductive_gzsl`：
 
 1. 训练梯度只使用 CUB `trainval_loc` 的 150 个 seen 类、7,057 张图像。
-2. test-seen/test-unseen 可在训练过程中反复评估，并用于选择 epoch、参数和模型。
-3. test 图像不进入反向传播；unseen 类图像从不参与梯度训练。
-4. U/S/H 在 200 类联合空间计算，ZS 在 50 个 unseen 类空间计算。
+2. 每个epoch完整遍历7,057张seen图像，每张恰好一次。
+3. 方法结构、参数、seed和报告epoch在RUN前固定；test-seen/test-unseen只在训练完成后加载一次，不用于选择。
+4. test 图像不进入反向传播；unseen 类图像从不参与梯度训练。
+5. U/S/H 在 200 类联合空间计算，ZS 在 50 个 unseen 类空间计算。
 
-该协议在图像监督上属于 inductive GZSL，但不是 blind-test 评估；论文或对外表述必须明确写 `test_used_for_selection: true`。
+新主结果记录 `test_used_for_selection: false`。历史 `test_selected_inductive_gzsl` 结果继续保留，但只能作为探索观察，并明确披露 `test_used_for_selection: true`。
 
 ## 运行
 

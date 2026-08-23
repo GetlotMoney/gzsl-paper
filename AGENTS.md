@@ -62,11 +62,13 @@
 
 ## 训练与测试
 
-- 协议固定为 `test_selected_inductive_gzsl`。
+- 新的论文主结果固定使用 `fixed_epoch_inductive_gzsl`；旧的 `test_selected_inductive_gzsl` 结果只保留为探索观察，不得作为无偏最终成绩。
 - 训练只使用 150 个 seen 类的训练图像；unseen 类图像不得进入梯度。
-- test-seen/test-unseen 允许用于选择参数、epoch 和模型，但必须记录 `test_used_for_selection: true`。
+- 正式统一训练每个epoch必须让7,057张seen图像各出现一次，不使用三折pseudo-unseen或重复平衡抽样代替完整遍历。
+- 方法结构、参数、seed和报告epoch必须在RUN前固定；official test只能在训练完成后加载一次，记录 `test_used_for_selection: false`。
+- 旧实验若反复使用official test选择参数、epoch、模型或seed，必须保持 `test_used_for_selection: true`并明确标记为test-selected探索结果。
 - U/S/H 使用 200 类联合竞争；ZS 使用 50 个 unseen 类竞争。
-- 不得把该协议描述为 blind-test 或 test-free model selection。
+- 未满足固定epoch与单次official test边界的结果不得描述为blind-test或无偏最终结果。
 
 ## 交付
 

@@ -108,20 +108,19 @@ test_used_for_selection,log_uri,model_uri,decision
 4. `control`：module-off、shuffle、wrong-role 等机制控制。
 5. `repeat`：值得保留后再跑其他 seed。
 
-项目允许根据 official test U/S/H/ZS 选择参数、epoch 和模型。每次 RUN 必须标记：
+新的论文主结果不得根据official test选择参数、epoch、模型或seed。每次正式RUN必须在启动前固定方法和报告epoch，并标记：
 
 ```yaml
-evaluation_protocol: test_selected_inductive_gzsl
-test_used_for_selection: true
+evaluation_protocol: fixed_epoch_inductive_gzsl
+test_used_for_selection: false
 unseen_images_used_for_gradient: false
 ```
 
-这不是 blind-test 证据，任何论文数字或对外比较都必须如实说明。
+official test只能在训练与checkpoint写入完成后加载一次。历史RUN若使用official test选模，继续记录为`test_selected_inductive_gzsl / test_used_for_selection: true`，只能作为探索结果，不能冒充无偏最终成绩。
 
 ## 多seed成绩口径
 
-- 对owner汇报和当前项目内部选模时，主成绩使用所有已完成seed中的最高`H`，并明确报告对应seed。
-- mean不作为主成绩，只用于判断结果是否可能由seed偶然性造成；同时必须计算`min / max / range`，不得只报最高值而隐藏波动。
-- 当前稳定性判断固定为：`H range <= 1.0`个百分点时视为差距不大，可以最高seed作为主结果；`1.0 < range <= 1.5`时必须追加稳定性诊断；`range > 1.5`时不得称为稳定结果。
-- 新论文核心创新原则上要求相对准确父条件的最高seed `Delta H >= 0.20`个百分点；更小的增益只作为辅助模块或观察，除非它提供不可替代且经消融证明的机制贡献。
-- 多seed口径不改变评估协议：official test仍参与选择，必须保持`test_used_for_selection: true`，不得描述为blind-test。
+- seed必须在RUN前固定；当前主RUN固定seed 7，不得在看到official test后改报最高seed。
+- 追加seed用于稳定性判断时必须全部报告，并计算`mean / min / max / range`；最高seed只能作为分布描述，不能替代预注册主seed。
+- 新论文核心创新原则上要求相对准确父条件在预注册主seed上`Delta H >= 0.20`个百分点，并由追加seed排除明显偶然性；更小增益只作为辅助模块或观察。
+- 多seedRUN均不得在训练中读取official test选epoch；每个RUN固定报告预注册epoch。
