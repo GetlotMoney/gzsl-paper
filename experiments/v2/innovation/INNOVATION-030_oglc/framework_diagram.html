@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-030 OGLC</title></head>
+<body>
+<h1>OGLC：正交全局与局部证据组合</h1>
+<p><strong>Base commit：</strong>c1b4f164abb6a230099c9dde51ac2d942eba16a2；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<h2>冻结证据</h2><p>固定OCLR正交Claude全局分支(beta=11.875345)与CCPE局部patch分支(beta=9.177013)，共同建立在SEBC父logits上。</p>
+<h2>协调公式</h2>
+<pre>patch_scale = 1 + 0.25 × tanh(raw_scale)
+final_logits = SEBC_logits
+             + fixed_oclr_beta × orthogonal_claude_logits
+             + patch_scale × fixed_ccpe_beta × top2_patch_score</pre>
+<p>raw_scale零初始化；只训练局部比例，不改两父权重。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新official test选全局best。unseen图像/patch不进入梯度；test_used_for_selection=true。文本和patch cache provenance未完整。</p>
+</body></html>

@@ -34,13 +34,13 @@ from tools.run_contract import (
 from tools.runtime import sha256_file
 
 EVALUATION_PROTOCOL = "chen_shiming_code_aligned_test_selected_gzsl"
-CONFIG_KEYS = {
+COMMON_CONFIG_KEYS = {
     "schema_version", "experiment_id", "idea_id", "framework_id", "dataset",
     "evaluation_protocol", "test_used_for_selection", "unseen_images_used_for_gradient",
     "strict_blind_claim", "feature_provenance_complete", "base_model",
     "base_model_sha256", "sdrs_model", "sdrs_model_sha256", "sebc_model",
-    "sebc_model_sha256", "ccpe_model", "ccpe_model_sha256", "clre_model",
-    "clre_model_sha256", "sebc_metrics_percent", "comparison_H",
+    "sebc_model_sha256", "ccpe_model", "ccpe_model_sha256",
+    "sebc_metrics_percent", "comparison_H",
     "class_name_embeddings", "class_name_embeddings_sha256", "claude_embeddings",
     "claude_embeddings_sha256", "patch_inputs", "patch_sha256", "patch_top_k",
     "patch_chunk_size", "device", "random_seed", "batch_size", "epochs", "niters",
@@ -53,15 +53,28 @@ def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    identity_by_schema = {
+        "gzsl-paper.clec.v1": (
+            "V2-INNOVATION-025", "IDEA-059", "clre_model",
+            77.80809298394227, False,
+        ),
+        "gzsl-paper.oglc.v1": (
+            "V2-INNOVATION-030", "IDEA-064", "oclr_model",
+            78.0721851209539, True,
+        ),
+    }
+    identity = identity_by_schema.get(config.get("schema_version")) if isinstance(config, dict) else None
+    global_model_key = identity[2] if identity is not None else "unknown_model"
+    expected_keys = COMMON_CONFIG_KEYS | {global_model_key, f"{global_model_key}_sha256"}
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"CLEC配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"CLEC配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
     if (
-        config["schema_version"] != "gzsl-paper.clec.v1"
-        or config["experiment_id"] != "V2-INNOVATION-025"
-        or config["idea_id"] != "IDEA-059"
+        identity is None
+        or config["experiment_id"] != identity[0]
+        or config["idea_id"] != identity[1]
     ):
         raise ValueError("CLEC身份错误。")
     if (
@@ -91,7 +104,7 @@ def load_config(path: Path):
         or float(config["learning_rate"]) != 0.01
         or float(config["weight_decay"]) != 0.0
         or float(config["max_patch_scale_residual"]) != 0.25
-        or abs(float(config["comparison_H"]) - 77.80809298394227) > 1e-9
+        or abs(float(config["comparison_H"]) - identity[3]) > 1e-9
     ):
         raise ValueError("CLEC优化参数或比较门槛错误。")
     return config, sha256_file(path)
@@ -154,8 +167,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     config, config_sha = load_config(config_path)
     paths = resolve_paths(config)
     input_sha = verify_inputs(config, paths)
+    global_model_key = (
+        "oclr_model"
+        if config["schema_version"] == "gzsl-paper.oglc.v1"
+        else "clre_model"
+    )
     for key in (
-        "base_model", "sdrs_model", "sebc_model", "ccpe_model", "clre_model",
+        "base_model", "sdrs_model", "sebc_model", "ccpe_model", global_model_key,
         "class_name_embeddings", "claude_embeddings",
     ):
         if sha256_file(Path(config[key])) != config[f"{key}_sha256"]:
@@ -185,6 +203,16 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         claude = torch.load(
             Path(config["claude_embeddings"]), map_location="cpu", weights_only=True
         ).to(device)
+        if config["schema_version"] == "gzsl-paper.oglc.v1":
+            normalized_names = F.normalize(class_names.float(), dim=-1)
+            normalized_claude = F.normalize(claude.float(), dim=-1)
+            claude = F.normalize(
+                normalized_claude
+                - (normalized_claude * normalized_names).sum(
+                    dim=-1, keepdim=True
+                ) * normalized_names,
+                dim=-1,
+            )
         seen_classes = torch.unique(labels, sorted=True)
         all_classes = torch.arange(200)
         unseen_classes = all_classes[~torch.isin(all_classes, seen_classes)]
@@ -218,15 +246,15 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             float(ccpe_payload["config"]["max_beta"])
             * torch.tanh(ccpe_payload["ccpe_state_dict"]["raw_beta"].float())
         )
-        clre_payload = torch.load(
-            Path(config["clre_model"]), map_location="cpu", weights_only=False
+        global_payload = torch.load(
+            Path(config[global_model_key]), map_location="cpu", weights_only=False
         )
-        clre_beta = float(
-            float(clre_payload["config"]["max_beta"])
-            * torch.tanh(clre_payload["clre_state_dict"]["raw_beta"].float())
+        global_beta = float(
+            float(global_payload["config"]["max_beta"])
+            * torch.tanh(global_payload["clre_state_dict"]["raw_beta"].float())
         )
         model = CrossLLMLocalEvidenceComposition(
-            claude, clre_beta, ccpe_beta,
+            claude, global_beta, ccpe_beta,
             float(config["max_patch_scale_residual"]),
         ).to(device)
         optimizer = torch.optim.Adam(
@@ -341,7 +369,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "sdrs_model": config["sdrs_model_sha256"],
                 "sebc_model": config["sebc_model_sha256"],
                 "ccpe_model": config["ccpe_model_sha256"],
-                "clre_model": config["clre_model_sha256"],
+                global_model_key: config[f"{global_model_key}_sha256"],
                 "class_name_embeddings": config["class_name_embeddings_sha256"],
                 "claude_embeddings": config["claude_embeddings_sha256"],
             },
@@ -364,7 +392,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "initial_composition_metrics_percent": initial_metrics,
             "best_metrics_percent": best_metrics,
             "selected_iteration": best_iteration,
-            "fixed_clre_beta": clre_beta,
+            "fixed_global_beta": global_beta,
             "fixed_ccpe_beta": ccpe_beta,
             "learned_patch_scale": best_patch_scale,
             "official_test_evaluation_count": len(history) + 1,
