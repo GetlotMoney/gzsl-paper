@@ -11,6 +11,7 @@
 - [x] V2-CONFIRM-005 RESCUE-2步长0.75为H=`75.830543`，低于0.5，步长轴关闭。
 - [x] V2-CONFIRM-006简单pseudo-unseen加权H=`75.948676`，未超过父条件，已拒绝；下一步转真正class-exclusive fold父模型。
 - [ ] 完成V2-CONFIRM-007完整TG+三个100类fold父模型+共享迁移训练，目标无专家H超过77.023。
+- [x] V2-CONFIRM-007 RUN-001 class-exclusive H=`75.849154`，语义边界通过但未达标；已预注册复用父模型的1.5步长补救。
 - [x] 标准开发协议改为`train_loc` 100类训练、`val_loc` 50类类别不相交validation选模。
 - [x] `V2-TUNE-001`划分固定为3724张梯度图像、978张val-seen、2355张val-unseen；official test不加载。
 - [x] 无专家路线validation H=`76.472964`；专家312维属性路线H=`77.556001`，各自validation调优后Delta=`+1.083037`。

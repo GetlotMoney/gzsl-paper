@@ -6,9 +6,9 @@ framework_id: FRAMEWORK-V2
 framework_ref: v2
 framework_diagram: experiments/v2/confirmation/CONFIRM-007_chen_class_exclusive/framework_diagram.html
 base_commit: 74767050b1fa21eff2ca89e88e379d3aaa1bc30c
-code_commit: null
+code_commit: 8f3d69b1a2b94243c9d43123f631635b36b25fd3
 research_question: 三个真正只见100类的fold TG父模型能否训练共享迁移与CCGR，把无专家Chen-style H推到77.023以上？
-status: planned
+status: rescue1_high_transport_planned
 evaluation_protocol: chen_shiming_code_aligned_class_exclusive_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -23,8 +23,15 @@ server:
 runs:
   - run_id: RUN-001
     condition: no_expert_true_class_exclusive
-    code_commit: null
+    code_commit: 8f3d69b1a2b94243c9d43123f631635b36b25fd3
     seed: 5
     config_ref: experiments/v2/confirmation/CONFIRM-007_chen_class_exclusive/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-007_chen_class_exclusive/RUN-001
+    status: completed
+  - run_id: RUN-002
+    condition: no_expert_true_class_exclusive_transport_1.5
+    code_commit: null
+    seed: 5
+    config_ref: experiments/v2/confirmation/CONFIRM-007_chen_class_exclusive/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-007_chen_class_exclusive/RUN-002
     status: planned

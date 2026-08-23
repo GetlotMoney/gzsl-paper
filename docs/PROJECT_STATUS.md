@@ -66,6 +66,8 @@ V2-CONFIRM-006完成后H=`75.948676%`，比CONFIRM-005最佳低`0.058172`，拒�
 
 `V2-CONFIRM-007`已开始实现真正class-exclusive：1个完整150类TG父模型供推理，3个仅见100类的fold TG父模型供共享TST/NTR+CCGR训练；每折另外50类从未进入该fold父模型梯度。fold训练不使用official test，只有完整推理模型参与Chen-style整模型H选模。
 
+V2-CONFIRM-007 RUN-001完成后`U/S/H/ZS=73.860192/77.948201/75.849154/83.031738%`，未超过普通0.5分阶段条件。class-exclusive语义成立但0.5迁移上限可能过强；RESCUE-1复用SHA绑定父模型，只重新训练共享迁移并恢复上限1.5。
+
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 
 ## 当前待办

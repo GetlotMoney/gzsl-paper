@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import copy
 import sys
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import torch
 import torch.nn.functional as F
@@ -80,6 +80,11 @@ CONFIG_KEYS = {
     "expected_sha256",
     "class_order_sha256",
 }
+REUSE_CONFIG_KEYS = CONFIG_KEYS | {
+    "reuse_parent_dir",
+    "full_tg_parent_sha256",
+    "fold_model_sha256",
+}
 
 
 def load_config(path: Path) -> tuple[dict, str]:
@@ -88,12 +93,21 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise FileNotFoundError(f"class-exclusive配置不存在：{path}")
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    expected_keys = (
+        REUSE_CONFIG_KEYS
+        if isinstance(config, dict)
+        and config.get("schema_version") == "gzsl-paper.chen-class-exclusive-reuse.v1"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"class-exclusive配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"class-exclusive配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
-    if config["schema_version"] != "gzsl-paper.chen-class-exclusive.v1":
+    if config["schema_version"] not in (
+        "gzsl-paper.chen-class-exclusive.v1",
+        "gzsl-paper.chen-class-exclusive-reuse.v1",
+    ):
         raise ValueError("class-exclusive配置schema错误。")
     if config["experiment_id"] != "V2-CONFIRM-007" or config["condition_id"] != "NO-EXPERT":
         raise ValueError("class-exclusive实验身份错误。")
@@ -135,9 +149,21 @@ def load_config(path: Path) -> tuple[dict, str]:
         "transfer_lr": 1e-4,
         "joint_lr": 1e-5,
         "pseudo_unseen_weight": 0.25,
-        "max_transport_step": 0.5,
     }.items()):
         raise ValueError("class-exclusive学习率、pseudo权重或迁移上限错误。")
+    if float(config["max_transport_step"]) not in (0.5, 1.5):
+        raise ValueError("class-exclusive迁移上限只允许0.5或1.5。")
+    config.setdefault("reuse_parent_dir", None)
+    config.setdefault("full_tg_parent_sha256", None)
+    config.setdefault("fold_model_sha256", None)
+    if config["schema_version"] == "gzsl-paper.chen-class-exclusive-reuse.v1":
+        if not (
+            Path(config["reuse_parent_dir"]).is_absolute()
+            or PurePosixPath(config["reuse_parent_dir"]).is_absolute()
+        ):
+            raise ValueError("复用父模型目录必须是绝对路径。")
+        if set(config["fold_model_sha256"]) != {"0", "1", "2"}:
+            raise ValueError("复用fold SHA必须包含0/1/2。")
     if set(config["inputs"]) != set(INPUT_KEYS) or set(config["expected_sha256"]) != set(INPUT_KEYS):
         raise ValueError("class-exclusive输入或SHA字段不完整。")
     return config, sha256_file(path)
@@ -226,20 +252,29 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             max_generator_magnitude=float(config["max_generator_magnitude"]),
         ).to(device)
         generator = torch.Generator(device="cpu").manual_seed(seed)
-        set_trainable_stage(model, "TG_ONLY")
-        optimizer = torch.optim.Adam(
-            (parameter for parameter in model.parameters() if parameter.requires_grad),
-            lr=float(config["main_tg_lr"]), weight_decay=float(config["weight_decay"]),
-        )
-        print(f"full_tg_pretrain steps={config['main_tg_steps']}")
-        for iteration in range(int(config["main_tg_steps"])):
-            indices = random_batch_indices(train_labels.numel(), int(config["batch_size"]), generator)
-            images = train_features.index_select(0, indices).to(device).float()
-            targets = global_to_seen[train_labels.index_select(0, indices)].to(device)
-            optimizer.zero_grad(set_to_none=True)
-            loss = F.cross_entropy(model.logits(images, seenclasses), targets) + float(config["topology_weight"]) * model.topology_loss()
-            loss.backward(); require_finite_gradients(model); optimizer.step()
-        full_tg_state = copy.deepcopy(model.tg_vpr.state_dict())
+        reuse_dir = Path(config["reuse_parent_dir"]) if config["reuse_parent_dir"] else None
+        if reuse_dir is None:
+            set_trainable_stage(model, "TG_ONLY")
+            optimizer = torch.optim.Adam(
+                (parameter for parameter in model.parameters() if parameter.requires_grad),
+                lr=float(config["main_tg_lr"]), weight_decay=float(config["weight_decay"]),
+            )
+            print(f"full_tg_pretrain steps={config['main_tg_steps']}")
+            for iteration in range(int(config["main_tg_steps"])):
+                indices = random_batch_indices(train_labels.numel(), int(config["batch_size"]), generator)
+                images = train_features.index_select(0, indices).to(device).float()
+                targets = global_to_seen[train_labels.index_select(0, indices)].to(device)
+                optimizer.zero_grad(set_to_none=True)
+                loss = F.cross_entropy(model.logits(images, seenclasses), targets) + float(config["topology_weight"]) * model.topology_loss()
+                loss.backward(); require_finite_gradients(model); optimizer.step()
+            full_tg_state = copy.deepcopy(model.tg_vpr.state_dict())
+        else:
+            source = reuse_dir / "full_tg_parent.pth"
+            if sha256_file(source) != config["full_tg_parent_sha256"]:
+                raise ValueError("复用full TG父模型SHA不匹配。")
+            full_tg_state = torch.load(source, map_location="cpu", weights_only=False)["state_dict"]
+            model.tg_vpr.load_state_dict(full_tg_state, strict=True)
+            print(f"full_tg_reused_from={source}")
         atomic_torch_save(output_dir / "full_tg_parent.pth", {"state_dict": full_tg_state})
 
         folds = fixed_class_folds(seenclasses)
@@ -257,22 +292,31 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 dropout=float(config["dropout"]), inner_ratio=float(config["inner_ratio"]),
                 outer_ratio=float(config["outer_ratio"]), temperature=float(config["temperature"]),
             ).to(device)
-            fold_optimizer = torch.optim.Adam(
-                fold_model.parameters(), lr=float(config["fold_tg_lr"]),
-                weight_decay=float(config["weight_decay"]),
-            )
-            fold_mapping = torch.full((200,), -1, dtype=torch.long)
-            fold_mapping[pseudo_seen] = torch.arange(100)
-            fold_generator = torch.Generator(device="cpu").manual_seed(seed * 100 + fold_id)
             fold_steps = fold_positions.numel() * int(config["fold_tg_epochs"]) // int(config["batch_size"])
-            for _ in range(fold_steps):
-                relative = random_batch_indices(fold_positions.numel(), int(config["batch_size"]), fold_generator)
-                positions = fold_positions.index_select(0, relative)
-                images = train_features.index_select(0, positions).to(device).float()
-                targets = fold_mapping[train_labels.index_select(0, positions)].to(device)
-                fold_optimizer.zero_grad(set_to_none=True)
-                fold_loss = F.cross_entropy(fold_model.logits(images, pseudo_seen), targets) + float(config["topology_weight"]) * fold_model.topology_loss()
-                fold_loss.backward(); require_finite_gradients(fold_model); fold_optimizer.step()
+            if reuse_dir is None:
+                fold_optimizer = torch.optim.Adam(
+                    fold_model.parameters(), lr=float(config["fold_tg_lr"]),
+                    weight_decay=float(config["weight_decay"]),
+                )
+                fold_mapping = torch.full((200,), -1, dtype=torch.long)
+                fold_mapping[pseudo_seen] = torch.arange(100)
+                fold_generator = torch.Generator(device="cpu").manual_seed(seed * 100 + fold_id)
+                for _ in range(fold_steps):
+                    relative = random_batch_indices(fold_positions.numel(), int(config["batch_size"]), fold_generator)
+                    positions = fold_positions.index_select(0, relative)
+                    images = train_features.index_select(0, positions).to(device).float()
+                    targets = fold_mapping[train_labels.index_select(0, positions)].to(device)
+                    fold_optimizer.zero_grad(set_to_none=True)
+                    fold_loss = F.cross_entropy(fold_model.logits(images, pseudo_seen), targets) + float(config["topology_weight"]) * fold_model.topology_loss()
+                    fold_loss.backward(); require_finite_gradients(fold_model); fold_optimizer.step()
+            else:
+                source = reuse_dir / f"fold_{fold_id}.pth"
+                if sha256_file(source) != config["fold_model_sha256"][str(fold_id)]:
+                    raise ValueError(f"复用fold {fold_id} SHA不匹配。")
+                payload = torch.load(source, map_location="cpu", weights_only=False)
+                if not torch.equal(payload["pseudo_seen"], pseudo_seen) or not torch.equal(payload["pseudo_unseen"], pseudo_unseen):
+                    raise ValueError(f"复用fold {fold_id}类别身份不匹配。")
+                fold_model.load_state_dict(payload["state_dict"], strict=True)
             fold_model.eval()
             for parameter in fold_model.parameters():
                 parameter.requires_grad_(False)
@@ -289,7 +333,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             )
             fold_model_shas[str(fold_id)] = sha256_file(target)
             fold_models.append(fold_model)
-            print(f"fold={fold_id} trained_classes=100 heldout_classes=50 steps={fold_steps}")
+            print(f"fold={fold_id} trained_classes=100 heldout_classes=50 steps={fold_steps} reused={reuse_dir is not None}")
 
         model.tg_vpr.load_state_dict(full_tg_state, strict=True)
         set_trainable_stage(model, "TRANSFER_CCGR")

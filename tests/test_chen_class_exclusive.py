@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import unittest
 
 import torch
@@ -53,6 +53,16 @@ class ChenClassExclusiveTest(unittest.TestCase):
         fold_section = source[fold_start:fold_end]
         self.assertNotIn("evaluate", fold_section)
         self.assertIn("prototype_stages_from_tg", source)
+
+    def test_reuse_config_binds_parent_artifacts_and_only_changes_transport_cap(self):
+        root = ROOT / "experiments/v2/confirmation/CONFIRM-007_chen_class_exclusive/configs"
+        parent, _ = load_config(root / "RUN-001.yaml")
+        rescue, _ = load_config(root / "RUN-002.yaml")
+        self.assertEqual(parent["max_transport_step"], 0.5)
+        self.assertEqual(rescue["max_transport_step"], 1.5)
+        self.assertTrue(PurePosixPath(rescue["reuse_parent_dir"]).is_absolute())
+        self.assertEqual(set(rescue["fold_model_sha256"]), {"0", "1", "2"})
+        self.assertIsNone(parent["reuse_parent_dir"])
 
 
 if __name__ == "__main__":
