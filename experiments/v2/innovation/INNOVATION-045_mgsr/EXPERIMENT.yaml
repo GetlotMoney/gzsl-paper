@@ -16,3 +16,8 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-045_mgsr/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-045_mgsr/RUN-001
     status: completed_retained_saturated_signal
+  - run_id: RUN-002
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-045_mgsr/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-045_mgsr/RUN-002
+    status: planned

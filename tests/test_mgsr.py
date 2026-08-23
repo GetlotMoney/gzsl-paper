@@ -45,6 +45,13 @@ class MGSRTest(unittest.TestCase):
         )
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_rescue_config_only_tightens_residual_limit(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-045_mgsr/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["max_logit_residual"], 0.1)
+        self.assertEqual(config["random_seed"], 5)
+
 
 if __name__ == "__main__":
     unittest.main()

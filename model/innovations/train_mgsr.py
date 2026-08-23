@@ -73,7 +73,7 @@ def load_config(path: Path):
     if config["text_cache_provenance_complete"] is not False:
         raise ValueError("MGSR文本cache provenance未完整。")
     if (
-        float(config["max_logit_residual"]) != 0.25
+        float(config["max_logit_residual"]) not in (0.25, 0.1)
         or float(config["kl_weight"]) != 0.01
         or int(config["batch_size"]) != 50
         or int(config["epochs"]) != 200
