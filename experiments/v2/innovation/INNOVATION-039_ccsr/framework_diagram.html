@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-039 CCSR</title></head>
 <body>
 <h1>CCSR：类别条件保守句子路由</h1>
-<p><strong>Base commit：</strong>abd371fde89ca3cda1bf32181e7d26ce075a0a0a；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>abd371fde89ca3cda1bf32181e7d26ce075a0a0a；<strong>RUN-001 code commit：</strong>d0484c4bc60f4b0dcab1e0ebb2e77dd925904530。</p>
 <h2>固定CASR父权重</h2><p>从CASR seed7正式best加载8个全局句权重与OESR beta，全部冻结。</p>
 <h2>类别条件微调</h2>
 <pre>u_cr = standardized(1 - cos(sentence_cr, class_name_c))

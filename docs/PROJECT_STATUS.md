@@ -304,6 +304,8 @@ CASR的KL=0.1条件过度接近等权；降到0.01后seed7达到`U/S/H/ZS=76.849
 
 CASR seed5达到`U/S/H/ZS=76.781464/79.831320/78.276696/83.987868%`，与seed7 H只差`0.009023`；两条链权重min均远高于0.01且均超过父模型。CASR两seed可靠成立，当前正式最高按owner规则取seed7 `H=78.285719%`。
 
+CCSR固定CASR后按句子-类名独立度学习类别差异，所有非零delta均降低H，best严格退回CASR。IDEA-073拒绝；下一方向改为图像条件的保守句子路由，而非类别固定权重。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
