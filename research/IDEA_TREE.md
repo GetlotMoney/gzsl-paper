@@ -126,7 +126,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-100 / E-GPES适度扩展硬pair选择器（低于GWPS）
       ├─ rejected_branch：IDEA-101 / NPS非线性成对证据选择器（复杂化无收益）
       ├─ rejected_branch：IDEA-102 / T-GWPS纯文本pair选择器（低于AGCT，保留patch-free对照）
-      ├─ testing_branch：IDEA-103 / S-GWPS四语义特征pair选择器（testing，patch-free）
+      ├─ supported_candidate：IDEA-103 / S-GWPS四语义特征pair选择器（两seed成立，patch-free最高H=78.368367）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

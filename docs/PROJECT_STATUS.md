@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 185
+completed_try_count: 186
 minimum_required_try_count: 50
 ```
 
@@ -397,6 +397,8 @@ T-GWPS首次RUN因schema漏入hard-pair分支而标记invalid；正确4041-pair 
 `PATCH_CACHE_PROVENANCE_AUDIT_001`确认当前项目没有patch生成脚本或原图挂载，无法证明具体CLIP checkpoint与预处理。GWPS继续保持`feature_provenance_complete=false`；下一patch-free候选在T-GWPS三特征上增加短类名差值，不再猜测patch来源。
 
 S-GWPS在patch-free T-GWPS上增加短类名差值，seed5达到`U/S/H/ZS=76.747000/80.059719/78.368367/83.953977%`，比patch-free AGCT提高H `0.011143`。追加seed7验证后决定supported状态。当前累计185组。
+
+S-GWPS seed7达到`U/S/H/ZS=76.713103/80.059719/78.350691/83.920079%`，相对同seed SDCR父条件提高H `0.047835`。seed5/7均为正提升，S-GWPS晋级为两seed支持的patch-free辅助候选；按owner口径最高取seed5 `H=78.368367%`。绝对最高仍为patch依赖且provenance不完整的GWPS seed7 `H=78.414246%`。当前累计186组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

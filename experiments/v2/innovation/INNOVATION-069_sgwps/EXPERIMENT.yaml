@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Semantic Gate-Weighted Pair Selector
 base_commit: a4a1f3d0852c8866fdc35f89e02773ec809bdca7
 code_commit: b4af5f3cceb0c843c667bf6a619928ce535b8c07
-status: testing_seed7_reliability
+status: supported_two_seed_patch_free
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -17,7 +17,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-069_sgwps/RUN-001
     status: completed_weak_positive
   - run_id: RUN-002
-    code_commit: null
+    code_commit: ea48fc1bca60cdb2d5e8d83239dbe907f6243249
     config_ref: experiments/v2/innovation/INNOVATION-069_sgwps/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-069_sgwps/RUN-002
-    status: planned
+    status: completed_positive
