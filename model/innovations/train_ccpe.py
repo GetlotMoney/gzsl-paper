@@ -61,6 +61,7 @@ def load_config(path: Path):
     top_k_by_schema = {
         "gzsl-paper.ccpe.v1": 8,
         "gzsl-paper.ccpe.v2": 4,
+        "gzsl-paper.ccpe.v3": 2,
     }
     if (
         config["schema_version"] not in top_k_by_schema

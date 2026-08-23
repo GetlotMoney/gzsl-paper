@@ -50,6 +50,13 @@ class CCPETest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.ccpe.v2")
         self.assertEqual(config["patch_top_k"], 4)
 
+    def test_top2_rescue_config_is_accepted(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-015_ccpe/configs/RUN-003.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.ccpe.v3")
+        self.assertEqual(config["patch_top_k"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()
