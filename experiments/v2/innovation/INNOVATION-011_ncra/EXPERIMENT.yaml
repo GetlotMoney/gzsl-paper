@@ -4,8 +4,8 @@ idea_id: IDEA-045
 framework_id: FRAMEWORK-V2
 title: Name-Conditioned Residual Alignment
 base_commit: fab936a65fe0e8d066909bf82752517f44a41f8e
-code_commit: null
-status: rescue2_beta20_planned
+code_commit: 2564d42ed5ce7b1dbe48b7a7f46a647097e8df42
+status: supported_target_passed
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -22,7 +22,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-011_ncra/RUN-002
     status: completed
   - run_id: RUN-003
-    code_commit: null
+    code_commit: 2564d42ed5ce7b1dbe48b7a7f46a647097e8df42
     config_ref: experiments/v2/innovation/INNOVATION-011_ncra/configs/RUN-003.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-011_ncra/RUN-003
-    status: planned
+    status: completed

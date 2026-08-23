@@ -240,6 +240,8 @@ HGCS的pseudo-unseen episode补救仍学到强正beta并降低H，seen CE与epis
 
 TG-VPR新颖性审计进一步加入PAPER-009/010：结构化、对比式LLM视觉描述及用细粒度图像适配VLM均有先例；TG-VPR只保留固定三角色共享Value重参数化与topology约束的组合claim。
 
+Chen-style无专家路线新增NCRA类名残差：冻结最佳分阶段父模型，只用seen训练图像学习一个有界beta，并由整次RUN的official H选一个全局最佳权重。RUN-003达到`U/S/H/ZS=75.131226/79.388309/77.201125/83.028460%`，相对父模型H提高`1.194277`，正式超过`77.023182%`目标；该结果明确`test_used_for_selection=true`，不作blind-test声明。NCRA暂列supported辅助分支，相关工作检索前不宣称原创核心创新。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
