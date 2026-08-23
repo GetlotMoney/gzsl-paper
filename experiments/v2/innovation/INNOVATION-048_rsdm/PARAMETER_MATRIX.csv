@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,weight_mean,weight_std,weight_min,weight_max,test_used_for_selection,output_uri,decision
+RUN-001,,experiments/v2/innovation/INNOVATION-048_rsdm/configs/RUN-001.yaml,d5c4eba0503ee73de8dfd28c875ac6b014796c63af6e66baffafa8e86cf3c186,5,planned,,,,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-048_rsdm/RUN-001,pending
