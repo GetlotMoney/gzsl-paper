@@ -102,6 +102,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-076 / SDCC句子dropout一致性蒸馏（rejected，过度约束）
       ├─ rejected_branch：IDEA-077 / WSDR二选一最坏句子dropout（rejected，低于SDCR）
       ├─ rejected_branch：IDEA-078 / IADR重要句优先dropout路由（rejected，低于SDCR）
+      ├─ testing_branch：IDEA-079 / MGSR多几何类别句子路由（testing，纯文本跨类规则）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）
