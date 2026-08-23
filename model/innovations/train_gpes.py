@@ -90,6 +90,23 @@ def class_balanced_pair_weights(
     return combined, class_weights
 
 
+def minimal_flip_delta_targets(
+    pair_logits: torch.Tensor,
+    pair_targets: torch.Tensor,
+    max_delta: float,
+) -> torch.Tensor:
+    """正确top1目标为0；错误top2目标为刚好消除当前pair margin。"""
+    if pair_logits.ndim != 2 or pair_logits.shape[1] != 2:
+        raise ValueError("minimal flip pair_logits必须是[N,2]。")
+    if tuple(pair_targets.shape) != (pair_logits.shape[0],):
+        raise ValueError("minimal flip pair_targets必须是[N]。")
+    margin = pair_logits[:, 0] - pair_logits[:, 1]
+    targets = torch.where(
+        pair_targets.long().eq(1), -0.5 * margin, torch.zeros_like(margin)
+    )
+    return targets.clamp(min=-float(max_delta), max=float(max_delta))
+
+
 def hard_margin_only_for_schema(schema: str) -> bool:
     return schema not in (
         "gzsl-paper.gwps.v1",
@@ -105,6 +122,7 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.rsnps.v1",
         "gzsl-paper.tcps.v1",
         "gzsl-paper.pdrs.v1",
+        "gzsl-paper.etpc.v1",
     )
 
 
@@ -137,6 +155,14 @@ def load_config(path: Path):
                 "patch_top_k", "patch_chunk_size",
             }
         ) | {"pair_training_scope", "semantic_neighbor_k", "pair_role_weighting"}
+    elif schema == "gzsl-paper.etpc.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {"pair_training_scope", "semantic_neighbor_k", "training_objective"}
     elif schema == "gzsl-paper.snps.v1":
         expected_keys = (
             CONFIG_KEYS
@@ -187,6 +213,7 @@ def load_config(path: Path):
         "gzsl-paper.rsnps.v1": ("V2-INNOVATION-074", "IDEA-108"),
         "gzsl-paper.tcps.v1": ("V2-INNOVATION-075", "IDEA-109"),
         "gzsl-paper.pdrs.v1": ("V2-INNOVATION-076", "IDEA-110"),
+        "gzsl-paper.etpc.v1": ("V2-INNOVATION-077", "IDEA-111"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -208,6 +235,7 @@ def load_config(path: Path):
             "gzsl-paper.rsnps.v1",
             "gzsl-paper.tcps.v1",
             "gzsl-paper.pdrs.v1",
+            "gzsl-paper.etpc.v1",
         )
         and config["feature_provenance_complete"] is not False
     ) or config["text_cache_provenance_complete"] is not False:
@@ -222,6 +250,7 @@ def load_config(path: Path):
                 "gzsl-paper.rsnps.v1",
                 "gzsl-paper.tcps.v1",
                 "gzsl-paper.pdrs.v1",
+                "gzsl-paper.etpc.v1",
             )
             and (
                 int(config["patch_top_k"]) != 2
@@ -236,6 +265,7 @@ def load_config(path: Path):
                 "gzsl-paper.rsnps.v1",
                 "gzsl-paper.tcps.v1",
                 "gzsl-paper.pdrs.v1",
+                "gzsl-paper.etpc.v1",
             )
             else "train_wrong_same_group_margin"
         )
@@ -280,6 +310,10 @@ def load_config(path: Path):
         "pair_training_scope"
     ] != "suffix_or_semantic_top3_soft_gate":
         raise ValueError("PDRS必须使用稳定语义top3 soft gate。")
+    if schema == "gzsl-paper.etpc.v1" and config[
+        "pair_training_scope"
+    ] != "suffix_or_semantic_top3_soft_gate":
+        raise ValueError("ETPC必须使用稳定语义top3 soft gate。")
     if schema == "gzsl-paper.bgwps.v1" and config[
         "pair_class_balance"
     ] != "inverse_frequency":
@@ -316,6 +350,10 @@ def load_config(path: Path):
         "semantic_neighbor_k"
     ]) != 3:
         raise ValueError("PDRS semantic_neighbor_k必须为3。")
+    if schema == "gzsl-paper.etpc.v1" and int(config[
+        "semantic_neighbor_k"
+    ]) != 3:
+        raise ValueError("ETPC semantic_neighbor_k必须为3。")
     if schema == "gzsl-paper.msnps.v1" and config[
         "semantic_neighbor_rule"
     ] != "mutual_top5":
@@ -332,6 +370,10 @@ def load_config(path: Path):
         "pair_role_weighting"
     ] != "cosine_distance_mean1":
         raise ValueError("PDRS必须使用cosine_distance_mean1。")
+    if schema == "gzsl-paper.etpc.v1" and config[
+        "training_objective"
+    ] != "minimal_flip_regression":
+        raise ValueError("ETPC必须使用minimal_flip_regression。")
     return config, sha256_file(path)
 
 
@@ -562,6 +604,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         "gzsl-paper.rsnps.v1",
         "gzsl-paper.tcps.v1",
         "gzsl-paper.pdrs.v1",
+        "gzsl-paper.etpc.v1",
     )
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
@@ -651,6 +694,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.rsnps.v1",
             "gzsl-paper.tcps.v1",
             "gzsl-paper.pdrs.v1",
+            "gzsl-paper.etpc.v1",
         ):
             if config["schema_version"] == "gzsl-paper.rsnps.v1":
                 semantic_confidence = reciprocal_neighbor_confidence(
@@ -756,6 +800,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.rsnps.v1",
                         "gzsl-paper.tcps.v1",
                         "gzsl-paper.pdrs.v1",
+                        "gzsl-paper.etpc.v1",
                     )
                     else None
                 ),
@@ -768,6 +813,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.rsnps.v1",
                         "gzsl-paper.tcps.v1",
                         "gzsl-paper.pdrs.v1",
+                        "gzsl-paper.etpc.v1",
                     )
                     else None
                 ),
@@ -778,6 +824,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.rsnps.v1",
                         "gzsl-paper.tcps.v1",
                         "gzsl-paper.pdrs.v1",
+                        "gzsl-paper.etpc.v1",
                     )
                 ),
                 pair_adjacency=semantic_adjacency,
@@ -867,6 +914,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = TriadicCompetitionPairSelector
         elif config["schema_version"] == "gzsl-paper.pdrs.v1":
             model_class = PairDiscriminativeRoleSelector
+        elif config["schema_version"] == "gzsl-paper.etpc.v1":
+            model_class = SemanticNeighborPairSelector
         else:
             model_class = GatedPairEvidenceSelector
         model_kwargs = {
@@ -890,6 +939,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.rsnps.v1",
             "gzsl-paper.tcps.v1",
             "gzsl-paper.pdrs.v1",
+            "gzsl-paper.etpc.v1",
         ):
             model_kwargs["class_name_prototypes"] = names_n
         if config["schema_version"] in (
@@ -899,12 +949,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.rsnps.v1",
             "gzsl-paper.tcps.v1",
             "gzsl-paper.pdrs.v1",
+            "gzsl-paper.etpc.v1",
         ):
             model_kwargs["role_sentence_prototypes"] = sentence8
         if config["schema_version"] in (
             "gzsl-paper.snps.v1", "gzsl-paper.msnps.v1",
             "gzsl-paper.tcps.v1",
             "gzsl-paper.pdrs.v1",
+            "gzsl-paper.etpc.v1",
         ):
             model_kwargs["semantic_adjacency"] = semantic_adjacency
         if config["schema_version"] == "gzsl-paper.rsnps.v1":
@@ -944,15 +996,26 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             batch = random_batch_indices(
                 pair_targets.numel(), int(config["batch_size"]), generator
             )
+            batch_pair_logits = pair_logits.index_select(0, batch).to(device)
+            batch_pair_targets = pair_targets.index_select(0, batch).to(device)
             corrected = model.corrected_pair_logits(
-                pair_logits.index_select(0, batch).to(device),
+                batch_pair_logits,
                 pair_features.index_select(0, batch).to(device),
             )
-            per_pair_loss = F.cross_entropy(
-                corrected,
-                pair_targets.index_select(0, batch).to(device),
-                reduction="none",
-            )
+            if config["schema_version"] == "gzsl-paper.etpc.v1":
+                target_delta = minimal_flip_delta_targets(
+                    batch_pair_logits,
+                    batch_pair_targets,
+                    float(config["max_delta"]),
+                )
+                applied_delta = corrected[:, 0] - batch_pair_logits[:, 0]
+                per_pair_loss = (applied_delta - target_delta).square()
+            else:
+                per_pair_loss = F.cross_entropy(
+                    corrected,
+                    batch_pair_targets,
+                    reduction="none",
+                )
             batch_weights = pair_weights.index_select(0, batch).to(device)
             loss = (per_pair_loss * batch_weights).sum() / batch_weights.sum().clamp_min(1e-8)
             optimizer.zero_grad(set_to_none=True)

@@ -23,6 +23,7 @@ from model.innovations.train_gpes import (
     extract_pair_examples,
     hard_margin_only_for_schema,
     load_config,
+    minimal_flip_delta_targets,
 )
 
 
@@ -444,6 +445,21 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.pdrs.v1")
         self.assertEqual(config["semantic_neighbor_k"], 3)
         self.assertEqual(config["pair_role_weighting"], "cosine_distance_mean1")
+
+    def test_minimal_flip_targets_leave_correct_pairs_unchanged(self):
+        logits = torch.tensor([[2.0, 1.0], [0.4, 0.2], [3.0, 0.0]])
+        targets = minimal_flip_delta_targets(
+            logits, torch.tensor([0, 1, 1]), max_delta=0.5
+        )
+        self.assertTrue(torch.equal(targets, torch.tensor([0.0, -0.1, -0.5])))
+
+    def test_etpc_config_binds_minimal_flip_regression(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-077_etpc/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.etpc.v1")
+        self.assertEqual(config["training_objective"], "minimal_flip_regression")
+        self.assertEqual(config["semantic_neighbor_k"], 3)
 
 
 if __name__ == "__main__":

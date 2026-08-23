@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-077 ETPC</title></head>
+<body>
+<h1>ETPC：错误定向成对修正</h1>
+<p><strong>Base commit：</strong>bb0c17f63e2a15a9ea72b532b7dd04de93fe62f7；<strong>RUN-001 code commit：</strong>pre-run后绑定。</p>
+<pre>稳定SNPS top-3关系图 + 12维中心化角色特征
+
+若真实类已是top1：target delta = 0
+若真实类是top2：target delta = clamp(-margin/2, -0.5, 0.5)
+
+MSE(applied delta, target delta)
+→ 只学习刚好消除错误margin的最小修正
+→ 不继续强化已经正确的top1
+→ 200-way U/S/H；50-way ZS</pre>
+<p>相对稳定SNPS唯一变化是训练loss：从二分类CE改为最小翻转回归。训练仍只使用seen图像，unseen图像不进入梯度；official test按陈式协议选最高H。</p>
+</body></html>

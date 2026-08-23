@@ -134,6 +134,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-108 / R-SNPS互惠加权语义近邻选择器（跨seed不能替代top-3）
       ├─ rejected_branch：IDEA-109 / TCPS三元竞争pair选择器（第三类上下文跨seed无效）
       ├─ rejected_branch：IDEA-110 / PDRS类别对判别角色选择器（角色距离过度放大，无增益）
+      ├─ testing_branch：IDEA-111 / ETPC错误定向成对修正（planned，只修错误pair）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）
