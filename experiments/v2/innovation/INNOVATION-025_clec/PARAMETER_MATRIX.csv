@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,fixed_clre_beta,fixed_ccpe_beta,patch_scale,test_used_for_selection,output_uri,decision
+RUN-001,,experiments/v2/innovation/INNOVATION-025_clec/configs/RUN-001.yaml,f1d8c7d7bc0fd698dfe8861e486b75de90bad1288a3b10142d5bb21746df0472,5,planned,,,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-025_clec/RUN-001,pending
