@@ -286,6 +286,8 @@ OCLR seed7达到`U/S/H/ZS=77.127939/78.964353/78.035343/84.219629%`，与seed5�
 
 BOCR同时去除类名和TG父原型方向后最高H仅`77.629049%`，完整删除第二方向导致有效Claude语义损失。IDEA-066拒绝；下一方向从OCLR精确起步，只学习父方向的有界部分去除系数。
 
+PBOR从OCLR起步学习父方向部分去除，seen CE把系数推到`-1`边界但H降到约`77.740104%`，best严格退回lambda=0。IDEA-067拒绝并关闭父方向调整轴；下一方向固定OCLR语义，使用class-exclusive episode重校准seen竞争gamma。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
