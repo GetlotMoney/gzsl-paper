@@ -1,6 +1,6 @@
 # IDEA-106：Semantic Neighborhood Pair Selector
 
-status: revised
+status: supported
 problem: C-RGWPS只在类名最后词相同的类别间纠错；这一人工族群规则会遗漏名称不同但结构化描述和视觉属性相近的细粒度类别。
 hypothesis: 保留C-RGWPS的中心化角色证据，用固定SDCR文本原型top-5语义邻接扩展关系门控，可覆盖额外真实混淆并提高H。
 evidence_refs: IDEA-105两seed成立；SDCR_ERROR_AUDIT_001显示错误集中于细粒度邻近类别；类名suffix只是关系近似。
@@ -14,3 +14,5 @@ result: seed5/seed7 patch-free H=78.480710/78.386251，范围0.094459；均超�
 decision: 按owner口径保留seed5为当前最高成绩；语义近邻增量未在两seed同号，不晋级独立核心创新。
 rescue_2: RUN-003使用union top-3中间关系密度；只在seed5超过C-RGWPS后追加seed7。
 rescue_2_interim: seed5 H=78.466710、ZS=84.121209，超过C-RGWPS且ZS为三种图规则最高；追加seed7。
+rescue_2_result: union top-3 seed5/7 H=78.466710/78.446100，两seed均超过C-RGWPS和mutual top-5，自身范围0.020610。
+final_decision: union top-3固定为稳定结构；union top-5 seed5 H=78.480710保留为最高成绩。相关工作检索前不作论文核心原创claim。
