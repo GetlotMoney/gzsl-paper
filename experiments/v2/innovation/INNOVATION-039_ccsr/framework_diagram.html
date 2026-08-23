@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-039 CCSR</title></head>
+<body>
+<h1>CCSR：类别条件保守句子路由</h1>
+<p><strong>Base commit：</strong>abd371fde89ca3cda1bf32181e7d26ce075a0a0a；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<h2>固定CASR父权重</h2><p>从CASR seed7正式best加载8个全局句权重与OESR beta，全部冻结。</p>
+<h2>类别条件微调</h2>
+<pre>u_cr = standardized(1 - cos(sentence_cr, class_name_c))
+delta = 2 × tanh(raw_delta)
+w_cr = softmax(log(base_weight_r) + delta × u_cr)
+prototype_c = orthogonalize(sum_r w_cr sentence_cr, class_name_c)</pre>
+<p>delta=0时所有类别使用CASR原权重；只训练一个共享delta。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次更新，每141次official test选全局best。unseen文本允许使用、unseen图像不进入梯度；test_used_for_selection=true。</p>
+</body></html>
