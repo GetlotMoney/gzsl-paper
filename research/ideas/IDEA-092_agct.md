@@ -9,3 +9,4 @@ core_change: SDCR冻结；门槛仅由seen训练margin固定，Claude校正只�
 success_condition: H大于78.320510，U和S任一项下降不超过2个百分点，official gate均值大于0且beta不在边界。
 failure_condition: H不超过SDCR、beta退回0/饱和、gate近零或Claude在歧义样本仍给出错误排序。
 experiment: V2-INNOVATION-058
+interim_result: seed5 H=78.339523，相对SDCR +0.019013；gate非零且beta不饱和，但增益弱，追加seed7。
