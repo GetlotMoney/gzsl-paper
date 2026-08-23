@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>V2-INNOVATION-012 SDRS</title></head>
+<body>
+<h1>SDRS：语义分歧驱动的类名残差缩放</h1>
+<p><strong>Base commit：</strong>994ad823c425ed237a2956c1aa7057202a1e9673；<strong>RUN code commit：</strong>正式运行后由结果提交回填。</p>
+<h2>输入与冻结父路径</h2>
+<p>768维CLIP图像cache → 冻结的TG-VPR/TST/CCGR父模型 → 200类父logits；同一图像与200个标准CLIP类名原型计算类名logits。NCRA父beta固定为17.151897。</p>
+<h2>唯一新增计算</h2>
+<p>每类先计算 d_c = 1 - cos(父原型_c, 类名原型_c)，再用150个seen类的均值和标准差归一化。唯一可训练参数为斜率δ：</p>
+<pre>beta_c = beta_NCRA + 5 × tanh(raw_slope) × normalized(d_c)
+final_logits_c = parent_logits_c + beta_c × class_name_logits_c</pre>
+<p>raw_slope零初始化，所以模块初始输出严格等于NCRA父模型；关闭模块时返回未加类名残差的冻结父logits。张量形状：图像[B,768]，父/类名原型[200,768]，最终logits[B,200]。</p>
+<h2>训练、loss与评估出口</h2>
+<p>只用7,057张seen训练图像的150类交叉熵更新raw_slope；冻结其余全部权重。unseen图像不进入梯度。Chen-style共28,228次随机batch更新，每141次更新评估official test；U/S/H在200类联合竞争，ZS在50个unseen类竞争，整次RUN仅按最高official H保存一个全局最佳权重。test_used_for_selection=true，不是blind-test。</p>
+</body>
+</html>
