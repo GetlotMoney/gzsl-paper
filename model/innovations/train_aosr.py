@@ -33,7 +33,7 @@ from tools.run_contract import (
 from tools.runtime import sha256_file
 
 EVALUATION_PROTOCOL = "chen_shiming_code_aligned_test_selected_gzsl"
-CONFIG_KEYS = {
+COMMON_CONFIG_KEYS = {
     "schema_version", "experiment_id", "idea_id", "framework_id", "dataset",
     "evaluation_protocol", "test_used_for_selection", "unseen_images_used_for_gradient",
     "strict_blind_claim", "text_cache_provenance_complete", "base_model",
@@ -50,15 +50,26 @@ def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    expected_keys = (
+        COMMON_CONFIG_KEYS | {"kl_weight"}
+        if schema == "gzsl-paper.casr.v1"
+        else COMMON_CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"AOSR配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"AOSR配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
+    identity_by_schema = {
+        "gzsl-paper.aosr.v1": ("V2-INNOVATION-037", "IDEA-071"),
+        "gzsl-paper.casr.v1": ("V2-INNOVATION-038", "IDEA-072"),
+    }
+    identity = identity_by_schema.get(config["schema_version"])
     if (
-        config["schema_version"] != "gzsl-paper.aosr.v1"
-        or config["experiment_id"] != "V2-INNOVATION-037"
-        or config["idea_id"] != "IDEA-071"
+        identity is None
+        or config["experiment_id"] != identity[0]
+        or config["idea_id"] != identity[1]
     ):
         raise ValueError("AOSR身份错误。")
     if (
@@ -80,6 +91,8 @@ def load_config(path: Path):
         or float(config["weight_decay"]) != 0.0
     ):
         raise ValueError("AOSR训练参数错误。")
+    if schema == "gzsl-paper.casr.v1" and float(config["kl_weight"]) != 0.1:
+        raise ValueError("CASR kl_weight必须为0.1。")
     return config, sha256_file(path)
 
 
@@ -203,7 +216,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             logits = sdrs(base, images, class_ids)
             logits = calibrator(logits, seen_mask)
             logits = model(logits, images, class_ids)
-            loss = F.cross_entropy(logits, targets)
+            ce_loss = F.cross_entropy(logits, targets)
+            if config["schema_version"] == "gzsl-paper.casr.v1":
+                weights = model.sentence_weights()
+                kl_loss = (weights * torch.log(weights * 8.0)).sum()
+                loss = ce_loss + float(config["kl_weight"]) * kl_loss
+            else:
+                kl_loss = ce_loss.new_zeros(())
+                loss = ce_loss
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
             require_finite_gradients(model)
@@ -219,6 +239,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     {
                         "iteration": iteration,
                         "loss": float(loss.detach()),
+                        "ce_loss": float(ce_loss.detach()),
+                        "kl_loss": float(kl_loss.detach()),
                         "official_metrics_percent": metrics,
                         "weight_stats": stats,
                     }

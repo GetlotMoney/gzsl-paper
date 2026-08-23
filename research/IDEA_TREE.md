@@ -95,6 +95,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-069 / ORMR GPT-5.6 role-matched正交残差（低于OCLR，保留正向对照）
       ├─ supported_candidate：IDEA-070 / OESR GPT-5.6八句正交残差（两seed，最高H=78.105812）
       ├─ supported_candidate：IDEA-071 / AOSR自适应八句正交残差（seed5有效H=78.210580；seed7塌缩）
+      ├─ testing_branch：IDEA-072 / CASR保守自适应句子路由（testing，KL防塌缩）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

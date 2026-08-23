@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-038
+idea_id: IDEA-072
+framework_id: FRAMEWORK-V2
+title: Conservative Adaptive Sentence Routing
+base_commit: bb5a6a8b5318a29c9fbef445859f6be391d6dc8f
+code_commit: null
+status: planned
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-038_casr/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-038_casr/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-038_casr/RUN-001
+    status: planned
