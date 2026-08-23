@@ -278,6 +278,8 @@ CACM类别权重最高仍为H `77.811876%`，mean/std=`0.990835/0.000207`，退�
 
 OCLR将Claude原型对类名方向正交化后达到`U/S/H/ZS=77.094042/79.075468/78.072185/84.185731%`，相对SEBC H提高`0.553803`、ZS提高`1.123947`，并超过MLRE成为当前无专家最高。IDEA-063为strong candidate；cache provenance和新颖性检索未完成前不作原创claim。
 
+OGLC叠加OCLR与CCPE后直接H仅`77.335657%`，协调后最高`77.533191%`，局部证据破坏OCLR的联合竞争平衡。IDEA-064拒绝；下一方向把类名正交化原则迁移到merge文本，检验其是否跨文本源成立。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

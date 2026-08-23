@@ -4,15 +4,15 @@ idea_id: IDEA-064
 framework_id: FRAMEWORK-V2
 title: Orthogonal Global-Local Composition
 base_commit: c1b4f164abb6a230099c9dde51ac2d942eba16a2
-code_commit: null
-status: planned
+code_commit: 83c419ba3fb1eeba6f121958b86d85fb3d28d7e2
+status: rejected_below_oclr
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-030_oglc/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 83c419ba3fb1eeba6f121958b86d85fb3d28d7e2
     config_ref: experiments/v2/innovation/INNOVATION-030_oglc/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-030_oglc/RUN-001
-    status: planned
+    status: completed

@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-030 OGLC</title></head>
 <body>
 <h1>OGLC：正交全局与局部证据组合</h1>
-<p><strong>Base commit：</strong>c1b4f164abb6a230099c9dde51ac2d942eba16a2；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>c1b4f164abb6a230099c9dde51ac2d942eba16a2；<strong>RUN-001 code commit：</strong>83c419ba3fb1eeba6f121958b86d85fb3d28d7e2。</p>
 <h2>冻结证据</h2><p>固定OCLR正交Claude全局分支(beta=11.875345)与CCPE局部patch分支(beta=9.177013)，共同建立在SEBC父logits上。</p>
 <h2>协调公式</h2>
 <pre>patch_scale = 1 + 0.25 × tanh(raw_scale)
