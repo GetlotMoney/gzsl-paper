@@ -16,6 +16,7 @@ from model.innovations.gpes import (
     NonlinearGatedPairSelector,
     PairDiscriminativeRoleSelector,
     ReciprocalSemanticNeighborPairSelector,
+    RoleDisagreementScaleSelector,
     RoleAwareGatedPairSelector,
     SemanticNeighborPairSelector,
     SemanticGatedPairSelector,
@@ -123,6 +124,7 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.tcps.v1",
         "gzsl-paper.pdrs.v1",
         "gzsl-paper.etpc.v1",
+        "gzsl-paper.rdss.v1",
     )
 
 
@@ -163,6 +165,14 @@ def load_config(path: Path):
                 "patch_top_k", "patch_chunk_size",
             }
         ) | {"pair_training_scope", "semantic_neighbor_k", "training_objective"}
+    elif schema == "gzsl-paper.rdss.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {"pair_training_scope", "semantic_neighbor_k", "context_feature"}
     elif schema == "gzsl-paper.snps.v1":
         expected_keys = (
             CONFIG_KEYS
@@ -214,6 +224,7 @@ def load_config(path: Path):
         "gzsl-paper.tcps.v1": ("V2-INNOVATION-075", "IDEA-109"),
         "gzsl-paper.pdrs.v1": ("V2-INNOVATION-076", "IDEA-110"),
         "gzsl-paper.etpc.v1": ("V2-INNOVATION-077", "IDEA-111"),
+        "gzsl-paper.rdss.v1": ("V2-INNOVATION-078", "IDEA-112"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -236,6 +247,7 @@ def load_config(path: Path):
             "gzsl-paper.tcps.v1",
             "gzsl-paper.pdrs.v1",
             "gzsl-paper.etpc.v1",
+            "gzsl-paper.rdss.v1",
         )
         and config["feature_provenance_complete"] is not False
     ) or config["text_cache_provenance_complete"] is not False:
@@ -251,6 +263,7 @@ def load_config(path: Path):
                 "gzsl-paper.tcps.v1",
                 "gzsl-paper.pdrs.v1",
                 "gzsl-paper.etpc.v1",
+                "gzsl-paper.rdss.v1",
             )
             and (
                 int(config["patch_top_k"]) != 2
@@ -266,6 +279,7 @@ def load_config(path: Path):
                 "gzsl-paper.tcps.v1",
                 "gzsl-paper.pdrs.v1",
                 "gzsl-paper.etpc.v1",
+                "gzsl-paper.rdss.v1",
             )
             else "train_wrong_same_group_margin"
         )
@@ -314,6 +328,10 @@ def load_config(path: Path):
         "pair_training_scope"
     ] != "suffix_or_semantic_top3_soft_gate":
         raise ValueError("ETPC必须使用稳定语义top3 soft gate。")
+    if schema == "gzsl-paper.rdss.v1" and config[
+        "pair_training_scope"
+    ] != "suffix_or_semantic_top3_soft_gate":
+        raise ValueError("RDSS必须使用稳定语义top3 soft gate。")
     if schema == "gzsl-paper.bgwps.v1" and config[
         "pair_class_balance"
     ] != "inverse_frequency":
@@ -354,6 +372,10 @@ def load_config(path: Path):
         "semantic_neighbor_k"
     ]) != 3:
         raise ValueError("ETPC semantic_neighbor_k必须为3。")
+    if schema == "gzsl-paper.rdss.v1" and int(config[
+        "semantic_neighbor_k"
+    ]) != 3:
+        raise ValueError("RDSS semantic_neighbor_k必须为3。")
     if schema == "gzsl-paper.msnps.v1" and config[
         "semantic_neighbor_rule"
     ] != "mutual_top5":
@@ -374,6 +396,10 @@ def load_config(path: Path):
         "training_objective"
     ] != "minimal_flip_regression":
         raise ValueError("ETPC必须使用minimal_flip_regression。")
+    if schema == "gzsl-paper.rdss.v1" and config[
+        "context_feature"
+    ] != "raw_role_difference_std":
+        raise ValueError("RDSS必须使用raw_role_difference_std。")
     return config, sha256_file(path)
 
 
@@ -396,6 +422,7 @@ def extract_pair_examples(
     pair_confidence: torch.Tensor | None = None,
     third_class_context: bool = False,
     pair_role_weighting: bool = False,
+    role_scale_context: bool = False,
 ):
     top = logits.topk(2, dim=1)
     global_ids = ids.index_select(0, top.indices.reshape(-1)).reshape_as(top.indices)
@@ -452,6 +479,7 @@ def extract_pair_examples(
             1, top.indices.unsqueeze(-1).expand(-1, -1, 8)
         )
         role_diffs = role_top2[:, 0] - role_top2[:, 1]
+        role_scale = role_diffs.std(dim=1, unbiased=False)
         if center_role_features:
             role_diffs = role_diffs - role_diffs.mean(dim=1, keepdim=True)
             role_diffs = role_diffs / role_diffs.std(
@@ -462,6 +490,8 @@ def extract_pair_examples(
                 role_prototypes, global_ids
             )
         values.extend(role_diffs.unbind(dim=1))
+        if role_scale_context:
+            values.append(role_scale)
     if patch_scores is not None:
         local_patch = patch_scores.to(logits.device).float()
         if local_patch.shape[1] == 200 and ids.numel() != 200:
@@ -605,6 +635,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         "gzsl-paper.tcps.v1",
         "gzsl-paper.pdrs.v1",
         "gzsl-paper.etpc.v1",
+        "gzsl-paper.rdss.v1",
     )
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
@@ -695,6 +726,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.tcps.v1",
             "gzsl-paper.pdrs.v1",
             "gzsl-paper.etpc.v1",
+            "gzsl-paper.rdss.v1",
         ):
             if config["schema_version"] == "gzsl-paper.rsnps.v1":
                 semantic_confidence = reciprocal_neighbor_confidence(
@@ -801,6 +833,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.tcps.v1",
                         "gzsl-paper.pdrs.v1",
                         "gzsl-paper.etpc.v1",
+                        "gzsl-paper.rdss.v1",
                     )
                     else None
                 ),
@@ -814,6 +847,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.tcps.v1",
                         "gzsl-paper.pdrs.v1",
                         "gzsl-paper.etpc.v1",
+                        "gzsl-paper.rdss.v1",
                     )
                     else None
                 ),
@@ -825,6 +859,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.tcps.v1",
                         "gzsl-paper.pdrs.v1",
                         "gzsl-paper.etpc.v1",
+                        "gzsl-paper.rdss.v1",
                     )
                 ),
                 pair_adjacency=semantic_adjacency,
@@ -834,6 +869,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 ),
                 pair_role_weighting=(
                     config["schema_version"] == "gzsl-paper.pdrs.v1"
+                ),
+                role_scale_context=(
+                    config["schema_version"] == "gzsl-paper.rdss.v1"
                 ),
             )
             pair_logits_list.append(package[0])
@@ -916,6 +954,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = PairDiscriminativeRoleSelector
         elif config["schema_version"] == "gzsl-paper.etpc.v1":
             model_class = SemanticNeighborPairSelector
+        elif config["schema_version"] == "gzsl-paper.rdss.v1":
+            model_class = RoleDisagreementScaleSelector
         else:
             model_class = GatedPairEvidenceSelector
         model_kwargs = {
@@ -940,6 +980,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.tcps.v1",
             "gzsl-paper.pdrs.v1",
             "gzsl-paper.etpc.v1",
+            "gzsl-paper.rdss.v1",
         ):
             model_kwargs["class_name_prototypes"] = names_n
         if config["schema_version"] in (
@@ -950,6 +991,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.tcps.v1",
             "gzsl-paper.pdrs.v1",
             "gzsl-paper.etpc.v1",
+            "gzsl-paper.rdss.v1",
         ):
             model_kwargs["role_sentence_prototypes"] = sentence8
         if config["schema_version"] in (
@@ -957,6 +999,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.tcps.v1",
             "gzsl-paper.pdrs.v1",
             "gzsl-paper.etpc.v1",
+            "gzsl-paper.rdss.v1",
         ):
             model_kwargs["semantic_adjacency"] = semantic_adjacency
         if config["schema_version"] == "gzsl-paper.rsnps.v1":

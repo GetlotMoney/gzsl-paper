@@ -9,6 +9,7 @@ from model.innovations.gpes import (
     NonlinearGatedPairSelector,
     PairDiscriminativeRoleSelector,
     ReciprocalSemanticNeighborPairSelector,
+    RoleDisagreementScaleSelector,
     RoleAwareGatedPairSelector,
     SemanticNeighborPairSelector,
     SemanticGatedPairSelector,
@@ -459,6 +460,31 @@ class GPESTest(unittest.TestCase):
         )
         self.assertEqual(config["schema_version"], "gzsl-paper.etpc.v1")
         self.assertEqual(config["training_objective"], "minimal_flip_regression")
+        self.assertEqual(config["semantic_neighbor_k"], 3)
+
+    def test_role_disagreement_scale_selector_adds_raw_std(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        model = RoleDisagreementScaleSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(13), torch.ones(13), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+        )
+        _, _, _, features = model._top2_context(
+            torch.randn(2, 200), torch.randn(2, 768), None, torch.arange(200)
+        )
+        self.assertEqual(tuple(features.shape), (2, 13))
+        self.assertTrue(bool((features[:, -1] >= 0).all()))
+
+    def test_rdss_config_binds_raw_role_scale(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-078_rdss/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.rdss.v1")
+        self.assertEqual(config["context_feature"], "raw_role_difference_std")
         self.assertEqual(config["semantic_neighbor_k"], 3)
 
 

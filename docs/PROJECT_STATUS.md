@@ -448,6 +448,8 @@ PDRS seed5达到`U/S/H/ZS=76.742035/80.151236/78.409596/83.981204%`，比稳定S
 
 ETPC seed5完整运行后best严格退回父模型`H=78.320510%`、selected iteration=`-1`。minimal-flip回归loss可以很小，但seen错误翻转方向不能迁移到unseen，IDEA-111拒绝且不追加seed7或loss幅度补救。当前累计201组。
 
+下一实验`V2-INNOVATION-078 / RDSS`固定稳定SNPS top-3图，在12维中心化角色输入后新增归一化前八角色差值标准差，恢复被单位方差处理丢弃的样本级角色分歧尺度。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
