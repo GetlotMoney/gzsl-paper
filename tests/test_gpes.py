@@ -154,6 +154,14 @@ class GPESTest(unittest.TestCase):
             config["pair_class_balance"], "sqrt_inverse_frequency"
         )
 
+    def test_egpes_config_separates_train_and_inference_quantiles(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-066_egpes/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.egpes.v1")
+        self.assertEqual(config["threshold_quantile"], 0.25)
+        self.assertEqual(config["pair_training_quantile"], 0.5)
+
 
 if __name__ == "__main__":
     unittest.main()

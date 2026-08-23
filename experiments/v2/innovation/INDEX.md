@@ -67,5 +67,6 @@
 | V2-INNOVATION-063 | IDEA-097 | GWPS soft-gate加权成对选择器 | supported two-seed（最高H=78.414246，patch provenance不完整） | `INNOVATION-063_gwps/` |
 | V2-INNOVATION-064 | IDEA-098 | B-GWPS类别平衡pair选择器 | rejected（逆频率过度补偿） | `INNOVATION-064_bgwps/` |
 | V2-INNOVATION-065 | IDEA-099 | M-BGWPS温和平衡pair选择器 | rejected（平方根平衡仍过强） | `INNOVATION-065_mbgwps/` |
+| V2-INNOVATION-066 | IDEA-100 | E-GPES适度扩展硬pair选择器 | planned（train 50分位，infer 25分位） | `INNOVATION-066_egpes/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

@@ -77,7 +77,9 @@ def load_config(path: Path):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    if schema in ("gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1"):
+    if schema == "gzsl-paper.egpes.v1":
+        expected_keys = CONFIG_KEYS | {"pair_training_quantile"}
+    elif schema in ("gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1"):
         expected_keys = CONFIG_KEYS | {"pair_training_scope", "pair_class_balance"}
     elif schema == "gzsl-paper.gwps.v1":
         expected_keys = CONFIG_KEYS | {"pair_training_scope"}
@@ -93,6 +95,7 @@ def load_config(path: Path):
         "gzsl-paper.gwps.v1": ("V2-INNOVATION-063", "IDEA-097"),
         "gzsl-paper.bgwps.v1": ("V2-INNOVATION-064", "IDEA-098"),
         "gzsl-paper.mbgwps.v1": ("V2-INNOVATION-065", "IDEA-099"),
+        "gzsl-paper.egpes.v1": ("V2-INNOVATION-066", "IDEA-100"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -140,6 +143,10 @@ def load_config(path: Path):
         "pair_class_balance"
     ] != "sqrt_inverse_frequency":
         raise ValueError("M-BGWPS必须使用平方根逆频率平衡。")
+    if schema == "gzsl-paper.egpes.v1" and float(config[
+        "pair_training_quantile"
+    ]) != 0.5:
+        raise ValueError("E-GPES训练pair门槛必须为50分位。")
     return config, sha256_file(path)
 
 
@@ -335,6 +342,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             parent, sdrs, calibrator, sdcr, features, labels,
             seen_classes, group_ids, device, float(config["threshold_quantile"])
         )
+        pair_training_threshold = threshold
+        pair_training_threshold_stats = threshold_stats
+        if config["schema_version"] == "gzsl-paper.egpes.v1":
+            pair_training_threshold, pair_training_threshold_stats = derive_train_threshold(
+                parent,
+                sdrs,
+                calibrator,
+                sdcr,
+                features,
+                labels,
+                seen_classes,
+                group_ids,
+                device,
+                float(config["pair_training_quantile"]),
+            )
         names_n = F.normalize(class_names_tensor.float(), dim=-1)
         claude_n = F.normalize(claude.float(), dim=-1)
         merge_n = F.normalize(merge.float(), dim=-1)
@@ -375,7 +397,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 group_ids,
                 claude_orth,
                 merge_orth,
-                threshold,
+                pair_training_threshold,
                 hard_margin_only=hard_margin_only,
                 margin_temperature=float(config["margin_temperature"]),
             )
@@ -387,6 +409,10 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         pair_features = torch.cat(feature_list)
         pair_targets = torch.cat(target_list)
         pair_weights = torch.cat(pair_weight_list)
+        if config["schema_version"] in (
+            "gzsl-paper.gpes.v1", "gzsl-paper.egpes.v1"
+        ):
+            pair_weights = torch.ones_like(pair_weights)
         pair_class_weights = torch.ones(2)
         if config["schema_version"] in (
             "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1"
@@ -414,6 +440,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "pair_class_weights": [
                 float(value) for value in pair_class_weights
             ],
+            "inference_threshold": float(threshold),
+            "training_threshold": float(pair_training_threshold),
+            "training_threshold_stats": pair_training_threshold_stats,
         }
         model = GatedPairEvidenceSelector(
             sdcr.prototypes(use_dropout=False).detach(),
