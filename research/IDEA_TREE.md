@@ -76,6 +76,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-050 / SCPE空间一致局部patch证据（rejected，多部位不要求相邻）
       ├─ rejected_branch：IDEA-051 / MPPE六局部部位独立patch证据（rejected，六路最大匹配累积噪声）
       ├─ rejected_branch：IDEA-052 / CNPE seen参考归一化patch证据（低于CCPE，保留互补信号）
+      ├─ testing_branch：IDEA-053 / DSPE绝对与相对双尺度patch证据（testing，联合两路正信号）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

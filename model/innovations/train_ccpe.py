@@ -11,6 +11,7 @@ import yaml
 
 from model.innovations.ccpe import (
     ClassConditionedPatchEvidence,
+    DualScalePatchEvidence,
     class_conditioned_patch_scores,
     multi_part_patch_scores,
     normalize_patch_scores_by_seen_reference,
@@ -59,10 +60,16 @@ def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    expected_keys = (
+        CONFIG_KEYS | {"normalized_max_beta"}
+        if isinstance(config, dict)
+        and config.get("schema_version") == "gzsl-paper.dspe.v1"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"CCPE配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"CCPE配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
     identity_by_schema = {
         "gzsl-paper.ccpe.v1": ("V2-INNOVATION-015", "IDEA-049", 8, 16, 10.0),
@@ -71,6 +78,7 @@ def load_config(path: Path):
         "gzsl-paper.scpe.v1": ("V2-INNOVATION-016", "IDEA-050", 2, 16, 10.0),
         "gzsl-paper.mppe.v1": ("V2-INNOVATION-017", "IDEA-051", 1, 4, 10.0),
         "gzsl-paper.cnpe.v1": ("V2-INNOVATION-018", "IDEA-052", 2, 16, 2.0),
+        "gzsl-paper.dspe.v1": ("V2-INNOVATION-019", "IDEA-053", 2, 16, 10.0),
     }
     identity = identity_by_schema.get(config.get("schema_version"))
     if (
@@ -108,6 +116,11 @@ def load_config(path: Path):
         or float(config["max_beta"]) != identity[4]
     ):
         raise ValueError("CCPE优化参数错误。")
+    if (
+        config["schema_version"] == "gzsl-paper.dspe.v1"
+        and float(config["normalized_max_beta"]) != 2.0
+    ):
+        raise ValueError("DSPE normalized_max_beta必须为2.0。")
     return config, sha256_file(path)
 
 
@@ -134,7 +147,13 @@ def _precompute_scores(config, text_prototypes, device):
                 chunk_size=int(config["patch_chunk_size"]),
             )
         del patches
-    if config["schema_version"] == "gzsl-paper.cnpe.v1":
+    if config["schema_version"] == "gzsl-paper.dspe.v1":
+        normalized, _, _ = normalize_patch_scores_by_seen_reference(scores)
+        scores = {
+            split: torch.cat((values, normalized[split]), dim=1)
+            for split, values in scores.items()
+        }
+    elif config["schema_version"] == "gzsl-paper.cnpe.v1":
         scores, _, _ = normalize_patch_scores_by_seen_reference(scores)
     return scores
 
@@ -241,15 +260,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         )
         print("precomputing class-conditioned patch scores")
         scores = _precompute_scores(config, text_residual, device)
-        if scores["train"].shape != (labels.shape[0], 200):
+        score_width = 400 if config["schema_version"] == "gzsl-paper.dspe.v1" else 200
+        if scores["train"].shape != (labels.shape[0], score_width):
             raise ValueError("CCPE train patch score形状错误。")
-        if scores["seen"].shape != (official["seen_labels"].shape[0], 200):
+        if scores["seen"].shape != (official["seen_labels"].shape[0], score_width):
             raise ValueError("CCPE test-seen patch score形状错误。")
-        if scores["unseen"].shape != (official["unseen_labels"].shape[0], 200):
+        if scores["unseen"].shape != (official["unseen_labels"].shape[0], score_width):
             raise ValueError("CCPE test-unseen patch score形状错误。")
 
-        model = ClassConditionedPatchEvidence(
-            max_beta=float(config["max_beta"])
+        model = (
+            DualScalePatchEvidence(
+                max_absolute_beta=float(config["max_beta"]),
+                max_normalized_beta=float(config["normalized_max_beta"]),
+            )
+            if config["schema_version"] == "gzsl-paper.dspe.v1"
+            else ClassConditionedPatchEvidence(max_beta=float(config["max_beta"]))
         ).to(device)
         optimizer = torch.optim.Adam(
             model.parameters(), lr=float(config["learning_rate"]), weight_decay=0.0
@@ -308,7 +333,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     parent, sdrs, calibrator, model, official, scores,
                     seen_classes, unseen_classes, device
                 )
-                beta = float(model.beta().detach())
+                beta = (
+                    {
+                        "absolute": float(model.absolute_beta().detach()),
+                        "normalized": float(model.normalized_beta().detach()),
+                    }
+                    if isinstance(model, DualScalePatchEvidence)
+                    else float(model.beta().detach())
+                )
                 history.append(
                     {
                         "iteration": iteration,
@@ -361,8 +393,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "class_name_embeddings": config["class_name_embeddings_sha256"],
             },
         )
-        best_beta = float(
-            torch.tanh(best_state["raw_beta"]) * float(config["max_beta"])
+        best_beta = (
+            {
+                "absolute": float(
+                    torch.tanh(best_state["raw_absolute_beta"])
+                    * float(config["max_beta"])
+                ),
+                "normalized": float(
+                    torch.tanh(best_state["raw_normalized_beta"])
+                    * float(config["normalized_max_beta"])
+                ),
+            }
+            if config["schema_version"] == "gzsl-paper.dspe.v1"
+            else float(
+                torch.tanh(best_state["raw_beta"]) * float(config["max_beta"])
+            )
         )
         metrics = {
             "experiment_id": config["experiment_id"],

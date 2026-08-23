@@ -131,3 +131,48 @@ class ClassConditionedPatchEvidence(nn.Module):
         if scores.shape != parent_logits.shape:
             raise ValueError("patch_scores与parent_logits形状不一致。")
         return parent_logits + self.beta() * scores
+
+
+class DualScalePatchEvidence(nn.Module):
+    """联合融合绝对top2证据与seen参考归一化证据。"""
+
+    def __init__(
+        self,
+        max_absolute_beta: float = 10.0,
+        max_normalized_beta: float = 2.0,
+    ) -> None:
+        super().__init__()
+        self.max_absolute_beta = float(max_absolute_beta)
+        self.max_normalized_beta = float(max_normalized_beta)
+        self.raw_absolute_beta = nn.Parameter(torch.zeros(()))
+        self.raw_normalized_beta = nn.Parameter(torch.zeros(()))
+
+    def absolute_beta(self) -> torch.Tensor:
+        return self.max_absolute_beta * torch.tanh(self.raw_absolute_beta)
+
+    def normalized_beta(self) -> torch.Tensor:
+        return self.max_normalized_beta * torch.tanh(self.raw_normalized_beta)
+
+    def forward(
+        self,
+        parent_logits: torch.Tensor,
+        patch_scores: torch.Tensor,
+        class_ids: torch.Tensor | None = None,
+        enabled: bool = True,
+    ) -> torch.Tensor:
+        if not enabled:
+            return parent_logits
+        if patch_scores.ndim != 2 or patch_scores.shape[1] != 400:
+            raise ValueError("双尺度patch_scores必须是[B,400]。")
+        absolute, normalized = patch_scores[:, :200], patch_scores[:, 200:]
+        if class_ids is not None and parent_logits.shape[1] != 200:
+            ids = class_ids.to(patch_scores.device)
+            absolute = absolute.index_select(1, ids)
+            normalized = normalized.index_select(1, ids)
+        if absolute.shape != parent_logits.shape or normalized.shape != parent_logits.shape:
+            raise ValueError("双尺度patch证据与父logits形状不一致。")
+        return (
+            parent_logits
+            + self.absolute_beta() * absolute
+            + self.normalized_beta() * normalized
+        )

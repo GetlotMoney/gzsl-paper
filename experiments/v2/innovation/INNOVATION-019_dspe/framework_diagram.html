@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-019 DSPE</title></head>
+<body>
+<h1>DSPE：绝对与相对双尺度patch证据</h1>
+<p><strong>Base commit：</strong>3462a34b2333dce828f12acb8c3303ee99cfa810；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<h2>父路径</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC，输出[B,200]父logits。DSPE从SEBC关闭态联合学习两路局部证据，不加载CCPE/CNPE权重。</p>
+<h2>双尺度证据</h2>
+<pre>absolute_ic = mean(top2_n cos(patch_in, local_text_c))
+mu_c,sigma_c = statistics over 7057 seen training images
+relative_ic = (absolute_ic - mu_c) / sigma_c
+final_logits = SEBC_logits + beta_abs × absolute + beta_rel × relative
+beta_abs = 10 × tanh(raw_abs)
+beta_rel = 2 × tanh(raw_rel)</pre>
+<p>absolute保留局部匹配强度，relative保留相对seen参考分布的异常度。两个参数均零初始化，关闭时严格复现SEBC。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新评估official test并保存一个全局最高H。真实unseen patch不进入梯度；test_used_for_selection=true。遗留CLIP patch准确checkpoint provenance仍不完整。</p>
+</body></html>
