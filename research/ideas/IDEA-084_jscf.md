@@ -10,3 +10,4 @@ core_change: 推理公式不变；把三个后级模块的10个参数放入同�
 success_condition: H大于78.320510，U和S任一项下降不超过2个百分点，句权重不塌缩，三个参数组均有梯度。
 failure_condition: H不超过SDCR、任一参数饱和或联合训练只改变U/S权衡。
 experiment: V2-INNOVATION-050
+interim_result: RUN-001 best退回父模型；SEBC gamma被seen CE持续推高并伤害H，进入冻结SEBC的9参数RESCUE-1。

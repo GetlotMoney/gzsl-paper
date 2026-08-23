@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 157
+completed_try_count: 158
 minimum_required_try_count: 50
 ```
 
@@ -335,6 +335,8 @@ NCSR降学习率到0.001后gamma振荡减弱，但所有非零条件仍低于父
 RSDM只对SDCR残差分支学习图像/文本共享对角度量；权重真实分化但所有非单位条件均降低H，best退回`H=78.320510%`与全1权重。IDEA-082拒绝，故障定位为单独改变残差分支破坏三原型分支尺度平衡。当前累计156组；下一实验只允许把同一度量施加到完整语义链。
 
 FSDM把同一对角度量扩展到TG主原型、SDRS类名和SDCR残差三路，但所有非单位条件仍降低H，best退回`H=78.320510%`和全1权重。RSDM/FSDM共同证明当前seen CE度量学习产生跨类域偏置，IDEA-083拒绝并关闭该方向。当前累计157组，最高可靠结果仍为SDCR seed5 `H=78.320510%`。
+
+JSCF联合微调SDRS、SEBC和SDCR共10个参数后，best退回`H=78.320510%`。SEBC gamma从`0.153261`持续升至约`0.1853`且H下降，定位为普通seen CE破坏episode竞争偏置；下一补救冻结SEBC，只协调其余9个参数。当前累计158组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

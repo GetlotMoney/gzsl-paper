@@ -51,6 +51,6 @@
 | V2-INNOVATION-047 | IDEA-081 | NCSR近邻对比语义残差 | rejected（两档学习率均退回父模型） | `INNOVATION-047_ncsr/` |
 | V2-INNOVATION-048 | IDEA-082 | RSDM残差对称对角度量 | rejected（只改残差分支破坏尺度平衡） | `INNOVATION-048_rsdm/` |
 | V2-INNOVATION-049 | IDEA-083 | FSDM完整语义链共享对角度量 | rejected（seen度量学习产生域偏置） | `INNOVATION-049_fsdm/` |
-| V2-INNOVATION-050 | IDEA-084 | JSCF联合语义协调微调 | planned（分阶段最终协调，无新推理模块） | `INNOVATION-050_jscf/` |
+| V2-INNOVATION-050 | IDEA-084 | JSCF联合语义协调微调 | testing（SEBC漂移，冻结后补救） | `INNOVATION-050_jscf/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
