@@ -276,6 +276,8 @@ ACLM全局凸混合最高H `77.811876%`低于MLRE，Claude权重`0.980989`退化
 
 CACM类别权重最高仍为H `77.811876%`，mean/std=`0.990835/0.000207`，退化为Claude常数端点。IDEA-062拒绝并关闭跨LLM混合轴；下一方向对Claude原型去除类名身份方向，只保留独立跨LLM残差。
 
+OCLR将Claude原型对类名方向正交化后达到`U/S/H/ZS=77.094042/79.075468/78.072185/84.185731%`，相对SEBC H提高`0.553803`、ZS提高`1.123947`，并超过MLRE成为当前无专家最高。IDEA-063为strong candidate；cache provenance和新颖性检索未完成前不作原创claim。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
