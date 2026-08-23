@@ -394,6 +394,8 @@ NPS把线性selector升级为4→8→1 MLP，参数真实更新且最高H=`78.41
 
 T-GWPS首次RUN因schema漏入hard-pair分支而标记invalid；正确4041-pair RERUN完全不读取patch并达到`H=78.352250%`，高于SDCR但略低于AGCT。IDEA-102拒绝并保留patch-free次级对照；patch差值是GWPS超越AGCT所需交互特征。当前累计184组。
 
+`PATCH_CACHE_PROVENANCE_AUDIT_001`确认当前项目没有patch生成脚本或原图挂载，无法证明具体CLIP checkpoint与预处理。GWPS继续保持`feature_provenance_complete=false`；下一patch-free候选在T-GWPS三特征上增加短类名差值，不再猜测patch来源。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
