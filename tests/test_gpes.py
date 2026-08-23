@@ -7,11 +7,13 @@ from model.innovations.gpes import (
     CenteredRoleGatedPairSelector,
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
+    ReciprocalSemanticNeighborPairSelector,
     RoleAwareGatedPairSelector,
     SemanticNeighborPairSelector,
     SemanticGatedPairSelector,
     TextOnlyGatedPairSelector,
     semantic_neighbor_adjacency,
+    reciprocal_neighbor_confidence,
 )
 from model.innovations.train_gpes import (
     class_balanced_pair_weights,
@@ -339,6 +341,42 @@ class GPESTest(unittest.TestCase):
         )
         self.assertEqual(config["schema_version"], "gzsl-paper.msnps.v1")
         self.assertEqual(config["semantic_neighbor_rule"], "mutual_top5")
+        self.assertNotIn("patch_inputs", config)
+
+    def test_reciprocal_neighbor_confidence_matches_union_graph(self):
+        prototypes = torch.randn(200, 32)
+        confidence = reciprocal_neighbor_confidence(prototypes, 5)
+        union = semantic_neighbor_adjacency(prototypes, 5)
+        self.assertTrue(torch.allclose(confidence, confidence.T))
+        self.assertTrue(torch.equal(confidence.gt(0), union))
+        self.assertTrue(set(confidence.unique().tolist()).issubset({0.0, 0.5, 1.0}))
+
+    def test_reciprocal_selector_disabled_returns_parent_chain(self):
+        groups = torch.arange(200) // 2
+        model = ReciprocalSemanticNeighborPairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(12), torch.ones(12), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_confidence=torch.zeros(200, 200),
+        )
+        images = torch.randn(2, 768)
+        parent = torch.randn(2, 200)
+        expected = parent + model.sdcr_beta * (
+            torch.nn.functional.normalize(images, dim=-1)
+            @ model.sdcr_prototypes.T
+        )
+        self.assertTrue(torch.equal(model(parent, images, None, enabled=False), expected))
+
+    def test_rsnps_config_uses_reciprocity_weighting(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-074_rsnps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.rsnps.v1")
+        self.assertEqual(
+            config["semantic_neighbor_rule"], "reciprocity_weighted_top5"
+        )
         self.assertNotIn("patch_inputs", config)
 
 

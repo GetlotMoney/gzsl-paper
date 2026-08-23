@@ -24,6 +24,25 @@ def semantic_neighbor_adjacency(
     return adjacency
 
 
+def reciprocal_neighbor_confidence(
+    prototypes: torch.Tensor, neighbor_k: int
+) -> torch.Tensor:
+    """互为top-k记1，单向top-k记0.5，其余记0。"""
+    normalized = F.normalize(prototypes.detach().float(), dim=-1)
+    if normalized.ndim != 2 or normalized.shape[0] != 200:
+        raise ValueError("语义近邻原型必须是[200,D]。")
+    if not 1 <= int(neighbor_k) < 200:
+        raise ValueError("semantic neighbor_k必须位于[1,199]。")
+    similarity = normalized @ normalized.T
+    similarity.fill_diagonal_(-torch.inf)
+    neighbors = similarity.topk(int(neighbor_k), dim=1).indices
+    directed = torch.zeros((200, 200), dtype=torch.bool, device=prototypes.device)
+    directed.scatter_(1, neighbors, True)
+    confidence = 0.5 * (directed.float() + directed.T.float())
+    confidence.fill_diagonal_(0.0)
+    return confidence
+
+
 class GatedPairEvidenceSelector(nn.Module):
     """用parent margin与三种证据差值学习top1/top2成对校正。"""
 
@@ -382,3 +401,57 @@ class SemanticNeighborPairSelector(CenteredRoleGatedPairSelector):
             global_ids[:, 0], global_ids[:, 1]
         ]
         return top, global_ids, same_group | semantic_neighbor, features
+
+
+class ReciprocalSemanticNeighborPairSelector(CenteredRoleGatedPairSelector):
+    """按互惠性连续缩放语义邻居的训练外推修正。"""
+
+    def __init__(
+        self, *args, semantic_confidence: torch.Tensor, **kwargs
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        if tuple(semantic_confidence.shape) != (200, 200):
+            raise ValueError("R-SNPS语义置信度必须是[200,200]。")
+        confidence = semantic_confidence.detach().float().clone()
+        if not torch.isfinite(confidence).all() or bool(
+            ((confidence < 0) | (confidence > 1)).any()
+        ):
+            raise ValueError("R-SNPS语义置信度必须有限且位于[0,1]。")
+        confidence.fill_diagonal_(0.0)
+        if not torch.allclose(confidence, confidence.T):
+            raise ValueError("R-SNPS语义置信度必须对称。")
+        self.register_buffer("semantic_confidence", confidence)
+
+    def forward(
+        self,
+        parent_logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None = None,
+        class_ids: torch.Tensor | None = None,
+        enabled: bool = True,
+    ) -> torch.Tensor:
+        ids = (
+            torch.arange(200, device=images.device)
+            if class_ids is None
+            else class_ids.to(images.device)
+        )
+        logits = parent_logits + self.sdcr_beta * (
+            F.normalize(images.float(), dim=-1)
+            @ self.sdcr_prototypes.index_select(0, ids).T
+        )
+        if not enabled:
+            return logits
+        top, global_ids, same_group, raw_features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        confidence = self.semantic_confidence[
+            global_ids[:, 0], global_ids[:, 1]
+        ]
+        confidence = torch.where(
+            same_group, torch.ones_like(confidence), confidence
+        )
+        corrected_pair = self.corrected_pair_logits(top.values, raw_features)
+        correction = (corrected_pair - top.values) * confidence.unsqueeze(1)
+        output = logits.clone()
+        output.scatter_add_(1, top.indices, correction)
+        return output
