@@ -4,8 +4,8 @@ idea_id: IDEA-102
 framework_id: FRAMEWORK-V2
 title: Text-Only Gate-Weighted Pair Selector
 base_commit: 08d74dc2499e436afdc4c11fbe5b4e2d05270548
-code_commit: null
-status: planned
+code_commit: 5c03e267dd1267f0dcb17bc7c8dde80e94839fb5
+status: rejected_below_agct_retained_patch_free
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -18,7 +18,7 @@ runs:
     status: invalid_contract
     failure_mode: configured all-pair scope executed hard 25-percent pair branch
   - run_id: RUN-001-RERUN-001
-    code_commit: null
+    code_commit: 5c03e267dd1267f0dcb17bc7c8dde80e94839fb5
     config_ref: experiments/v2/innovation/INNOVATION-068_tgwps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-068_tgwps/RUN-001-RERUN-001
-    status: planned
+    status: completed_positive_below_agct
