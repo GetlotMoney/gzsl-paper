@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 147
+completed_try_count: 148
 minimum_required_try_count: 50
 ```
 
@@ -315,6 +315,8 @@ SDCR seed5达到`U/S/H/ZS=76.747000/79.959893/78.320510/83.953977%`，与seed7 H
 SDCR每批mask两句的条件达到H `78.303151%`，高于CASR但低于mask一句的`78.320510%`。dropout数量轴关闭，最终固定每批mask 1句。
 
 SDCC在SDCR上增加dropout学生到完整教师的一致性KL，最高H仅`78.285486%`，低于SDCR。显式一致性过度限制了dropout带来的有效偏移，IDEA-076拒绝并关闭该loss轴。
+
+WSDR每批采样两个不同的单句mask并只反传较大CE，得到`U/S/H/ZS=76.679766/79.959893/78.285486/83.920646%`。权重与mask覆盖均正常，但H低于SDCR `78.320510%`，说明更激进的最坏候选优化没有改善泛化；IDEA-077拒绝并关闭该轴。当前累计148组，Chen-style无专家最高仍为SDCR seed5 `H=78.320510%`。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
