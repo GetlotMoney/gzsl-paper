@@ -71,6 +71,10 @@ def load_config(path: Path):
             "V2-INNOVATION-032", "IDEA-066", "claude_embeddings",
             78.0721851209539,
         ),
+        "gzsl-paper.ormr.v1": (
+            "V2-INNOVATION-035", "IDEA-069",
+            "rolematched_sentence_embeddings", 78.0721851209539,
+        ),
     }
     identity = identity_by_schema.get(config.get("schema_version")) if isinstance(config, dict) else None
     cache_key = identity[2] if identity is not None else "unknown_embeddings"
@@ -153,13 +157,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     config, config_sha = load_config(config_path)
     paths = resolve_paths(config)
     input_sha = verify_inputs(config, paths)
-    cache_key = (
-        "claude_embeddings"
-        if config["schema_version"] in (
-            "gzsl-paper.clre.v1", "gzsl-paper.oclr.v1", "gzsl-paper.bocr.v1"
-        )
-        else "merge_embeddings"
-    )
+    if config["schema_version"] in (
+        "gzsl-paper.clre.v1", "gzsl-paper.oclr.v1", "gzsl-paper.bocr.v1"
+    ):
+        cache_key = "claude_embeddings"
+    elif config["schema_version"] in ("gzsl-paper.mlre.v1", "gzsl-paper.omlr.v1"):
+        cache_key = "merge_embeddings"
+    else:
+        cache_key = "rolematched_sentence_embeddings"
     for key in (
         "base_model", "sdrs_model", "sebc_model",
         "class_name_embeddings", cache_key,
@@ -198,12 +203,18 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         names = torch.load(
             Path(config[cache_key]), map_location="cpu", weights_only=True
         ).to(device)
+        if config["schema_version"] == "gzsl-paper.ormr.v1":
+            if tuple(names.shape) != (200, 7, 768):
+                raise ValueError("role-matched语义必须是[200,7,768]。")
+            names = names.float().mean(dim=1)
         if tuple(names.shape) != (200, 768):
             raise ValueError("Claude原型必须是[200,768]。")
         class_names = torch.load(
             Path(config["class_name_embeddings"]), map_location="cpu", weights_only=True
         ).to(device)
-        if config["schema_version"] in ("gzsl-paper.oclr.v1", "gzsl-paper.omlr.v1"):
+        if config["schema_version"] in (
+            "gzsl-paper.oclr.v1", "gzsl-paper.omlr.v1", "gzsl-paper.ormr.v1"
+        ):
             normalized_names = F.normalize(class_names.float(), dim=-1)
             normalized_residual = F.normalize(names.float(), dim=-1)
             names = F.normalize(
