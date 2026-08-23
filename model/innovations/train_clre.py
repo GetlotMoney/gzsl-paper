@@ -32,14 +32,13 @@ from tools.run_contract import (
 from tools.runtime import sha256_file
 
 EVALUATION_PROTOCOL = "chen_shiming_code_aligned_test_selected_gzsl"
-CONFIG_KEYS = {
+COMMON_CONFIG_KEYS = {
     "schema_version", "experiment_id", "idea_id", "framework_id", "dataset",
     "evaluation_protocol", "test_used_for_selection", "unseen_images_used_for_gradient",
     "strict_blind_claim", "text_cache_provenance_complete", "base_model",
     "base_model_sha256", "sdrs_model", "sdrs_model_sha256", "sebc_model",
     "sebc_model_sha256", "parent_metrics_percent", "comparison_H",
-    "class_name_embeddings", "class_name_embeddings_sha256",
-    "claude_embeddings", "claude_embeddings_sha256", "device", "random_seed",
+    "class_name_embeddings", "class_name_embeddings_sha256", "device", "random_seed",
     "batch_size", "epochs", "niters", "report_interval", "optimizer",
     "learning_rate", "weight_decay", "max_beta", "inputs", "expected_sha256",
     "class_order_sha256",
@@ -50,15 +49,28 @@ def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    identity_by_schema = {
+        "gzsl-paper.clre.v1": (
+            "V2-INNOVATION-024", "IDEA-058", "claude_embeddings",
+            77.6665326315915,
+        ),
+        "gzsl-paper.mlre.v1": (
+            "V2-INNOVATION-026", "IDEA-060", "merge_embeddings",
+            77.80809298394227,
+        ),
+    }
+    identity = identity_by_schema.get(config.get("schema_version")) if isinstance(config, dict) else None
+    cache_key = identity[2] if identity is not None else "unknown_embeddings"
+    expected_keys = COMMON_CONFIG_KEYS | {cache_key, f"{cache_key}_sha256"}
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"CLRE配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"CLRE配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
     if (
-        config["schema_version"] != "gzsl-paper.clre.v1"
-        or config["experiment_id"] != "V2-INNOVATION-024"
-        or config["idea_id"] != "IDEA-058"
+        identity is None
+        or config["experiment_id"] != identity[0]
+        or config["idea_id"] != identity[1]
     ):
         raise ValueError("CLRE身份错误。")
     if (
@@ -82,7 +94,7 @@ def load_config(path: Path):
         or float(config["learning_rate"]) != 0.01
         or float(config["weight_decay"]) != 0.0
         or float(config["max_beta"]) != 20.0
-        or abs(float(config["comparison_H"]) - 77.6665326315915) > 1e-9
+        or abs(float(config["comparison_H"]) - identity[3]) > 1e-9
     ):
         raise ValueError("CLRE优化参数或比较门槛错误。")
     return config, sha256_file(path)
@@ -128,9 +140,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     config, config_sha = load_config(config_path)
     paths = resolve_paths(config)
     input_sha = verify_inputs(config, paths)
+    cache_key = (
+        "claude_embeddings"
+        if config["schema_version"] == "gzsl-paper.clre.v1"
+        else "merge_embeddings"
+    )
     for key in (
         "base_model", "sdrs_model", "sebc_model",
-        "class_name_embeddings", "claude_embeddings",
+        "class_name_embeddings", cache_key,
     ):
         if sha256_file(Path(config[key])) != config[f"{key}_sha256"]:
             raise ValueError(f"CLRE {key} SHA错误。")
@@ -164,7 +181,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             raise ValueError("CLRE CUB类别边界错误。")
 
         names = torch.load(
-            Path(config["claude_embeddings"]), map_location="cpu", weights_only=True
+            Path(config[cache_key]), map_location="cpu", weights_only=True
         ).to(device)
         if tuple(names.shape) != (200, 768):
             raise ValueError("Claude原型必须是[200,768]。")
@@ -294,7 +311,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "sdrs_model": config["sdrs_model_sha256"],
                 "sebc_model": config["sebc_model_sha256"],
                 "class_name_embeddings": config["class_name_embeddings_sha256"],
-                "claude_embeddings": config["claude_embeddings_sha256"],
+                cache_key: config[f"{cache_key}_sha256"],
             },
         )
         best_beta = float(

@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-026 MLRE</title></head>
+<body>
+<h1>MLRE：融合LLM文本残差证据</h1>
+<p><strong>Base commit：</strong>d281f8b01b6ebeae58c922516bdc3b00a06d6656；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<h2>输入与公式</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC。新增SHA绑定merge文本原型[200,768]：</p>
+<pre>merge_logits = Norm(image_CLS) @ Norm(merge_text).T
+final_logits = SEBC_logits + beta × merge_logits
+beta = 20 × tanh(raw_beta)</pre>
+<p>raw_beta零初始化，关闭时严格复现SEBC；与CLRE唯一差异是残差文本输入。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新official test选全局best。unseen文本允许使用、unseen图像不进入梯度；test_used_for_selection=true。merge cache准确生成来源尚未完整。</p>
+</body></html>
