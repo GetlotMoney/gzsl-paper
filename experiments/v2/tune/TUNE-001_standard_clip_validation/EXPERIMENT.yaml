@@ -8,7 +8,7 @@ framework_diagram: experiments/v2/tune/TUNE-001_standard_clip_validation/framewo
 base_commit: 0dfd5a373c38c3865da07d4b5131bf782f101b59
 code_commit: d2245a2e43b2b01bbb1ee9354c905dce3c3ae4e5
 research_question: 在xlsa17类别不相交validation上，无专家CLIP/GPT语义路线与增加312维专家属性路线分别达到什么U/S/H/ZS？
-status: topology_0.03_rejected
+status: tuning_pair3_planned
 evaluation_protocol: xlsa17_class_disjoint_gzsl_validation
 validation_used_for_selection: true
 test_used_for_selection: false
@@ -61,3 +61,17 @@ runs:
     config_ref: experiments/v2/tune/TUNE-001_standard_clip_validation/configs/RUN-004.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-001_standard_clip_validation/RUN-004
     status: completed
+  - run_id: RUN-005
+    condition: no_expert_topology_0.2
+    code_commit: null
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-001_standard_clip_validation/configs/RUN-005.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-001_standard_clip_validation/RUN-005
+    status: planned
+  - run_id: RUN-006
+    condition: expert_topology_0.2
+    code_commit: null
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-001_standard_clip_validation/configs/RUN-006.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-001_standard_clip_validation/RUN-006
+    status: planned
