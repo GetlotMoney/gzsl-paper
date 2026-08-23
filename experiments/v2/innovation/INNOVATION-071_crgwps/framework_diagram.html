@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-071 C-RGWPS</title></head>
+<body>
+<h1>C-RGWPS：中心化角色分歧选择器</h1>
+<p><strong>Base commit：</strong>30682e927626a612ac4bf679725b27b5f4caed0f；<strong>RUN-001 code commit：</strong>pre-run后绑定。</p>
+<pre>八个角色句的top1-top2差值 d₁…d₈
+             ↓ 每张图内部处理
+zᵣ = (dᵣ - mean(d)) / std(d)
+             ↓
+[parent margin, Claude差, merge差, 类名差, z₁…z₈]
+             ↓
+Linear(12,1) → bounded delta → 同族低margin top2修正
+             ↓
+200-way U/S/H；50-way ZS</pre>
+<p>中心化和标准化删除八角色共享的类别身份与整体尺度，只保留同一图像内部角色间的相对分歧。训练仅使用7,057张seen图像；真实unseen图像不进入梯度。</p>
+<p>official test每141步评估并选择整模型最高H，明确test_used_for_selection=true；全程不读取patch。</p>
+</body></html>

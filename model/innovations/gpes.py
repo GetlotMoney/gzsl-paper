@@ -306,3 +306,29 @@ class RoleAwareGatedPairSelector(SemanticGatedPairSelector):
             same_group,
             torch.cat((semantic_features, role_diffs), dim=1),
         )
+
+
+class CenteredRoleGatedPairSelector(RoleAwareGatedPairSelector):
+    """去掉八角色公共身份，只保留样本内标准化的相对角色分歧。"""
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top, global_ids, same_group, features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        role_diffs = features[:, -8:]
+        centered = role_diffs - role_diffs.mean(dim=1, keepdim=True)
+        centered = centered / centered.std(
+            dim=1, keepdim=True, unbiased=False
+        ).clamp_min(1e-6)
+        return (
+            top,
+            global_ids,
+            same_group,
+            torch.cat((features[:, :-8], centered), dim=1),
+        )

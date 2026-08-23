@@ -11,6 +11,7 @@ import yaml
 
 from model.innovations.ebc import EpisodicBiasCalibration
 from model.innovations.gpes import (
+    CenteredRoleGatedPairSelector,
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
     RoleAwareGatedPairSelector,
@@ -87,6 +88,7 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.tgwps.v1",
         "gzsl-paper.sgwps.v1",
         "gzsl-paper.rgwps.v1",
+        "gzsl-paper.crgwps.v1",
     )
 
 
@@ -96,7 +98,8 @@ def load_config(path: Path):
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
     if schema in (
-        "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1"
+        "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
+        "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
     ):
         expected_keys = (
             CONFIG_KEYS
@@ -130,6 +133,7 @@ def load_config(path: Path):
         "gzsl-paper.tgwps.v1": ("V2-INNOVATION-068", "IDEA-102"),
         "gzsl-paper.sgwps.v1": ("V2-INNOVATION-069", "IDEA-103"),
         "gzsl-paper.rgwps.v1": ("V2-INNOVATION-070", "IDEA-104"),
+        "gzsl-paper.crgwps.v1": ("V2-INNOVATION-071", "IDEA-105"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -144,7 +148,8 @@ def load_config(path: Path):
         raise ValueError("GPES协议边界错误。")
     if (
         schema not in (
-            "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1"
+            "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
+            "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
         )
         and config["feature_provenance_complete"] is not False
     ) or config["text_cache_provenance_complete"] is not False:
@@ -153,7 +158,7 @@ def load_config(path: Path):
         (
             schema not in (
                 "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
-                "gzsl-paper.rgwps.v1",
+                "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
             )
             and (
                 int(config["patch_top_k"]) != 2
@@ -178,6 +183,7 @@ def load_config(path: Path):
         "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
         "gzsl-paper.nps.v1", "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
         "gzsl-paper.rgwps.v1",
+        "gzsl-paper.crgwps.v1",
     ) and config[
         "pair_training_scope"
     ] != "all_same_group_top2_soft_gate":
@@ -215,6 +221,7 @@ def extract_pair_examples(
     margin_temperature: float = 0.1,
     extra_prototypes: torch.Tensor | None = None,
     role_prototypes: torch.Tensor | None = None,
+    center_role_features: bool = False,
 ):
     top = logits.topk(2, dim=1)
     global_ids = ids.index_select(0, top.indices.reshape(-1)).reshape_as(top.indices)
@@ -255,7 +262,13 @@ def extract_pair_examples(
         role_top2 = role_logits.gather(
             1, top.indices.unsqueeze(-1).expand(-1, -1, 8)
         )
-        values.extend((role_top2[:, 0] - role_top2[:, 1]).unbind(dim=1))
+        role_diffs = role_top2[:, 0] - role_top2[:, 1]
+        if center_role_features:
+            role_diffs = role_diffs - role_diffs.mean(dim=1, keepdim=True)
+            role_diffs = role_diffs / role_diffs.std(
+                dim=1, keepdim=True, unbiased=False
+            ).clamp_min(1e-6)
+        values.extend(role_diffs.unbind(dim=1))
     if patch_scores is not None:
         local_patch = patch_scores.to(logits.device).float()
         if local_patch.shape[1] == 200 and ids.numel() != 200:
@@ -336,7 +349,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         if sha256_file(Path(config[key])) != config[f"{key}_sha256"]:
             raise ValueError(f"GPES {key} SHA错误。")
     text_only = config["schema_version"] in (
-        "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1"
+        "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
+        "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
     )
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
@@ -487,14 +501,20 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 extra_prototypes=(
                     names_n
                     if config["schema_version"] in (
-                        "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1"
+                        "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1",
+                        "gzsl-paper.crgwps.v1",
                     )
                     else None
                 ),
                 role_prototypes=(
                     F.normalize(sentence8.float(), dim=-1)
-                    if config["schema_version"] == "gzsl-paper.rgwps.v1"
+                    if config["schema_version"] in (
+                        "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1"
+                    )
                     else None
+                ),
+                center_role_features=(
+                    config["schema_version"] == "gzsl-paper.crgwps.v1"
                 ),
             )
             pair_logits_list.append(package[0])
@@ -548,6 +568,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = SemanticGatedPairSelector
         elif config["schema_version"] == "gzsl-paper.rgwps.v1":
             model_class = RoleAwareGatedPairSelector
+        elif config["schema_version"] == "gzsl-paper.crgwps.v1":
+            model_class = CenteredRoleGatedPairSelector
         else:
             model_class = GatedPairEvidenceSelector
         model_kwargs = {
@@ -565,10 +587,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         if config["schema_version"] == "gzsl-paper.nps.v1":
             model_kwargs["hidden_dim"] = int(config["selector_hidden_dim"])
         if config["schema_version"] in (
-            "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1"
+            "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1",
+            "gzsl-paper.crgwps.v1",
         ):
             model_kwargs["class_name_prototypes"] = names_n
-        if config["schema_version"] == "gzsl-paper.rgwps.v1":
+        if config["schema_version"] in (
+            "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1"
+        ):
             model_kwargs["role_sentence_prototypes"] = sentence8
         model = model_class(**model_kwargs).to(device)
         optimizer = torch.optim.Adam(

@@ -4,6 +4,7 @@ import unittest
 import torch
 
 from model.innovations.gpes import (
+    CenteredRoleGatedPairSelector,
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
     RoleAwareGatedPairSelector,
@@ -254,6 +255,31 @@ class GPESTest(unittest.TestCase):
             ROOT / "experiments/v2/innovation/INNOVATION-070_rgwps/configs/RUN-001.yaml"
         )
         self.assertEqual(config["schema_version"], "gzsl-paper.rgwps.v1")
+        self.assertNotIn("patch_inputs", config)
+
+    def test_centered_role_selector_removes_common_identity(self):
+        groups = torch.arange(200) // 2
+        model = CenteredRoleGatedPairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(12), torch.ones(12), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+        )
+        _, _, _, features = model._top2_context(
+            torch.randn(3, 200), torch.randn(3, 768), None, torch.arange(200)
+        )
+        roles = features[:, -8:]
+        self.assertTrue(torch.allclose(roles.mean(dim=1), torch.zeros(3), atol=1e-5))
+        self.assertTrue(torch.allclose(
+            roles.std(dim=1, unbiased=False), torch.ones(3), atol=1e-4
+        ))
+
+    def test_crgwps_config_is_patch_free(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-071_crgwps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.crgwps.v1")
         self.assertNotIn("patch_inputs", config)
 
 

@@ -404,6 +404,8 @@ S-GWPS seed7达到`U/S/H/ZS=76.713103/80.059719/78.350691/83.920079%`，相对�
 
 R-GWPS完成28,228次更新后best严格退回关闭态`H=78.320510%`、selected iteration=`-1`；所有非零12维selector均更差。八角色差值数值有效但直接并列重复放大类别身份，IDEA-104拒绝且不追加seed7或参数补救。当前累计187组。
 
+下一实验`V2-INNOVATION-071 / C-RGWPS`不再直接使用八角色绝对差值，而是对每张图做角色内中心化和标准化，删除公共类别身份与整体幅度，只保留角色相对分歧；其余训练、gate和Chen-style评估不变。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
