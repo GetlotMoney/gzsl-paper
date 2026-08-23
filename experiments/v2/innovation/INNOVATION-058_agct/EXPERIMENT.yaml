@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Ambiguity-Gated Cross-LLM Tie-Breaker
 base_commit: 45394ae01e29a929d4179d469b7bbe3abede07c6
 code_commit: 0087de74602639bb8e95fbf63ebf7f9d20cd59eb
-status: testing_coverage_rescue
+status: supported_coverage_rescue_1_failed
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -22,8 +22,8 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-058_agct/RUN-002
     status: completed_positive
   - run_id: RUN-003
-    code_commit: null
+    code_commit: 7d37ff2e369bbce98fd8406e968d2003ba406062
     config_ref: experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-003.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-058_agct/RUN-003
-    status: planned
+    status: completed_failed_parent_only
     attempt_no: RESCUE-1

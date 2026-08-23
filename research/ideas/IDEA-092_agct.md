@@ -12,3 +12,4 @@ failure_condition: H不超过SDCR、beta退回0/饱和、gate近零或Claude在�
 experiment: V2-INNOVATION-058
 interim_result: seed5 H=78.339523，相对SDCR +0.019013；gate非零且beta不饱和，但增益弱，追加seed7。
 result: seed7 H=78.339523、相对父模型+0.036667；两seed均正且最高一致，supported辅助候选。
+coverage_rescue_1: 75分位使gate扩大到0.306但best退回父模型；中位数条件保持正式最优，最后检查25分位。

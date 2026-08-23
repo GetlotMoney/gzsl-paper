@@ -13,3 +13,7 @@ RUN-002使用seed7父链，train错误同族样本`414`个，门槛=`0.547560`�
 两seed均为正增益且最高H完全一致，AGCT标记supported辅助候选；主成绩按owner规则取`H=78.339523%`。增益很小且U/ZS略降，不作为论文核心创新，下一Experiment检验负beta的“反共识”触发条件能否放大收益。
 
 RUN-002模型SHA256：`7d4f4d10243ed1845c6081be82882b31ba78911927adebfb5994d983c60cdd51`；最后checkpoint SHA256：`affda041196eba37e5df03da116435f78d1f95e53058353915a44c7f566ad08c`。
+
+RUN-003把train错误margin门槛从中位数提高到75分位，阈值=`0.984965`，seen/unseen gate扩大到`0.239759/0.305713`。所有非零条件均低于父模型，best退回`H=78.320510%`、beta=0，说明覆盖过宽引入噪声；原中位数AGCT继续保持正式supported条件。
+
+RUN-003模型SHA256：`6668426bb89dbc54e0a4a460552ffde62d93d47ecf008baf54398e68f1c2933d`；最后checkpoint SHA256：`a9137e5307925370e7574e60c4f1c7693631d7d3819b7fdc2bbc4ab1efeb9437`。门槛轴最后检查25分位窄覆盖。
