@@ -25,7 +25,8 @@ split:
   validation_seen_classes: 100
   validation_unseen_images: 2355
   validation_unseen_classes: 50
-  split_sha256: 5f73f6213248f994cda66a7569f07bad558a464ce2bcc01d7e522cb15aaadc3c
+  split_file_sha256_server: c7223f25c91a9476b497090458df5cc57039729333e8e8347648629ae6e25853
+  split_semantic_identity_verified_across_local_server: true
 server:
   ssh_host: lab4090
   gpu: 1
