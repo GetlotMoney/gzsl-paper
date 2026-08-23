@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Trust-Region Role Disagreement Scale Selector
 base_commit: bbd476ab3b88387cce96339d79b477189f2bad80
 code_commit: 45f05ec5a796e9a6dc33e85368babb070e48bf6e
-status: testing_seed7_reliability
+status: rejected_not_two_seed_consistent
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -17,7 +17,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-080_trdss/RUN-001
     status: completed_positive
   - run_id: RUN-002
-    code_commit: null
+    code_commit: f29acf517d85ba5b74352e8472257d456edff7e1
     config_ref: experiments/v2/innovation/INNOVATION-080_trdss/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-080_trdss/RUN-002
-    status: planned
+    status: completed_best_parent
