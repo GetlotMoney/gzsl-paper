@@ -4,15 +4,15 @@ idea_id: IDEA-086
 framework_id: FRAMEWORK-V2
 title: Sentence-Patch Complementary Residual
 base_commit: 0467360142fc2994aa8bc47cb7f5f79b96ad437e
-code_commit: null
-status: planned
+code_commit: 4841ea3da82a0c3f8cf28b975c9d57f92aa95dd8
+status: rejected_inference_conflict
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-052_spcr/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 4841ea3da82a0c3f8cf28b975c9d57f92aa95dd8
     config_ref: experiments/v2/innovation/INNOVATION-052_spcr/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-052_spcr/RUN-001
-    status: planned
+    status: completed_failed_parent_only
