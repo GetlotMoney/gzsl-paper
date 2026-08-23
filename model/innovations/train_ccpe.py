@@ -12,6 +12,7 @@ import yaml
 from model.innovations.ccpe import (
     ClassConditionedPatchEvidence,
     class_conditioned_patch_scores,
+    spatially_coherent_patch_scores,
 )
 from model.innovations.ebc import EpisodicBiasCalibration
 from model.innovations.lpsr import orthogonal_local_text_residuals
@@ -58,15 +59,17 @@ def load_config(path: Path):
             f"CCPE配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
             f"多出={sorted(actual-CONFIG_KEYS)}。"
         )
-    top_k_by_schema = {
-        "gzsl-paper.ccpe.v1": 8,
-        "gzsl-paper.ccpe.v2": 4,
-        "gzsl-paper.ccpe.v3": 2,
+    identity_by_schema = {
+        "gzsl-paper.ccpe.v1": ("V2-INNOVATION-015", "IDEA-049", 8),
+        "gzsl-paper.ccpe.v2": ("V2-INNOVATION-015", "IDEA-049", 4),
+        "gzsl-paper.ccpe.v3": ("V2-INNOVATION-015", "IDEA-049", 2),
+        "gzsl-paper.scpe.v1": ("V2-INNOVATION-016", "IDEA-050", 2),
     }
+    identity = identity_by_schema.get(config.get("schema_version"))
     if (
-        config["schema_version"] not in top_k_by_schema
-        or config["experiment_id"] != "V2-INNOVATION-015"
-        or config["idea_id"] != "IDEA-049"
+        identity is None
+        or config["experiment_id"] != identity[0]
+        or config["idea_id"] != identity[1]
     ):
         raise ValueError("CCPE身份错误。")
     if (
@@ -83,7 +86,7 @@ def load_config(path: Path):
     if set(config["patch_sha256"]) != {"train", "seen", "unseen"}:
         raise ValueError("CCPE patch SHA必须包含train/seen/unseen。")
     if (
-        int(config["patch_top_k"]) != top_k_by_schema[config["schema_version"]]
+        int(config["patch_top_k"]) != identity[2]
         or int(config["patch_chunk_size"]) != 16
         or int(config["batch_size"]) != 50
         or int(config["epochs"]) != 200
@@ -108,10 +111,16 @@ def _precompute_scores(config, text_prototypes, device):
         if sha256_file(path) != config["patch_sha256"][split]:
             raise ValueError(f"CCPE {split} patch SHA错误。")
         patches = torch.load(path, map_location="cpu", weights_only=True)
-        scores[split] = class_conditioned_patch_scores(
-            patches, text_prototypes, int(config["patch_top_k"]), device,
-            chunk_size=int(config["patch_chunk_size"]),
-        )
+        if config["schema_version"] == "gzsl-paper.scpe.v1":
+            scores[split] = spatially_coherent_patch_scores(
+                patches, text_prototypes, device,
+                chunk_size=int(config["patch_chunk_size"]),
+            )
+        else:
+            scores[split] = class_conditioned_patch_scores(
+                patches, text_prototypes, int(config["patch_top_k"]), device,
+                chunk_size=int(config["patch_chunk_size"]),
+            )
         del patches
     return scores
 

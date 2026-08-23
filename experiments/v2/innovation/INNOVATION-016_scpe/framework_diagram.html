@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-016 SCPE</title></head>
+<body>
+<h1>SCPE：空间一致的类别条件patch证据</h1>
+<p><strong>Base commit：</strong>06d28c77ee032cd32e81e356797df6f7a5781c29；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<h2>父路径</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC，输出父logits[B,200]。SCPE作为CCPE的替代局部分支，不叠加CCPE权重。</p>
+<h2>空间一致局部证据</h2>
+<pre>sim_bnc = cos(patch_bn, orthogonal_local_text_c)
+(v1,i1),(v2,i2) = top2_n(sim_bnc)
+d = grid_distance(i1,i2) / diagonal(24x24)
+coherence = 1 - d
+evidence_bc = mean(v1,v2) × coherence
+final_logits = SEBC_logits + beta × evidence
+beta = 10 × tanh(raw_beta)</pre>
+<p>相邻top2获得高置信，网格两端的分散匹配接近零。raw_beta零初始化，关闭时严格复现SEBC。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机batch更新；每141次更新评估official test并保存一个全局最高H。真实unseen patch不进入梯度；test_used_for_selection=true。CLIP patch准确checkpoint provenance仍不完整。</p>
+</body></html>
