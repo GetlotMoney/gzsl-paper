@@ -244,12 +244,14 @@ class TaxonomicPairwiseLogitDeconvolution(nn.Module):
         high_pass = logits - neighbor_logits
         high_pass[:, ~active] = 0.0
         local_groups = self.group_ids.index_select(0, ids)
-        for group_id in local_groups[local_groups >= 0].unique(sorted=True).tolist():
-            positions = local_groups.eq(int(group_id)).nonzero(as_tuple=False).flatten()
-            if positions.numel() < 2:
-                high_pass[:, positions] = 0.0
-                continue
-            high_pass[:, positions] -= high_pass[:, positions].mean(
-                dim=1, keepdim=True
-            )
+        membership = torch.zeros(
+            ids.numel(), self.group_count, dtype=logits.dtype, device=logits.device
+        )
+        grouped = local_groups >= 0
+        membership[
+            grouped.nonzero(as_tuple=False).flatten(), local_groups[grouped]
+        ] = 1.0
+        counts = membership.sum(dim=0).clamp_min(1.0)
+        group_means = (high_pass @ membership) / counts.unsqueeze(0)
+        high_pass = high_pass - group_means @ membership.T
         return logits + self.alpha() * high_pass
