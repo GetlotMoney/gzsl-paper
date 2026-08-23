@@ -725,3 +725,43 @@ class CrossSourceDisagreementSelector(SemanticNeighborPairSelector):
             related,
             torch.cat((features, disagreement.unsqueeze(1)), dim=1),
         )
+
+
+class RoleUncertaintyGatedSelector(StagedRoleDisagreementScaleSelector):
+    """冻结SNPS方向，用非负gamma按角色分歧乘法衰减pair delta。"""
+
+    def __init__(self, *args, max_gamma: float = 1.0, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        del self.scale_weight
+        self.gamma = nn.Parameter(torch.zeros(()))
+        self.max_gamma = float(max_gamma)
+        if self.max_gamma <= 0:
+            raise ValueError("RUGS max_gamma必须为正。")
+
+    def pair_delta(self, raw_features: torch.Tensor) -> torch.Tensor:
+        base_features = (
+            raw_features[:, :12].float() - self.base_feature_mean
+        ) / self.base_feature_std
+        base_raw = (
+            base_features @ self.base_selector_weight + self.base_selector_bias
+        )
+        base_delta = self.max_delta * torch.tanh(base_raw)
+        scale_ratio = (
+            raw_features[:, 12].float()
+            / self.feature_mean[12].clamp_min(1e-6)
+        ).clamp(min=0.0, max=10.0)
+        return base_delta * torch.exp(-self.gamma * scale_ratio)
+
+    @torch.no_grad()
+    def project_parameters(self) -> None:
+        self.gamma.clamp_(0.0, self.max_gamma)
+
+    def stats(self) -> dict[str, object]:
+        return {
+            "gamma": float(self.gamma.detach()),
+            "max_gamma": self.max_gamma,
+            "base_selector_weight_norm": float(self.base_selector_weight.norm()),
+            "base_selector_bias": float(self.base_selector_bias),
+            "margin_threshold": float(self.margin_threshold),
+            "margin_temperature": self.margin_temperature,
+        }

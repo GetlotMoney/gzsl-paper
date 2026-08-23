@@ -12,6 +12,7 @@ from model.innovations.gpes import (
     ReciprocalSemanticNeighborPairSelector,
     RoleDisagreementScaleSelector,
     RoleVotePairSelector,
+    RoleUncertaintyGatedSelector,
     RoleAwareGatedPairSelector,
     SemanticNeighborPairSelector,
     StagedRoleDisagreementScaleSelector,
@@ -610,6 +611,47 @@ class GPESTest(unittest.TestCase):
             config["context_feature"], "absolute_claude_merge_pair_gap"
         )
         self.assertEqual(config["semantic_neighbor_k"], 3)
+
+    def test_role_uncertainty_gate_starts_at_parent_and_projects_gamma(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        base_weight = torch.randn(12)
+        base_bias = torch.randn(())
+        feature_mean = torch.cat((torch.zeros(12), torch.tensor([0.01])))
+        model = RoleUncertaintyGatedSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, feature_mean, torch.ones(13), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+            base_selector_weight=base_weight,
+            base_selector_bias=base_bias,
+            base_feature_mean=torch.zeros(12),
+            base_feature_std=torch.ones(12),
+            max_gamma=1.0,
+        )
+        features = torch.randn(2, 13)
+        features[:, 12] = torch.tensor([0.01, 0.02])
+        expected = 0.5 * torch.tanh(features[:, :12] @ base_weight + base_bias)
+        self.assertTrue(torch.allclose(model.pair_delta(features), expected))
+        self.assertEqual([name for name, _ in model.named_parameters()], ["gamma"])
+        with torch.no_grad():
+            model.gamma.fill_(2.0)
+        model.project_parameters()
+        self.assertEqual(float(model.gamma.detach()), 1.0)
+        attenuated = model.pair_delta(features).abs()
+        self.assertLessEqual(
+            float(attenuated[1].detach()), float(expected[1].abs())
+        )
+
+    def test_rugs_config_binds_multiplicative_uncertainty_gate(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-083_rugs/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.rugs.v1")
+        self.assertEqual(config["training_scope"], "freeze_snps_train_gamma_only")
+        self.assertEqual(config["max_gamma"], 1.0)
 
 
 if __name__ == "__main__":
