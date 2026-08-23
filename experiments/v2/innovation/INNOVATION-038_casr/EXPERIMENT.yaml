@@ -4,8 +4,8 @@ idea_id: IDEA-072
 framework_id: FRAMEWORK-V2
 title: Conservative Adaptive Sentence Routing
 base_commit: bb5a6a8b5318a29c9fbef445859f6be391d6dc8f
-code_commit: c05c48117fdd15d2346be5928ecf09241d6e9619
-status: reliability_seed5_planned
+code_commit: cba46825c4a010dc9952815b18e7d3e7068b4d7a
+status: supported_two_seed_strong_candidate
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -22,7 +22,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-038_casr/RUN-002
     status: completed
   - run_id: RUN-003
-    code_commit: null
+    code_commit: cba46825c4a010dc9952815b18e7d3e7068b4d7a
     config_ref: experiments/v2/innovation/INNOVATION-038_casr/configs/RUN-003.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-038_casr/RUN-003
-    status: planned
+    status: completed

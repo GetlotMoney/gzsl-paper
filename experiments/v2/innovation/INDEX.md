@@ -39,6 +39,6 @@
 | V2-INNOVATION-035 | IDEA-069 | ORMR GPT-5.6 role-matched正交残差 | rejected below OCLR（正向对照H=77.935371） | `INNOVATION-035_ormr/` |
 | V2-INNOVATION-036 | IDEA-070 | OESR GPT-5.6八句正交残差 | supported two-seed weak H candidate（最高H=78.105812） | `INNOVATION-036_oesr/` |
 | V2-INNOVATION-037 | IDEA-071 | AOSR自适应八句正交残差 | supported seed5（有效H=78.210580；seed7更高但塌缩） | `INNOVATION-037_aosr/` |
-| V2-INNOVATION-038 | IDEA-072 | CASR保守自适应句子路由 | supported seed7（最高H=78.285719，seed5待跑） | `INNOVATION-038_casr/` |
+| V2-INNOVATION-038 | IDEA-072 | CASR保守自适应句子路由 | supported two-seed strong candidate（最高H=78.285719） | `INNOVATION-038_casr/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
