@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 163
+completed_try_count: 164
 minimum_required_try_count: 50
 ```
 
@@ -347,6 +347,8 @@ CLCR直接在SDCR上增加独立Claude类名正交残差；两种原型平均余
 SPCR把CCPE top2局部证据直接叠加到SDCR推理logits，但从小beta到接近5边界均降低H，best退回`H=78.320510%`与patch beta=0。IDEA-086拒绝；局部patch后续只允许作为训练期可靠性信息，不再增加推理分支。当前累计162组。
 
 PGSD用train-only patch可靠性加权SDCR训练，样本权重std=`0.110662`但均值=`1.164163`，同时放大了CE总尺度；所有条件低于父模型，best退回`H=78.320510%`。IDEA-087拒绝，下一独立Experiment将权重中心化为均值1以隔离相对可靠性作用。当前累计163组。
+
+CPGSD把patch可靠性中心化到mean=`1.0`、std=`0.068121`且保持有界，但所有条件仍低于父模型，best退回`H=78.320510%`。结合SPCR推理叠加失败，说明当前patch信息既不能直接加入SDCR推理，也不能改善其训练权重；IDEA-088拒绝并关闭patch结合轴。当前累计164组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

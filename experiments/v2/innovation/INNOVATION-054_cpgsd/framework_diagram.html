@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-054 CPGSD</title></head>
 <body>
 <h1>CPGSD：中心化patch引导句子dropout</h1>
-<p><strong>Base commit：</strong>da50d8b84aadfa48810fde4d3b663b10933b7ed0；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>da50d8b84aadfa48810fde4d3b663b10933b7ed0；<strong>RUN code commit：</strong>2dc7c71bdecf4fdd5aff74b385a837a98e23fe2d。</p>
 <pre>train-only patch真类置信度 → tanh → 减去全训练集均值 → 最大绝对值归一化
 sample weight = 1 + 0.25×centered confidence
 保证 mean=1，范围[0.75,1.25]
