@@ -38,11 +38,19 @@ def competition_confidence_features(
 class SampleConditionedCompetitionCalibration(nn.Module):
     """按样本置信度预测有界seen-logit扣减，零初始化严格返回父logits。"""
 
-    def __init__(self, hidden_dim: int = 16, max_gamma: float = 2.0):
+    def __init__(
+        self,
+        hidden_dim: int = 16,
+        max_gamma: float = 2.0,
+        gamma_mode: str = "signed",
+    ):
         super().__init__()
         self.max_gamma = float(max_gamma)
+        self.gamma_mode = str(gamma_mode)
         if self.max_gamma <= 0.0:
             raise ValueError("SCCC max_gamma必须为正数。")
+        if self.gamma_mode not in ("signed", "nonnegative"):
+            raise ValueError("SCCC gamma_mode只允许signed/nonnegative。")
         self.network = nn.Sequential(
             nn.Linear(6, int(hidden_dim)),
             nn.GELU(),
@@ -53,7 +61,8 @@ class SampleConditionedCompetitionCalibration(nn.Module):
 
     def gamma(self, logits: torch.Tensor, seen_mask: torch.Tensor) -> torch.Tensor:
         features = competition_confidence_features(logits, seen_mask)
-        return self.max_gamma * torch.tanh(self.network(features)).squeeze(-1)
+        value = self.max_gamma * torch.tanh(self.network(features)).squeeze(-1)
+        return value if self.gamma_mode == "signed" else value.clamp_min(0.0)
 
     def forward(self, logits: torch.Tensor, seen_mask: torch.Tensor) -> torch.Tensor:
         mask = torch.as_tensor(seen_mask, device=logits.device, dtype=torch.bool)

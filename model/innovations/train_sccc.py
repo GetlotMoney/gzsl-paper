@@ -38,6 +38,7 @@ CONFIG_KEYS = {
     "optimizer", "learning_rate", "weight_decay", "hidden_dim", "max_gamma",
     "fold_count", "inputs", "expected_sha256", "class_order_sha256",
 }
+CONFIG_KEYS_V2 = CONFIG_KEYS | {"gamma_mode"}
 
 
 def load_config(path: Path) -> tuple[dict, str]:
@@ -46,12 +47,17 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise FileNotFoundError(f"SCCC配置不存在：{path}")
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    expected_keys = (
+        CONFIG_KEYS_V2
+        if isinstance(config, dict) and config.get("schema_version") == "gzsl-paper.sccc.v2"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"SCCC配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"SCCC配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
-    if config["schema_version"] != "gzsl-paper.sccc.v1":
+    if config["schema_version"] not in ("gzsl-paper.sccc.v1", "gzsl-paper.sccc.v2"):
         raise ValueError("SCCC配置schema错误。")
     if config["experiment_id"] != "V2-INNOVATION-010" or config["idea_id"] != "IDEA-044":
         raise ValueError("SCCC实验/idea身份错误。")
@@ -69,7 +75,13 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("SCCC固定200名义epoch/28228步/141评估间隔。")
     if config["optimizer"] != "Adam" or float(config["learning_rate"]) != 1e-3:
         raise ValueError("SCCC固定Adam lr=1e-3。")
-    if int(config["hidden_dim"]) != 16 or float(config["max_gamma"]) != 2.0 or int(config["fold_count"]) != 3:
+    config.setdefault("gamma_mode", "signed")
+    expected_gamma = (
+        ("nonnegative", 0.5)
+        if config["schema_version"] == "gzsl-paper.sccc.v2"
+        else ("signed", 2.0)
+    )
+    if int(config["hidden_dim"]) != 16 or (config["gamma_mode"], float(config["max_gamma"])) != expected_gamma or int(config["fold_count"]) != 3:
         raise ValueError("SCCC gate参数错误。")
     if set(config["parent_metrics_percent"]) != {"U", "S", "H", "ZS"}:
         raise ValueError("SCCC父指标不完整。")
@@ -150,7 +162,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         for parameter in parent.parameters(): parameter.requires_grad_(False)
         parent_prototypes = parent.prototypes().detach(); parent_scale = parent.scale().detach()
         model = SampleConditionedCompetitionCalibration(
-            hidden_dim=int(config["hidden_dim"]), max_gamma=float(config["max_gamma"])
+            hidden_dim=int(config["hidden_dim"]), max_gamma=float(config["max_gamma"]),
+            gamma_mode=config["gamma_mode"],
         ).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=float(config["learning_rate"]), weight_decay=float(config["weight_decay"]))
         mapping = torch.full((200,), -1, dtype=torch.long); mapping[seenclasses] = torch.arange(150)
@@ -185,7 +198,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 print(f"iter={iteration} epoch={row['nominal_epoch']} H={metrics['H']:.6f} best_H={best_h:.6f} gamma={stats['mean']:.6f}")
         atomic_torch_save(output_dir / "checkpoint_last.pth", {"config": config, "code_commit": code_commit, "sccc_state_dict": copy.deepcopy(model.state_dict()), "optimizer_state_dict": optimizer.state_dict(), "best_state_dict": best_state, "best_metrics_percent": best_metrics, "selected_iteration": best_iteration, "history": history})
         atomic_write_json(output_dir / "data_fingerprints.json", {"files": input_sha, "parent_model": config["parent_model_sha256"]})
-        payload = {"experiment_id": config["experiment_id"], "idea_id": config["idea_id"], "run_id": run_id, "framework_id": config["framework_id"], "evaluation_protocol": EVALUATION_PROTOCOL, "test_used_for_selection": True, "unseen_images_used_for_gradient": False, "strict_blind_claim": False, "code_commit": code_commit, "config_sha256": config_sha, "parent_model_sha256": config["parent_model_sha256"], "parent_metrics_percent": config["parent_metrics_percent"], "best_metrics_percent": best_metrics, "delta_vs_parent_percent_points": {key: best_metrics[key] - float(config["parent_metrics_percent"][key]) for key in ("U", "S", "H", "ZS")}, "selected_iteration": best_iteration, "selected_nominal_epoch": best_epoch, "official_test_evaluation_count": len(history), "best_zs_observation_percent": best_zs, "first_gradient_norm": first_gradient_norm, "model_sha256": sha256_file(output_dir / "model_best.pth"), "checkpoint_last_sha256": sha256_file(output_dir / "checkpoint_last.pth")}
+        payload = {"experiment_id": config["experiment_id"], "idea_id": config["idea_id"], "run_id": run_id, "framework_id": config["framework_id"], "evaluation_protocol": EVALUATION_PROTOCOL, "test_used_for_selection": True, "unseen_images_used_for_gradient": False, "strict_blind_claim": False, "gamma_mode": config["gamma_mode"], "max_gamma": float(config["max_gamma"]), "code_commit": code_commit, "config_sha256": config_sha, "parent_model_sha256": config["parent_model_sha256"], "parent_metrics_percent": config["parent_metrics_percent"], "best_metrics_percent": best_metrics, "delta_vs_parent_percent_points": {key: best_metrics[key] - float(config["parent_metrics_percent"][key]) for key in ("U", "S", "H", "ZS")}, "selected_iteration": best_iteration, "selected_nominal_epoch": best_epoch, "official_test_evaluation_count": len(history), "best_zs_observation_percent": best_zs, "first_gradient_norm": first_gradient_norm, "model_sha256": sha256_file(output_dir / "model_best.pth"), "checkpoint_last_sha256": sha256_file(output_dir / "checkpoint_last.pth")}
         atomic_write_json(output_dir / "metrics.json", payload); print(payload); return best_metrics
     finally:
         sys.stdout.flush(); sys.stdout = original_stdout; log_handle.close()

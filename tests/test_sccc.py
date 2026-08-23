@@ -36,6 +36,16 @@ class SCCCTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             competition_confidence_features(logits, torch.ones(5, dtype=torch.bool))
 
+    def test_nonnegative_mode_starts_exactly_zero_and_keeps_gradient(self):
+        logits = torch.randn(8, 20, generator=torch.Generator().manual_seed(603))
+        mask = torch.zeros(20, dtype=torch.bool); mask[:12] = True
+        model = SampleConditionedCompetitionCalibration(max_gamma=0.5, gamma_mode="nonnegative")
+        value = model.gamma(logits, mask)
+        self.assertEqual(float(value.detach().abs().max()), 0.0)
+        (-model(logits, mask)[:, :12].mean()).backward()
+        self.assertGreater(float(model.network[-1].weight.grad.abs().sum()), 0.0)
+        self.assertGreaterEqual(float(model.gamma(logits, mask).min()), 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()

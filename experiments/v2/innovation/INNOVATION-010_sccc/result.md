@@ -1,3 +1,7 @@
 # V2-INNOVATION-010 结果
 
-状态：`planned`。冻结H=76.006848无专家父模型，只训练SCCC gate。
+状态：`rescue1_nonnegative_planned`。
+
+RUN-001 signed gamma结果H=`76.099469`，相对父模型提高`0.092621`，但best时gamma均值`-1.107964`且max_abs接近2，机制方向与饱和门槛均不成立。
+
+RESCUE-1把gamma改为严格非负、上限0.5，零初始化仍严格返回父logits；禁止通过增强seen获得表面增益。
