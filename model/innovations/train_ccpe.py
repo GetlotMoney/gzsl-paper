@@ -266,7 +266,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         )
         print("precomputing class-conditioned patch scores")
         scores = _precompute_scores(config, text_residual, device)
-        score_width = 400 if config["schema_version"] == "gzsl-paper.dspe.v1" else 200
+        score_width = (
+            400
+            if config["schema_version"] in ("gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2")
+            else 200
+        )
         if scores["train"].shape != (labels.shape[0], score_width):
             raise ValueError("CCPE train patch score形状错误。")
         if scores["seen"].shape != (official["seen_labels"].shape[0], score_width):

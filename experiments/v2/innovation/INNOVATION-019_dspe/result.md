@@ -1,6 +1,6 @@
 # V2-INNOVATION-019 结果
 
-状态：`failed_runtime_stagewise_retry_pending`。
+状态：`stagewise_run004_planned`。
 
 RUN-001在第一个评估点后因双beta字典仍使用单浮点日志格式而停止，未完成正式训练。按工程失败记为`failed_runtime`，不采信局部checkpoint、不计方法补救；修复日志格式后使用新RUN目录重跑同一条件。
 
@@ -13,3 +13,5 @@ RUN-002联合训练得到`U/S/H/ZS=76.220822/78.957713/77.565132/83.165276%`，�
 RESCUE-1固定CCPE RUN-003的绝对beta和模型SHA，只训练归一化beta；关闭新增分支时必须逐值复现CCPE `H=77.666533`。
 
 RUN-003在参数更新前因`dspe.v2`未被旧形状检查识别为400维双路分数而停止，记为`failed_runtime`，不占方法补救。修复schema形状检查后用新RUN目录重跑同一分阶段条件。
+
+RUN-004只修复双路score宽度契约；训练公式、父权重SHA、参数、seed和评估语义不变。
