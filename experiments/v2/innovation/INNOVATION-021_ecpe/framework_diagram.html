@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-021 ECPE</title></head>
 <body>
 <h1>ECPE：episode训练的类别条件patch证据</h1>
-<p><strong>Base commit：</strong>476c92576ed3d69f30469fe06e0974ad1286d6aa；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>476c92576ed3d69f30469fe06e0974ad1286d6aa；<strong>RUN-001 code commit：</strong>f6a84248c44781e7d1d5a8990ac74630c85392e3。</p>
 <h2>推理公式</h2><p>与CCPE完全相同：SEBC logits + beta × 每类top2局部patch平均相似度。关闭beta时严格复现SEBC。</p>
 <h2>分阶段episode训练</h2>
 <pre>3 folds × (100 pseudo-seen classes + 50 pseudo-unseen classes)

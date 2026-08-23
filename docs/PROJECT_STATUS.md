@@ -260,6 +260,8 @@ DSPE联合训练时绝对分支吞掉归一化分支，最高H仅`77.565132%`；
 
 PCME固定CCPE后学习top1-top2差距，权重大部分时间为负，说明孤立top1确属噪声；但所有非零权重均未超过CCPE，best退回gap=0。IDEA-054拒绝；下一实验保留CCPE公式但把beta训练目标改为100/50类class-exclusive episode。
 
+ECPE用100/50类episode训练CCPE beta后，beta第一轮即变为`-7.385873`并继续接近`-10`，所有非零条件均降低H，best退回SEBC关闭态。fold父模型的局部证据风险方向不能迁移到主模型，IDEA-055已拒绝；下一方向固定CCPE并只学习类别语义可靠性残差。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
