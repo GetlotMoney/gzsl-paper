@@ -4,15 +4,15 @@ idea_id: IDEA-065
 framework_id: FRAMEWORK-V2
 title: Orthogonal Merged-LLM Residual
 base_commit: 02fdd7ded27b13993fa27ce5c7f4fedc07abc5a4
-code_commit: null
-status: planned
+code_commit: 613e29dd3e4f2b0327d75955bd93ea531367db5e
+status: retained_strong_secondary_below_oclr
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-031_omlr/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 613e29dd3e4f2b0327d75955bd93ea531367db5e
     config_ref: experiments/v2/innovation/INNOVATION-031_omlr/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-031_omlr/RUN-001
-    status: planned
+    status: completed

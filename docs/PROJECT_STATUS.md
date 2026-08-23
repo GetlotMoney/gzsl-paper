@@ -280,6 +280,8 @@ OCLR将Claude原型对类名方向正交化后达到`U/S/H/ZS=77.094042/79.07546
 
 OGLC叠加OCLR与CCPE后直接H仅`77.335657%`，协调后最高`77.533191%`，局部证据破坏OCLR的联合竞争平衡。IDEA-064拒绝；下一方向把类名正交化原则迁移到merge文本，检验其是否跨文本源成立。
 
+OMLR正交化merge文本后达到`U/S/H/ZS=76.796263/79.348004/78.051283/84.291506%`，H略低于OCLR但ZS更高；保留为强次级观察，并证明正交化原则跨Claude/merge成立。下一步运行OCLR seed7可靠性，判断最高结果是否偶然。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
