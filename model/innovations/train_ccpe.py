@@ -12,6 +12,8 @@ import yaml
 from model.innovations.ccpe import (
     ClassConditionedPatchEvidence,
     DualScalePatchEvidence,
+    PatchConsensusMarginEvidence,
+    class_conditioned_patch_mean_gap_scores,
     class_conditioned_patch_scores,
     multi_part_patch_scores,
     normalize_patch_scores_by_seen_reference,
@@ -66,6 +68,10 @@ def load_config(path: Path):
         expected_keys = expected_keys | {"normalized_max_beta"}
     if schema == "gzsl-paper.dspe.v2":
         expected_keys = expected_keys | {"ccpe_model", "ccpe_model_sha256"}
+    if schema == "gzsl-paper.pcme.v1":
+        expected_keys = expected_keys | {
+            "ccpe_model", "ccpe_model_sha256", "gap_max_beta"
+        }
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"CCPE配置字段错误；缺少={sorted(expected_keys-actual)}，"
@@ -80,6 +86,7 @@ def load_config(path: Path):
         "gzsl-paper.cnpe.v1": ("V2-INNOVATION-018", "IDEA-052", 2, 16, 2.0),
         "gzsl-paper.dspe.v1": ("V2-INNOVATION-019", "IDEA-053", 2, 16, 10.0),
         "gzsl-paper.dspe.v2": ("V2-INNOVATION-019", "IDEA-053", 2, 16, 10.0),
+        "gzsl-paper.pcme.v1": ("V2-INNOVATION-020", "IDEA-054", 2, 16, 10.0),
     }
     identity = identity_by_schema.get(config.get("schema_version"))
     if (
@@ -122,6 +129,11 @@ def load_config(path: Path):
         and float(config["normalized_max_beta"]) != 2.0
     ):
         raise ValueError("DSPE normalized_max_beta必须为2.0。")
+    if (
+        config["schema_version"] == "gzsl-paper.pcme.v1"
+        and float(config["gap_max_beta"]) != 5.0
+    ):
+        raise ValueError("PCME gap_max_beta必须为5.0。")
     return config, sha256_file(path)
 
 
@@ -132,7 +144,12 @@ def _precompute_scores(config, text_prototypes, device):
         if sha256_file(path) != config["patch_sha256"][split]:
             raise ValueError(f"CCPE {split} patch SHA错误。")
         patches = torch.load(path, map_location="cpu", weights_only=True)
-        if config["schema_version"] == "gzsl-paper.mppe.v1":
+        if config["schema_version"] == "gzsl-paper.pcme.v1":
+            scores[split] = class_conditioned_patch_mean_gap_scores(
+                patches, text_prototypes, device,
+                chunk_size=int(config["patch_chunk_size"]),
+            )
+        elif config["schema_version"] == "gzsl-paper.mppe.v1":
             scores[split] = multi_part_patch_scores(
                 patches, text_prototypes, device,
                 chunk_size=int(config["patch_chunk_size"]),
@@ -207,7 +224,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         if sha256_file(Path(config[key])) != config[f"{key}_sha256"]:
             raise ValueError(f"CCPE {key} SHA错误。")
     if (
-        config["schema_version"] == "gzsl-paper.dspe.v2"
+        config["schema_version"] in ("gzsl-paper.dspe.v2", "gzsl-paper.pcme.v1")
         and sha256_file(Path(config["ccpe_model"])) != config["ccpe_model_sha256"]
     ):
         raise ValueError("DSPE CCPE父模型SHA错误。")
@@ -268,7 +285,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         scores = _precompute_scores(config, text_residual, device)
         score_width = (
             400
-            if config["schema_version"] in ("gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2")
+            if config["schema_version"] in (
+                "gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2", "gzsl-paper.pcme.v1"
+            )
             else 200
         )
         if scores["train"].shape != (labels.shape[0], score_width):
@@ -278,15 +297,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         if scores["unseen"].shape != (official["unseen_labels"].shape[0], score_width):
             raise ValueError("CCPE test-unseen patch score形状错误。")
 
-        model = (
-            DualScalePatchEvidence(
+        if config["schema_version"] == "gzsl-paper.pcme.v1":
+            model = PatchConsensusMarginEvidence(
+                max_absolute_beta=float(config["max_beta"]),
+                max_gap_beta=float(config["gap_max_beta"]),
+            ).to(device)
+        elif config["schema_version"] in ("gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2"):
+            model = DualScalePatchEvidence(
                 max_absolute_beta=float(config["max_beta"]),
                 max_normalized_beta=float(config["normalized_max_beta"]),
-            )
-            if config["schema_version"] in ("gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2")
-            else ClassConditionedPatchEvidence(max_beta=float(config["max_beta"]))
-        ).to(device)
-        if config["schema_version"] == "gzsl-paper.dspe.v2":
+            ).to(device)
+        else:
+            model = ClassConditionedPatchEvidence(
+                max_beta=float(config["max_beta"])
+            ).to(device)
+        if config["schema_version"] in ("gzsl-paper.dspe.v2", "gzsl-paper.pcme.v1"):
             ccpe_payload = torch.load(
                 Path(config["ccpe_model"]), map_location="cpu", weights_only=False
             )
@@ -358,7 +383,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "normalized": float(model.normalized_beta().detach()),
                     }
                     if isinstance(model, DualScalePatchEvidence)
-                    else float(model.beta().detach())
+                    else (
+                        {
+                            "absolute": float(model.absolute_beta().detach()),
+                            "gap": float(model.gap_beta().detach()),
+                        }
+                        if isinstance(model, PatchConsensusMarginEvidence)
+                        else float(model.beta().detach())
+                    )
                 )
                 history.append(
                     {
@@ -412,7 +444,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "class_name_embeddings": config["class_name_embeddings_sha256"],
                 **(
                     {"ccpe_model": config["ccpe_model_sha256"]}
-                    if config["schema_version"] == "gzsl-paper.dspe.v2"
+                    if config["schema_version"] in (
+                        "gzsl-paper.dspe.v2", "gzsl-paper.pcme.v1"
+                    )
                     else {}
                 ),
             },
@@ -429,8 +463,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 ),
             }
             if config["schema_version"] in ("gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2")
-            else float(
-                torch.tanh(best_state["raw_beta"]) * float(config["max_beta"])
+            else (
+                {
+                    "absolute": float(
+                        torch.tanh(best_state["raw_absolute_beta"])
+                        * float(config["max_beta"])
+                    ),
+                    "gap": float(
+                        torch.tanh(best_state["raw_gap_beta"])
+                        * float(config["gap_max_beta"])
+                    ),
+                }
+                if config["schema_version"] == "gzsl-paper.pcme.v1"
+                else float(
+                    torch.tanh(best_state["raw_beta"]) * float(config["max_beta"])
+                )
             )
         )
         metrics = {

@@ -31,6 +31,30 @@ def class_conditioned_patch_scores(
     return torch.cat(output, dim=0)
 
 
+def class_conditioned_patch_mean_gap_scores(
+    patches: torch.Tensor,
+    text_prototypes: torch.Tensor,
+    device: torch.device,
+    chunk_size: int = 16,
+) -> torch.Tensor:
+    """返回top2均值与top1-top2孤立差距，形状[N,2C]。"""
+    if patches.ndim != 3 or patches.shape[1:] != (576, 768):
+        raise ValueError("patch缓存必须是[N,576,768]。")
+    if text_prototypes.ndim != 2 or text_prototypes.shape[1] != 768:
+        raise ValueError("文本原型必须是[C,768]。")
+    prototypes = F.normalize(text_prototypes.detach().float(), dim=-1).to(device)
+    output = []
+    for start in range(0, patches.shape[0], int(chunk_size)):
+        batch = F.normalize(
+            patches[start : start + int(chunk_size)].to(device).float(), dim=-1
+        )
+        top2 = (batch @ prototypes.T).topk(2, dim=1, largest=True).values
+        mean = top2.mean(dim=1)
+        gap = top2[:, 0] - top2[:, 1]
+        output.append(torch.cat((mean, gap), dim=1).cpu())
+    return torch.cat(output, dim=0)
+
+
 def spatially_coherent_patch_scores(
     patches: torch.Tensor,
     text_prototypes: torch.Tensor,
@@ -176,3 +200,44 @@ class DualScalePatchEvidence(nn.Module):
             + self.absolute_beta() * absolute
             + self.normalized_beta() * normalized
         )
+
+
+class PatchConsensusMarginEvidence(nn.Module):
+    """固定CCPE绝对证据，仅学习top1-top2孤立匹配惩罚。"""
+
+    def __init__(
+        self,
+        max_absolute_beta: float = 10.0,
+        max_gap_beta: float = 5.0,
+    ) -> None:
+        super().__init__()
+        self.max_absolute_beta = float(max_absolute_beta)
+        self.max_gap_beta = float(max_gap_beta)
+        self.raw_absolute_beta = nn.Parameter(torch.zeros(()))
+        self.raw_gap_beta = nn.Parameter(torch.zeros(()))
+
+    def absolute_beta(self) -> torch.Tensor:
+        return self.max_absolute_beta * torch.tanh(self.raw_absolute_beta)
+
+    def gap_beta(self) -> torch.Tensor:
+        return self.max_gap_beta * torch.tanh(self.raw_gap_beta)
+
+    def forward(
+        self,
+        parent_logits: torch.Tensor,
+        patch_scores: torch.Tensor,
+        class_ids: torch.Tensor | None = None,
+        enabled: bool = True,
+    ) -> torch.Tensor:
+        if not enabled:
+            return parent_logits
+        if patch_scores.ndim != 2 or patch_scores.shape[1] != 400:
+            raise ValueError("共识patch_scores必须是[B,400]。")
+        mean, gap = patch_scores[:, :200], patch_scores[:, 200:]
+        if class_ids is not None and parent_logits.shape[1] != 200:
+            ids = class_ids.to(patch_scores.device)
+            mean = mean.index_select(1, ids)
+            gap = gap.index_select(1, ids)
+        if mean.shape != parent_logits.shape or gap.shape != parent_logits.shape:
+            raise ValueError("共识patch证据与父logits形状不一致。")
+        return parent_logits + self.absolute_beta() * mean + self.gap_beta() * gap

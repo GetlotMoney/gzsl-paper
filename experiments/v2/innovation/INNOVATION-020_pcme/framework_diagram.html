@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-020 PCME</title></head>
+<body>
+<h1>PCME：局部patch分数共识边际</h1>
+<p><strong>Base commit：</strong>897b445ce3a6d69e3f49d4da368fe66bdcaac90d；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<h2>父路径与固定分支</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC。加载SHA绑定的CCPE top2权重，固定absolute beta=9.177013。</p>
+<h2>新增共识差距</h2>
+<pre>v1,v2 = top2_n cos(patch_n, local_text_c)
+absolute = (v1+v2)/2
+gap = v1-v2
+final_logits = SEBC_logits + fixed_beta × absolute + beta_gap × gap
+beta_gap = 5 × tanh(raw_gap)</pre>
+<p>若孤立top1是噪声，预期beta_gap为负；若单一强部位更可信，则允许学到正值。raw_gap零初始化，关闭时严格复现CCPE。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新评估official test并保存一个全局最高H。真实unseen patch不进入梯度；test_used_for_selection=true。遗留CLIP patch准确checkpoint provenance仍不完整。</p>
+</body></html>
