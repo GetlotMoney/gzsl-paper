@@ -9,3 +9,4 @@ core_change: SDCR父原型和beta冻结；新增文本top-5近邻对比正交方
 success_condition: H大于78.320510，U和S任一项下降不超过2个百分点，gamma不在±5边界，正交余弦绝对值小于1e-5。
 failure_condition: H不超过SDCR、gamma饱和或近邻差分只改变U/S权衡。
 experiment: V2-INNOVATION-047
+interim_result: RUN-001以gamma=0父模型为best，非零gamma均降H且0.01学习率振荡；进入0.001学习率RESCUE-1。
