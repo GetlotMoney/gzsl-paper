@@ -4,15 +4,15 @@ idea_id: IDEA-057
 framework_id: FRAMEWORK-V2
 title: Local Visual Prototype Generation
 base_commit: 8dd45d33ad1fee24c910590293adb951838f177f
-code_commit: null
-status: planned
+code_commit: a065f06a290792e54eddc52d33f9351a710bdfa9
+status: rejected_seen_visual_domain_bias
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-023_lvpg/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: a065f06a290792e54eddc52d33f9351a710bdfa9
     config_ref: experiments/v2/innovation/INNOVATION-023_lvpg/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-023_lvpg/RUN-001
-    status: planned
+    status: completed

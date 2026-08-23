@@ -264,6 +264,8 @@ ECPE用100/50类episode训练CCPE beta后，beta第一轮即变为`-7.385873`并
 
 CRPE固定CCPE后按局部文本正交残差强度学习类别斜率，所有非零delta均未超过CCPE，best退回delta=0。IDEA-056拒绝；CCPE后的标量校准轴关闭，下一方向改为从seen局部patch视觉中心生成200类局部视觉原型。
 
+LVPG从seen真类patch中心ridge生成200类局部视觉原型后，beta被推到上限但H降到约`76.946222%`，best退回SEBC。seen视觉映射的unseen域偏置在局部空间仍存在，IDEA-057已拒绝；下一方向换用独立Claude文本原型，不再从seen视觉生成unseen表示。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

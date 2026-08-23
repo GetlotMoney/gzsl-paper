@@ -24,6 +24,6 @@
 | V2-INNOVATION-020 | IDEA-054 | PCME局部patch分数共识边际 | rejected（方向合理但无增益） | `INNOVATION-020_pcme/` |
 | V2-INNOVATION-021 | IDEA-055 | ECPE episode训练的CCPE | rejected（fold方向相反） | `INNOVATION-021_ecpe/` |
 | V2-INNOVATION-022 | IDEA-056 | CRPE类别语义可靠性patch缩放 | rejected（类别斜率无增益） | `INNOVATION-022_crpe/` |
-| V2-INNOVATION-023 | IDEA-057 | LVPG局部视觉原型生成 | planned | `INNOVATION-023_lvpg/` |
+| V2-INNOVATION-023 | IDEA-057 | LVPG局部视觉原型生成 | rejected（seen视觉域偏置） | `INNOVATION-023_lvpg/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
