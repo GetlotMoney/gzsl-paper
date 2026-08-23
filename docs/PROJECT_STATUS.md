@@ -248,6 +248,8 @@ SEBC在三个100/50类class-exclusive episode中只用全局seen图像训练一�
 
 LPSR首次把真实576 patch缓存接入无专家路线，但class-agnostic top64平均只使H增加`0.003747`且ZS下降`0.066668`，best beta为负。IDEA-048已止损；下一局部实验必须保留“每个类别寻找自己的patch”这一定位关系，并因forward公式变化新建Experiment。
 
+CCPE让每个类别用正交局部文本独立选择top patch。top8/top4仅为弱信号，top2的RUN-003达到`U/S/H/ZS=76.119131/79.278153/77.666533/83.168101%`，相对SEBC提高H `0.148151`并成为当前无专家最高条件。IDEA-049作为supported创新候选保留，但CLIP patch checkpoint provenance和最近相关工作检索尚未补齐，暂不作原创核心claim。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

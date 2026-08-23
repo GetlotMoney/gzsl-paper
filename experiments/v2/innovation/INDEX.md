@@ -16,6 +16,6 @@
 | V2-INNOVATION-012 | IDEA-046 | SDRS语义分歧驱动类名残差缩放 | supported auxiliary marginal（H=77.290521） | `INNOVATION-012_sdrs/` |
 | V2-INNOVATION-013 | IDEA-047 | SEBC seen内部episode竞争去偏置 | supported auxiliary（无专家H=77.518382） | `INNOVATION-013_sebc/` |
 | V2-INNOVATION-014 | IDEA-048 | LPSR局部patch-文本残差 | rejected（H仅+0.003747且方向错误） | `INNOVATION-014_lpsr/` |
-| V2-INNOVATION-015 | IDEA-049 | CCPE每类独立局部patch证据 | testing（top8弱正信号） | `INNOVATION-015_ccpe/` |
+| V2-INNOVATION-015 | IDEA-049 | CCPE每类独立局部patch证据 | supported candidate（当前无专家H=77.666533） | `INNOVATION-015_ccpe/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
