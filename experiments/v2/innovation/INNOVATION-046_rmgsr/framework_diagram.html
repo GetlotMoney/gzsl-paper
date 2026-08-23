@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-046 R-MGSR</title></head>
 <body>
 <h1>R-MGSR：系数正则化多几何路由</h1>
-<p><strong>Base commit：</strong>5cedbf0a1996e49f61480461297568166395c74f；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>5cedbf0a1996e49f61480461297568166395c74f；<strong>RUN-001 code commit：</strong>21b3924dd8f5572813351b1f1599da55fe6a99cf。</p>
 <pre>MGSR四个纯文本几何特征 → 4个共享系数 → 类别句权重 → 残差logits
 训练loss = seen CE + 0.01×KL(类别权重 || SDCR全局权重)
                     + 0.05×mean(共享系数²)</pre>

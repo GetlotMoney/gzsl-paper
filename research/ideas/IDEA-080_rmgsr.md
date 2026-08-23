@@ -11,3 +11,4 @@ core_change: MGSR结构、父权重、seed和训练量不变，只新增0.05共�
 success_condition: H大于78.365239，class variation大于0.001，最小权重大于0.01，且残差绝对最大值小于0.245。
 failure_condition: H不超过MGSR RUN-001、残差继续饱和或类别差异退化。
 experiment: V2-INNOVATION-046
+interim_result: RUN-001的0.05 L2过强，best退回父模型且class variation=0；最后补救固定为0.005 L2。
