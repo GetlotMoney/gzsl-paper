@@ -29,6 +29,18 @@ class UnifiedSeenTrainingTest(unittest.TestCase):
             dropout=0.0,
         )
 
+    def test_development_mode_accepts_100_seen_and_150_active_classes(self):
+        model = UnifiedSeenPrototypeModel(
+            self.sentences,
+            torch.arange(100),
+            self.centroids[:100],
+            active_classes=torch.arange(150),
+            dropout=0.0,
+        )
+        self.assertEqual(model.seenclasses.numel(), 100)
+        self.assertEqual(model.active_classes.numel(), 150)
+        self.assertTrue(torch.isfinite(model.topology_loss()))
+
     def test_full_epoch_batches_cover_every_sample_once(self):
         batches = full_epoch_batches(7057, 64, torch.Generator().manual_seed(7))
         joined = torch.cat(batches)

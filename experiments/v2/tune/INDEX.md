@@ -1,4 +1,5 @@
 # V2 Tune
 
-当前无实验。首项从`V2-TUNE-001`开始。
-
+| Experiment | 目的 | 状态 | 目录 |
+|---|---|---|---|
+| V2-TUNE-001 | 标准类别不相交validation上的无专家/专家双路线 | planned | `TUNE-001_standard_clip_validation/` |

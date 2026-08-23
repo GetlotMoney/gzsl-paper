@@ -13,15 +13,15 @@
 
 ## 评估协议
 
-新的论文主结果使用 `fixed_epoch_inductive_gzsl`：
+新的论文主结果使用xlsa17类别不相交validation协议：
 
-1. 训练梯度只使用 CUB `trainval_loc` 的 150 个 seen 类、7,057 张图像。
-2. 每个epoch完整遍历7,057张seen图像，每张恰好一次。
-3. 方法结构、参数、seed和报告epoch在RUN前固定；test-seen/test-unseen只在训练完成后加载一次，不用于选择。
-4. test 图像不进入反向传播；unseen 类图像从不参与梯度训练。
-5. U/S/H 在 200 类联合空间计算，ZS 在 50 个 unseen 类空间计算。
+1. 开发阶段只使用`train_loc`的100类训练，并以类别不相交的`val_loc` 50类选择结构、参数和epoch。
+2. validation图像不进入梯度；三折、冻结和多阶段训练允许，但只能发生在开发训练/validation范围内。
+3. 选择冻结后，使用`trainval_loc`的150类、7,057张图像重新训练最终模型。
+4. official test只在最终checkpoint完成后评估，不用于回改方法。
+5. U/S/H在200类联合空间计算，ZS在50个unseen类空间计算。
 
-新主结果记录 `test_used_for_selection: false`。历史 `test_selected_inductive_gzsl` 结果继续保留，但只能作为探索观察，并明确披露 `test_used_for_selection: true`。
+新主结果记录`validation_used_for_selection: true / test_used_for_selection: false`。历史test-selected结果继续保留，但只能作为探索观察。CLIP-based与经典ResNet-101 GZSL分开报告，不能直接混表比较。
 
 ## 运行
 

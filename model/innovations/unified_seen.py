@@ -17,6 +17,7 @@ class UnifiedSeenPrototypeModel(nn.Module):
         sentence_embeds: torch.Tensor,
         seenclasses: torch.Tensor,
         visual_centroids: torch.Tensor,
+        active_classes: torch.Tensor | None = None,
         *,
         dropout: float = 0.5,
         inner_ratio: float = 0.35,
@@ -29,8 +30,17 @@ class UnifiedSeenPrototypeModel(nn.Module):
     ):
         super().__init__()
         classes = torch.as_tensor(seenclasses).detach().cpu().long().sort().values
-        if classes.numel() != 150 or classes.unique().numel() != 150:
-            raise ValueError("统一seen训练固定要求150个唯一seen类。")
+        if classes.numel() not in (100, 150) or classes.unique().numel() != classes.numel():
+            raise ValueError("统一seen训练只接受100类开发训练或150类最终训练。")
+        active = (
+            torch.arange(200)
+            if active_classes is None
+            else torch.as_tensor(active_classes).detach().cpu().long().sort().values
+        )
+        if active.ndim != 1 or active.unique().numel() != active.numel():
+            raise ValueError("active_classes必须是一维唯一类别编号。")
+        if active.numel() not in (150, 200) or not torch.isin(classes, active).all():
+            raise ValueError("active_classes必须包含训练类并固定为150或200类。")
         self.tg_vpr = VariableClassTGVPR(
             sentence_embeds,
             classes,
@@ -41,6 +51,7 @@ class UnifiedSeenPrototypeModel(nn.Module):
             temperature=temperature,
         )
         self.register_buffer("seenclasses", classes, persistent=True)
+        self.register_buffer("active_classes", active, persistent=True)
         self.max_transport_step = float(max_transport_step)
         self.max_generator_magnitude = float(max_generator_magnitude)
         if self.max_transport_step <= 0.0 or self.max_generator_magnitude <= 0.0:
@@ -147,9 +158,11 @@ class UnifiedSeenPrototypeModel(nn.Module):
         )
 
     def topology_loss(self) -> torch.Tensor:
-        base = self.tg_vpr.base_prototypes()
-        adapted = self.prototypes()
-        off_diag = ~torch.eye(200, dtype=torch.bool, device=base.device)
+        ids = self.active_classes.to(self.tg_vpr.sentence_embeds.device)
+        base = self.tg_vpr.base_prototypes().index_select(0, ids)
+        adapted = self.prototypes().index_select(0, ids)
+        count = ids.numel()
+        off_diag = ~torch.eye(count, dtype=torch.bool, device=base.device)
         x = (base @ base.T).detach()[off_diag]
         y = (adapted @ adapted.T)[off_diag]
         x = x - x.mean()

@@ -62,13 +62,14 @@
 
 ## 训练与测试
 
-- 新的论文主结果固定使用 `fixed_epoch_inductive_gzsl`；旧的 `test_selected_inductive_gzsl` 结果只保留为探索观察，不得作为无偏最终成绩。
-- 训练只使用 150 个 seen 类的训练图像；unseen 类图像不得进入梯度。
-- 正式统一训练每个epoch必须让7,057张seen图像各出现一次，不使用三折pseudo-unseen或重复平衡抽样代替完整遍历。
-- 方法结构、参数、seed和报告epoch必须在RUN前固定；official test只能在训练完成后加载一次，记录 `test_used_for_selection: false`。
-- 旧实验若反复使用official test选择参数、epoch、模型或seed，必须保持 `test_used_for_selection: true`并明确标记为test-selected探索结果。
+- 标准开发使用xlsa17类别不相交划分：`train_loc`的100类用于梯度训练，`val_loc`的50类只用于validation选结构、参数和epoch。
+- validation-unseen图像不得进入梯度；三折、冻结或多阶段训练本身允许，但只能使用开发训练/validation边界，不能访问official test。
+- 开发选定后冻结方法、参数、epoch和seed，再使用`trainval_loc`的150类/7,057张图像重新训练。
+- official `test_seen_loc/test_unseen_loc`只能在最终checkpoint完成后评估，不得用于回改方法；记录`test_used_for_selection: false`。
+- CLIP与经典ResNet-101属于不同视觉特征设置，必须记录准确checkpoint、预处理和缓存生成脚本，并只与相同骨干基线直接比较。
+- 旧实验若使用official test选择参数、epoch、模型或seed，必须保持`test_used_for_selection: true`并明确标记为test-informed探索结果。
 - U/S/H 使用 200 类联合竞争；ZS 使用 50 个 unseen 类竞争。
-- 未满足固定epoch与单次official test边界的结果不得描述为blind-test或无偏最终结果。
+- 已经受历史official test反馈影响的方法必须披露`historical_test_informed_architecture: true`；单次RUN不读test不能消除历史影响。
 
 ## 交付
 
