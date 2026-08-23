@@ -58,6 +58,10 @@ def load_config(path: Path):
             "V2-INNOVATION-026", "IDEA-060", "merge_embeddings",
             77.80809298394227,
         ),
+        "gzsl-paper.oclr.v1": (
+            "V2-INNOVATION-029", "IDEA-063", "claude_embeddings",
+            77.82913952565472,
+        ),
     }
     identity = identity_by_schema.get(config.get("schema_version")) if isinstance(config, dict) else None
     cache_key = identity[2] if identity is not None else "unknown_embeddings"
@@ -142,7 +146,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     input_sha = verify_inputs(config, paths)
     cache_key = (
         "claude_embeddings"
-        if config["schema_version"] == "gzsl-paper.clre.v1"
+        if config["schema_version"] in ("gzsl-paper.clre.v1", "gzsl-paper.oclr.v1")
         else "merge_embeddings"
     )
     for key in (
@@ -188,6 +192,16 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         class_names = torch.load(
             Path(config["class_name_embeddings"]), map_location="cpu", weights_only=True
         ).to(device)
+        if config["schema_version"] == "gzsl-paper.oclr.v1":
+            normalized_names = F.normalize(class_names.float(), dim=-1)
+            normalized_residual = F.normalize(names.float(), dim=-1)
+            names = F.normalize(
+                normalized_residual
+                - (normalized_residual * normalized_names).sum(
+                    dim=-1, keepdim=True
+                ) * normalized_names,
+                dim=-1,
+            )
         parent, sdrs = _load_main(
             config, sentence, labels, features, class_names, seen_classes, device
         )
