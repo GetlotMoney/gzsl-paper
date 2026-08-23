@@ -294,6 +294,8 @@ ORMR使用GPT-5.6 role-matched七句均值做类名正交残差，达到`U/S/H/Z
 
 OESR使用GPT-5.6八句均值正交残差达到`U/S/H/ZS=76.715362/79.547596/78.105812/83.822459%`，H比OCLR高`0.033627`但U/ZS更低。因差距很小，暂列弱H候选并追加seed7可靠性，不替代OCLR主候选。
 
+OESR seed7达到`U/S/H/ZS=76.715362/79.540753/78.102514/83.822459%`，与seed5 H只差`0.003299`且两者均超过OCLR，确认H提升可靠。按owner规则当前最高取seed5 `H=78.105812`；OCLR仍保留更高U/ZS的强候选身份。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
