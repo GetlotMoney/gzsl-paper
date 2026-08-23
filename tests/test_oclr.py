@@ -18,6 +18,13 @@ class OCLRTest(unittest.TestCase):
         self.assertIn("normalized_residual", source)
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_seed7_reliability_config(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-029_oclr/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["random_seed"], 7)
+        self.assertEqual(config["schema_version"], "gzsl-paper.oclr.v1")
+
 
 if __name__ == "__main__":
     unittest.main()

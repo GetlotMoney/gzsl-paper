@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Orthogonal Cross-LLM Residual
 base_commit: 8452f2ad849942174162c520d83ee16bcfaa33d3
 code_commit: 5656b83593d9cc95a080256e3650d924f55f684d
-status: supported_strong_candidate_novelty_pending
+status: reliability_seed7_planned
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -16,3 +16,8 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-029_oclr/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-029_oclr/RUN-001
     status: completed
+  - run_id: RUN-002
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-029_oclr/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-029_oclr/RUN-002
+    status: planned
