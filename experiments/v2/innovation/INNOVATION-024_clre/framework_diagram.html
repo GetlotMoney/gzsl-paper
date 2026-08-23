@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-024 CLRE</title></head>
 <body>
 <h1>CLRE：跨LLM描述残差证据</h1>
-<p><strong>Base commit：</strong>3c1cb0b6d2e12788132bdb10337362016c6ed0ad；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>3c1cb0b6d2e12788132bdb10337362016c6ed0ad；<strong>RUN-001 code commit：</strong>bb885f84cdcb20bf9869468a10845203ff95074d。</p>
 <h2>父路径与独立输入</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC，输出[B,200]父logits。新增输入为SHA绑定的Claude描述CLIP原型[200,768]；它不替换GPT父语义。</p>
 <h2>公式</h2>
 <pre>claude_logits = Norm(image_CLS) @ Norm(claude_text).T

@@ -4,15 +4,15 @@ idea_id: IDEA-058
 framework_id: FRAMEWORK-V2
 title: Cross-LLM Residual Evidence
 base_commit: 3c1cb0b6d2e12788132bdb10337362016c6ed0ad
-code_commit: null
-status: planned
+code_commit: bb885f84cdcb20bf9869468a10845203ff95074d
+status: supported_candidate_provenance_pending
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-024_clre/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: bb885f84cdcb20bf9869468a10845203ff95074d
     config_ref: experiments/v2/innovation/INNOVATION-024_clre/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-024_clre/RUN-001
-    status: planned
+    status: completed

@@ -266,6 +266,8 @@ CRPE固定CCPE后按局部文本正交残差强度学习类别斜率，所有非
 
 LVPG从seen真类patch中心ridge生成200类局部视觉原型后，beta被推到上限但H降到约`76.946222%`，best退回SEBC。seen视觉映射的unseen域偏置在局部空间仍存在，IDEA-057已拒绝；下一方向换用独立Claude文本原型，不再从seen视觉生成unseen表示。
 
+CLRE把独立Claude描述原型作为SEBC残差，RUN-001达到`U/S/H/ZS=75.997263/79.707325/77.808093/83.523118%`，相对SEBC四项同时提高，并超过CCPE成为当前无专家最高。IDEA-058作为supported候选保留；Claude cache准确prompt/编码模型provenance与相关工作仍待补齐，暂不作原创claim。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

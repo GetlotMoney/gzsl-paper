@@ -16,6 +16,7 @@
 - [x] V2-INNOVATION-011 NCRA仅用seen图像训练类名残差，Chen-style RUN-003达到H=`77.201125`，无专家路线正式超过`77.023182`目标。
 - [x] NCRA→SDRS→SEBC无专家辅助链达到当前最高H=`77.518382`；SEBC只用seen内部episode训练，复用既有校准机制不作原创claim。
 - [x] CCPE首次把类别条件真实patch证据接入V2，top2达到当前无专家最高H=`77.666533`；创新候选成立但新颖性与patch来源仍待核查。
+- [x] CLRE独立Claude描述残差达到新的无专家最高H=`77.808093`且U/S/ZS全提高；候选成立但cache provenance与新颖性仍待核查。
 - [x] 标准开发协议改为`train_loc` 100类训练、`val_loc` 50类类别不相交validation选模。
 - [x] `V2-TUNE-001`划分固定为3724张梯度图像、978张val-seen、2355张val-unseen；official test不加载。
 - [x] 无专家路线validation H=`76.472964`；专家312维属性路线H=`77.556001`，各自validation调优后Delta=`+1.083037`。
