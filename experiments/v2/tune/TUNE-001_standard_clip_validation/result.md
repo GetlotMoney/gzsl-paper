@@ -1,6 +1,6 @@
 # V2-TUNE-001 结果
 
-状态：`completed_initial_pair`。
+状态：`tuning_pair2_planned`。
 
 RUN-001为无专家属性CLIP/GPT文本路线，RUN-002在同一视觉特征和训练协议上增加CUB 312维专家属性残差。
 
@@ -20,3 +20,5 @@ RUN-001为无专家属性CLIP/GPT文本路线，RUN-002在同一视觉特征和�
 
 - RUN-001：`d99156ff078c0584f80497be7a86bef06a76180c6fc499df4135f8cc7d6c97c8`
 - RUN-002：`e3bc0bdc8596d6c09106939784c147bd8871915e52838990d1d0778c40e01c53`
+
+下一对RUN-003/004仅把`topology_weight`从`0.1`降为`0.03`，根据validation检查拓扑约束是否过强。
