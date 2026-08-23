@@ -49,14 +49,20 @@ CONFIG_KEYS = {
 
 
 def enable_joint_parameters(
-    sdrs, calibrator, sdcr, train_sebc: bool = True
+    sdrs,
+    calibrator,
+    sdcr,
+    train_sebc: bool = True,
+    train_sdrs: bool = True,
 ) -> list[str]:
     for module in (sdrs, calibrator, sdcr):
         for parameter in module.parameters():
             parameter.requires_grad_(False)
-    sdrs.raw_slope.requires_grad_(True)
     sdcr.raw_weight_residual.requires_grad_(True)
-    names = ["sdrs.raw_slope"]
+    names = []
+    if train_sdrs:
+        sdrs.raw_slope.requires_grad_(True)
+        names.append("sdrs.raw_slope")
     if train_sebc:
         calibrator.raw_gamma.requires_grad_(True)
         names.append("calibrator.raw_gamma")
@@ -69,18 +75,23 @@ def load_config(path: Path):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    expected_keys = (
-        CONFIG_KEYS | {"train_sebc"}
-        if schema == "gzsl-paper.jscf.v2"
-        else CONFIG_KEYS
-    )
+    if schema == "gzsl-paper.jscf.v3":
+        expected_keys = CONFIG_KEYS | {"train_sebc", "train_sdrs"}
+    elif schema == "gzsl-paper.jscf.v2":
+        expected_keys = CONFIG_KEYS | {"train_sebc"}
+    else:
+        expected_keys = CONFIG_KEYS
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"JSCF配置字段错误；缺少={sorted(expected_keys-actual)}，"
             f"多出={sorted(actual-expected_keys)}。"
         )
     if (
-        schema not in ("gzsl-paper.jscf.v1", "gzsl-paper.jscf.v2")
+        schema not in (
+            "gzsl-paper.jscf.v1",
+            "gzsl-paper.jscf.v2",
+            "gzsl-paper.jscf.v3",
+        )
         or config["experiment_id"] != "V2-INNOVATION-050"
         or config["idea_id"] != "IDEA-084"
     ):
@@ -107,6 +118,11 @@ def load_config(path: Path):
         raise ValueError("JSCF训练参数错误。")
     if schema == "gzsl-paper.jscf.v2" and config["train_sebc"] is not False:
         raise ValueError("JSCF RESCUE-1必须冻结SEBC。")
+    if schema == "gzsl-paper.jscf.v3" and (
+        config["train_sebc"] is not False
+        or config["train_sdrs"] is not False
+    ):
+        raise ValueError("JSCF RESCUE-2必须冻结SEBC和SDRS。")
     return config, sha256_file(path)
 
 
@@ -193,7 +209,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         ).to(device)
         sdcr.load_state_dict(sdcr_payload["sdcr_state_dict"], strict=True)
         trainable_names = enable_joint_parameters(
-            sdrs, calibrator, sdcr, bool(config.get("train_sebc", True))
+            sdrs,
+            calibrator,
+            sdcr,
+            bool(config.get("train_sebc", True)),
+            bool(config.get("train_sdrs", True)),
         )
         trainable_modules = torch.nn.ModuleList([sdrs, calibrator, sdcr])
         optimizer = torch.optim.Adam(

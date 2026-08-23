@@ -74,6 +74,20 @@ class JSCFTest(unittest.TestCase):
         )
         self.assertFalse(config["train_sebc"])
 
+    def test_final_rescue_trains_only_eight_sentence_weights(self):
+        sdrs, calibrator, sdcr = DummySDRS(), DummyCalibrator(), DummySDCR()
+        names = enable_joint_parameters(
+            sdrs, calibrator, sdcr, train_sebc=False, train_sdrs=False
+        )
+        self.assertEqual(names, ["sdcr.raw_weight_residual"])
+        self.assertFalse(sdrs.raw_slope.requires_grad)
+        self.assertFalse(calibrator.raw_gamma.requires_grad)
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-050_jscf/configs/RUN-003.yaml"
+        )
+        self.assertFalse(config["train_sebc"])
+        self.assertFalse(config["train_sdrs"])
+
 
 if __name__ == "__main__":
     unittest.main()

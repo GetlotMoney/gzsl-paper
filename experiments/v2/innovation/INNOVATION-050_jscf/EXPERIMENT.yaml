@@ -21,4 +21,10 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-050_jscf/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-050_jscf/RUN-002
     status: completed_failed_sdrs_drift
+  - run_id: RUN-003
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-050_jscf/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-050_jscf/RUN-003
+    status: planned
+    attempt_no: RESCUE-2
     attempt_no: RESCUE-1
