@@ -41,6 +41,24 @@ class UnifiedSeenTrainingTest(unittest.TestCase):
         self.assertEqual(model.active_classes.numel(), 150)
         self.assertTrue(torch.isfinite(model.topology_loss()))
 
+    def test_external_fold_parent_reuses_shared_transfer_generator(self):
+        model = self.make_model().eval()
+        with torch.no_grad():
+            direct = model.prototype_stages()
+            external = model.prototype_stages_from_tg(model.tg_vpr, model.seenclasses)
+        for key in direct:
+            self.assertTrue(torch.equal(direct[key], external[key]), key)
+
+        fold_parent = UnifiedSeenPrototypeModel(
+            self.sentences,
+            torch.arange(100),
+            self.centroids[:100],
+            active_classes=torch.arange(150),
+            dropout=0.0,
+        ).tg_vpr
+        stages = model.prototype_stages_from_tg(fold_parent, torch.arange(100))
+        self.assertEqual(tuple(stages["final"].shape), (200, 768))
+
     def test_full_epoch_batches_cover_every_sample_once(self):
         batches = full_epoch_batches(7057, 64, torch.Generator().manual_seed(7))
         joined = torch.cat(batches)
