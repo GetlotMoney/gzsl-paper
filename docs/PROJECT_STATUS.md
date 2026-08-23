@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 198
+completed_try_count: 199
 minimum_required_try_count: 50
 ```
 
@@ -437,6 +437,8 @@ R-SNPS seed7达到`U/S/H/ZS=76.844305/80.079335/78.428474/83.949006%`，比稳�
 下一实验`V2-INNOVATION-075 / TCPS`固定稳定SNPS union top-3关系图，只在12维selector中新增parent top2-top3间隔，补充第三类竞争上下文；这是新的输入轴，不再改变语义图。
 
 TCPS首次启动因patch-free schema漏接线在创建输出目录前失败，修复后RUN-001 seed5达到`U/S/H/ZS=76.949829/80.056471/78.472415/84.052283%`，相对稳定SNPS top-3提高H `0.005705`。第13维与其权重均有效但增益极小，追加seed7判断可靠性。当前累计198组。
+
+TCPS seed7达到`U/S/H/ZS=76.748145/80.184466/78.428683/83.953416%`，比稳定SNPS top-3低`0.017417`；TCPS相对top-3增量在seed5/7一正一负，IDEA-109拒绝并停止第三类上下文轴。当前累计199组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

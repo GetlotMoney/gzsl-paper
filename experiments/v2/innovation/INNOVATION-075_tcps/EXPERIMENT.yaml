@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Triadic Competition Pair Selector
 base_commit: 89db8894ffe3b756e090595517d946dcc6768543
 code_commit: 359bbc65338bb830a747d7d72e690517eacc8096
-status: testing_seed7_reliability
+status: rejected_not_reproducible
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -22,7 +22,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-075_tcps/RUN-001
     status: completed_positive
   - run_id: RUN-002
-    code_commit: null
+    code_commit: a148a64588209c523c25182ebe3bbd6e4f4eea6b
     config_ref: experiments/v2/innovation/INNOVATION-075_tcps/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-075_tcps/RUN-002
-    status: planned
+    status: completed_below_top3
