@@ -314,6 +314,8 @@ SDCR seed5达到`U/S/H/ZS=76.747000/79.959893/78.320510/83.953977%`，与seed7 H
 
 SDCR每批mask两句的条件达到H `78.303151%`，高于CASR但低于mask一句的`78.320510%`。dropout数量轴关闭，最终固定每批mask 1句。
 
+SDCC在SDCR上增加dropout学生到完整教师的一致性KL，最高H仅`78.285486%`，低于SDCR。显式一致性过度限制了dropout带来的有效偏移，IDEA-076拒绝并关闭该loss轴。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

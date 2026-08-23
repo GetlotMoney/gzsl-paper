@@ -4,15 +4,15 @@ idea_id: IDEA-076
 framework_id: FRAMEWORK-V2
 title: Sentence-Dropout Consistency Calibration
 base_commit: 408a122284697d59643052406058790231a13001
-code_commit: null
-status: planned
+code_commit: f75d4a543fe77850078facdef1e91598d4e38948
+status: rejected_consistency_overconstraint
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-042_sdcc/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: f75d4a543fe77850078facdef1e91598d4e38948
     config_ref: experiments/v2/innovation/INNOVATION-042_sdcc/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-042_sdcc/RUN-001
-    status: planned
+    status: completed
