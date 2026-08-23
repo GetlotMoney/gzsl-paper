@@ -102,6 +102,13 @@ class AGCTTest(unittest.TestCase):
         self.assertEqual(config["threshold_quantile"], 0.75)
         self.assertEqual(config["random_seed"], 5)
 
+    def test_agct_precision_rescue_uses_25th_percentile(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-004.yaml"
+        )
+        self.assertEqual(config["threshold_quantile"], 0.25)
+        self.assertEqual(config["random_seed"], 5)
+
 
 if __name__ == "__main__":
     unittest.main()
