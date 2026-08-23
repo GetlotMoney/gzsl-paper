@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 204
+completed_try_count: 205
 minimum_required_try_count: 50
 ```
 
@@ -459,6 +459,8 @@ RDSS seed7达到`U/S/H/ZS=76.914233/80.009395/78.431289/84.020644%`，相对SDCR
 S-RDSS seed5初始态精确复现SNPS top-3 `H=78.466710%`，且仅一个尺度参数可训练；完整运行后所有非零尺度状态均更差，best保持`scale_weight=0 / selected iteration=-1`。分阶段边界有效，但尺度不能独立叠加，IDEA-113拒绝且不追加seed7。当前累计204组。
 
 下一实验`V2-INNOVATION-080 / TR-RDSS`在冻结与从零联合训练之间取中间方案：从SNPS top-3初始化13维selector，联合训练但对旧12维权重和偏置增加固定0.1信赖域约束。
+
+TR-RDSS seed5达到`U/S/H/ZS=76.917648/80.219018/78.533653/84.054536%`，相对SNPS父模型提高H `0.066943`。role scale weight=`-0.037190`，旧权重drift=`0.115727`，信赖域允许有限协调；追加seed7检验稳定性。当前累计205组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

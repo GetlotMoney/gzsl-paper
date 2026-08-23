@@ -10,3 +10,4 @@ success_condition: seed5 H大于SNPS父模型78.466710且旧权重drift有限；
 failure_condition: 初始态不复现父模型、H不超过父模型或drift非有限。
 experiment: V2-INNOVATION-080
 paper_core_innovation: false
+interim_result: seed5 H=78.533653，相对SNPS +0.066943；旧权重drift有限，追加seed7。

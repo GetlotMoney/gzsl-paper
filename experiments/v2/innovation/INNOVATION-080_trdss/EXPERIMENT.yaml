@@ -4,15 +4,15 @@ idea_id: IDEA-114
 framework_id: FRAMEWORK-V2
 title: Trust-Region Role Disagreement Scale Selector
 base_commit: bbd476ab3b88387cce96339d79b477189f2bad80
-code_commit: null
-status: planned
+code_commit: 45f05ec5a796e9a6dc33e85368babb070e48bf6e
+status: testing_seed7_reliability
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-080_trdss/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 45f05ec5a796e9a6dc33e85368babb070e48bf6e
     config_ref: experiments/v2/innovation/INNOVATION-080_trdss/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-080_trdss/RUN-001
-    status: planned
+    status: completed_positive
