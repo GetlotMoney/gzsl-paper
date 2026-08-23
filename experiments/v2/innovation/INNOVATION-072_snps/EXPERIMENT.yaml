@@ -26,3 +26,8 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-072_snps/configs/RUN-003.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-072_snps/RUN-003
     status: completed_positive_rescue2_union_top3
+  - run_id: RUN-004
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-072_snps/configs/RUN-004.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-072_snps/RUN-004
+    status: planned_rescue2_union_top3_seed7
