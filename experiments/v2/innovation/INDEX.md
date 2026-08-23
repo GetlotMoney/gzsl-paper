@@ -61,5 +61,6 @@
 | V2-INNOVATION-057 | IDEA-091 | TPLD同族成对logit去卷积 | rejected（非均匀图仍放大错误邻接） | `INNOVATION-057_tpld/` |
 | V2-INNOVATION-058 | IDEA-092 | AGCT歧义门控跨LLM二选一 | supported 25分位两seed（最高H=78.357224，参数轴关闭） | `INNOVATION-058_agct/` |
 | V2-INNOVATION-059 | IDEA-093 | CCTB反共识二选一 | rejected（gate过稀且无预测变化） | `INNOVATION-059_cctb/` |
+| V2-INNOVATION-060 | IDEA-094 | MAGT多源歧义门控二选一 | planned（Claude+merge） | `INNOVATION-060_magt/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

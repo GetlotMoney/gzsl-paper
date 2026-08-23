@@ -3,7 +3,10 @@ import unittest
 
 import torch
 
-from model.innovations.agct import AmbiguityGatedCrossLLMTieBreaker
+from model.innovations.agct import (
+    AmbiguityGatedCrossLLMTieBreaker,
+    MultiSourceAmbiguityGatedTieBreaker,
+)
 from model.innovations.train_agct import load_config, select_margin_threshold
 
 
@@ -115,6 +118,38 @@ class AGCTTest(unittest.TestCase):
         )
         self.assertEqual(config["threshold_quantile"], 0.25)
         self.assertEqual(config["margin_temperature"], 0.05)
+
+    def test_magt_has_two_trainable_source_betas_and_exact_parent(self):
+        generator = torch.Generator().manual_seed(887)
+        groups = torch.arange(200) // 2
+        model = MultiSourceAmbiguityGatedTieBreaker(
+            torch.randn(200, 768, generator=generator),
+            13.0,
+            torch.randn(2, 200, 768, generator=generator),
+            groups,
+            0.25,
+            0.1,
+            5.0,
+        )
+        images = torch.randn(2, 768, generator=generator)
+        parent = torch.randn(2, 200, generator=generator)
+        baseline = model(parent, images)
+        expected = parent + model.sdcr_beta * (
+            torch.nn.functional.normalize(images, dim=-1)
+            @ model.sdcr_prototypes.T
+        )
+        self.assertTrue(torch.equal(baseline, expected))
+        baseline.sum().backward()
+        self.assertEqual(model.raw_betas.numel(), 2)
+        self.assertIsNotNone(model.raw_betas.grad)
+
+    def test_magt_config_binds_merge_source(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-060_magt/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.magt.v1")
+        self.assertTrue(config["merge_embeddings_sha256"])
+        self.assertTrue(config["omlr_model_sha256"])
 
 
 if __name__ == "__main__":

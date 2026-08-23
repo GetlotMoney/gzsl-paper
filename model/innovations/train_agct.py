@@ -9,7 +9,10 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-from model.innovations.agct import AmbiguityGatedCrossLLMTieBreaker
+from model.innovations.agct import (
+    AmbiguityGatedCrossLLMTieBreaker,
+    MultiSourceAmbiguityGatedTieBreaker,
+)
 from model.innovations.ebc import EpisodicBiasCalibration
 from model.innovations.sdcr import SentenceDropoutConservativeRouting
 from model.innovations.tigr import taxonomic_suffix_group_ids
@@ -82,11 +85,15 @@ def load_config(path: Path):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    expected_keys = (
-        CONFIG_KEYS | {"consensus_only"}
-        if schema == "gzsl-paper.cctb.v1"
-        else CONFIG_KEYS
-    )
+    if schema == "gzsl-paper.magt.v1":
+        expected_keys = CONFIG_KEYS | {
+            "merge_embeddings", "merge_embeddings_sha256",
+            "omlr_model", "omlr_model_sha256",
+        }
+    elif schema == "gzsl-paper.cctb.v1":
+        expected_keys = CONFIG_KEYS | {"consensus_only"}
+    else:
+        expected_keys = CONFIG_KEYS
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"AGCT配置字段错误；缺少={sorted(expected_keys-actual)}，"
@@ -95,6 +102,7 @@ def load_config(path: Path):
     identity = {
         "gzsl-paper.agct.v1": ("V2-INNOVATION-058", "IDEA-092"),
         "gzsl-paper.cctb.v1": ("V2-INNOVATION-059", "IDEA-093"),
+        "gzsl-paper.magt.v1": ("V2-INNOVATION-060", "IDEA-094"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -244,11 +252,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     config, config_sha = load_config(config_path)
     paths = resolve_paths(config)
     input_sha = verify_inputs(config, paths)
-    for key in (
+    verify_keys = [
         "base_model", "sdrs_model", "sebc_model", "casr_model", "sdcr_model",
         "oclr_model", "class_name_embeddings", "eight_sentence_embeddings",
         "claude_embeddings",
-    ):
+    ]
+    if config["schema_version"] == "gzsl-paper.magt.v1":
+        verify_keys.extend(("merge_embeddings", "omlr_model"))
+    for key in verify_keys:
         if sha256_file(Path(config[key])) != config[f"{key}_sha256"]:
             raise ValueError(f"AGCT {key} SHA错误。")
     device = torch.device(config["device"])
@@ -348,16 +359,38 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             claude_n - (claude_n * names_n).sum(dim=-1, keepdim=True) * names_n,
             dim=-1,
         )
-        model = AmbiguityGatedCrossLLMTieBreaker(
-            sdcr.prototypes(use_dropout=False).detach(),
-            fixed_beta,
-            claude_orth,
-            group_ids,
-            threshold,
-            float(config["margin_temperature"]),
-            float(config["max_beta"]),
-            bool(config.get("consensus_only", False)),
-        ).to(device)
+        if config["schema_version"] == "gzsl-paper.magt.v1":
+            merge = torch.load(
+                Path(config["merge_embeddings"]),
+                map_location="cpu",
+                weights_only=True,
+            ).to(device)
+            merge_n = F.normalize(merge.float(), dim=-1)
+            merge_orth = F.normalize(
+                merge_n
+                - (merge_n * names_n).sum(dim=-1, keepdim=True) * names_n,
+                dim=-1,
+            )
+            model = MultiSourceAmbiguityGatedTieBreaker(
+                sdcr.prototypes(use_dropout=False).detach(),
+                fixed_beta,
+                torch.stack((claude_orth, merge_orth)),
+                group_ids,
+                threshold,
+                float(config["margin_temperature"]),
+                float(config["max_beta"]),
+            ).to(device)
+        else:
+            model = AmbiguityGatedCrossLLMTieBreaker(
+                sdcr.prototypes(use_dropout=False).detach(),
+                fixed_beta,
+                claude_orth,
+                group_ids,
+                threshold,
+                float(config["margin_temperature"]),
+                float(config["max_beta"]),
+                bool(config.get("consensus_only", False)),
+            ).to(device)
         optimizer = torch.optim.Adam(
             model.parameters(), lr=float(config["learning_rate"]), weight_decay=0.0
         )
@@ -442,9 +475,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                             "reproducibility": reproducibility,
                         },
                     )
+                beta_text = (
+                    str(stats["source_betas"])
+                    if "source_betas" in stats
+                    else f"{stats['tie_beta']:.6f}"
+                )
                 print(
                     f"iter={iteration} H={metrics['H']:.6f} "
-                    f"best_H={best_h:.6f} beta={stats['tie_beta']:.6f} "
+                    f"best_H={best_h:.6f} beta={beta_text} "
                     f"gate_U={stats['unseen_gzsl_gate_mean']:.4f}"
                 )
 
@@ -476,6 +514,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "class_name_embeddings": config["class_name_embeddings_sha256"],
                 "eight_sentence_embeddings": config["eight_sentence_embeddings_sha256"],
                 "claude_embeddings": config["claude_embeddings_sha256"],
+                **(
+                    {
+                        "merge_embeddings": config["merge_embeddings_sha256"],
+                        "omlr_model": config["omlr_model_sha256"],
+                    }
+                    if config["schema_version"] == "gzsl-paper.magt.v1"
+                    else {}
+                ),
             },
         )
         metrics = {
