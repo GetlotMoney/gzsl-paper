@@ -14,3 +14,4 @@ interim_result: seed5 H=78.339523，相对SDCR +0.019013；gate非零且beta不�
 result: seed7 H=78.339523、相对父模型+0.036667；两seed均正且最高一致，supported辅助候选。
 coverage_rescue_1: 75分位使gate扩大到0.306但best退回父模型；中位数条件保持正式最优，最后检查25分位。
 precision_rescue_seed5: 25分位H=78.357224，高于中位数AGCT 0.017701；追加seed7。
+precision_rescue_result: seed7 H=78.339523且相对父模型正增益；25分位两seed成立，正式最高取seed5 78.357224。
