@@ -94,6 +94,14 @@ class AGCTTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.cctb.v1")
         self.assertTrue(config["consensus_only"])
 
+    def test_agct_coverage_rescue_uses_75th_percentile(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-003.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.agct.v1")
+        self.assertEqual(config["threshold_quantile"], 0.75)
+        self.assertEqual(config["random_seed"], 5)
+
 
 if __name__ == "__main__":
     unittest.main()

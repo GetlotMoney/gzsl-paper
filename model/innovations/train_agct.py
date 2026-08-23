@@ -112,7 +112,7 @@ def load_config(path: Path):
     if (
         config["group_rule"] != "class_name_last_token_min2"
         or config["threshold_source"] != "train_wrong_same_group_margin"
-        or float(config["threshold_quantile"]) != 0.5
+        or float(config["threshold_quantile"]) not in (0.5, 0.75)
         or float(config["margin_temperature"]) != 0.1
         or float(config["max_beta"]) != 5.0
         or int(config["batch_size"]) != 50
