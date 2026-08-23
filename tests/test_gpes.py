@@ -136,6 +136,24 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.bgwps.v1")
         self.assertEqual(config["pair_class_balance"], "inverse_frequency")
 
+    def test_sqrt_balance_is_milder_than_full_inverse(self):
+        targets = torch.tensor([0, 0, 0, 1])
+        _, full = class_balanced_pair_weights(targets, torch.ones(4), exponent=1.0)
+        weights, sqrt = class_balanced_pair_weights(
+            targets, torch.ones(4), exponent=0.5
+        )
+        self.assertLess(float(sqrt[1] / sqrt[0]), float(full[1] / full[0]))
+        self.assertAlmostEqual(float(weights.mean()), 1.0, places=6)
+
+    def test_mbgwps_config_binds_sqrt_balance(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-065_mbgwps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.mbgwps.v1")
+        self.assertEqual(
+            config["pair_class_balance"], "sqrt_inverse_frequency"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

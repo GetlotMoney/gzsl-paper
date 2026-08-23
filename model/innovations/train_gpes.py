@@ -57,12 +57,14 @@ CONFIG_KEYS = {
 
 
 def class_balanced_pair_weights(
-    pair_targets: torch.Tensor, soft_weights: torch.Tensor
+    pair_targets: torch.Tensor,
+    soft_weights: torch.Tensor,
+    exponent: float = 1.0,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     counts = torch.bincount(pair_targets.long(), minlength=2).float()
     if bool((counts == 0).any()):
         raise ValueError("B-GWPS pair标签必须同时包含top1/top2真类。")
-    class_weights = pair_targets.numel() / (2.0 * counts)
+    class_weights = (pair_targets.numel() / (2.0 * counts)).pow(float(exponent))
     combined = soft_weights.float() * class_weights.index_select(
         0, pair_targets.long()
     )
@@ -75,7 +77,7 @@ def load_config(path: Path):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    if schema == "gzsl-paper.bgwps.v1":
+    if schema in ("gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1"):
         expected_keys = CONFIG_KEYS | {"pair_training_scope", "pair_class_balance"}
     elif schema == "gzsl-paper.gwps.v1":
         expected_keys = CONFIG_KEYS | {"pair_training_scope"}
@@ -90,6 +92,7 @@ def load_config(path: Path):
         "gzsl-paper.gpes.v1": ("V2-INNOVATION-062", "IDEA-096"),
         "gzsl-paper.gwps.v1": ("V2-INNOVATION-063", "IDEA-097"),
         "gzsl-paper.bgwps.v1": ("V2-INNOVATION-064", "IDEA-098"),
+        "gzsl-paper.mbgwps.v1": ("V2-INNOVATION-065", "IDEA-099"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -123,7 +126,9 @@ def load_config(path: Path):
         or float(config["weight_decay"]) != 0.0001
     ):
         raise ValueError("GPES训练参数错误。")
-    if schema in ("gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1") and config[
+    if schema in (
+        "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1"
+    ) and config[
         "pair_training_scope"
     ] != "all_same_group_top2_soft_gate":
         raise ValueError("GWPS必须使用全同族top2与soft gate加权。")
@@ -131,6 +136,10 @@ def load_config(path: Path):
         "pair_class_balance"
     ] != "inverse_frequency":
         raise ValueError("B-GWPS必须使用pair标签逆频率平衡。")
+    if schema == "gzsl-paper.mbgwps.v1" and config[
+        "pair_class_balance"
+    ] != "sqrt_inverse_frequency":
+        raise ValueError("M-BGWPS必须使用平方根逆频率平衡。")
     return config, sha256_file(path)
 
 
@@ -346,7 +355,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         ids = seen_classes.to(device)
         pair_logits_list, feature_list, target_list, pair_weight_list = [], [], [], []
         hard_margin_only = config["schema_version"] not in (
-            "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1"
+            "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1",
+            "gzsl-paper.mbgwps.v1",
         )
         for start in range(0, features.shape[0], 512):
             images = features[start : start + 512].to(device).float()
@@ -378,9 +388,17 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         pair_targets = torch.cat(target_list)
         pair_weights = torch.cat(pair_weight_list)
         pair_class_weights = torch.ones(2)
-        if config["schema_version"] == "gzsl-paper.bgwps.v1":
+        if config["schema_version"] in (
+            "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1"
+        ):
             pair_weights, pair_class_weights = class_balanced_pair_weights(
-                pair_targets, pair_weights
+                pair_targets,
+                pair_weights,
+                exponent=(
+                    0.5
+                    if config["schema_version"] == "gzsl-paper.mbgwps.v1"
+                    else 1.0
+                ),
             )
         if pair_targets.numel() < 50 or pair_targets.unique().numel() != 2:
             raise ValueError("GPES成对训练样本不足或标签退化。")

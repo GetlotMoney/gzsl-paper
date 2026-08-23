@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-065 M-BGWPS</title></head>
+<body>
+<h1>M-BGWPS：温和类别平衡pair选择器</h1>
+<p><strong>Base commit：</strong>02232cd41bf9ac8ea07bff0d7209ea2d44a27cd4；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<pre>GWPS soft gate pair weight
+× sqrt(inverse_frequency(pair target))
+→ mean=1归一化 → weighted pair CE</pre>
+<p>相对B-GWPS将类别补偿从完整逆频率降为平方根逆频率；模型与推理不变。</p>
+</body></html>
