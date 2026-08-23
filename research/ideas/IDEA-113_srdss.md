@@ -1,6 +1,6 @@
 # IDEA-113：Staged Role Disagreement Scale Selector
 
-status: testing
+status: rejected
 problem: RDSS两seed尺度权重方向一致为负，但联合重训旧12维selector使seed7略低于稳定SNPS。
 hypothesis: 冻结每个seed已训练的SNPS top-3 12维选择器，只训练新增尺度系数，可保留稳定父模型并获得跨seed一致增益。
 evidence_refs: IDEA-112 seed5/7尺度权重均负；IDEA-106稳定SNPS top-3 checkpoint。
@@ -10,3 +10,5 @@ success_condition: seed5 H大于其SNPS父模型78.466710且scale_weight非零�
 failure_condition: 初始态不能精确复现父模型、H不超过父模型或scale_weight非有限。
 experiment: V2-INNOVATION-079
 paper_core_innovation: false
+result: 初始态精确复现SNPS H=78.466710；完整训练后best仍为scale_weight=0、selected iteration=-1。
+decision: 尺度不能独立叠加，分阶段补救失败；不追加seed7。

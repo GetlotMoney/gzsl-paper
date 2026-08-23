@@ -136,7 +136,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-110 / PDRS类别对判别角色选择器（角色距离过度放大，无增益）
       ├─ rejected_branch：IDEA-111 / ETPC错误定向成对修正（seen最小翻转不迁移）
       ├─ revised_branch：IDEA-112 / RDSS角色分歧尺度选择器（最高H=78.555039；分阶段补救待做）
-      ├─ testing_branch：IDEA-113 / S-RDSS分阶段角色尺度选择器（planned，只训1个系数）
+      ├─ rejected_branch：IDEA-113 / S-RDSS分阶段角色尺度选择器（尺度不能独立叠加）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）
