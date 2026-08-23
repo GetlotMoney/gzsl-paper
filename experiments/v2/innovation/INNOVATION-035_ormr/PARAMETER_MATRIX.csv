@@ -1,2 +1,2 @@
 run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,learned_beta,test_used_for_selection,output_uri,decision
-RUN-001,,experiments/v2/innovation/INNOVATION-035_ormr/configs/RUN-001.yaml,d5630a02858fe4376e33513bb1c841b1fee938a4f4d239a68fe0b8560503acd0,5,planned,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-035_ormr/RUN-001,pending
+RUN-001,8ef8605f2ed1682b3082e87bda515590018fea7e,experiments/v2/innovation/INNOVATION-035_ormr/configs/RUN-001.yaml,d5630a02858fe4376e33513bb1c841b1fee938a4f4d239a68fe0b8560503acd0,5,completed,76.753217,79.154509,77.935371,83.825284,141,11.666481,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-035_ormr/RUN-001,drop_below_oclr_keep_positive

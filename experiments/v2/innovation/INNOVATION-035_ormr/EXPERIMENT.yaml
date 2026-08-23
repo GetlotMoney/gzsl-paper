@@ -4,15 +4,15 @@ idea_id: IDEA-069
 framework_id: FRAMEWORK-V2
 title: Orthogonal Role-Matched Residual
 base_commit: 597c012d6c4545c58a1a50ad17c604a21bf1be5f
-code_commit: null
-status: planned
+code_commit: 8ef8605f2ed1682b3082e87bda515590018fea7e
+status: rejected_below_oclr_positive_control
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-035_ormr/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 8ef8605f2ed1682b3082e87bda515590018fea7e
     config_ref: experiments/v2/innovation/INNOVATION-035_ormr/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-035_ormr/RUN-001
-    status: planned
+    status: completed

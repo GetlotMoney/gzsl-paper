@@ -92,7 +92,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-066 / BOCR二维正交跨LLM残差（rejected，完整去父方向过强）
       ├─ rejected_branch：IDEA-067 / PBOR父方向部分正交（rejected，best退回OCLR）
       ├─ rejected_branch：IDEA-068 / ORER OCLR后episode重校准（rejected，best退回原gamma）
-      ├─ testing_branch：IDEA-069 / ORMR GPT-5.6 role-matched正交残差（testing，新文本源）
+      ├─ rejected_branch：IDEA-069 / ORMR GPT-5.6 role-matched正交残差（低于OCLR，保留正向对照）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

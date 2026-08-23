@@ -290,6 +290,8 @@ PBOR从OCLR起步学习父方向部分去除，seen CE把系数推到`-1`边界�
 
 ORER在OCLR后用episode学习gamma残差，残差趋近`+0.1`上限且H降到`77.658158%`，best严格退回原gamma。IDEA-068拒绝；OCLR后的语义几何、局部组合与竞争重校准轴均已收口，当前最高仍为两seed可靠的OCLR `H=78.072185%`。
 
+ORMR使用GPT-5.6 role-matched七句均值做类名正交残差，达到`U/S/H/ZS=76.753217/79.154509/77.935371/83.825284%`，相对SEBC明显提高但低于OCLR。IDEA-069不晋级，保留为正交机制跨模型正向对照。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
