@@ -14,6 +14,6 @@
 | V2-INNOVATION-010 | IDEA-044 | SCCC样本条件竞争校准 | rejected | `INNOVATION-010_sccc/` |
 | V2-INNOVATION-011 | IDEA-045 | NCRA类名与GPT长描述双语义残差 | supported auxiliary（无专家H=77.201125） | `INNOVATION-011_ncra/` |
 | V2-INNOVATION-012 | IDEA-046 | SDRS语义分歧驱动类名残差缩放 | supported auxiliary marginal（H=77.290521） | `INNOVATION-012_sdrs/` |
-| V2-INNOVATION-013 | IDEA-047 | SEBC seen内部episode竞争去偏置 | planned | `INNOVATION-013_sebc/` |
+| V2-INNOVATION-013 | IDEA-047 | SEBC seen内部episode竞争去偏置 | testing（RUN-001过修正失败） | `INNOVATION-013_sebc/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
