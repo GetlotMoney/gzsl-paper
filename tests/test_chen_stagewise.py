@@ -76,6 +76,16 @@ class ChenStagewiseTest(unittest.TestCase):
         self.assertNotIn("best_h_by_stage", source)
         self.assertIn('"nested_official_test_selection": False', source)
 
+    def test_pseudo_unseen_experiment_changes_loss_not_data_boundary(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/confirmation/CONFIRM-006_chen_stagewise_pseudo_unseen/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["stage2_loss"], "seen_ce_plus_pseudo_unseen_ce")
+        self.assertEqual(config["pseudo_unseen_weight"], 0.25)
+        self.assertEqual(config["pseudo_unseen_fold_count"], 3)
+        self.assertEqual(config["max_transport_step"], 0.5)
+        self.assertFalse(config["unseen_images_used_for_gradient"])
+
 
 if __name__ == "__main__":
     unittest.main()

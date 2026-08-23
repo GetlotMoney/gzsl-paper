@@ -9,6 +9,7 @@ import torch
 import torch.nn.functional as F
 import yaml
 
+from model.innovations.elpt import fixed_class_folds
 from model.innovations.train_chen_style import (
     INPUT_KEYS,
     OFFICIAL_KEYS,
@@ -70,6 +71,11 @@ CONFIG_KEYS = {
     "expected_sha256",
     "class_order_sha256",
 }
+PSEUDO_UNSEEN_CONFIG_KEYS = CONFIG_KEYS | {
+    "stage2_loss",
+    "pseudo_unseen_weight",
+    "pseudo_unseen_fold_count",
+}
 
 
 def load_config(path: Path) -> tuple[dict, str]:
@@ -78,15 +84,29 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise FileNotFoundError(f"Chen-style分阶段配置不存在：{path}")
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    expected_keys = (
+        PSEUDO_UNSEEN_CONFIG_KEYS
+        if isinstance(config, dict)
+        and config.get("schema_version") == "gzsl-paper.chen-stagewise-pseudo-unseen.v1"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"分阶段配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"分阶段配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
-    if config["schema_version"] != "gzsl-paper.chen-stagewise.v1":
+    if config["schema_version"] not in (
+        "gzsl-paper.chen-stagewise.v1",
+        "gzsl-paper.chen-stagewise-pseudo-unseen.v1",
+    ):
         raise ValueError("分阶段配置schema错误。")
-    if config["experiment_id"] != "V2-CONFIRM-005" or config["condition_id"] != "NO-EXPERT":
-        raise ValueError("首次分阶段实验固定V2-CONFIRM-005/NO-EXPERT。")
+    expected_experiment = (
+        "V2-CONFIRM-006"
+        if config["schema_version"] == "gzsl-paper.chen-stagewise-pseudo-unseen.v1"
+        else "V2-CONFIRM-005"
+    )
+    if config["experiment_id"] != expected_experiment or config["condition_id"] != "NO-EXPERT":
+        raise ValueError("分阶段实验或condition身份错误。")
     if config["framework_id"] != "FRAMEWORK-V2" or config["dataset"] != "CUB":
         raise ValueError("分阶段训练只接受FRAMEWORK-V2/CUB。")
     if config["evaluation_protocol"] != EVALUATION_PROTOCOL:
@@ -117,6 +137,17 @@ def load_config(path: Path) -> tuple[dict, str]:
     ]
     if config["stages"] != expected_stages:
         raise ValueError("分阶段边界必须固定50/100/50名义epoch。")
+    if expected_experiment == "V2-CONFIRM-006":
+        if config["stage2_loss"] != "seen_ce_plus_pseudo_unseen_ce":
+            raise ValueError("CONFIRM-006阶段2loss身份错误。")
+        if float(config["pseudo_unseen_weight"]) != 0.25 or int(config["pseudo_unseen_fold_count"]) != 3:
+            raise ValueError("CONFIRM-006固定pseudo-unseen权重0.25和3折。")
+        if float(config["max_transport_step"]) != 0.5:
+            raise ValueError("CONFIRM-006固定沿用最佳迁移步长上限0.5。")
+    else:
+        config.setdefault("stage2_loss", "seen_ce")
+        config.setdefault("pseudo_unseen_weight", 0.0)
+        config.setdefault("pseudo_unseen_fold_count", 0)
     if set(config["inputs"]) != set(INPUT_KEYS) or set(config["expected_sha256"]) != set(INPUT_KEYS):
         raise ValueError("分阶段输入或SHA不完整。")
     return config, sha256_file(path)
@@ -221,6 +252,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         global_to_seen = torch.full((200,), -1, dtype=torch.long)
         global_to_seen[seenclasses] = torch.arange(150)
         generator = torch.Generator(device="cpu").manual_seed(seed)
+        pseudo_unseen_enabled = config["stage2_loss"] == "seen_ce_plus_pseudo_unseen_ce"
+        folds = fixed_class_folds(seenclasses) if pseudo_unseen_enabled else None
         report_interval = int(config["report_interval"])
         best_h = float("-inf")
         best_metrics = best_state = best_iteration = best_nominal_epoch = best_stage = None
@@ -248,9 +281,22 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             images = train_features.index_select(0, indices).to(device).float()
             targets = global_to_seen[train_labels.index_select(0, indices)].to(device)
             optimizer.zero_grad(set_to_none=True)
-            ce = F.cross_entropy(model.logits(images, seenclasses), targets)
+            logits = model.logits(images, seenclasses)
+            ce = F.cross_entropy(logits, targets)
+            pseudo_unseen_ce = logits.new_zeros(())
+            if current_stage == "TRANSFER_CCGR" and pseudo_unseen_enabled:
+                fold_id = (iteration - int(stage["start"])) % int(config["pseudo_unseen_fold_count"])
+                pseudo_unseen = folds[fold_id][1]
+                pseudo_mask = torch.isin(train_labels.index_select(0, indices), pseudo_unseen)
+                if not pseudo_mask.any():
+                    raise RuntimeError("阶段2随机batch缺少pseudo-unseen样本。")
+                pseudo_unseen_ce = F.cross_entropy(logits[pseudo_mask.to(device)], targets[pseudo_mask.to(device)])
             topology = model.topology_loss()
-            loss = ce + float(config["topology_weight"]) * topology
+            loss = (
+                ce
+                + float(config["pseudo_unseen_weight"]) * pseudo_unseen_ce
+                + float(config["topology_weight"]) * topology
+            )
             if not torch.isfinite(loss):
                 raise FloatingPointError("分阶段loss包含NaN/Inf。")
             loss.backward()
@@ -275,6 +321,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     "nominal_epoch": nominal_epoch,
                     "stage": current_stage,
                     "train_loss": float(loss.detach()),
+                    "pseudo_unseen_ce": float(pseudo_unseen_ce.detach()),
                     "official_metrics_percent": metrics,
                     "diagnostics": model.diagnostics(),
                 }
@@ -339,6 +386,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "training_strategy": config["training_strategy"],
             "selection_scope": config["selection_scope"],
             "nested_official_test_selection": False,
+            "stage2_loss": config["stage2_loss"],
+            "pseudo_unseen_weight": float(config["pseudo_unseen_weight"]),
             "test_used_for_selection": True,
             "unseen_images_used_for_gradient": False,
             "strict_blind_claim": False,
