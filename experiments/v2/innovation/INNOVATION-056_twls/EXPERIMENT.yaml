@@ -4,15 +4,15 @@ idea_id: IDEA-090
 framework_id: FRAMEWORK-V2
 title: Taxonomic Within-Group Logit Sharpening
 base_commit: c27dc9c1f9495ac3b8a90bfe5323a6e53124264d
-code_commit: null
-status: planned
+code_commit: 6e140c3c06efd1b971b54af13065ba585c7e0d6f
+status: rejected_uniform_sharpening
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-056_twls/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 6e140c3c06efd1b971b54af13065ba585c7e0d6f
     config_ref: experiments/v2/innovation/INNOVATION-056_twls/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-056_twls/RUN-001
-    status: planned
+    status: completed_failed_parent_only

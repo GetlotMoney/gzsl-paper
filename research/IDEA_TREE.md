@@ -113,7 +113,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-087 / PGSD patch引导句子dropout（未中心化权重改变loss尺度）
       ├─ rejected_branch：IDEA-088 / CPGSD中心化patch引导dropout（中心化后仍无增益）
       ├─ rejected_branch：IDEA-089 / TIGR同族类内身份残差（类中心差方向无增益）
-      ├─ testing_branch：IDEA-090 / TWLS同族logit差值缩放（testing，保持组均值）
+      ├─ rejected_branch：IDEA-090 / TWLS同族logit差值缩放（统一锐化放大错误）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

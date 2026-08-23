@@ -57,6 +57,6 @@
 | V2-INNOVATION-053 | IDEA-087 | PGSD patch引导句子dropout | rejected（权重均值1.164改变loss尺度） | `INNOVATION-053_pgsd/` |
 | V2-INNOVATION-054 | IDEA-088 | CPGSD中心化patch引导dropout | rejected（均值1后仍退回父模型） | `INNOVATION-054_cpgsd/` |
 | V2-INNOVATION-055 | IDEA-089 | TIGR同族类内身份残差 | rejected（37组有效但非零beta均降H） | `INNOVATION-055_tigr/` |
-| V2-INNOVATION-056 | IDEA-090 | TWLS同族logit差值缩放 | planned（保持组均值） | `INNOVATION-056_twls/` |
+| V2-INNOVATION-056 | IDEA-090 | TWLS同族logit差值缩放 | rejected（统一锐化放大错误排名） | `INNOVATION-056_twls/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
