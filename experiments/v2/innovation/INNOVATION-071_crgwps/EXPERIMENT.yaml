@@ -4,15 +4,15 @@ idea_id: IDEA-105
 framework_id: FRAMEWORK-V2
 title: Centered Role Gate-Weighted Pair Selector
 base_commit: 30682e927626a612ac4bf679725b27b5f4caed0f
-code_commit: null
-status: planned
+code_commit: 07a3503a8d52030af9961e9fb4852638699e5c95
+status: testing_seed7_reliability
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-071_crgwps/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 07a3503a8d52030af9961e9fb4852638699e5c95
     config_ref: experiments/v2/innovation/INNOVATION-071_crgwps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-071_crgwps/RUN-001
-    status: planned
+    status: completed_positive

@@ -10,3 +10,4 @@ success_condition: seed5 H大于S-GWPS 78.368367且不读取patch；正提升后
 failure_condition: H不超过S-GWPS、best退回关闭态或标准化产生非有限值。
 experiment: V2-INNOVATION-071
 paper_core_innovation: false
+interim_result: seed5 patch-free H=78.393178，相对S-GWPS +0.024811；追加seed7可靠性验证。
