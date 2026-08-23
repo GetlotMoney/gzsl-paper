@@ -4,15 +4,15 @@ idea_id: IDEA-104
 framework_id: FRAMEWORK-V2
 title: Role-aware Gate-Weighted Pair Selector
 base_commit: 845ec3dfb76bea0a4a72a1dbb5b57ef81bc8af3e
-code_commit: null
-status: planned
+code_commit: 04aa3dfd95c40f65581ac2725ca7ceb56b521182
+status: rejected
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-070_rgwps/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 04aa3dfd95c40f65581ac2725ca7ceb56b521182
     config_ref: experiments/v2/innovation/INNOVATION-070_rgwps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-070_rgwps/RUN-001
-    status: planned
+    status: completed_no_gain
