@@ -15,3 +15,4 @@ result: seed7 H=78.339523、相对父模型+0.036667；两seed均正且最高一
 coverage_rescue_1: 75分位使gate扩大到0.306但best退回父模型；中位数条件保持正式最优，最后检查25分位。
 precision_rescue_seed5: 25分位H=78.357224，高于中位数AGCT 0.017701；追加seed7。
 precision_rescue_result: seed7 H=78.339523且相对父模型正增益；25分位两seed成立，正式最高取seed5 78.357224。
+final_temperature_rescue: 温度0.05与0.1最高指标逐项相同；固定0.1并关闭参数轴。
