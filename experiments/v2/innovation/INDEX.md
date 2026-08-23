@@ -48,6 +48,6 @@
 | V2-INNOVATION-044 | IDEA-078 | IADR重要句优先dropout路由 | rejected（H=78.302856，低于SDCR） | `INNOVATION-044_iadr/` |
 | V2-INNOVATION-045 | IDEA-079 | MGSR多几何类别句子路由 | rejected family（最高78.365239但饱和） | `INNOVATION-045_mgsr/` |
 | V2-INNOVATION-046 | IDEA-080 | R-MGSR系数正则化多几何路由 | rejected（两档L2均退回父模型，预算耗尽） | `INNOVATION-046_rmgsr/` |
-| V2-INNOVATION-047 | IDEA-081 | NCSR近邻对比语义残差 | testing（首RUN退回父模型，降学习率补救） | `INNOVATION-047_ncsr/` |
+| V2-INNOVATION-047 | IDEA-081 | NCSR近邻对比语义残差 | rejected（两档学习率均退回父模型） | `INNOVATION-047_ncsr/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

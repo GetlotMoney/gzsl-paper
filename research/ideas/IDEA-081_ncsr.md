@@ -1,6 +1,6 @@
 # IDEA-081：Neighborhood-Contrastive Semantic Residual
 
-status: testing
+status: rejected
 problem: SDCR强化了类内语义证据，但细粒度鸟类最容易在语义近邻之间混淆；继续改变句权重已经止损。
 hypothesis: 对每类SDCR原型减去top-5语义近邻均值，并只保留与原型正交的判别方向；seen图像训练一个有界gamma后，可减少近邻混淆并超过SDCR。
 evidence_refs: IDEA-075 SDCR是当前可靠父模型；IDEA-079/080表明继续类别句路由会在饱和和关闭态之间摆动，因此改为显式近邻差分方向。
@@ -10,3 +10,4 @@ success_condition: H大于78.320510，U和S任一项下降不超过2个百分点
 failure_condition: H不超过SDCR、gamma饱和或近邻差分只改变U/S权衡。
 experiment: V2-INNOVATION-047
 interim_result: RUN-001以gamma=0父模型为best，非零gamma均降H且0.01学习率振荡；进入0.001学习率RESCUE-1。
+result: RUN-002降低学习率后仍以gamma=0父模型为best；近邻正交差分方向无效，提前止损。
