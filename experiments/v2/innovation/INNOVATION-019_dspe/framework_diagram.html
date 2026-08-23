@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-019 DSPE</title></head>
 <body>
 <h1>DSPE：绝对与相对双尺度patch证据</h1>
-<p><strong>Base commit：</strong>3462a34b2333dce828f12acb8c3303ee99cfa810；<strong>RUN-001 code commit：</strong>223a6f5ce2edd3a1d9db60ac2cbae68587feb7fd（failed_runtime，训练未完成）；<strong>RUN-002 code commit：</strong>b89018a4588bc71c47cf3a7af8b8efcf3cf830b6。</p>
+<p><strong>Base commit：</strong>3462a34b2333dce828f12acb8c3303ee99cfa810；<strong>RUN-001 code commit：</strong>223a6f5ce2edd3a1d9db60ac2cbae68587feb7fd（failed_runtime）；<strong>RUN-002 code commit：</strong>b89018a4588bc71c47cf3a7af8b8efcf3cf830b6；<strong>RUN-003 code commit：</strong>4af27ab24c20bdb3154dbf0832b182ed7dfa59fa（failed_runtime）。</p>
 <h2>父路径</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC，输出[B,200]父logits。DSPE从SEBC关闭态联合学习两路局部证据，不加载CCPE/CNPE权重。</p>
 <h2>双尺度证据</h2>
 <pre>absolute_ic = mean(top2_n cos(patch_in, local_text_c))
