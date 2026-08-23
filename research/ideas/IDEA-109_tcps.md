@@ -10,3 +10,4 @@ success_condition: seed5 H大于稳定SNPS top-3 78.466710；正提升后追加s
 failure_condition: H不超过top-3、best退回关闭态或第三类特征退化。
 experiment: V2-INNOVATION-075
 paper_core_innovation: false
+interim_result: seed5 patch-free H=78.472415，相对稳定SNPS top-3 +0.005705；第三类特征有效但增益很小，追加seed7。
