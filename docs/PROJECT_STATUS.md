@@ -298,6 +298,8 @@ OESR seed7达到`U/S/H/ZS=76.715362/79.540753/78.102514/83.822459%`，与seed5 H
 
 AOSR固定OESR beta并学习八句softmax权重，seed5达到`U/S/H/ZS=76.445878/80.058682/78.210580/83.652842%`，相对OESR H提高`0.104768`。句权重std/min=`0.107490/0.012587`通过非塌缩门槛；暂为当前最高H，追加seed7可靠性。
 
+AOSR seed7最高H=`78.231209%`，但min句权重仅`0.0000056`且三个句子近零，违反非塌缩门槛；只保留高H观察。当前正式有效最高仍取seed5 `H=78.210580%`。下一实验用KL保守约束防止句子删除。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

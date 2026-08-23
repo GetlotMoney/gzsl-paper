@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-037 AOSR</title></head>
 <body>
 <h1>AOSR：自适应八句正交残差</h1>
-<p><strong>Base commit：</strong>442b28a44d5c79cbe2aad73c31598b7ccbae7ee4；<strong>RUN-001 code commit：</strong>15e09c78247f138b467f5b77289127076904a3ff。</p>
+<p><strong>Base commit：</strong>442b28a44d5c79cbe2aad73c31598b7ccbae7ee4；<strong>RUN-001 code commit：</strong>15e09c78247f138b467f5b77289127076904a3ff；<strong>RUN-002 code commit：</strong>471f3c66a8c717d37ebb79c24d5565f097771a3e（mechanism collapse）。</p>
 <h2>从OESR严格起步</h2>
 <pre>w = softmax(raw_weights), raw_weights=0 → w_r=1/8
 mixed_c = sum_r w_r × GPT56_sentence_cr

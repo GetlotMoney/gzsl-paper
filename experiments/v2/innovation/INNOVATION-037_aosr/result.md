@@ -1,6 +1,6 @@
 # V2-INNOVATION-037 结果
 
-状态：`reliability_seed7_planned`。
+状态：`supported_seed5_seed7_collapsed`。
 
 RUN-001得到`U/S/H/ZS=76.445878/80.058682/78.210580/83.652842%`，相对OESR H提高`0.104768`，成为当前最高H。U下降`0.269485`、S提高`0.511086`，均在预注册边界内。
 
@@ -9,3 +9,7 @@ best句子权重为`[0.012587, 0.353058, 0.121260, 0.107798, 0.025099, 0.018921,
 最佳位于iteration=`1551`。模型SHA256：`77b95e78087e2e4a674c4dde8150cfaa37907b2c2f1375775d5ed03cd957269c`；最后checkpoint SHA256：`b812cdcfc09197f0976157cc88fc616bf8ca2e1ae1959fdf1c39186a60d68c34`。追加seed7可靠性后再决定最终身份。
 
 RUN-002使用OESR seed7正式best作为父模型，并把AOSR随机seed改为7；其余结构、数据和训练协议不变。
+
+RUN-002最高`U/S/H/ZS=76.545304/79.993051/78.231209/83.853400%`，H比seed5更高；但句权重min=`0.0000056`，三个句子接近归零，违反预注册`min>0.01`非塌缩门槛。
+
+因此seed7只保留为高H观察，不能替代正式有效的seed5 `H=78.210580`。RUN-002模型SHA256：`c2b4bcab348063c5d5cba836f8aef7514919131fb61d957337fce87e6f67f9de`；最后checkpoint SHA256：`9ef4f6dc43ce55dc8e69e9902349b39bba12dcb9cc875a5b940351b0fafa7357`。下一实验增加显式KL约束防止句子删除。
