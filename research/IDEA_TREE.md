@@ -69,7 +69,7 @@ V2-H-PLUS-3PP
       ├─ auxiliary_branch：IDEA-036 / VPA属性视觉原型残差（supported辅助，4seed稳定提高H与ZS）
       ├─ auxiliary_branch：IDEA-037 / VEBC视觉原型偏置校准（supported辅助，4seed组合H mean超过80）
       ├─ auxiliary_branch：IDEA-045 / NCRA无专家类名残差（supported辅助，Chen-style H=77.201125，未作原创claim）
-      ├─ testing_branch：IDEA-046 / SDRS语义分歧残差缩放（testing，NCRA父模型上的单变量类条件补救）
+      ├─ auxiliary_branch：IDEA-046 / SDRS语义分歧残差缩放（supported，H=77.290521，增益较小不作核心）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

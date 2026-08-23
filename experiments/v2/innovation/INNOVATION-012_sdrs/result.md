@@ -1,9 +1,13 @@
 # V2-INNOVATION-012 结果
 
-状态：`rescue1_conservative_delta_planned`。
+状态：`supported_auxiliary_marginal`。
 
 RUN-001得到`U/S/H/ZS=75.029516/79.568261/77.232263/83.028460%`，相对NCRA父模型H只提高`0.031139`个百分点。最佳位于iteration=`0`，即第一个seen训练batch之后，learned_delta=`0.049998`；后续delta增大时H普遍下降，诊断为允许幅度过大导致快速过修正。
 
 该结果仅标记`keep_marginal`，不宣称新模块成立。模型SHA256：`8c10e7f513adc5a06300aab36e7b04d0932f8f04d46481a10f47bda1c1c4b0b2`；最后checkpoint SHA256：`3ec9dcd820608fa482c3fd6b21f48da03962d0ddbd6c172713bbb1d1c627a13f`。
 
 RESCUE-1只把max_delta从5.0收紧到0.5，防止类别修正幅度过大；公式、输入、loss、seed、训练量和评估语义均不变。
+
+RUN-002得到`U/S/H/ZS=73.985535/80.904585/77.290521/83.061785%`，相对NCRA父模型H提高`0.089396`。最佳位于iteration=`282`，learned_delta=`0.394185/0.5`，未贴边；U下降`1.145691`、S上升`1.516277`，通过预注册边界。该分支保留为有效但增益较小的辅助改进，不作为新的论文核心创新。
+
+模型SHA256：`788ff97f3e81cba2f9d87c64a8ee81ffde59450c332229a5c8715824516f56d6`；最后checkpoint SHA256：`bde4a9449a069bd970cb24362c452597034debc6027b529dee25d66ac6bf94b3`。

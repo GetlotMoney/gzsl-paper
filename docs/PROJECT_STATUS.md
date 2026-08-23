@@ -242,6 +242,8 @@ TG-VPR新颖性审计进一步加入PAPER-009/010：结构化、对比式LLM视�
 
 Chen-style无专家路线新增NCRA类名残差：冻结最佳分阶段父模型，只用seen训练图像学习一个有界beta，并由整次RUN的official H选一个全局最佳权重。RUN-003达到`U/S/H/ZS=75.131226/79.388309/77.201125/83.028460%`，相对父模型H提高`1.194277`，正式超过`77.023182%`目标；该结果明确`test_used_for_selection=true`，不作blind-test声明。NCRA暂列supported辅助分支，相关工作检索前不宣称原创核心创新。
 
+SDRS按父原型与类名原型的余弦分歧为NCRA提供类别条件缩放。收紧幅度后的RUN-002达到`U/S/H/ZS=73.985535/80.904585/77.290521/83.061785%`，比NCRA提高H `0.089396`；通过预注册边界但增益较小，保留为supported辅助改进，不作为论文核心创新。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
