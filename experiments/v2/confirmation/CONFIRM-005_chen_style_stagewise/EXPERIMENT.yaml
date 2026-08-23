@@ -1,0 +1,34 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-CONFIRM-005
+slug: chen_style_stagewise
+kind: confirmation
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+framework_diagram: experiments/v2/confirmation/CONFIRM-005_chen_style_stagewise/framework_diagram.html
+base_commit: 53528de2687bd06094ed6bd13547072756b30454
+code_commit: null
+research_question: 固定边界分阶段训练是否能使无专家路线超过Chen-style端到端H 74.933940并达到77.023目标？
+status: planned
+evaluation_protocol: chen_shiming_code_aligned_stagewise_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+training_strategy: stagewise_fixed_boundaries_then_joint
+selection_scope: whole_run_whole_model_only
+nested_official_test_selection: false
+stage_schedule:
+  - TG-VPR only: 50 nominal epochs
+  - frozen TG-VPR, train TST/NTR and CCGR: 100 nominal epochs
+  - joint finetune all modules at lr 1e-5: 50 nominal epochs
+server:
+  ssh_host: lab4090
+  gpu: 1
+  output_root: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-005_chen_style_stagewise
+runs:
+  - run_id: RUN-001
+    condition: no_expert_stagewise
+    code_commit: null
+    seed: 5
+    config_ref: experiments/v2/confirmation/CONFIRM-005_chen_style_stagewise/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-005_chen_style_stagewise/RUN-001
+    status: planned

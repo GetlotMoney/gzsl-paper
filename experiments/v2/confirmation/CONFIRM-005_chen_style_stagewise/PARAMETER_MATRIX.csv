@@ -1,0 +1,2 @@
+run_id,condition,code_commit,config_ref,config_sha256,seed,batch_size,niters,evaluation_protocol,status,U,S,H,ZS,selected_iteration,selected_nominal_epoch,selected_stage,test_used_for_selection,output_uri,decision
+RUN-001,no_expert_stagewise,,experiments/v2/confirmation/CONFIRM-005_chen_style_stagewise/configs/RUN-001.yaml,b08a94d212e333656ab4b86dde92b55202e142bbcf3ee3495e0426cf8a5c0165,5,50,28228,chen_shiming_code_aligned_stagewise_test_selected_gzsl,planned,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-005_chen_style_stagewise/RUN-001,pending

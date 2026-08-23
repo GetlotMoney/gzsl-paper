@@ -1,0 +1,56 @@
+schema_version: gzsl-paper.chen-stagewise.v1
+experiment_id: V2-CONFIRM-005
+condition_id: NO-EXPERT
+framework_id: FRAMEWORK-V2
+dataset: CUB
+evaluation_protocol: chen_shiming_code_aligned_stagewise_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+training_strategy: stagewise_fixed_boundaries_then_joint
+selection_scope: whole_run_whole_model_only
+nested_official_test_selection: false
+feature_backbone: legacy_clip_768_unknown
+feature_provenance_complete: false
+device: cuda:0
+random_seed: 5
+batch_size: 50
+epochs: 200
+niters: 28228
+report_interval: 141
+optimizer: Adam
+weight_decay: 0.0001
+dropout: 0.5
+inner_ratio: 0.35
+outer_ratio: 0.65
+topology_weight: 0.1
+temperature: 0.07
+transport_hidden_dim: 16
+generator_hidden_dim: 32
+max_transport_step: 1.5
+max_generator_magnitude: 0.2
+stages:
+  - {name: TG_ONLY, start: 0, end: 7050, lr: 0.0001}
+  - {name: TRANSFER_CCGR, start: 7050, end: 21150, lr: 0.0001}
+  - {name: JOINT_FINETUNE, start: 21150, end: 28228, lr: 0.00001}
+inputs:
+  sentence_embeds: data/cache/CUB_gpt55_8role_sentence_embeds.pt
+  train_features: data/cache/CUB_train_features.pt
+  train_labels: data/cache/CUB_train_labels.pt
+  res101: data/xlsa17/data/CUB/res101.mat
+  att_splits: data/xlsa17/data/CUB/att_splits.mat
+  seen_features: data/cache/CUB_test_seen_features.pt
+  seen_labels: data/cache/CUB_test_seen_labels.pt
+  unseen_features: data/cache/CUB_test_unseen_features.pt
+  unseen_labels: data/cache/CUB_test_unseen_labels.pt
+expected_sha256:
+  sentence_embeds: e3b428a3588d4e715910e07472848de4641ddb7e37791edbe6c07f8681213663
+  train_features: a18cefc50ec541027598d742698622f7ddd2ec8687ba797ab1eeeacb743a4fe9
+  train_labels: b1cbf2c128a3a09979852ec5906161a737be58bf4517b18b4f7d16beec06b666
+  res101: 9a97c71951f9ac9f5c3708e6e55386e53f3d433289ed5e87a18b4af2a1a0fca1
+  att_splits: d7f5b4c2cb7853acdce43a9e87607ceed30bdf18c60344be3a266de29b6751e3
+  seen_features: 5af75c696c8d285e35a35cc41eb538017f5452d1eaf13e34fe3ee978e72983c5
+  seen_labels: 06f3f7057b6847fd912544ddb921d0ca3fca96d0888503f3fc87a52f98d3de14
+  unseen_features: 32c1b89edb72a94e27585060ac968f1afc99000a9bd8c42acee8469971fb107e
+  unseen_labels: 7fadd63d51f69cf09cc8107a132d28036b838649b75227a17656eac8640b9c59
+class_order_sha256: 7b6ffe26103bfeb73324f328fac499d6ea7cfadfb2b56448b0df295aca22df38

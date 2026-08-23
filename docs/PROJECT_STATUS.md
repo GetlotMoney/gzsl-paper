@@ -52,6 +52,8 @@ owner进一步选择陈使明TransZero公开代码对齐的test-selected方式�
 
 `V2-CONFIRM-004`已完成：无专家整模型best在iteration 9165/epoch 65，`U/S/H/ZS=69.692755/81.027550/74.933940/80.256838%`，未达到77.023目标；专家整模型best在iteration 6768/epoch 48，`74.429244/82.228470/78.134714/85.708600%`，达到78目标。两条RUN均完成28,228步、201个official评估点，只有整模型H参与best选择，没有模块分阶段取最大。
 
+按预注册止损规则，无专家端到端失败后新建`V2-CONFIRM-005`分阶段对照：50名义epoch只训练TG-VPR，100名义epoch冻结TG训练TST/NTR+CCGR，最后50名义epoch以`1e-5`全部解冻联合微调。阶段边界固定，阶段间使用最后权重，整次RUN只有一个跨阶段整模型best-H，`nested_official_test_selection=false`。
+
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 
 ## 当前待办
