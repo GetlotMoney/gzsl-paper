@@ -1,5 +1,16 @@
 # FRAMEWORK-V2 简化清单
 
+## 2026-08-23 规范纠正
+
+- [x] 论文主协议改为固定第50轮、official test只加载一次，`test_used_for_selection=false`。
+- [x] 每个epoch完整且唯一遍历7,057张seen图像；主训练不使用三折或阶段冻结。
+- [x] `V2-CONFIRM-002`完成统一模型与同协议TG-VPR-only控制：H `74.595407 vs 73.825692`，Delta=`+0.769715`。
+- [x] 当前统一模型S提高但U/ZS下降，标记为seen-biased clean signal，不作为最终78%框架。
+- [x] 旧test-selected结果只作探索观察；人工专家属性链不进入论文主结果。
+- [ ] 在同一无泄漏协议下缓解seen偏置并达到`H >= 78%`。
+
+以下旧清单保留为历史执行记录，其中test-selected或专家属性成绩不再代表当前论文主结果。
+
 ## 已完成
 
 - [x] V2正式身份：`framework/v2 = v2 = 3dc078c...`。
@@ -60,4 +71,4 @@
 
 ## 当前唯一下一步
 
-执行`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`；SDM方向已产生新最高，下一步增加受控低秩交互并继续验证。
+基于`V2-CONFIRM-002`只设计一个预注册的seen偏置修正条件；固定50轮与seed 7，official test只在训练结束后运行一次，不回到三折、阶段冻结或test选模。

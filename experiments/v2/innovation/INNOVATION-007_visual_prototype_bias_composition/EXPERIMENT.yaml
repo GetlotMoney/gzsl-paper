@@ -9,7 +9,9 @@ code_commits:
   interior_gamma: 01470a4f0e0f450a95fc0c70c743d8cad76b9e8e
   multiseed: 7c65bced976d8aa4b61d1199c94f198378d8a9bf
 title: Visual Prototype and Episodic Bias Composition
-status: supported
+status: retained_out_of_scope_expert_attributes
+paper_eligible: false
+exclusion_reason: owner_prohibits_CUB_312d_expert_attributes_2026-08-23
 paper_core_innovation: false
 question: 属性视觉原型的类内判别增益与episodic偏置校准能否互补并稳定把H推到80左右
 source_attempts: [V2-TRY-125, V2-TRY-121, V2-TRY-126, V2-TRY-127]

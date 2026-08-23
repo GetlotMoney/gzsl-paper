@@ -8,7 +8,9 @@ code_commits:
   seed17: c20f734cf910325ade95f2a8ef25c353c57f56fb
   multiseed: 4fd4e4e7db4e87bedc85dd07e8eb12e171158e83
 title: Centroid Ridge Alignment
-status: supported
+status: retained_out_of_scope_expert_attributes
+paper_eligible: false
+exclusion_reason: owner_prohibits_CUB_312d_expert_attributes_2026-08-23
 paper_core_innovation: false
 question: 类别级视觉中心能否比图像级样本更可靠地拟合显式属性ridge并稳定提高U/S/H/ZS
 source_attempts: [V2-TRY-105, V2-TRY-104, V2-TRY-106, V2-TRY-107]

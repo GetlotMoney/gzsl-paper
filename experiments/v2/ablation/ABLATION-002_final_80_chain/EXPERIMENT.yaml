@@ -3,7 +3,9 @@ experiment_id: V2-ABLATION-002
 framework_id: FRAMEWORK-V2
 title: Final 80+ Method Chain Ablation
 question: 三项核心创新与统一辅助语义证据头逐层加入时分别产生多少真实增益
-status: completed
+status: retained_out_of_scope_expert_attributes_and_test_selection
+paper_eligible: false
+exclusion_reason: auxiliary_chain_uses_CUB_312d_expert_attributes_and_adaptive_official_test_selection
 data_seed: 7
 module_training_seed: 17
 paper_core_innovations: [TG-VPR, TST, CCGR]

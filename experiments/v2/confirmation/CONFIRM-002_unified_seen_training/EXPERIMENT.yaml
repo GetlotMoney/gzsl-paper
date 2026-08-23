@@ -8,7 +8,7 @@ framework_diagram: experiments/v2/confirmation/CONFIRM-002_unified_seen_training
 base_commit: c78bae68f526f693c268cd4dcabe57076511d5aa
 code_commit: 8066cce8c2c9a9ecdeb473597202f3e98925dea2
 research_question: 取消三折、阶段冻结和official-test选模后，TG-VPR与共享语义迁移/类别条件修正统一训练50轮能否产生可信增益？
-status: running_control_queued
+status: completed_seen_biased_gain
 evaluation_protocol: fixed_epoch_inductive_gzsl
 test_used_for_selection: false
 unseen_images_used_for_gradient: false
@@ -24,6 +24,7 @@ training_contract:
   reported_epoch: 50
   official_test_evaluations: 1
 control_note: RUN-002在RUN-001结果产生后追加，仅用于建立同协议TG-VPR基线；不得据此修改或重选RUN-001
+control_code_commit: 7dae7b8ba78c0a497a46fafb9577f53c0bb3354b
 dataset:
   name: CUB
   train_split: trainval_loc
@@ -46,9 +47,9 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/runs/v2/CONFIRM-002_unified_seen_training/RUN-001
     status: completed
   - run_id: RUN-002
-    code_commit: null
+    code_commit: 7dae7b8ba78c0a497a46fafb9577f53c0bb3354b
     condition: tg_vpr_only_full_seen_fixed_epoch
     seed: 7
     config_ref: experiments/v2/confirmation/CONFIRM-002_unified_seen_training/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/runs/v2/CONFIRM-002_unified_seen_training/RUN-002
-    status: planned
+    status: completed

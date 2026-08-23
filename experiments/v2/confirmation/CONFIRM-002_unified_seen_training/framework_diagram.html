@@ -16,8 +16,8 @@
 </head>
 <body><main>
   <h1>统一seen训练 · Fixed-Epoch Full-Seen Training</h1>
-  <div class="meta">V2-CONFIRM-002 · base c78bae68f526f693c268cd4dcabe57076511d5aa · RUN-001 code 8066cce8c2c9a9ecdeb473597202f3e98925dea2</div>
-  <span class="tag">control pending</span><span class="tag">RUN-001 H 74.595407</span><span class="tag">test_used_for_selection=false</span>
+  <div class="meta">V2-CONFIRM-002 · RUN-001 code 8066cce8c2c9a9ecdeb473597202f3e98925dea2 · RUN-002 control code 7dae7b8ba78c0a497a46fafb9577f53c0bb3354b</div>
+  <span class="tag">completed</span><span class="tag">H +0.769715 vs clean control</span><span class="tag">test_used_for_selection=false</span>
   <section class="flow">
     <div class="box"><strong>1 · 输入</strong>冻结CLIP CLS缓存<br>[7057,768]<br>八角色文本<br>[200,8,768]</div>
     <div class="box"><strong>2 · TG-VPR</strong>local / unique / overall三组语义<br>共享Value路径</div>
@@ -30,7 +30,7 @@
     <div class="box"><strong>每轮数据流</strong>每个epoch只生成一次7,057样本完整随机排列；batch size 64，共111个batch，最后一个batch为17张。每张seen图像恰好出现一次。</div>
     <div class="box"><strong>统一反向传播</strong>CLIP特征固定；TG-VPR、共享迁移gate与共享CCGR生成器同时接收梯度。没有三折pseudo-unseen，也没有逐阶段冻结父模型。</div>
     <div class="box"><strong>零残差起点</strong>迁移步长和CCGR幅度出口初始化为0，初始forward等价于TG-VPR；之后由同一个seen CE和topology目标联合更新。</div>
-    <div class="box"><strong>评估与控制</strong>真实unseen图像不进入梯度；official test只运行一次且固定报告第50轮。RUN-002关闭共享迁移/CCGR，建立同训练口径TG-VPR-only控制。</div>
+    <div class="box"><strong>结果与边界</strong>RUN-002关闭共享迁移/CCGR。统一模型H提高0.769715，但U下降1.260048、ZS下降1.894343；证明存在干净H信号，也暴露明显seen偏置。</div>
   </section>
 </main></body>
 </html>

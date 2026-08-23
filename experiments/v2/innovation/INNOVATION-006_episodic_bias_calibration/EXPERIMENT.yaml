@@ -9,7 +9,9 @@ code_commits:
   conservative: c004585083c7f7ad74293ff9ae7fb1c087ee1eb8
   multiseed: e17956563fb698d08f4d7f2950bb2d77d281fd7d
 title: Episodic Bias Calibration
-status: supported
+status: retained_out_of_scope_expert_attributes
+paper_eligible: false
+exclusion_reason: parent_chain_uses_CUB_312d_expert_attributes
 paper_core_innovation: false
 question: pseudo-unseen episode训练的全局seen logit扣减能否稳定改善CRA的U/S平衡
 source_attempts: [V2-TRY-115, V2-TRY-114, V2-TRY-116, V2-TRY-117]
