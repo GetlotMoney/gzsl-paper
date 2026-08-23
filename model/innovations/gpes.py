@@ -765,3 +765,34 @@ class RoleUncertaintyGatedSelector(StagedRoleDisagreementScaleSelector):
             "margin_threshold": float(self.margin_threshold),
             "margin_temperature": self.margin_temperature,
         }
+
+
+class NeighborhoodDegreePairSelector(SemanticNeighborPairSelector):
+    """增加top1/top2在语义图中的log邻居度数差。"""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.register_buffer(
+            "semantic_log_degree",
+            torch.log1p(self.semantic_adjacency.float().sum(dim=1)),
+        )
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top, global_ids, related, features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        degree_diff = self.semantic_log_degree.index_select(
+            0, global_ids[:, 0]
+        ) - self.semantic_log_degree.index_select(0, global_ids[:, 1])
+        return (
+            top,
+            global_ids,
+            related,
+            torch.cat((features, degree_diff.unsqueeze(1)), dim=1),
+        )

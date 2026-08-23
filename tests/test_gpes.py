@@ -8,6 +8,7 @@ from model.innovations.gpes import (
     CrossSourceDisagreementSelector,
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
+    NeighborhoodDegreePairSelector,
     PairDiscriminativeRoleSelector,
     ReciprocalSemanticNeighborPairSelector,
     RoleDisagreementScaleSelector,
@@ -652,6 +653,36 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.rugs.v1")
         self.assertEqual(config["training_scope"], "freeze_snps_train_gamma_only")
         self.assertEqual(config["max_gamma"], 1.0)
+
+    def test_neighborhood_degree_selector_adds_log_degree_difference(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        model = NeighborhoodDegreePairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(13), torch.ones(13), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+        )
+        _, global_ids, _, features = model._top2_context(
+            torch.randn(3, 200), torch.randn(3, 768), None, torch.arange(200)
+        )
+        expected = model.semantic_log_degree[global_ids[:, 0]] - model.semantic_log_degree[
+            global_ids[:, 1]
+        ]
+        self.assertEqual(tuple(features.shape), (3, 13))
+        self.assertTrue(torch.equal(features[:, -1], expected))
+
+    def test_ndps_config_binds_degree_difference(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-084_ndps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.ndps.v1")
+        self.assertEqual(
+            config["context_feature"], "semantic_log_degree_difference"
+        )
+        self.assertEqual(config["semantic_neighbor_k"], 3)
 
 
 if __name__ == "__main__":

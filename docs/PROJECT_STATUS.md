@@ -476,6 +476,8 @@ CSDS seed5最高`U/S/H/ZS=76.883179/80.116844/78.466710/84.121209%`，与稳定S
 
 RUGS seed5初始态精确复现SNPS父模型`H=78.466710%`，但seen CE持续把gamma推向负方向，非负投影使其全程回到0；所有评估点均无新增收益。IDEA-117拒绝且不追加seed7。当前累计209组。
 
+下一实验`V2-INNOVATION-084 / NDPS`固定稳定SNPS top-3图，新增top1/top2的`log1p(semantic degree)`差值，让selector感知两个候选类别所处语义区域的竞争密度。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
