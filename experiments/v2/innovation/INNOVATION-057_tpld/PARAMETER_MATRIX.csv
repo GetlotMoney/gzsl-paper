@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,pairwise_alpha,group_count,grouped_classes,affinity_entropy,test_used_for_selection,output_uri,decision
+RUN-001,,experiments/v2/innovation/INNOVATION-057_tpld/configs/RUN-001.yaml,672323fcd80e9066505b1d6bf44f5d47650e9cf297363bc850670d3b58e886b0,5,planned,,,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-057_tpld/RUN-001,pending

@@ -155,3 +155,101 @@ class TaxonomicWithinGroupLogitSharpening(nn.Module):
             centered = group_logits - group_logits.mean(dim=1, keepdim=True)
             output[:, positions] = group_logits + self.alpha() * centered
         return output
+
+
+class TaxonomicPairwiseLogitDeconvolution(nn.Module):
+    """按族内语义相似度做非均匀近邻高通，并保持组均值。"""
+
+    def __init__(
+        self,
+        sdcr_prototypes: torch.Tensor,
+        sdcr_beta: float,
+        group_ids: torch.Tensor,
+        similarity_temperature: float = 0.1,
+        max_alpha: float = 0.5,
+    ) -> None:
+        super().__init__()
+        if tuple(sdcr_prototypes.shape) != (200, 768):
+            raise ValueError("TPLD SDCR原型必须是[200,768]。")
+        if tuple(group_ids.shape) != (200,):
+            raise ValueError("TPLD group_ids必须是[200]。")
+        if float(similarity_temperature) <= 0:
+            raise ValueError("TPLD相似度温度必须为正。")
+        base = F.normalize(sdcr_prototypes.detach().float(), dim=-1)
+        group_ids = group_ids.detach().long().to(base.device)
+        affinity = torch.zeros(200, 200, dtype=base.dtype, device=base.device)
+        valid_groups = group_ids[group_ids >= 0].unique(sorted=True)
+        grouped_count = 0
+        entropies = []
+        for group_id in valid_groups.tolist():
+            positions = group_ids.eq(int(group_id)).nonzero(as_tuple=False).flatten()
+            if positions.numel() < 2:
+                continue
+            local = base.index_select(0, positions)
+            similarity = local @ local.T / float(similarity_temperature)
+            similarity.fill_diagonal_(-float("inf"))
+            weights = torch.softmax(similarity, dim=-1)
+            affinity[positions.unsqueeze(1), positions.unsqueeze(0)] = weights
+            entropies.append(
+                -(weights * weights.clamp_min(1e-8).log()).sum(dim=-1).mean()
+            )
+            grouped_count += int(positions.numel())
+        self.register_buffer("sdcr_prototypes", base)
+        self.register_buffer("sdcr_beta", torch.tensor(float(sdcr_beta)))
+        self.register_buffer("group_ids", group_ids)
+        self.register_buffer("affinity", affinity)
+        self.register_buffer(
+            "mean_affinity_entropy",
+            torch.stack(entropies).mean() if entropies else torch.tensor(0.0),
+        )
+        self.group_count = int(valid_groups.numel())
+        self.grouped_class_count = int(grouped_count)
+        self.max_alpha = float(max_alpha)
+        self.raw_alpha = nn.Parameter(torch.zeros(()))
+
+    def alpha(self) -> torch.Tensor:
+        return self.max_alpha * torch.tanh(self.raw_alpha)
+
+    def stats(self) -> dict[str, float | int]:
+        return {
+            "pairwise_alpha": float(self.alpha().detach()),
+            "group_count": self.group_count,
+            "grouped_class_count": self.grouped_class_count,
+            "mean_affinity_entropy": float(self.mean_affinity_entropy),
+        }
+
+    def forward(
+        self,
+        parent_logits: torch.Tensor,
+        images: torch.Tensor,
+        class_ids: torch.Tensor | None = None,
+        enabled: bool = True,
+    ) -> torch.Tensor:
+        ids = (
+            torch.arange(200, device=self.sdcr_prototypes.device)
+            if class_ids is None
+            else class_ids.to(self.sdcr_prototypes.device)
+        )
+        prototypes = self.sdcr_prototypes.index_select(0, ids)
+        logits = parent_logits + self.sdcr_beta * (
+            F.normalize(images.float(), dim=-1) @ prototypes.T
+        )
+        if not enabled:
+            return logits
+        affinity = self.affinity.index_select(0, ids).index_select(1, ids)
+        row_sum = affinity.sum(dim=-1, keepdim=True)
+        active = row_sum.squeeze(1) > 0
+        affinity = affinity / row_sum.clamp_min(1e-8)
+        neighbor_logits = logits @ affinity.T
+        high_pass = logits - neighbor_logits
+        high_pass[:, ~active] = 0.0
+        local_groups = self.group_ids.index_select(0, ids)
+        for group_id in local_groups[local_groups >= 0].unique(sorted=True).tolist():
+            positions = local_groups.eq(int(group_id)).nonzero(as_tuple=False).flatten()
+            if positions.numel() < 2:
+                high_pass[:, positions] = 0.0
+                continue
+            high_pass[:, positions] -= high_pass[:, positions].mean(
+                dim=1, keepdim=True
+            )
+        return logits + self.alpha() * high_pass

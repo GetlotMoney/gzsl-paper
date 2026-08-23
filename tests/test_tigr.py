@@ -6,6 +6,7 @@ import torch.nn.functional as F
 
 from model.innovations.tigr import (
     TaxonomicIntraGroupResidual,
+    TaxonomicPairwiseLogitDeconvolution,
     TaxonomicWithinGroupLogitSharpening,
     taxonomic_suffix_group_ids,
 )
@@ -77,6 +78,45 @@ class TIGRTest(unittest.TestCase):
         )
         self.assertEqual(config["schema_version"], "gzsl-paper.twls.v1")
         self.assertEqual(config["max_alpha"], 1.0)
+
+    def test_tpld_preserves_group_mean_and_renormalizes_subsets(self):
+        generator = torch.Generator().manual_seed(863)
+        prototypes = torch.randn(200, 768, generator=generator)
+        groups = torch.arange(200) // 4
+        model = TaxonomicPairwiseLogitDeconvolution(
+            prototypes, 13.0, groups, 0.1, 0.5
+        )
+        ids = torch.tensor([0, 1, 2, 4, 5, 6])
+        images = torch.randn(3, 768, generator=generator)
+        parent = torch.randn(3, ids.numel(), generator=generator)
+        baseline = model(parent, images, ids)
+        with torch.no_grad():
+            model.raw_alpha.fill_(0.3)
+        transformed = model(parent, images, ids)
+        self.assertTrue(
+            torch.allclose(
+                baseline[:, :3].mean(dim=1),
+                transformed[:, :3].mean(dim=1),
+                atol=1e-6,
+                rtol=1e-6,
+            )
+        )
+        self.assertTrue(
+            torch.allclose(
+                baseline[:, 3:].mean(dim=1),
+                transformed[:, 3:].mean(dim=1),
+                atol=1e-6,
+                rtol=1e-6,
+            )
+        )
+
+    def test_tpld_config_binds_pairwise_affinity(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-057_tpld/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.tpld.v1")
+        self.assertEqual(config["similarity_temperature"], 0.1)
+        self.assertEqual(config["max_alpha"], 0.5)
 
 
 if __name__ == "__main__":

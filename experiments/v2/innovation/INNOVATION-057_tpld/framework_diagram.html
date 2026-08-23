@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-057 TPLD</title></head>
+<body>
+<h1>TPLD：同族成对logit去卷积</h1>
+<p><strong>Base commit：</strong>4b404bcb4c30749745f6d0e46539729f2bf9c26a；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<pre>同族SDCR原型余弦 → softmax(sim/0.1) → 非均匀成对矩阵A
+high_pass_c = logit_c - Σ_j A_cj logit_j
+每组再减high_pass均值，保持组平均logit不变
+logits' = logits + alpha×high_pass，alpha∈[-0.5,0.5]</pre>
+<p>与TWLS不同，A的每一行不同，因此可以改变族内类别排序；候选只含seen或unseen时对剩余邻居重新归一化。</p>
+<p>真实unseen图像不进入梯度；训练固定28,228次更新，每141次official test，按完整模型H保存best。</p>
+</body></html>

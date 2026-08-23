@@ -13,6 +13,7 @@ from model.innovations.ebc import EpisodicBiasCalibration
 from model.innovations.sdcr import SentenceDropoutConservativeRouting
 from model.innovations.tigr import (
     TaxonomicIntraGroupResidual,
+    TaxonomicPairwiseLogitDeconvolution,
     TaxonomicWithinGroupLogitSharpening,
     taxonomic_suffix_group_ids,
 )
@@ -59,11 +60,14 @@ def load_config(path: Path):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    expected_keys = (
-        (CONFIG_KEYS - {"max_beta"}) | {"max_alpha"}
-        if schema == "gzsl-paper.twls.v1"
-        else CONFIG_KEYS
-    )
+    if schema == "gzsl-paper.tpld.v1":
+        expected_keys = (
+            CONFIG_KEYS - {"max_beta"}
+        ) | {"max_alpha", "similarity_temperature"}
+    elif schema == "gzsl-paper.twls.v1":
+        expected_keys = (CONFIG_KEYS - {"max_beta"}) | {"max_alpha"}
+    else:
+        expected_keys = CONFIG_KEYS
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"TIGR配置字段错误；缺少={sorted(expected_keys-actual)}，"
@@ -72,6 +76,7 @@ def load_config(path: Path):
     identity = {
         "gzsl-paper.tigr.v1": ("V2-INNOVATION-055", "IDEA-089"),
         "gzsl-paper.twls.v1": ("V2-INNOVATION-056", "IDEA-090"),
+        "gzsl-paper.tpld.v1": ("V2-INNOVATION-057", "IDEA-091"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -95,6 +100,13 @@ def load_config(path: Path):
         or (
             schema == "gzsl-paper.twls.v1"
             and float(config["max_alpha"]) != 1.0
+        )
+        or (
+            schema == "gzsl-paper.tpld.v1"
+            and (
+                float(config["max_alpha"]) != 0.5
+                or float(config["similarity_temperature"]) != 0.1
+            )
         )
         or int(config["batch_size"]) != 50
         or int(config["epochs"]) != 200
@@ -198,7 +210,15 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         for parameter in sdcr.parameters():
             parameter.requires_grad_(False)
         group_ids = taxonomic_suffix_group_ids(load_class_names(paths["att_splits"]))
-        if config["schema_version"] == "gzsl-paper.twls.v1":
+        if config["schema_version"] == "gzsl-paper.tpld.v1":
+            model = TaxonomicPairwiseLogitDeconvolution(
+                sdcr.prototypes(use_dropout=False).detach(),
+                fixed_beta,
+                group_ids,
+                float(config["similarity_temperature"]),
+                float(config["max_alpha"]),
+            ).to(device)
+        elif config["schema_version"] == "gzsl-paper.twls.v1":
             model = TaxonomicWithinGroupLogitSharpening(
                 sdcr.prototypes(use_dropout=False).detach(),
                 fixed_beta,
@@ -296,7 +316,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 effect = (
                     stats["within_group_alpha"]
                     if "within_group_alpha" in stats
-                    else stats["identity_beta"]
+                    else (
+                        stats["pairwise_alpha"]
+                        if "pairwise_alpha" in stats
+                        else stats["identity_beta"]
+                    )
                 )
                 print(
                     f"iter={iteration} H={metrics['H']:.6f} "
