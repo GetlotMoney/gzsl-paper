@@ -1,6 +1,6 @@
 # V2-CONFIRM-005 结果
 
-状态：`rescue1_completed_improved_target_fail`。
+状态：`rescue2_transport_cap_0.75_planned`。
 
 固定50/100/50名义epoch三阶段；阶段边界不根据test移动，阶段间使用最后权重继续训练。全程只有一个跨阶段的整模型best-H，不为每阶段分别保存test最大父checkpoint。
 
@@ -21,3 +21,5 @@ RESCUE-1结果：`U/S/H/ZS=74.326867/77.764529/76.006848/82.930040%`，best位�
 阶段2在0.5上限下后半输出几乎固定，说明该上限抑制过迁移但形成硬饱和；下一补救测试中间上限0.75。
 
 RUN-002模型SHA：`4231aba956c3c0ff57a1ac859a6a8748131e2275efcf3bfb63fcced54b32aa99`。
+
+RESCUE-2固定只把迁移步长上限从0.5调至中间值0.75；其余代码、阶段边界、seed、loss和Chen-style选模完全一致。

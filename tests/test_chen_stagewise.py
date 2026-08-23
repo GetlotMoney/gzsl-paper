@@ -42,12 +42,18 @@ class ChenStagewiseTest(unittest.TestCase):
         root = ROOT / "experiments/v2/confirmation/CONFIRM-005_chen_style_stagewise/configs"
         parent, _ = load_config(root / "RUN-001.yaml")
         rescue, _ = load_config(root / "RUN-002.yaml")
+        rescue2, _ = load_config(root / "RUN-003.yaml")
         self.assertEqual(parent["max_transport_step"], 1.5)
         self.assertEqual(rescue["max_transport_step"], 0.5)
+        self.assertEqual(rescue2["max_transport_step"], 0.75)
         ignored = {"max_transport_step"}
         self.assertEqual(
             {key: value for key, value in parent.items() if key not in ignored},
             {key: value for key, value in rescue.items() if key not in ignored},
+        )
+        self.assertEqual(
+            {key: value for key, value in parent.items() if key not in ignored},
+            {key: value for key, value in rescue2.items() if key not in ignored},
         )
 
     def test_trainable_groups_match_stage_contract(self):
