@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-027 ACLM</title></head>
 <body>
 <h1>ACLM：自适应跨LLM混合</h1>
-<p><strong>Base commit：</strong>d8561d3008754628ac01d89ace2fd536c4ba36a1；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>d8561d3008754628ac01d89ace2fd536c4ba36a1；<strong>RUN-001 code commit：</strong>b3e5012e6c2e74c212240c268bfc32981f8f449f。</p>
 <h2>两个冻结端点</h2><p>SEBC父logits固定。Claude分支beta=19.266289，merge分支beta=15.747334，均从SHA绑定正式best加载。</p>
 <h2>唯一训练参数</h2>
 <pre>w = sigmoid(raw_mix)

@@ -272,6 +272,8 @@ CLEC直接叠加CLRE与CCPE得到H `77.569776%`，训练局部比例后最高`77
 
 MLRE用merge文本原型达到`U/S/H/ZS=75.798345/79.971749/77.829140/83.225495%`，H比CLRE高`0.021047`成为当前最高，但ZS比CLRE低约`0.298`。IDEA-060仅保留为弱H候选；下一实验在Claude与merge两个已训练端点间学习混合比例，检验能否兼顾H与ZS。
 
+ACLM全局凸混合最高H `77.811876%`低于MLRE，Claude权重`0.980989`退化到端点。IDEA-061拒绝；下一补救按类别Claude/merge一致度学习不同混合权重，若仍失败则关闭跨LLM混合轴。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
