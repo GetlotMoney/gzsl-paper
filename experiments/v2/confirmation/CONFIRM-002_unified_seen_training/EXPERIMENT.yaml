@@ -6,9 +6,9 @@ framework_id: FRAMEWORK-V2
 framework_ref: v2
 framework_diagram: experiments/v2/confirmation/CONFIRM-002_unified_seen_training/framework_diagram.html
 base_commit: c78bae68f526f693c268cd4dcabe57076511d5aa
-code_commit: null
+code_commit: 8066cce8c2c9a9ecdeb473597202f3e98925dea2
 research_question: 取消三折、阶段冻结和official-test选模后，TG-VPR与共享语义迁移/类别条件修正统一训练50轮能否产生可信增益？
-status: planned
+status: running_control_pending
 evaluation_protocol: fixed_epoch_inductive_gzsl
 test_used_for_selection: false
 unseen_images_used_for_gradient: false
@@ -38,9 +38,9 @@ server:
   output_root: /data/lby/projects/cv_project/GZSL_Warehouse/runs/v2/CONFIRM-002_unified_seen_training
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 8066cce8c2c9a9ecdeb473597202f3e98925dea2
     condition: unified_full_seen_fixed_epoch
     seed: 7
     config_ref: experiments/v2/confirmation/CONFIRM-002_unified_seen_training/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/runs/v2/CONFIRM-002_unified_seen_training/RUN-001
-    status: planned
+    status: completed
