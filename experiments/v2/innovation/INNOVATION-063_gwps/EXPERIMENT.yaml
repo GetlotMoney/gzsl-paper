@@ -16,3 +16,8 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-063_gwps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-063_gwps/RUN-001
     status: completed_weak_positive
+  - run_id: RUN-002
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-063_gwps/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-063_gwps/RUN-002
+    status: planned
