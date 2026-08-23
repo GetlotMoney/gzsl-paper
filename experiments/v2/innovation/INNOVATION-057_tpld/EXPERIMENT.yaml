@@ -4,15 +4,15 @@ idea_id: IDEA-091
 framework_id: FRAMEWORK-V2
 title: Taxonomic Pairwise Logit Deconvolution
 base_commit: 4b404bcb4c30749745f6d0e46539729f2bf9c26a
-code_commit: null
-status: planned
+code_commit: fe71f955b40fe8d2232aac78504c9211f6fac4dd
+status: rejected_pairwise_graph_harm
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-057_tpld/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: fe71f955b40fe8d2232aac78504c9211f6fac4dd
     config_ref: experiments/v2/innovation/INNOVATION-057_tpld/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-057_tpld/RUN-001
-    status: planned
+    status: completed_failed_parent_only
