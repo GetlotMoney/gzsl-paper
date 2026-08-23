@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Reciprocity-Weighted Semantic Neighborhood Pair Selector
 base_commit: f96bea0bf7211dc09fba5cdb53b63eacadefe77a
 code_commit: b2148d8645f498f3f7549b87cbe4f4b440c9a45a
-status: testing_seed7_reliability
+status: rejected_below_top3_on_seed7
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -17,7 +17,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-074_rsnps/RUN-001
     status: completed_positive
   - run_id: RUN-002
-    code_commit: null
+    code_commit: 93bbc43c69994f9d5090bcef62f513f3a4ae5918
     config_ref: experiments/v2/innovation/INNOVATION-074_rsnps/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-074_rsnps/RUN-002
-    status: planned
+    status: completed_positive_below_top3
