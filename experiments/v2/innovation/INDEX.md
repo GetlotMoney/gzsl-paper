@@ -63,6 +63,6 @@
 | V2-INNOVATION-059 | IDEA-093 | CCTB反共识二选一 | rejected（gate过稀且无预测变化） | `INNOVATION-059_cctb/` |
 | V2-INNOVATION-060 | IDEA-094 | MAGT多源歧义门控二选一 | rejected（Claude/merge余弦0.981，重复） | `INNOVATION-060_magt/` |
 | V2-INNOVATION-061 | IDEA-095 | AGPT歧义门控局部patch二选一 | rejected（窄gate内仍无效） | `INNOVATION-061_agpt/` |
-| V2-INNOVATION-062 | IDEA-096 | GPES门控成对证据选择器 | planned（四特征pair CE） | `INNOVATION-062_gpes/` |
+| V2-INNOVATION-062 | IDEA-096 | GPES门控成对证据选择器 | rejected（169 pair过拟合） | `INNOVATION-062_gpes/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

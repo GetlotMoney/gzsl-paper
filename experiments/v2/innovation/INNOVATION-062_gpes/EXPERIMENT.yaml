@@ -4,8 +4,8 @@ idea_id: IDEA-096
 framework_id: FRAMEWORK-V2
 title: Gated Pair Evidence Selector
 base_commit: cae6eedcaf2d6ccba81bb402d9f1c0cdb00c0c79
-code_commit: null
-status: planned
+code_commit: d56d32829c06975335721acc903dff7ca4b58c64
+status: rejected_small_pair_overfit
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -18,7 +18,7 @@ runs:
     status: failed_runtime
     failure_mode: precomputed pair tensors retained frozen parent graph
   - run_id: RUN-001-RERUN-001
-    code_commit: null
+    code_commit: d56d32829c06975335721acc903dff7ca4b58c64
     config_ref: experiments/v2/innovation/INNOVATION-062_gpes/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-062_gpes/RUN-001-RERUN-001
-    status: planned
+    status: completed_failed_parent_only
