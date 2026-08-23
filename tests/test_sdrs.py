@@ -34,6 +34,13 @@ class SDRSTest(unittest.TestCase):
         source = (ROOT / "model/innovations/train_sdrs.py").read_text(encoding="utf-8")
         self.assertNotIn('["att"]', source)
 
+    def test_conservative_rescue_config_is_accepted(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-012_sdrs/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.sdrs.v2")
+        self.assertEqual(config["max_delta"], 0.5)
+
 
 if __name__ == "__main__":
     unittest.main()

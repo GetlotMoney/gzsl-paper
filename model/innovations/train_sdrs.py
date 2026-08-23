@@ -51,8 +51,12 @@ def load_config(path: Path):
             f"SDRS配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
             f"多出={sorted(actual-CONFIG_KEYS)}。"
         )
+    delta_by_schema = {
+        "gzsl-paper.sdrs.v1": 5.0,
+        "gzsl-paper.sdrs.v2": 0.5,
+    }
     if (
-        config["schema_version"] != "gzsl-paper.sdrs.v1"
+        config["schema_version"] not in delta_by_schema
         or config["experiment_id"] != "V2-INNOVATION-012"
         or config["idea_id"] != "IDEA-046"
     ):
@@ -75,7 +79,7 @@ def load_config(path: Path):
         config["optimizer"] != "Adam"
         or float(config["learning_rate"]) != 0.01
         or float(config["weight_decay"]) != 0.0
-        or float(config["max_delta"]) != 5.0
+        or float(config["max_delta"]) != delta_by_schema[config["schema_version"]]
     ):
         raise ValueError("SDRS优化参数错误。")
     return config, sha256_file(path)
