@@ -11,7 +11,11 @@ import yaml
 
 from model.innovations.ebc import EpisodicBiasCalibration
 from model.innovations.sdcr import SentenceDropoutConservativeRouting
-from model.innovations.tigr import TaxonomicIntraGroupResidual, taxonomic_suffix_group_ids
+from model.innovations.tigr import (
+    TaxonomicIntraGroupResidual,
+    TaxonomicWithinGroupLogitSharpening,
+    taxonomic_suffix_group_ids,
+)
 from model.innovations.train_chen_style import (
     OFFICIAL_KEYS,
     random_batch_indices,
@@ -54,16 +58,24 @@ def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    expected_keys = (
+        (CONFIG_KEYS - {"max_beta"}) | {"max_alpha"}
+        if schema == "gzsl-paper.twls.v1"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"TIGR配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"TIGR配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
-    if (
-        config["schema_version"] != "gzsl-paper.tigr.v1"
-        or config["experiment_id"] != "V2-INNOVATION-055"
-        or config["idea_id"] != "IDEA-089"
-    ):
+    identity = {
+        "gzsl-paper.tigr.v1": ("V2-INNOVATION-055", "IDEA-089"),
+        "gzsl-paper.twls.v1": ("V2-INNOVATION-056", "IDEA-090"),
+    }.get(schema)
+    if identity is None or (
+        config["experiment_id"], config["idea_id"]
+    ) != identity:
         raise ValueError("TIGR身份错误。")
     if (
         config["evaluation_protocol"] != EVALUATION_PROTOCOL
@@ -76,7 +88,14 @@ def load_config(path: Path):
         raise ValueError("TIGR文本cache provenance未完整。")
     if (
         config["group_rule"] != "class_name_last_token_min2"
-        or float(config["max_beta"]) != 5.0
+        or (
+            schema == "gzsl-paper.tigr.v1"
+            and float(config["max_beta"]) != 5.0
+        )
+        or (
+            schema == "gzsl-paper.twls.v1"
+            and float(config["max_alpha"]) != 1.0
+        )
         or int(config["batch_size"]) != 50
         or int(config["epochs"]) != 200
         or int(config["niters"]) != 28228
@@ -179,12 +198,20 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         for parameter in sdcr.parameters():
             parameter.requires_grad_(False)
         group_ids = taxonomic_suffix_group_ids(load_class_names(paths["att_splits"]))
-        model = TaxonomicIntraGroupResidual(
-            sdcr.prototypes(use_dropout=False).detach(),
-            fixed_beta,
-            group_ids,
-            float(config["max_beta"]),
-        ).to(device)
+        if config["schema_version"] == "gzsl-paper.twls.v1":
+            model = TaxonomicWithinGroupLogitSharpening(
+                sdcr.prototypes(use_dropout=False).detach(),
+                fixed_beta,
+                group_ids,
+                float(config["max_alpha"]),
+            ).to(device)
+        else:
+            model = TaxonomicIntraGroupResidual(
+                sdcr.prototypes(use_dropout=False).detach(),
+                fixed_beta,
+                group_ids,
+                float(config["max_beta"]),
+            ).to(device)
         optimizer = torch.optim.Adam(
             model.parameters(), lr=float(config["learning_rate"]), weight_decay=0.0
         )
@@ -266,9 +293,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                             "reproducibility": reproducibility,
                         },
                     )
+                effect = (
+                    stats["within_group_alpha"]
+                    if "within_group_alpha" in stats
+                    else stats["identity_beta"]
+                )
                 print(
                     f"iter={iteration} H={metrics['H']:.6f} "
-                    f"best_H={best_h:.6f} beta={stats['identity_beta']:.6f}"
+                    f"best_H={best_h:.6f} effect={effect:.6f}"
                 )
 
         atomic_torch_save(

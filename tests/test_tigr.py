@@ -6,6 +6,7 @@ import torch.nn.functional as F
 
 from model.innovations.tigr import (
     TaxonomicIntraGroupResidual,
+    TaxonomicWithinGroupLogitSharpening,
     taxonomic_suffix_group_ids,
 )
 from model.innovations.train_tigr import load_config
@@ -45,6 +46,37 @@ class TIGRTest(unittest.TestCase):
         self.assertEqual(config["group_rule"], "class_name_last_token_min2")
         self.assertEqual(config["max_beta"], 5.0)
         self.assertFalse(config["unseen_images_used_for_gradient"])
+
+    def test_twls_zero_alpha_is_identity_and_group_mean_is_preserved(self):
+        generator = torch.Generator().manual_seed(857)
+        prototypes = torch.randn(200, 768, generator=generator)
+        groups = torch.arange(200) // 2
+        model = TaxonomicWithinGroupLogitSharpening(
+            prototypes, 13.0, groups, 1.0
+        )
+        images = torch.randn(4, 768, generator=generator)
+        parent = torch.randn(4, 200, generator=generator)
+        baseline = model(parent, images)
+        with torch.no_grad():
+            model.raw_alpha.fill_(0.4)
+        sharpened = model(parent, images)
+        self.assertTrue(
+            torch.allclose(
+                baseline[:, :2].mean(dim=1),
+                sharpened[:, :2].mean(dim=1),
+                atol=1e-6,
+                rtol=1e-6,
+            )
+        )
+        model.raw_alpha.data.zero_()
+        self.assertTrue(torch.equal(model(parent, images), baseline))
+
+    def test_twls_config_binds_logit_space_operation(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-056_twls/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.twls.v1")
+        self.assertEqual(config["max_alpha"], 1.0)
 
 
 if __name__ == "__main__":

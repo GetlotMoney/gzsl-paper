@@ -87,3 +87,71 @@ class TaxonomicIntraGroupResidual(nn.Module):
         if not enabled:
             return logits
         return logits + self.beta() * (normalized @ identity.T)
+
+
+class TaxonomicWithinGroupLogitSharpening(nn.Module):
+    """保持族群logit均值不变，只缩放族内类别差值。"""
+
+    def __init__(
+        self,
+        sdcr_prototypes: torch.Tensor,
+        sdcr_beta: float,
+        group_ids: torch.Tensor,
+        max_alpha: float = 1.0,
+    ) -> None:
+        super().__init__()
+        if tuple(sdcr_prototypes.shape) != (200, 768):
+            raise ValueError("TWLS SDCR原型必须是[200,768]。")
+        if tuple(group_ids.shape) != (200,):
+            raise ValueError("TWLS group_ids必须是[200]。")
+        self.register_buffer(
+            "sdcr_prototypes",
+            F.normalize(sdcr_prototypes.detach().float(), dim=-1),
+        )
+        self.register_buffer("sdcr_beta", torch.tensor(float(sdcr_beta)))
+        self.register_buffer("group_ids", group_ids.detach().long())
+        valid = self.group_ids[self.group_ids >= 0]
+        self.group_count = int(valid.unique().numel())
+        self.grouped_class_count = int(valid.numel())
+        self.max_alpha = float(max_alpha)
+        self.raw_alpha = nn.Parameter(torch.zeros(()))
+
+    def alpha(self) -> torch.Tensor:
+        return self.max_alpha * torch.tanh(self.raw_alpha)
+
+    def stats(self) -> dict[str, float | int]:
+        return {
+            "within_group_alpha": float(self.alpha().detach()),
+            "group_count": self.group_count,
+            "grouped_class_count": self.grouped_class_count,
+        }
+
+    def forward(
+        self,
+        parent_logits: torch.Tensor,
+        images: torch.Tensor,
+        class_ids: torch.Tensor | None = None,
+        enabled: bool = True,
+    ) -> torch.Tensor:
+        prototypes = self.sdcr_prototypes
+        ids = (
+            torch.arange(200, device=prototypes.device)
+            if class_ids is None
+            else class_ids.to(prototypes.device)
+        )
+        prototypes = prototypes.index_select(0, ids)
+        logits = parent_logits + self.sdcr_beta * (
+            F.normalize(images.float(), dim=-1) @ prototypes.T
+        )
+        if not enabled:
+            return logits
+        local_groups = self.group_ids.index_select(0, ids)
+        output = logits.clone()
+        for group_id in local_groups[local_groups >= 0].unique(sorted=True).tolist():
+            positions = local_groups.eq(int(group_id)).nonzero(as_tuple=False).flatten()
+            if positions.numel() < 2:
+                continue
+            group_logits = logits.index_select(1, positions)
+            centered = group_logits - group_logits.mean(dim=1, keepdim=True)
+            output[:, positions] = group_logits + self.alpha() * centered
+        return output
