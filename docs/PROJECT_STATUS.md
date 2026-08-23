@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 188
+completed_try_count: 189
 minimum_required_try_count: 50
 ```
 
@@ -407,6 +407,8 @@ R-GWPS完成28,228次更新后best严格退回关闭态`H=78.320510%`、selected
 下一实验`V2-INNOVATION-071 / C-RGWPS`不再直接使用八角色绝对差值，而是对每张图做角色内中心化和标准化，删除公共类别身份与整体幅度，只保留角色相对分歧；其余训练、gate和Chen-style评估不变。
 
 C-RGWPS seed5达到`U/S/H/ZS=76.782060/80.073357/78.393178/83.886743%`，相对SDCR提高H `0.072667`、相对S-GWPS提高`0.024811`，成为当前最高patch-free单seed H；ZS相对父条件下降`0.067234`。追加seed7判断可靠性。当前累计188组。
+
+C-RGWPS seed7达到`U/S/H/ZS=76.705819/80.197293/78.412709/83.981764%`，相对同seed SDCR提高H `0.109853`、相对S-GWPS提高`0.062018`。两seed均正，C-RGWPS晋级为两seed支持的patch-free辅助候选；最高取seed7 `H=78.412709%`，仅比patch依赖GWPS最高低`0.001537`。当前累计189组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
