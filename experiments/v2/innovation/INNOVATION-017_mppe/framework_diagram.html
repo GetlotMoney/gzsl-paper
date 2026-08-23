@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-017 MPPE</title></head>
+<body>
+<h1>MPPE：六个局部部位分别寻找patch</h1>
+<p><strong>Base commit：</strong>3f24e61b292ef7d95fdc6131244b2709740908f4；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<h2>父路径</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC，输出[B,200]父logits。MPPE替代CCPE/SCPE局部分支，不叠加旧局部权重。</p>
+<h2>多部位局部证据</h2>
+<pre>part_text_cr = orthogonalize(sentence_cr, class_name_c), r=1..6
+part_score_bcr = max_n cos(patch_bn, part_text_cr)
+multi_part_evidence_bc = mean_r(part_score_bcr)
+final_logits = SEBC_logits + beta × multi_part_evidence
+beta = 10 × tanh(raw_beta)</pre>
+<p>每个局部句子可以选择完全不同的patch，允许嘴、翼、腹、尾等证据空间分散。证据预计算为[N,200]；raw_beta零初始化，关闭时严格复现SEBC。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新评估official test并保存一个全局最高H。真实unseen patch不进入梯度；test_used_for_selection=true。遗留CLIP patch准确checkpoint provenance仍不完整。</p>
+</body></html>

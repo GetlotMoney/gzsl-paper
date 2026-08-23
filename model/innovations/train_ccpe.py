@@ -12,10 +12,14 @@ import yaml
 from model.innovations.ccpe import (
     ClassConditionedPatchEvidence,
     class_conditioned_patch_scores,
+    multi_part_patch_scores,
     spatially_coherent_patch_scores,
 )
 from model.innovations.ebc import EpisodicBiasCalibration
-from model.innovations.lpsr import orthogonal_local_text_residuals
+from model.innovations.lpsr import (
+    orthogonal_local_text_residuals,
+    orthogonal_part_text_residuals,
+)
 from model.innovations.train_chen_style import (
     OFFICIAL_KEYS,
     random_batch_indices,
@@ -60,10 +64,11 @@ def load_config(path: Path):
             f"多出={sorted(actual-CONFIG_KEYS)}。"
         )
     identity_by_schema = {
-        "gzsl-paper.ccpe.v1": ("V2-INNOVATION-015", "IDEA-049", 8),
-        "gzsl-paper.ccpe.v2": ("V2-INNOVATION-015", "IDEA-049", 4),
-        "gzsl-paper.ccpe.v3": ("V2-INNOVATION-015", "IDEA-049", 2),
-        "gzsl-paper.scpe.v1": ("V2-INNOVATION-016", "IDEA-050", 2),
+        "gzsl-paper.ccpe.v1": ("V2-INNOVATION-015", "IDEA-049", 8, 16),
+        "gzsl-paper.ccpe.v2": ("V2-INNOVATION-015", "IDEA-049", 4, 16),
+        "gzsl-paper.ccpe.v3": ("V2-INNOVATION-015", "IDEA-049", 2, 16),
+        "gzsl-paper.scpe.v1": ("V2-INNOVATION-016", "IDEA-050", 2, 16),
+        "gzsl-paper.mppe.v1": ("V2-INNOVATION-017", "IDEA-051", 1, 4),
     }
     identity = identity_by_schema.get(config.get("schema_version"))
     if (
@@ -87,7 +92,7 @@ def load_config(path: Path):
         raise ValueError("CCPE patch SHA必须包含train/seen/unseen。")
     if (
         int(config["patch_top_k"]) != identity[2]
-        or int(config["patch_chunk_size"]) != 16
+        or int(config["patch_chunk_size"]) != identity[3]
         or int(config["batch_size"]) != 50
         or int(config["epochs"]) != 200
         or int(config["niters"]) != 28228
@@ -111,7 +116,12 @@ def _precompute_scores(config, text_prototypes, device):
         if sha256_file(path) != config["patch_sha256"][split]:
             raise ValueError(f"CCPE {split} patch SHA错误。")
         patches = torch.load(path, map_location="cpu", weights_only=True)
-        if config["schema_version"] == "gzsl-paper.scpe.v1":
+        if config["schema_version"] == "gzsl-paper.mppe.v1":
+            scores[split] = multi_part_patch_scores(
+                patches, text_prototypes, device,
+                chunk_size=int(config["patch_chunk_size"]),
+            )
+        elif config["schema_version"] == "gzsl-paper.scpe.v1":
             scores[split] = spatially_coherent_patch_scores(
                 patches, text_prototypes, device,
                 chunk_size=int(config["patch_chunk_size"]),
@@ -220,7 +230,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         for parameter in calibrator.parameters():
             parameter.requires_grad_(False)
 
-        text_residual = orthogonal_local_text_residuals(sentence, names)
+        text_residual = (
+            orthogonal_part_text_residuals(sentence, names)
+            if config["schema_version"] == "gzsl-paper.mppe.v1"
+            else orthogonal_local_text_residuals(sentence, names)
+        )
         print("precomputing class-conditioned patch scores")
         scores = _precompute_scores(config, text_residual, device)
         if scores["train"].shape != (labels.shape[0], 200):

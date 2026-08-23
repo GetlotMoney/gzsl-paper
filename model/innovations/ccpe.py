@@ -63,6 +63,33 @@ def spatially_coherent_patch_scores(
     return torch.cat(output, dim=0)
 
 
+def multi_part_patch_scores(
+    patches: torch.Tensor,
+    part_text_prototypes: torch.Tensor,
+    device: torch.device,
+    chunk_size: int = 4,
+) -> torch.Tensor:
+    """每个局部句子独立寻找最匹配patch，再按类别平均六个部位证据。"""
+    if patches.ndim != 3 or patches.shape[1:] != (576, 768):
+        raise ValueError("patch缓存必须是[N,576,768]。")
+    if part_text_prototypes.ndim != 3 or part_text_prototypes.shape[-1] != 768:
+        raise ValueError("局部文本原型必须是[C,R,768]。")
+    class_count, role_count, _ = part_text_prototypes.shape
+    prototypes = F.normalize(
+        part_text_prototypes.detach().float().reshape(-1, 768), dim=-1
+    ).to(device)
+    output = []
+    for start in range(0, patches.shape[0], int(chunk_size)):
+        batch = F.normalize(
+            patches[start : start + int(chunk_size)].to(device).float(), dim=-1
+        )
+        similarities = batch @ prototypes.T
+        best_per_role = similarities.max(dim=1).values
+        scores = best_per_role.view(-1, class_count, role_count).mean(dim=-1)
+        output.append(scores.cpu())
+    return torch.cat(output, dim=0)
+
+
 class ClassConditionedPatchEvidence(nn.Module):
     """把预计算的类别条件局部patch证据作为有界logit残差。"""
 
