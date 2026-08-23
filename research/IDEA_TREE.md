@@ -80,6 +80,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-054 / PCME局部patch分数共识边际（rejected，方向合理但无增益）
       ├─ rejected_branch：IDEA-055 / ECPE episode训练的CCPE（rejected，fold方向不能迁移）
       ├─ rejected_branch：IDEA-056 / CRPE类别语义可靠性patch缩放（rejected，类别斜率无增益）
+      ├─ testing_branch：IDEA-057 / LVPG局部视觉原型生成（testing，改变局部表示）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

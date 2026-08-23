@@ -26,6 +26,7 @@ from model.innovations.lpsr import (
     orthogonal_local_text_residuals,
     orthogonal_part_text_residuals,
 )
+from model.innovations.lvpg import fit_local_visual_prototypes
 from model.innovations.train_chen_style import (
     OFFICIAL_KEYS,
     random_batch_indices,
@@ -78,6 +79,8 @@ def load_config(path: Path):
         expected_keys = expected_keys | {
             "ccpe_model", "ccpe_model_sha256", "delta_max_beta"
         }
+    if schema == "gzsl-paper.lvpg.v1":
+        expected_keys = expected_keys | {"ridge"}
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"CCPE配置字段错误；缺少={sorted(expected_keys-actual)}，"
@@ -94,6 +97,7 @@ def load_config(path: Path):
         "gzsl-paper.dspe.v2": ("V2-INNOVATION-019", "IDEA-053", 2, 16, 10.0),
         "gzsl-paper.pcme.v1": ("V2-INNOVATION-020", "IDEA-054", 2, 16, 10.0),
         "gzsl-paper.crpe.v1": ("V2-INNOVATION-022", "IDEA-056", 2, 16, 10.0),
+        "gzsl-paper.lvpg.v1": ("V2-INNOVATION-023", "IDEA-057", 2, 16, 10.0),
     }
     identity = identity_by_schema.get(config.get("schema_version"))
     if (
@@ -146,6 +150,11 @@ def load_config(path: Path):
         and float(config["delta_max_beta"]) != 2.0
     ):
         raise ValueError("CRPE delta_max_beta必须为2.0。")
+    if (
+        config["schema_version"] == "gzsl-paper.lvpg.v1"
+        and float(config["ridge"]) != 0.1
+    ):
+        raise ValueError("LVPG ridge必须为0.1。")
     return config, sha256_file(path)
 
 
@@ -290,11 +299,23 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         for parameter in calibrator.parameters():
             parameter.requires_grad_(False)
 
-        text_residual = (
-            orthogonal_part_text_residuals(sentence, names)
-            if config["schema_version"] == "gzsl-paper.mppe.v1"
-            else orthogonal_local_text_residuals(sentence, names)
-        )
+        if config["schema_version"] == "gzsl-paper.mppe.v1":
+            text_residual = orthogonal_part_text_residuals(sentence, names)
+        else:
+            text_residual = orthogonal_local_text_residuals(sentence, names)
+        if config["schema_version"] == "gzsl-paper.lvpg.v1":
+            train_patch_path = h1.repo_path(config["patch_inputs"]["train"])
+            if sha256_file(train_patch_path) != config["patch_sha256"]["train"]:
+                raise ValueError("LVPG train patch SHA错误。")
+            train_patches = torch.load(
+                train_patch_path, map_location="cpu", weights_only=True
+            )
+            text_residual, _ = fit_local_visual_prototypes(
+                train_patches, labels, text_residual, seen_classes,
+                top_k=int(config["patch_top_k"]), ridge=float(config["ridge"]),
+                device=device, chunk_size=int(config["patch_chunk_size"]),
+            )
+            del train_patches
         print("precomputing class-conditioned patch scores")
         scores = _precompute_scores(config, text_residual, device)
         score_width = (
