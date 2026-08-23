@@ -50,8 +50,12 @@ def load_config(path: Path):
             f"SEBC配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
             f"多出={sorted(actual-CONFIG_KEYS)}。"
         )
+    gamma_by_schema = {
+        "gzsl-paper.sebc.v1": 2.0,
+        "gzsl-paper.sebc.v2": 0.2,
+    }
     if (
-        config["schema_version"] != "gzsl-paper.sebc.v1"
+        config["schema_version"] not in gamma_by_schema
         or config["experiment_id"] != "V2-INNOVATION-013"
         or config["idea_id"] != "IDEA-047"
     ):
@@ -71,7 +75,7 @@ def load_config(path: Path):
         or config["optimizer"] != "Adam"
         or float(config["learning_rate"]) != 0.01
         or float(config["weight_decay"]) != 0.0
-        or float(config["max_gamma"]) != 2.0
+        or float(config["max_gamma"]) != gamma_by_schema[config["schema_version"]]
     ):
         raise ValueError("SEBC训练参数错误。")
     return config, sha256_file(path)

@@ -18,6 +18,13 @@ class SEBCTest(unittest.TestCase):
         self.assertNotIn('["att"]', source)
         self.assertIn("balanced_fold_batch", source)
 
+    def test_conservative_gamma_rescue_is_accepted(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-013_sebc/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.sebc.v2")
+        self.assertEqual(config["max_gamma"], 0.2)
+
 
 if __name__ == "__main__":
     unittest.main()
