@@ -4,8 +4,8 @@ idea_id: IDEA-047
 framework_id: FRAMEWORK-V2
 title: Seen-Episodic Bias Calibration
 base_commit: 3831d795a75efaedc5cade4830ffa0e2862c0eb0
-code_commit: 6869be8f5b141928b3e4ef29bf4b21da14535d80
-status: rescue1_conservative_gamma_planned
+code_commit: 3397eeaa86102117527b1fe8db129853c0059d8d
+status: supported_auxiliary_composition
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -17,7 +17,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-013_sebc/RUN-001
     status: completed
   - run_id: RUN-002
-    code_commit: null
+    code_commit: 3397eeaa86102117527b1fe8db129853c0059d8d
     config_ref: experiments/v2/innovation/INNOVATION-013_sebc/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-013_sebc/RUN-002
-    status: planned
+    status: completed

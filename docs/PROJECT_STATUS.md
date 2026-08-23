@@ -244,6 +244,8 @@ Chen-style无专家路线新增NCRA类名残差：冻结最佳分阶段父模型
 
 SDRS按父原型与类名原型的余弦分歧为NCRA提供类别条件缩放。收紧幅度后的RUN-002达到`U/S/H/ZS=73.985535/80.904585/77.290521/83.061785%`，比NCRA提高H `0.089396`；通过预注册边界但增益较小，保留为supported辅助改进，不作为论文核心创新。
 
+SEBC在三个100/50类class-exclusive episode中只用全局seen图像训练一个seen竞争gamma。收紧上限后的RUN-002达到`U/S/H/ZS=75.772560/79.346550/77.518382/83.061785%`，比SDRS提高H `0.227861`，成为当前Chen-style无专家最高条件。该组合复用已有EBC机制，不作为新颖性claim；真实unseen图像未进入梯度，official test用于选模。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

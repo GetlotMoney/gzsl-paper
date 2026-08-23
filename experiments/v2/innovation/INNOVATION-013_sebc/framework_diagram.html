@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-013 SEBC</title></head>
 <body>
 <h1>SEBC：seen内部episode学习联合竞争去偏置</h1>
-<p><strong>Base commit：</strong>3831d795a75efaedc5cade4830ffa0e2862c0eb0；<strong>RUN-001 code commit：</strong>6869be8f5b141928b3e4ef29bf4b21da14535d80。</p>
+<p><strong>Base commit：</strong>3831d795a75efaedc5cade4830ffa0e2862c0eb0；<strong>RUN-001 code commit：</strong>6869be8f5b141928b3e4ef29bf4b21da14535d80；<strong>RUN-002 code commit：</strong>3397eeaa86102117527b1fe8db129853c0059d8d。</p>
 <h2>冻结输入与fold数据流</h2>
 <p>主推理路径固定为TG-VPR/TST/CCGR → NCRA → SDRS，输出[B,200] logits。训练路径复用三个SHA绑定的fold TG模型：每折只用100类训练模型，另50个全局seen类作为pseudo-unseen；三折互斥并覆盖150类。</p>
 <h2>唯一可训练计算</h2>

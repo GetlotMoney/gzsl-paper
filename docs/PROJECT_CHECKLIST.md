@@ -14,6 +14,7 @@
 - [x] V2-CONFIRM-007 RUN-001 class-exclusive H=`75.849154`，语义边界通过但未达标；已预注册复用父模型的1.5步长补救。
 - [x] V2-CONFIRM-007 RUN-002 H=`75.793527`，低于RUN-001，class-exclusive轴关闭。
 - [x] V2-INNOVATION-011 NCRA仅用seen图像训练类名残差，Chen-style RUN-003达到H=`77.201125`，无专家路线正式超过`77.023182`目标。
+- [x] NCRA→SDRS→SEBC无专家辅助链达到当前最高H=`77.518382`；SEBC只用seen内部episode训练，复用既有校准机制不作原创claim。
 - [x] 标准开发协议改为`train_loc` 100类训练、`val_loc` 50类类别不相交validation选模。
 - [x] `V2-TUNE-001`划分固定为3724张梯度图像、978张val-seen、2355张val-unseen；official test不加载。
 - [x] 无专家路线validation H=`76.472964`；专家312维属性路线H=`77.556001`，各自validation调优后Delta=`+1.083037`。
