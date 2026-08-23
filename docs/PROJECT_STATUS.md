@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 200
+completed_try_count: 201
 minimum_required_try_count: 50
 ```
 
@@ -445,6 +445,8 @@ TCPS seed7达到`U/S/H/ZS=76.748145/80.184466/78.428683/83.953416%`，比稳定S
 PDRS seed5达到`U/S/H/ZS=76.742035/80.151236/78.409596/83.981204%`，比稳定SNPS top-3低H `0.057115`。pair-specific角色距离把角色特征最大标准差扩大到`1.832577`但没有改善H，IDEA-110拒绝且不追加seed7或幅度补救。当前累计200组。
 
 下一实验`V2-INNOVATION-077 / ETPC`保持稳定SNPS top-3输入与推理，只把pair CE改为minimal-flip回归：正确top1目标delta=0，错误top2目标为刚好消除当前margin的有界负delta，避免持续强化93%已正确pair。
+
+ETPC seed5完整运行后best严格退回父模型`H=78.320510%`、selected iteration=`-1`。minimal-flip回归loss可以很小，但seen错误翻转方向不能迁移到unseen，IDEA-111拒绝且不追加seed7或loss幅度补救。当前累计201组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

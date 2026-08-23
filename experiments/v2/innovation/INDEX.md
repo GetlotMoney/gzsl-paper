@@ -78,6 +78,6 @@
 | V2-INNOVATION-074 | IDEA-108 | R-SNPS互惠加权语义近邻选择器 | rejected（seed7低于稳定top-3，图补救轴关闭） | `INNOVATION-074_rsnps/` |
 | V2-INNOVATION-075 | IDEA-109 | TCPS三元竞争pair选择器 | rejected（seed7低于稳定top-3） | `INNOVATION-075_tcps/` |
 | V2-INNOVATION-076 | IDEA-110 | PDRS类别对判别角色选择器 | rejected（pair角色距离加权低于top-3） | `INNOVATION-076_pdrs/` |
-| V2-INNOVATION-077 | IDEA-111 | ETPC错误定向成对修正 | planned（minimal-flip回归，patch-free） | `INNOVATION-077_etpc/` |
+| V2-INNOVATION-077 | IDEA-111 | ETPC错误定向成对修正 | rejected（best退回父模型） | `INNOVATION-077_etpc/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

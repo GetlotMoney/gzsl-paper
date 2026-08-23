@@ -1,6 +1,6 @@
 # IDEA-111：Error-Targeted Pair Correction
 
-status: testing
+status: rejected
 problem: 当前pair CE在正确top1占约93%的训练集上持续强化已正确pair，pair loss下降但official H在早期峰值后持续恶化。
 hypothesis: 正确pair目标修正为0，错误top2只学习刚好消除当前margin的最小负delta，可减少seen过强化并提高稳定SNPS H。
 evidence_refs: GWPS/SNPS/TCPS训练日志均在早期达到最佳后随pair loss继续下降而H下降；pair top1 target rate约0.932。
@@ -10,3 +10,5 @@ success_condition: seed5 H大于稳定SNPS top-3 78.466710；正提升后追加s
 failure_condition: H不超过top-3、best退回关闭态或错误target非有限。
 experiment: V2-INNOVATION-077
 paper_core_innovation: false
+result: RUN-001 best退回父模型H=78.320510、selected iteration=-1；所有非零状态更差。
+decision: seen错误最小翻转方向不能迁移到unseen，拒绝且不追加seed7或loss幅度补救。
