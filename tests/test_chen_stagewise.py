@@ -42,8 +42,11 @@ class ChenStagewiseTest(unittest.TestCase):
         set_trainable_stage(self.model, "TG_ONLY")
         self.assertTrue(any(p.requires_grad for p in self.model.tg_vpr.parameters()))
         self.assertFalse(any(p.requires_grad for p in self.model.transport_head.parameters()))
+        for parameter in self.model.tg_vpr.parameters():
+            parameter.grad = torch.ones_like(parameter)
         set_trainable_stage(self.model, "TRANSFER_CCGR")
         self.assertFalse(any(p.requires_grad for p in self.model.tg_vpr.parameters()))
+        self.assertTrue(all(p.grad is None for p in self.model.tg_vpr.parameters()))
         self.assertTrue(any(p.requires_grad for p in self.model.transport_head.parameters()))
         self.assertTrue(any(p.requires_grad for p in self.model.generator_magnitude_head.parameters()))
         set_trainable_stage(self.model, "JOINT_FINETUNE")

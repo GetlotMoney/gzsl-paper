@@ -130,6 +130,8 @@ def stage_for_iteration(config: dict, iteration: int) -> dict:
 
 
 def set_trainable_stage(model: UnifiedSeenPrototypeModel, stage_name: str) -> list[torch.nn.Parameter]:
+    # 清除上一阶段冻结参数的旧grad，避免审计字段把遗留梯度误报为当前阶段梯度。
+    model.zero_grad(set_to_none=True)
     for parameter in model.parameters():
         parameter.requires_grad_(False)
     if stage_name == "TG_ONLY":

@@ -54,6 +54,8 @@ owner进一步选择陈使明TransZero公开代码对齐的test-selected方式�
 
 按预注册止损规则，无专家端到端失败后新建`V2-CONFIRM-005`分阶段对照：50名义epoch只训练TG-VPR，100名义epoch冻结TG训练TST/NTR+CCGR，最后50名义epoch以`1e-5`全部解冻联合微调。阶段边界固定，阶段间使用最后权重，整次RUN只有一个跨阶段整模型best-H，`nested_official_test_selection=false`。
 
+`V2-CONFIRM-005`完成后，无专家分阶段整模型best为`U/S/H/ZS=71.105868/80.453974/75.491628/82.531631%`，位于TRANSFER_CCGR阶段epoch 54；相对端到端无专家提高`0.557688`，但仍未达到77.023目标。阶段2冻结参数未进入optimizer，训练结果有效；梯度审计字段存在上一阶段冻结参数旧grad缓存误报，已在post-run代码中修复并披露。
+
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 
 ## 当前待办
