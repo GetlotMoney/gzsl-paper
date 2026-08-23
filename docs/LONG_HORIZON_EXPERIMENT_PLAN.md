@@ -11,6 +11,9 @@ current_expert_validation_delta_H: 1.083037
 final_no_expert_H: 74.971312
 final_expert_H: 78.751611
 final_expert_delta_H: 3.780300
+chen_style_end_to_end_no_expert_H: 74.933940
+chen_style_end_to_end_expert_H: 78.134714
+chen_style_end_to_end_expert_delta_H: 3.200774
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
 completed_try_count: 147

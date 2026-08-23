@@ -4,7 +4,8 @@
 
 - [x] owner最终选择Chen-style test-selected为论文主协议，validation-first保留为严格对照。
 - [x] Chen-style端到端流程固定为整模型统一H选模，不允许TG-VPR/TST/NTR/CCGR分别取最大。
-- [ ] 完成V2-CONFIRM-004无专家/专家各28,228次更新并回填best-H checkpoint。
+- [x] V2-CONFIRM-004无专家/专家各完成28,228次更新和201个official评估点；无专家H=`74.933940`，专家H=`78.134714`。
+- [x] 端到端专家达到78目标；无专家未达到77.023目标，失败结果完整保留。
 - [x] 标准开发协议改为`train_loc` 100类训练、`val_loc` 50类类别不相交validation选模。
 - [x] `V2-TUNE-001`划分固定为3724张梯度图像、978张val-seen、2355张val-unseen；official test不加载。
 - [x] 无专家路线validation H=`76.472964`；专家312维属性路线H=`77.556001`，各自validation调优后Delta=`+1.083037`。
@@ -76,4 +77,4 @@
 
 ## 当前唯一下一步
 
-执行`V2-CONFIRM-004` Chen-style端到端无专家/专家双RUN；只保存整套模型best-H，不做模块分阶段嵌套选模。
+端到端专家已过78；若继续无专家提升，另建分阶段Experiment并保持整套模型统一Chen-style选模，不能覆盖V2-CONFIRM-004。

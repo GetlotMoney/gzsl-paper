@@ -20,6 +20,9 @@ paper_primary_framework: FRAMEWORK-V2
 standard_final_no_expert_H: 74.971312
 standard_final_expert_H: 78.751611
 standard_final_expert_delta_H: 3.780300
+chen_style_end_to_end_no_expert_H: 74.933940
+chen_style_end_to_end_expert_H: 78.134714
+chen_style_end_to_end_expert_delta_H: 3.200774
 historical_v2_baseline_H: 74.023182
 paper_target_H: 78.0
 target_supported_innovations: 3
@@ -46,6 +49,8 @@ owner已将来源身份`INNOVATION-MODULE-1 / TG-VPR-H1`提升为独立正式框
 owner随后明确授权`V2-CONFIRM-003`执行冻结配置最终评估。两条路线均在完整trainval 150类/7,057张图像上从头重训，并在checkpoint写入后各调用一次official test：无专家`U/S/H/ZS=73.071939/76.972061/74.971312/80.278075%`；专家属性`77.935892/79.584587/78.751611/84.862840%`，H提高`3.780300`并达到78目标。由于方法结构受历史test探索影响且CLIP缓存来源不完整，仍必须标记`strict_blind_claim_eligible=false`，不能写成从未接触test的盲测。
 
 owner进一步选择陈使明TransZero公开代码对齐的test-selected方式作为论文主协议。`V2-CONFIRM-004`已预注册端到端联合训练：batch 50、seed 5、Adam `1e-4`、28,228次更新、每141步official test、仅根据完整模型H保存best；无专家与专家路线串行执行。该协议固定披露`test_used_for_selection=true / strict_blind_claim=false`，V2-CONFIRM-003继续作为validation-first严格对照。
+
+`V2-CONFIRM-004`已完成：无专家整模型best在iteration 9165/epoch 65，`U/S/H/ZS=69.692755/81.027550/74.933940/80.256838%`，未达到77.023目标；专家整模型best在iteration 6768/epoch 48，`74.429244/82.228470/78.134714/85.708600%`，达到78目标。两条RUN均完成28,228步、201个official评估点，只有整模型H参与best选择，没有模块分阶段取最大。
 
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 
