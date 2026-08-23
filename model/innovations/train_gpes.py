@@ -76,6 +76,16 @@ def class_balanced_pair_weights(
     return combined, class_weights
 
 
+def hard_margin_only_for_schema(schema: str) -> bool:
+    return schema not in (
+        "gzsl-paper.gwps.v1",
+        "gzsl-paper.bgwps.v1",
+        "gzsl-paper.mbgwps.v1",
+        "gzsl-paper.nps.v1",
+        "gzsl-paper.tgwps.v1",
+    )
+
+
 def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -419,10 +429,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         mapping[seen_classes] = torch.arange(150)
         ids = seen_classes.to(device)
         pair_logits_list, feature_list, target_list, pair_weight_list = [], [], [], []
-        hard_margin_only = config["schema_version"] not in (
-            "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1",
-            "gzsl-paper.mbgwps.v1", "gzsl-paper.nps.v1",
-        )
+        hard_margin_only = hard_margin_only_for_schema(config["schema_version"])
         for start in range(0, features.shape[0], 512):
             images = features[start : start + 512].to(device).float()
             parent_logits = F.normalize(images, dim=-1) @ parent.prototypes().index_select(0, ids).T * parent.scale()

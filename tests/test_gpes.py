@@ -11,6 +11,7 @@ from model.innovations.gpes import (
 from model.innovations.train_gpes import (
     class_balanced_pair_weights,
     extract_pair_examples,
+    hard_margin_only_for_schema,
     load_config,
 )
 
@@ -210,6 +211,7 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.tgwps.v1")
         self.assertNotIn("patch_inputs", config)
         self.assertNotIn("feature_provenance_complete", config)
+        self.assertFalse(hard_margin_only_for_schema(config["schema_version"]))
 
 
 if __name__ == "__main__":

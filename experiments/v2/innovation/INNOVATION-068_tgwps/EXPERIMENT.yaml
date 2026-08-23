@@ -12,7 +12,13 @@ unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-068_tgwps/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 35e61afe17eec36403917139fb1dec964959ff8f
     config_ref: experiments/v2/innovation/INNOVATION-068_tgwps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-068_tgwps/RUN-001
+    status: invalid_contract
+    failure_mode: configured all-pair scope executed hard 25-percent pair branch
+  - run_id: RUN-001-RERUN-001
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-068_tgwps/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-068_tgwps/RUN-001-RERUN-001
     status: planned
