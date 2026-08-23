@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,test_used_for_selection,output_uri,decision
+RUN-001,,experiments/v2/innovation/INNOVATION-010_sccc/configs/RUN-001.yaml,048f7657718c1b47e334127887ba7deeb3ccf877227c84df863217a8f3b3fe24,5,planned,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-010_sccc/RUN-001,pending
