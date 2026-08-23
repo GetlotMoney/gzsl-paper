@@ -90,6 +90,21 @@ def multi_part_patch_scores(
     return torch.cat(output, dim=0)
 
 
+def normalize_patch_scores_by_seen_reference(
+    scores: dict[str, torch.Tensor],
+) -> tuple[dict[str, torch.Tensor], torch.Tensor, torch.Tensor]:
+    if set(scores) != {"train", "seen", "unseen"}:
+        raise ValueError("patch分数必须包含train/seen/unseen。")
+    reference = scores["train"].float()
+    mean = reference.mean(dim=0)
+    std = reference.std(dim=0, unbiased=False).clamp_min(1e-6)
+    normalized = {
+        split: (values.float() - mean) / std
+        for split, values in scores.items()
+    }
+    return normalized, mean, std
+
+
 class ClassConditionedPatchEvidence(nn.Module):
     """把预计算的类别条件局部patch证据作为有界logit残差。"""
 

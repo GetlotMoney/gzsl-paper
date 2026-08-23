@@ -13,6 +13,7 @@ from model.innovations.ccpe import (
     ClassConditionedPatchEvidence,
     class_conditioned_patch_scores,
     multi_part_patch_scores,
+    normalize_patch_scores_by_seen_reference,
     spatially_coherent_patch_scores,
 )
 from model.innovations.ebc import EpisodicBiasCalibration
@@ -64,11 +65,12 @@ def load_config(path: Path):
             f"多出={sorted(actual-CONFIG_KEYS)}。"
         )
     identity_by_schema = {
-        "gzsl-paper.ccpe.v1": ("V2-INNOVATION-015", "IDEA-049", 8, 16),
-        "gzsl-paper.ccpe.v2": ("V2-INNOVATION-015", "IDEA-049", 4, 16),
-        "gzsl-paper.ccpe.v3": ("V2-INNOVATION-015", "IDEA-049", 2, 16),
-        "gzsl-paper.scpe.v1": ("V2-INNOVATION-016", "IDEA-050", 2, 16),
-        "gzsl-paper.mppe.v1": ("V2-INNOVATION-017", "IDEA-051", 1, 4),
+        "gzsl-paper.ccpe.v1": ("V2-INNOVATION-015", "IDEA-049", 8, 16, 10.0),
+        "gzsl-paper.ccpe.v2": ("V2-INNOVATION-015", "IDEA-049", 4, 16, 10.0),
+        "gzsl-paper.ccpe.v3": ("V2-INNOVATION-015", "IDEA-049", 2, 16, 10.0),
+        "gzsl-paper.scpe.v1": ("V2-INNOVATION-016", "IDEA-050", 2, 16, 10.0),
+        "gzsl-paper.mppe.v1": ("V2-INNOVATION-017", "IDEA-051", 1, 4, 10.0),
+        "gzsl-paper.cnpe.v1": ("V2-INNOVATION-018", "IDEA-052", 2, 16, 2.0),
     }
     identity = identity_by_schema.get(config.get("schema_version"))
     if (
@@ -103,7 +105,7 @@ def load_config(path: Path):
         config["optimizer"] != "Adam"
         or float(config["learning_rate"]) != 0.01
         or float(config["weight_decay"]) != 0.0
-        or float(config["max_beta"]) != 10.0
+        or float(config["max_beta"]) != identity[4]
     ):
         raise ValueError("CCPE优化参数错误。")
     return config, sha256_file(path)
@@ -132,6 +134,8 @@ def _precompute_scores(config, text_prototypes, device):
                 chunk_size=int(config["patch_chunk_size"]),
             )
         del patches
+    if config["schema_version"] == "gzsl-paper.cnpe.v1":
+        scores, _, _ = normalize_patch_scores_by_seen_reference(scores)
     return scores
 
 
