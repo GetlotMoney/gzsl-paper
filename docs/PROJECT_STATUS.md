@@ -258,6 +258,8 @@ CNPE对CCPE top2分数做seen参考z-score后达到`U/S/H/ZS=75.874960/79.415172
 
 DSPE联合训练时绝对分支吞掉归一化分支，最高H仅`77.565132%`；固定CCPE绝对beta的分阶段补救中，所有非零归一化beta仍降低H，best严格退回CCPE `77.666533%`。IDEA-053拒绝，说明同源patch分数的绝对值与z-score不能硬拼；下一方向必须改变信息或训练目标。
 
+PCME固定CCPE后学习top1-top2差距，权重大部分时间为负，说明孤立top1确属噪声；但所有非零权重均未超过CCPE，best退回gap=0。IDEA-054拒绝；下一实验保留CCPE公式但把beta训练目标改为100/50类class-exclusive episode。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

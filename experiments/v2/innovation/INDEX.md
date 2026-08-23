@@ -21,6 +21,6 @@
 | V2-INNOVATION-017 | IDEA-051 | MPPE六局部部位独立patch证据 | rejected（六路噪声累积） | `INNOVATION-017_mppe/` |
 | V2-INNOVATION-018 | IDEA-052 | CNPE seen参考归一化patch证据 | rejected（低于CCPE，保留互补信号） | `INNOVATION-018_cnpe/` |
 | V2-INNOVATION-019 | IDEA-053 | DSPE绝对与相对双尺度patch证据 | rejected（联合与分阶段均失败） | `INNOVATION-019_dspe/` |
-| V2-INNOVATION-020 | IDEA-054 | PCME局部patch分数共识边际 | planned | `INNOVATION-020_pcme/` |
+| V2-INNOVATION-020 | IDEA-054 | PCME局部patch分数共识边际 | rejected（方向合理但无增益） | `INNOVATION-020_pcme/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
