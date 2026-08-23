@@ -11,3 +11,4 @@ success_condition: H大于78.320510，U和S任一项下降不超过2个百分点
 failure_condition: H不超过SDCR、任一参数饱和或联合训练只改变U/S权衡。
 experiment: V2-INNOVATION-050
 interim_result: RUN-001 best退回父模型；SEBC gamma被seen CE持续推高并伤害H，进入冻结SEBC的9参数RESCUE-1。
+rescue_1_result: 冻结SEBC后仍退回父模型，SDRS delta持续下降；最终补救冻结SDRS，只训练SDCR八维权重。
