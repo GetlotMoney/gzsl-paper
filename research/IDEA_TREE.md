@@ -110,7 +110,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-084 / JSCF联合语义协调微调（三种边界均无增益）
       ├─ rejected_branch：IDEA-085 / CLCR跨LLM互补语义残差（非零Claude beta均降H）
       ├─ rejected_branch：IDEA-086 / SPCR句子—局部patch互补残差（非零patch beta均降H）
-      ├─ testing_branch：IDEA-087 / PGSD patch引导句子dropout（testing，patch-free推理）
+      ├─ rejected_branch：IDEA-087 / PGSD patch引导句子dropout（未中心化权重改变loss尺度）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

@@ -4,15 +4,15 @@ idea_id: IDEA-087
 framework_id: FRAMEWORK-V2
 title: Patch-Guided Sentence Dropout
 base_commit: 1562f4ca29d95bdbde344f94a7b2dbbf0f2ad3f3
-code_commit: null
-status: planned
+code_commit: a00f6b7aa2067e24a14995096f79977aef214029
+status: rejected_uncentered_loss_scale
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-053_pgsd/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: a00f6b7aa2067e24a14995096f79977aef214029
     config_ref: experiments/v2/innovation/INNOVATION-053_pgsd/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-053_pgsd/RUN-001
-    status: planned
+    status: completed_failed_parent_only
