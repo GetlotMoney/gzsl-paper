@@ -102,7 +102,6 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.msnps.v1",
         "gzsl-paper.rsnps.v1",
         "gzsl-paper.tcps.v1",
-        "gzsl-paper.tcps.v1",
     )
 
 
@@ -529,6 +528,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         "gzsl-paper.snps.v1",
         "gzsl-paper.msnps.v1",
         "gzsl-paper.rsnps.v1",
+        "gzsl-paper.tcps.v1",
     )
     if not text_only:
         for split, path_text in config["patch_inputs"].items():

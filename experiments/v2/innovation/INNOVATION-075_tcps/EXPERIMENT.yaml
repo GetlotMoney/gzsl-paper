@@ -10,6 +10,11 @@ evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-075_tcps/framework_diagram.html
+pre_run_failures:
+  - code_commit: 9f4749b5572fab018f5534c1ae2fff1a01ee1b57
+    status: failed_pre_run
+    reason: patch_free_schema_missing_from_runtime_dispatch
+    output_dir_created: false
 runs:
   - run_id: RUN-001
     code_commit: null
