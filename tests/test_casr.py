@@ -24,6 +24,16 @@ class CASRTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.casr.v2")
         self.assertEqual(config["kl_weight"], 0.01)
 
+    def test_seed5_reliability_uses_seed5_parent(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-038_casr/configs/RUN-003.yaml"
+        )
+        self.assertEqual(config["random_seed"], 5)
+        self.assertEqual(
+            config["oesr_model_sha256"],
+            "74bd92c84278c4f623e2ae357358a34bc07a810714b1f03c236065fc77a9a8e1",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
