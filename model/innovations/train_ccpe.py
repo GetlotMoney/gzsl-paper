@@ -58,8 +58,12 @@ def load_config(path: Path):
             f"CCPE配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
             f"多出={sorted(actual-CONFIG_KEYS)}。"
         )
+    top_k_by_schema = {
+        "gzsl-paper.ccpe.v1": 8,
+        "gzsl-paper.ccpe.v2": 4,
+    }
     if (
-        config["schema_version"] != "gzsl-paper.ccpe.v1"
+        config["schema_version"] not in top_k_by_schema
         or config["experiment_id"] != "V2-INNOVATION-015"
         or config["idea_id"] != "IDEA-049"
     ):
@@ -78,7 +82,7 @@ def load_config(path: Path):
     if set(config["patch_sha256"]) != {"train", "seen", "unseen"}:
         raise ValueError("CCPE patch SHA必须包含train/seen/unseen。")
     if (
-        int(config["patch_top_k"]) != 8
+        int(config["patch_top_k"]) != top_k_by_schema[config["schema_version"]]
         or int(config["patch_chunk_size"]) != 16
         or int(config["batch_size"]) != 50
         or int(config["epochs"]) != 200
