@@ -106,7 +106,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-080 / R-MGSR系数正则化多几何路由（两档L2均退回父模型）
       ├─ rejected_branch：IDEA-081 / NCSR近邻对比语义残差（两档学习率均退回关闭态）
       ├─ rejected_branch：IDEA-082 / RSDM残差对称对角度量（残差单支位置错误）
-      ├─ testing_branch：IDEA-083 / FSDM完整语义链共享对角度量（testing，三分支同步变换）
+      ├─ rejected_branch：IDEA-083 / FSDM完整语义链共享对角度量（完整度量仍退回单位态）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

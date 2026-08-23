@@ -50,6 +50,6 @@
 | V2-INNOVATION-046 | IDEA-080 | R-MGSR系数正则化多几何路由 | rejected（两档L2均退回父模型，预算耗尽） | `INNOVATION-046_rmgsr/` |
 | V2-INNOVATION-047 | IDEA-081 | NCSR近邻对比语义残差 | rejected（两档学习率均退回父模型） | `INNOVATION-047_ncsr/` |
 | V2-INNOVATION-048 | IDEA-082 | RSDM残差对称对角度量 | rejected（只改残差分支破坏尺度平衡） | `INNOVATION-048_rsdm/` |
-| V2-INNOVATION-049 | IDEA-083 | FSDM完整语义链共享对角度量 | planned（复用IDEA-028机制，无原创claim） | `INNOVATION-049_fsdm/` |
+| V2-INNOVATION-049 | IDEA-083 | FSDM完整语义链共享对角度量 | rejected（seen度量学习产生域偏置） | `INNOVATION-049_fsdm/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
