@@ -703,3 +703,25 @@ class RoleVotePairSelector(SemanticNeighborPairSelector):
             related,
             torch.cat((features, vote.unsqueeze(1)), dim=1),
         )
+
+
+class CrossSourceDisagreementSelector(SemanticNeighborPairSelector):
+    """增加Claude与merge pair差值的绝对分歧。"""
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top, global_ids, related, features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        disagreement = (features[:, 1] - features[:, 2]).abs()
+        return (
+            top,
+            global_ids,
+            related,
+            torch.cat((features, disagreement.unsqueeze(1)), dim=1),
+        )

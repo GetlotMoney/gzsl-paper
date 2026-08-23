@@ -468,6 +468,8 @@ TR-RDSS seed7完整训练后best严格退回SNPS父模型`H=78.446100%`，role s
 
 RVPS seed5完整运行后best严格退回父模型`H=78.320510%`、selected iteration=`-1`。signed role vote分布有效但所有非零selector均更差，说明多数投票重复已有角色方向并强化seen偏好；IDEA-115拒绝且不追加seed7。当前累计207组。
 
+下一实验`V2-INNOVATION-082 / CSDS`固定稳定SNPS top-3图，新增`abs(Claude pair diff - merge pair diff)`作为第13维跨文本源可靠性；不再调整角色尺度或投票。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

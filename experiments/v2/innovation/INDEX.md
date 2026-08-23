@@ -83,5 +83,6 @@
 | V2-INNOVATION-079 | IDEA-113 | S-RDSS分阶段角色尺度选择器 | rejected（best退回冻结SNPS父模型） | `INNOVATION-079_srdss/` |
 | V2-INNOVATION-080 | IDEA-114 | TR-RDSS信赖域角色尺度选择器 | rejected（seed7 best退回SNPS父模型） | `INNOVATION-080_trdss/` |
 | V2-INNOVATION-081 | IDEA-115 | RVPS角色投票成对选择器 | rejected（best退回父模型） | `INNOVATION-081_rvps/` |
+| V2-INNOVATION-082 | IDEA-116 | CSDS跨来源分歧选择器 | planned（Claude/merge绝对分歧） | `INNOVATION-082_csds/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

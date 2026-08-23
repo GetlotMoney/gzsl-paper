@@ -5,6 +5,7 @@ import torch
 
 from model.innovations.gpes import (
     CenteredRoleGatedPairSelector,
+    CrossSourceDisagreementSelector,
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
     PairDiscriminativeRoleSelector,
@@ -579,6 +580,35 @@ class GPESTest(unittest.TestCase):
         )
         self.assertEqual(config["schema_version"], "gzsl-paper.rvps.v1")
         self.assertEqual(config["context_feature"], "signed_role_vote_mean")
+        self.assertEqual(config["semantic_neighbor_k"], 3)
+
+    def test_cross_source_selector_adds_absolute_gap(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        model = CrossSourceDisagreementSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(13), torch.ones(13), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+        )
+        _, _, _, features = model._top2_context(
+            torch.randn(3, 200), torch.randn(3, 768), None, torch.arange(200)
+        )
+        self.assertEqual(tuple(features.shape), (3, 13))
+        self.assertTrue(torch.equal(
+            features[:, -1], (features[:, 1] - features[:, 2]).abs()
+        ))
+
+    def test_csds_config_binds_absolute_source_gap(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-082_csds/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.csds.v1")
+        self.assertEqual(
+            config["context_feature"], "absolute_claude_merge_pair_gap"
+        )
         self.assertEqual(config["semantic_neighbor_k"], 3)
 
 
