@@ -70,6 +70,8 @@ V2-CONFIRM-007 RUN-001完成后`U/S/H/ZS=73.860192/77.948201/75.849154/83.031738
 
 V2-CONFIRM-007 RUN-002高步长H=`75.793527%`，低于RUN-001；class-exclusive轴关闭。当前无专家最高仍为CONFIRM-005 RUN-002 `H=76.006848%`，下一创新转向样本条件seen/unseen竞争校准。
 
+V2-INNOVATION-010 SCCC signed条件H=`76.099469%`但gamma均值负且接近边界；非负补救H=`75.846458%`。样本竞争校准机制不成立并拒绝，下一方向转类名CLIP原型与GPT长描述原型的无专家双语义融合。
+
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 
 ## 当前待办

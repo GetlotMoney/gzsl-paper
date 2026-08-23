@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Sample-Conditioned Competition Calibration
 base_commit: 626a94c1afff7a60eca3de4b8227110d48ffbbdc
 code_commit: null
-status: rescue1_nonnegative_planned
+status: rejected
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -17,7 +17,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-010_sccc/RUN-001
     status: completed
   - run_id: RUN-002
-    code_commit: null
+    code_commit: 28176366ef84344994883fcc8c75f32bdc68bfe5
     config_ref: experiments/v2/innovation/INNOVATION-010_sccc/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-010_sccc/RUN-002
-    status: planned
+    status: completed
