@@ -1,6 +1,6 @@
 # IDEA-080：Regularized Multi-Geometry Sentence Routing
 
-status: testing
+status: rejected
 rescue_of: IDEA-079
 attempt_no: RESCUE-2
 problem: MGSR有正H信号，但±0.25与±0.10两种输出上限都会饱和；故障来自共享系数被seen CE持续推大，而非单纯上限过宽。
@@ -12,3 +12,4 @@ success_condition: H大于78.365239，class variation大于0.001，最小权重�
 failure_condition: H不超过MGSR RUN-001、残差继续饱和或类别差异退化。
 experiment: V2-INNOVATION-046
 interim_result: RUN-001的0.05 L2过强，best退回父模型且class variation=0；最后补救固定为0.005 L2。
+result: RUN-002的0.005 L2仍以关闭态为best；MGSR家族3次补救用完，方向拒绝并止损。

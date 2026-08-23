@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 152
+completed_try_count: 153
 minimum_required_try_count: 50
 ```
 
@@ -325,6 +325,8 @@ MGSR用4个纯文本几何量和4个跨类共享系数从SDCR生成类别句权�
 MGSR RUN-002收紧残差到±0.10后最高H=`78.338157%`，低于RUN-001且仍触边界，说明单纯缩小上限不能修复seen CE驱动的系数极化；该参数轴关闭。当前累计151组，MGSR保留H=`78.365239%`的正观察但未晋级，下一补救改为直接约束共享系数。
 
 R-MGSR用0.05系数L2直接抑制极化，但整次RUN best退回SDCR父模型`H=78.320510%`，selected iteration=-1且class variation=0，属于过强正则。当前累计152组；MGSR家族只剩最后一次0.005 L2补救，失败后强制止损。
+
+R-MGSR最终0.005 L2补救仍以关闭态`H=78.320510%`为best。MGSR家族的无正则、收紧上限、0.05 L2和0.005 L2已覆盖首次TRY加3次补救：唯一更高观察`78.365239%`依赖饱和边界，所有防饱和方案均不能超过父模型。IDEA-079/080拒绝并止损。当前累计153组，最高可靠结果仍为SDCR seed5 `H=78.320510%`。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
