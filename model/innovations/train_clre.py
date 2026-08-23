@@ -18,6 +18,7 @@ from model.innovations.train_chen_style import (
     verify_inputs,
 )
 from model.innovations.train_sebc import _load_main
+from model.innovations.semantic_orthogonal import classwise_bi_orthogonal_residual
 from model.tg_vpr_h1 import train as h1
 from tools.cub_data import load_cub_split
 from tools.reproducibility import configure_reproducibility
@@ -64,6 +65,10 @@ def load_config(path: Path):
         ),
         "gzsl-paper.omlr.v1": (
             "V2-INNOVATION-031", "IDEA-065", "merge_embeddings",
+            78.0721851209539,
+        ),
+        "gzsl-paper.bocr.v1": (
+            "V2-INNOVATION-032", "IDEA-066", "claude_embeddings",
             78.0721851209539,
         ),
     }
@@ -150,7 +155,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     input_sha = verify_inputs(config, paths)
     cache_key = (
         "claude_embeddings"
-        if config["schema_version"] in ("gzsl-paper.clre.v1", "gzsl-paper.oclr.v1")
+        if config["schema_version"] in (
+            "gzsl-paper.clre.v1", "gzsl-paper.oclr.v1", "gzsl-paper.bocr.v1"
+        )
         else "merge_embeddings"
     )
     for key in (
@@ -209,6 +216,10 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         parent, sdrs = _load_main(
             config, sentence, labels, features, class_names, seen_classes, device
         )
+        if config["schema_version"] == "gzsl-paper.bocr.v1":
+            names = classwise_bi_orthogonal_residual(
+                names, class_names, parent.prototypes().detach()
+            )
         sebc_payload = torch.load(
             Path(config["sebc_model"]), map_location="cpu", weights_only=False
         )
