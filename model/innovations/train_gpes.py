@@ -13,6 +13,7 @@ from model.innovations.ebc import EpisodicBiasCalibration
 from model.innovations.gpes import (
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
+    SemanticGatedPairSelector,
     TextOnlyGatedPairSelector,
 )
 from model.innovations.lpsr import orthogonal_local_text_residuals
@@ -83,6 +84,7 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.mbgwps.v1",
         "gzsl-paper.nps.v1",
         "gzsl-paper.tgwps.v1",
+        "gzsl-paper.sgwps.v1",
     )
 
 
@@ -91,7 +93,7 @@ def load_config(path: Path):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    if schema == "gzsl-paper.tgwps.v1":
+    if schema in ("gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1"):
         expected_keys = (
             CONFIG_KEYS
             - {
@@ -122,6 +124,7 @@ def load_config(path: Path):
         "gzsl-paper.egpes.v1": ("V2-INNOVATION-066", "IDEA-100"),
         "gzsl-paper.nps.v1": ("V2-INNOVATION-067", "IDEA-101"),
         "gzsl-paper.tgwps.v1": ("V2-INNOVATION-068", "IDEA-102"),
+        "gzsl-paper.sgwps.v1": ("V2-INNOVATION-069", "IDEA-103"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -135,13 +138,13 @@ def load_config(path: Path):
     ):
         raise ValueError("GPES协议边界错误。")
     if (
-        schema != "gzsl-paper.tgwps.v1"
+        schema not in ("gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1")
         and config["feature_provenance_complete"] is not False
     ) or config["text_cache_provenance_complete"] is not False:
         raise ValueError("GPES cache provenance边界错误。")
     if (
         (
-            schema != "gzsl-paper.tgwps.v1"
+            schema not in ("gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1")
             and (
                 int(config["patch_top_k"]) != 2
                 or int(config["patch_chunk_size"]) != 16
@@ -163,7 +166,7 @@ def load_config(path: Path):
         raise ValueError("GPES训练参数错误。")
     if schema in (
         "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
-        "gzsl-paper.nps.v1", "gzsl-paper.tgwps.v1",
+        "gzsl-paper.nps.v1", "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
     ) and config[
         "pair_training_scope"
     ] != "all_same_group_top2_soft_gate":
@@ -199,6 +202,7 @@ def extract_pair_examples(
     threshold,
     hard_margin_only: bool = True,
     margin_temperature: float = 0.1,
+    extra_prototypes: torch.Tensor | None = None,
 ):
     top = logits.topk(2, dim=1)
     global_ids = ids.index_select(0, top.indices.reshape(-1)).reshape_as(top.indices)
@@ -224,6 +228,12 @@ def extract_pair_examples(
         merge_logits.gather(1, top.indices)[:, 0]
         - merge_logits.gather(1, top.indices)[:, 1],
     ]
+    if extra_prototypes is not None:
+        extra_logits = normalized @ extra_prototypes.index_select(0, ids).T
+        values.append(
+            extra_logits.gather(1, top.indices)[:, 0]
+            - extra_logits.gather(1, top.indices)[:, 1]
+        )
     if patch_scores is not None:
         local_patch = patch_scores.to(logits.device).float()
         if local_patch.shape[1] == 200 and ids.numel() != 200:
@@ -303,7 +313,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     ):
         if sha256_file(Path(config[key])) != config[f"{key}_sha256"]:
             raise ValueError(f"GPES {key} SHA错误。")
-    text_only = config["schema_version"] == "gzsl-paper.tgwps.v1"
+    text_only = config["schema_version"] in (
+        "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1"
+    )
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
             if sha256_file(h1.repo_path(path_text)) != config["patch_sha256"][split]:
@@ -450,6 +462,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 pair_training_threshold,
                 hard_margin_only=hard_margin_only,
                 margin_temperature=float(config["margin_temperature"]),
+                extra_prototypes=(
+                    names_n
+                    if config["schema_version"] == "gzsl-paper.sgwps.v1"
+                    else None
+                ),
             )
             pair_logits_list.append(package[0])
             feature_list.append(package[1])
@@ -498,6 +515,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = NonlinearGatedPairSelector
         elif config["schema_version"] == "gzsl-paper.tgwps.v1":
             model_class = TextOnlyGatedPairSelector
+        elif config["schema_version"] == "gzsl-paper.sgwps.v1":
+            model_class = SemanticGatedPairSelector
         else:
             model_class = GatedPairEvidenceSelector
         model_kwargs = {
@@ -514,6 +533,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         }
         if config["schema_version"] == "gzsl-paper.nps.v1":
             model_kwargs["hidden_dim"] = int(config["selector_hidden_dim"])
+        if config["schema_version"] == "gzsl-paper.sgwps.v1":
+            model_kwargs["class_name_prototypes"] = names_n
         model = model_class(**model_kwargs).to(device)
         optimizer = torch.optim.Adam(
             model.parameters(),

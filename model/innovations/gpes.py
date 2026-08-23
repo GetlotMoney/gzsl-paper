@@ -227,3 +227,41 @@ class TextOnlyGatedPairSelector(GatedPairEvidenceSelector):
         return super().forward(
             parent_logits, images, patch_scores, class_ids, enabled
         )
+
+
+class SemanticGatedPairSelector(TextOnlyGatedPairSelector):
+    """增加短类名差值的四语义特征patch-free选择器。"""
+
+    def __init__(
+        self, *args, class_name_prototypes: torch.Tensor, **kwargs
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        if tuple(class_name_prototypes.shape) != (200, 768):
+            raise ValueError("S-GWPS类名原型必须是[200,768]。")
+        self.register_buffer(
+            "class_name_prototypes",
+            F.normalize(class_name_prototypes.detach().float(), dim=-1),
+        )
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top, global_ids, same_group, text_features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        class_logits = F.normalize(
+            images.float(), dim=-1
+        ) @ self.class_name_prototypes.index_select(0, ids).T
+        class_diff = class_logits.gather(1, top.indices)[:, 0] - class_logits.gather(
+            1, top.indices
+        )[:, 1]
+        return (
+            top,
+            global_ids,
+            same_group,
+            torch.cat((text_features, class_diff.unsqueeze(1)), dim=1),
+        )

@@ -6,6 +6,7 @@ import torch
 from model.innovations.gpes import (
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
+    SemanticGatedPairSelector,
     TextOnlyGatedPairSelector,
 )
 from model.innovations.train_gpes import (
@@ -212,6 +213,24 @@ class GPESTest(unittest.TestCase):
         self.assertNotIn("patch_inputs", config)
         self.assertNotIn("feature_provenance_complete", config)
         self.assertFalse(hard_margin_only_for_schema(config["schema_version"]))
+
+    def test_semantic_selector_adds_class_name_feature_without_patch(self):
+        groups = torch.arange(200) // 2
+        model = SemanticGatedPairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(4), torch.ones(4), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+        )
+        self.assertEqual(model.selector_weight.numel(), 4)
+        self.assertTrue(hasattr(model, "class_name_prototypes"))
+
+    def test_sgwps_config_is_patch_free(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-069_sgwps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.sgwps.v1")
+        self.assertNotIn("patch_inputs", config)
 
 
 if __name__ == "__main__":
