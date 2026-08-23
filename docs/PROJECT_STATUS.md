@@ -246,6 +246,8 @@ SDRS按父原型与类名原型的余弦分歧为NCRA提供类别条件缩放。
 
 SEBC在三个100/50类class-exclusive episode中只用全局seen图像训练一个seen竞争gamma。收紧上限后的RUN-002达到`U/S/H/ZS=75.772560/79.346550/77.518382/83.061785%`，比SDRS提高H `0.227861`，成为当前Chen-style无专家最高条件。该组合复用已有EBC机制，不作为新颖性claim；真实unseen图像未进入梯度，official test用于选模。
 
+LPSR首次把真实576 patch缓存接入无专家路线，但class-agnostic top64平均只使H增加`0.003747`且ZS下降`0.066668`，best beta为负。IDEA-048已止损；下一局部实验必须保留“每个类别寻找自己的patch”这一定位关系，并因forward公式变化新建Experiment。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
