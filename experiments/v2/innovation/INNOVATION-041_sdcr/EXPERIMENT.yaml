@@ -4,8 +4,8 @@ idea_id: IDEA-075
 framework_id: FRAMEWORK-V2
 title: Sentence-Dropout Conservative Routing
 base_commit: 561dfc4f4e279556ea047dc610adf422ca199d9b
-code_commit: e5aeb9453b8f4e18b875785374cd64ad3f4a8eb0
-status: reliability_seed5_planned
+code_commit: 38e07a25124f181fb86ffef2c45fdf700867e7f7
+status: supported_two_seed_weak_gain
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -17,7 +17,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-041_sdcr/RUN-001
     status: completed
   - run_id: RUN-002
-    code_commit: null
+    code_commit: 38e07a25124f181fb86ffef2c45fdf700867e7f7
     config_ref: experiments/v2/innovation/INNOVATION-041_sdcr/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-041_sdcr/RUN-002
-    status: planned
+    status: completed

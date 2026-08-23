@@ -21,6 +21,7 @@
 - [x] OCLR seed7 H=`78.035343`，与seed5差`0.036842`，确认提升非单seed偶然；主成绩继续取最高seed5。
 - [x] OESR seed5/7 H=`78.105812/78.102514`，差距仅`0.003299`；当前最高H取seed5，OCLR保留更高U/ZS。
 - [x] CASR seed5/7 H=`78.276696/78.285719`，差距仅`0.009023`且权重不塌缩；当前正式最高取seed7。
+- [x] SDCR seed5/7 H=`78.320510/78.302856`，两链均超过CASR且mask覆盖均衡；当前正式最高取seed5。
 - [x] 标准开发协议改为`train_loc` 100类训练、`val_loc` 50类类别不相交validation选模。
 - [x] `V2-TUNE-001`划分固定为3724张梯度图像、978张val-seen、2355张val-unseen；official test不加载。
 - [x] 无专家路线validation H=`76.472964`；专家312维属性路线H=`77.556001`，各自validation调优后Delta=`+1.083037`。

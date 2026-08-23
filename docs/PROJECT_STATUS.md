@@ -310,6 +310,8 @@ ICSR在CASR上增加零初始化图像门控，但所有动态条件均未超过
 
 SDCR训练期每批mask一句、推理恢复完整8句，seed7达到`U/S/H/ZS=76.713103/79.959893/78.302856/83.920079%`，H比CASR仅高`0.017137`；权重非塌缩且mask覆盖均衡。暂列弱候选，追加seed5可靠性。
 
+SDCR seed5达到`U/S/H/ZS=76.747000/79.959893/78.320510/83.953977%`，与seed7 H差`0.017655`，两链均超过CASR且mask覆盖均衡。SDCR可靠成立，当前正式最高按owner规则取seed5 `H=78.320510%`。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
