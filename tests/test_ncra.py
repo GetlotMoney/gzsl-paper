@@ -11,4 +11,9 @@ class NCRATest(unittest.TestCase):
         source=(ROOT/"model/innovations/train_ncra.py").read_text(encoding="utf-8")
         self.assertNotIn('["att"]',source)
         self.assertIn("ClassNameResidualAlignment",source)
+
+    def test_beta20_rescue_config_is_accepted(self):
+        c,_=load_config(ROOT/"experiments/v2/innovation/INNOVATION-011_ncra/configs/RUN-003.yaml")
+        self.assertEqual(c["schema_version"],"gzsl-paper.ncra.v3")
+        self.assertEqual(c["max_beta"],20.0)
 if __name__=="__main__": unittest.main()

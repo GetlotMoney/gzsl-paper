@@ -21,10 +21,11 @@ CONFIG_KEYS={"schema_version","experiment_id","idea_id","framework_id","dataset"
 def load_config(path):
     path=h1.repo_path(path); c=yaml.safe_load(path.read_text(encoding="utf-8")); actual=set(c) if isinstance(c,dict) else set()
     if not isinstance(c,dict) or actual!=CONFIG_KEYS: raise ValueError(f"NCRA配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。")
-    if c["schema_version"] not in ("gzsl-paper.ncra.v1","gzsl-paper.ncra.v2") or c["experiment_id"]!="V2-INNOVATION-011" or c["idea_id"]!="IDEA-045": raise ValueError("NCRA身份错误。")
+    beta_by_schema={"gzsl-paper.ncra.v1":5.0,"gzsl-paper.ncra.v2":10.0,"gzsl-paper.ncra.v3":20.0}
+    if c["schema_version"] not in beta_by_schema or c["experiment_id"]!="V2-INNOVATION-011" or c["idea_id"]!="IDEA-045": raise ValueError("NCRA身份错误。")
     if c["evaluation_protocol"]!=EVALUATION_PROTOCOL or c["test_used_for_selection"] is not True or c["unseen_images_used_for_gradient"] is not False or c["strict_blind_claim"] is not False: raise ValueError("NCRA协议边界错误。")
     if int(c["batch_size"])!=50 or int(c["epochs"])!=200 or int(c["niters"])!=28228 or int(c["report_interval"])!=141: raise ValueError("NCRA Chen训练量错误。")
-    expected_beta=10.0 if c["schema_version"]=="gzsl-paper.ncra.v2" else 5.0
+    expected_beta=beta_by_schema[c["schema_version"]]
     if c["optimizer"]!="Adam" or float(c["learning_rate"])!=0.01 or float(c["weight_decay"])!=0.0 or float(c["max_beta"])!=expected_beta: raise ValueError("NCRA优化参数错误。")
     return c,sha256_file(path)
 
