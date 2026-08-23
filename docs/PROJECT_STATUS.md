@@ -376,6 +376,8 @@ MAGT在固定AGCT窄gate内联合Claude与merge，但两源原型余弦高达`0.
 
 AGPT在25分位gate内使用top2局部patch二选一，但所有非零patch beta都降低H，best退回父模型。局部patch的全局叠加、训练加权和歧义tie-break三种路径均失败，IDEA-095拒绝并关闭patch轴。下一步做gated样本source-oracle审计。当前累计176组。
 
+`AGCT_SOURCE_ORACLE_001`显示unseen gated样本中有79个可由top2 oracle净纠正，理论H=`80.900744%`；但Claude、merge、patch任一固定正/反选择在GZSL unseen均为净负收益。下一模块改为训练共享pair selector，不能继续用固定beta或固定来源方向。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
