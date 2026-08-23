@@ -2,12 +2,12 @@
 
 ## 2026-08-23 规范纠正
 
-- [x] 论文主协议改为固定第50轮、official test只加载一次，`test_used_for_selection=false`。
-- [x] 每个epoch完整且唯一遍历7,057张seen图像；主训练不使用三折或阶段冻结。
-- [x] `V2-CONFIRM-002`完成统一模型与同协议TG-VPR-only控制：H `74.595407 vs 73.825692`，Delta=`+0.769715`。
-- [x] 当前统一模型S提高但U/ZS下降，标记为seen-biased clean signal，不作为最终78%框架。
+- [x] 标准开发协议改为`train_loc` 100类训练、`val_loc` 50类类别不相交validation选模。
+- [x] `V2-TUNE-001`划分固定为3724张梯度图像、978张val-seen、2355张val-unseen；official test不加载。
+- [x] 无专家路线validation H=`76.472964`；专家312维属性路线H=`77.517761`，Delta=`+1.044797`。
+- [x] 两条路线都只使用来源一致的CLIP缓存；专家属性开关是唯一条件差异。
 - [x] 旧test-selected结果只作探索观察；人工专家属性链不进入论文主结果。
-- [ ] 在同一无泄漏协议下缓解seen偏置并达到`H >= 78%`。
+- [ ] 只在validation继续调参，冻结配置并补齐CLIP缓存身份后才能进入trainval最终重训。
 
 以下旧清单保留为历史执行记录，其中test-selected或专家属性成绩不再代表当前论文主结果。
 
@@ -71,4 +71,4 @@
 
 ## 当前唯一下一步
 
-基于`V2-CONFIRM-002`只设计一个预注册的seen偏置修正条件；固定50轮与seed 7，official test只在训练结束后运行一次，不回到三折、阶段冻结或test选模。
+基于`V2-TUNE-001`只在类别不相交validation上继续无专家/专家成对调参；不加载official test，不挑test seed。

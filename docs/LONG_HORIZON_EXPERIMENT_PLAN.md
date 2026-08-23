@@ -5,21 +5,21 @@
 ```yaml
 base_framework: FRAMEWORK-V2 / TG-VPR-H1
 supported_innovations: [TG-VPR, TST, CCGR]
-current_clean_observation: V2-CONFIRM-002 / unified full-seen fixed-epoch
-current_clean_H: 74.595407
-current_clean_seed: 7
-same_protocol_tg_vpr_control_H: 73.825692
+current_no_expert_validation_H: 76.472964
+current_expert_validation_H: 77.517761
+current_expert_validation_delta_H: 1.044797
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
 completed_try_count: 147
 minimum_total_try_count: 50
 target_best_H: 78.0
-evaluation_protocol: fixed_epoch_inductive_gzsl
+evaluation_protocol: xlsa17_class_disjoint_gzsl_validation
+validation_used_for_selection: true
 test_used_for_selection: false
 unseen_images_used_for_gradient: false
 ```
 
-主RUN固定seed 7和第50轮，official test只在训练与checkpoint完成后运行一次。追加seed必须全部报告，不能在看到结果后改报最高seed。所有新核心创新必须提供同协议module-off消融、准确父条件、训练边界和HTML框架图。本文档后续旧阶段保留为历史搜索记录；其中test-selected或专家属性路线不再作为当前论文主结果。
+开发阶段固定seed 7并只根据类别不相交validation选择结构、参数和epoch。最终seed集合必须在official test前冻结并全部报告，不能看到结果后改报最高seed。所有新核心创新必须提供同validation协议module-off消融、准确父条件、训练边界和HTML框架图。本文档后续旧阶段保留为历史搜索记录；其中test-selected路线不再作为当前论文主结果。
 
 ## 第一性原理框架
 

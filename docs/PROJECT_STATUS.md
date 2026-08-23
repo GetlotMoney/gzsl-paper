@@ -13,17 +13,18 @@ frameworks:
     branch: framework/v2
     tag: v2
     status: baseline_completed_single_seed
-evaluation_protocol: fixed_epoch_inductive_gzsl
+development_evaluation_protocol: xlsa17_class_disjoint_gzsl_validation
+final_evaluation_protocol: xlsa17_ps_gzsl_after_validation_freeze
 historical_exploration_protocol: test_selected_inductive_gzsl
 paper_primary_framework: FRAMEWORK-V2
-paper_baseline_H: 73.825692
+standard_final_test_H: pending
 historical_v2_baseline_H: 74.023182
 paper_target_H: 78.0
 target_supported_innovations: 3
 historical_test_selected_supported_innovations: 3
-clean_protocol_supported_innovations: pending_individual_ablation
-current_clean_seed7_H: 74.595407
-current_clean_delta_vs_same_protocol_baseline: 0.769715
+current_no_expert_validation_H: 76.472964
+current_expert_validation_H: 77.517761
+current_expert_validation_delta_H: 1.044797
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
 completed_try_count: 147
@@ -36,7 +37,9 @@ V1 来源于 `model/v5-template-v2@fb4b29b04087640890a532f105cb527d3a8c461b` 的
 
 owner已将来源身份`INNOVATION-MODULE-1 / TG-VPR-H1`提升为独立正式框架`FRAMEWORK-V2`。V2使用独立代码、配置和训练入口，不接入`FRAMEWORK-V1`。首个当前仓库正式基线已由`V2-CONFIRM-001 / RUN-001`完成：`U=72.655779%`、`S=75.443041%`、`H=74.023182%`、`ZS=81.534684%`。
 
-2026-08-23起，论文主结果改用`fixed_epoch_inductive_gzsl`：每轮完整且唯一遍历7,057张seen图像，固定报告第50轮，official test只在训练完成后加载一次。`V2-CONFIRM-002`同协议控制为`H=73.825692%`，统一TG-VPR+共享迁移+CCGR为`H=74.595407%`，干净增益`+0.769715`；但U/ZS分别下降`1.260048/1.894343`，当前只保留为seen偏置下的干净训练信号。旧`77.612988%`无专家属性结果属于test-selected探索观察，使用专家属性的80+链全部不进入论文主成绩。
+`V2-CONFIRM-002`曾验证单RUN固定epoch与完整样本遍历，但没有采用类别不相交validation，且结构受历史official test探索影响，因此只保留为协议纠正过程证据，不是标准GZSL最终结果。旧`77.612988%`无专家属性结果属于test-selected探索观察，使用专家属性的80+链全部不进入论文主成绩。
+
+标准协议审计后，开发选模已进一步纠正为xlsa17类别不相交validation。`V2-TUNE-001`仅用100个开发seen类训练，以50个validation-unseen类和固定seen图像holdout选择epoch：无专家路线`H_val=76.472964`（epoch 24），专家312维属性路线`H_val=77.517761`（epoch 25），专家增益`+1.044797`。两条RUN均`official_test_loaded=false`；遗留CLIP缓存来源仍不完整，所以暂不具备最终test资格。
 
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 
