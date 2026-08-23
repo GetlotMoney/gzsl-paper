@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 181
+completed_try_count: 182
 minimum_required_try_count: 50
 ```
 
@@ -387,6 +387,8 @@ GWPS seed7达到`U/S/H/ZS=76.773667/80.126470/78.414246/83.980089%`，相对父�
 B-GWPS使用完整逆频率平衡后，top2类别权重=`7.320652`、组合pair权重std=`5.399093`，H降到约`76.75%`，best退回父模型。IDEA-098拒绝为过度平衡；下一补救改用平方根逆频率的温和补偿。当前累计180组。
 
 M-BGWPS平方根平衡把top2权重降到`2.705670`，但组合权重std仍达`4.446476`，H约`77.0%`且best退回父模型。标签平衡轴关闭，原GWPS最高`78.414246%`保持；最后补救改为不平衡但适度扩大硬pair margin范围。当前累计181组。
+
+E-GPES用50分位硬pair得到386个训练样本，最高H=`78.367537%`，高于SDCR但低于GWPS。169/386/4041三种pair规模与两档标签平衡均已覆盖，GWPS soft-gate全pair保持最优`78.414246%`；pair训练范围轴关闭。当前累计182组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
