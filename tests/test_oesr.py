@@ -20,6 +20,12 @@ class OESRTest(unittest.TestCase):
         self.assertAlmostEqual(config["comparison_H"], 78.0721851209539)
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_seed7_reliability_config(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-036_oesr/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["random_seed"], 7)
+
 
 if __name__ == "__main__":
     unittest.main()
