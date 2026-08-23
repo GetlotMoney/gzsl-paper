@@ -65,6 +65,6 @@
 | V2-INNOVATION-061 | IDEA-095 | AGPT歧义门控局部patch二选一 | rejected（窄gate内仍无效） | `INNOVATION-061_agpt/` |
 | V2-INNOVATION-062 | IDEA-096 | GPES门控成对证据选择器 | rejected（169 pair过拟合） | `INNOVATION-062_gpes/` |
 | V2-INNOVATION-063 | IDEA-097 | GWPS soft-gate加权成对选择器 | supported two-seed（最高H=78.414246，patch provenance不完整） | `INNOVATION-063_gwps/` |
-| V2-INNOVATION-064 | IDEA-098 | B-GWPS类别平衡pair选择器 | planned（修复93% top1不平衡） | `INNOVATION-064_bgwps/` |
+| V2-INNOVATION-064 | IDEA-098 | B-GWPS类别平衡pair选择器 | rejected（逆频率过度补偿） | `INNOVATION-064_bgwps/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
