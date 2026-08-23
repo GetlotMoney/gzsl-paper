@@ -1,6 +1,6 @@
 # V2-CONFIRM-005 结果
 
-状态：`rescue1_transport_cap_planned`。
+状态：`rescue1_completed_improved_target_fail`。
 
 固定50/100/50名义epoch三阶段；阶段边界不根据test移动，阶段间使用最后权重继续训练。全程只有一个跨阶段的整模型best-H，不为每阶段分别保存test最大父checkpoint。
 
@@ -15,3 +15,9 @@
 模型SHA：`b495826d58c5fc421c4757d2c9105148b3fc23d310e04ab70fa4dbfdf03c8c1d`。
 
 失败诊断：RUN-001 best时平均迁移步长为`0.444078`，阶段2末增至`0.829518`并伴随U从`71.105868`降至`65.729409`。RESCUE-1仅把`max_transport_step`从`1.5`降到`0.5`，其余条件不变。
+
+RESCUE-1结果：`U/S/H/ZS=74.326867/77.764529/76.006848/82.930040%`，best位于TRANSFER_CCGR阶段iteration 8037/epoch 57。相对RUN-001提高H `0.515219`，相对端到端提高`1.072908`，但距离77.023目标仍差`1.016334`。
+
+阶段2在0.5上限下后半输出几乎固定，说明该上限抑制过迁移但形成硬饱和；下一补救测试中间上限0.75。
+
+RUN-002模型SHA：`4231aba956c3c0ff57a1ac859a6a8748131e2275efcf3bfb63fcced54b32aa99`。
