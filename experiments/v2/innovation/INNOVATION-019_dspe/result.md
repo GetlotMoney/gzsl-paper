@@ -1,6 +1,6 @@
 # V2-INNOVATION-019 结果
 
-状态：`stagewise_run004_planned`。
+状态：`rejected_no_complementarity`。
 
 RUN-001在第一个评估点后因双beta字典仍使用单浮点日志格式而停止，未完成正式训练。按工程失败记为`failed_runtime`，不采信局部checkpoint、不计方法补救；修复日志格式后使用新RUN目录重跑同一条件。
 
@@ -15,3 +15,7 @@ RESCUE-1固定CCPE RUN-003的绝对beta和模型SHA，只训练归一化beta；�
 RUN-003在参数更新前因`dspe.v2`未被旧形状检查识别为400维双路分数而停止，记为`failed_runtime`，不占方法补救。修复schema形状检查后用新RUN目录重跑同一分阶段条件。
 
 RUN-004只修复双路score宽度契约；训练公式、父权重SHA、参数、seed和评估语义不变。
+
+RUN-004成功从CCPE固定权重起步，关闭归一化分支时逐值复现`U/S/H/ZS=76.119131/79.278153/77.666533/83.168101%`。所有非零归一化beta均降低H，整次RUN best保留iteration=`-1`、absolute beta=`9.177013`、normalized beta=`0`。
+
+因此绝对top2与seen参考z-score不是可叠加的互补证据；联合训练与分阶段训练均失败，IDEA-053拒绝。模型SHA256：`c60799a33a78dcf6e3d22c50fa00c572a1834e3704712c7ee970d40b366ef9b6`；最后checkpoint SHA256：`17a3874bf030c4eb4d37616285896a426fcad0ec1877cd07839cae852ea89699`。

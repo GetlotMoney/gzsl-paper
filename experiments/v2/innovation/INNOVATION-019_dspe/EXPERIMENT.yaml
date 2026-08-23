@@ -4,8 +4,8 @@ idea_id: IDEA-053
 framework_id: FRAMEWORK-V2
 title: Dual-Scale Patch Evidence
 base_commit: 3462a34b2333dce828f12acb8c3303ee99cfa810
-code_commit: 4af27ab24c20bdb3154dbf0832b182ed7dfa59fa
-status: stagewise_run004_planned
+code_commit: 0f98eb0ab0977d2f12a4d5e6e614ba68687f45b6
+status: rejected_no_complementarity
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -27,7 +27,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-019_dspe/RUN-003
     status: failed_runtime
   - run_id: RUN-004
-    code_commit: null
+    code_commit: 0f98eb0ab0977d2f12a4d5e6e614ba68687f45b6
     config_ref: experiments/v2/innovation/INNOVATION-019_dspe/configs/RUN-004.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-019_dspe/RUN-004
-    status: planned
+    status: completed

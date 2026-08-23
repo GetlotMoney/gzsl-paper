@@ -256,6 +256,8 @@ MPPE让六个局部句子分别取最大patch后，所有非零beta均降低H，
 
 CNPE对CCPE top2分数做seen参考z-score后达到`U/S/H/ZS=75.874960/79.415172/77.604713/83.086050%`，比SEBC提高H `0.086331`但低于CCPE `77.666533`。IDEA-052作为独立替代方案拒绝；绝对top2与归一化top2均有正信号，下一实验检验双尺度互补融合。
 
+DSPE联合训练时绝对分支吞掉归一化分支，最高H仅`77.565132%`；固定CCPE绝对beta的分阶段补救中，所有非零归一化beta仍降低H，best严格退回CCPE `77.666533%`。IDEA-053拒绝，说明同源patch分数的绝对值与z-score不能硬拼；下一方向必须改变信息或训练目标。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
