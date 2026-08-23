@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Conservative Adaptive Sentence Routing
 base_commit: bb5a6a8b5318a29c9fbef445859f6be391d6dc8f
 code_commit: 0940f33ad2d81b7040c536830b4a968c1411ebef
-status: run001_over_regularized_rescue_pending
+status: rescue1_kl001_planned
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -16,3 +16,8 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-038_casr/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-038_casr/RUN-001
     status: completed
+  - run_id: RUN-002
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-038_casr/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-038_casr/RUN-002
+    status: planned

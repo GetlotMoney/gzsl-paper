@@ -17,6 +17,13 @@ class CASRTest(unittest.TestCase):
         self.assertEqual(config["random_seed"], 7)
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_rescue_uses_weaker_kl(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-038_casr/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.casr.v2")
+        self.assertEqual(config["kl_weight"], 0.01)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -53,7 +53,7 @@ def load_config(path: Path):
     schema = config.get("schema_version") if isinstance(config, dict) else None
     expected_keys = (
         COMMON_CONFIG_KEYS | {"kl_weight"}
-        if schema == "gzsl-paper.casr.v1"
+        if schema in ("gzsl-paper.casr.v1", "gzsl-paper.casr.v2")
         else COMMON_CONFIG_KEYS
     )
     if not isinstance(config, dict) or actual != expected_keys:
@@ -64,6 +64,7 @@ def load_config(path: Path):
     identity_by_schema = {
         "gzsl-paper.aosr.v1": ("V2-INNOVATION-037", "IDEA-071"),
         "gzsl-paper.casr.v1": ("V2-INNOVATION-038", "IDEA-072"),
+        "gzsl-paper.casr.v2": ("V2-INNOVATION-038", "IDEA-072"),
     }
     identity = identity_by_schema.get(config["schema_version"])
     if (
@@ -91,8 +92,11 @@ def load_config(path: Path):
         or float(config["weight_decay"]) != 0.0
     ):
         raise ValueError("AOSR训练参数错误。")
-    if schema == "gzsl-paper.casr.v1" and float(config["kl_weight"]) != 0.1:
-        raise ValueError("CASR kl_weight必须为0.1。")
+    expected_kl = 0.01 if schema == "gzsl-paper.casr.v2" else 0.1
+    if schema in ("gzsl-paper.casr.v1", "gzsl-paper.casr.v2") and float(
+        config["kl_weight"]
+    ) != expected_kl:
+        raise ValueError(f"CASR kl_weight必须为{expected_kl}。")
     return config, sha256_file(path)
 
 
@@ -217,7 +221,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             logits = calibrator(logits, seen_mask)
             logits = model(logits, images, class_ids)
             ce_loss = F.cross_entropy(logits, targets)
-            if config["schema_version"] == "gzsl-paper.casr.v1":
+            if config["schema_version"] in (
+                "gzsl-paper.casr.v1", "gzsl-paper.casr.v2"
+            ):
                 weights = model.sentence_weights()
                 kl_loss = (weights * torch.log(weights * 8.0)).sum()
                 loss = ce_loss + float(config["kl_weight"]) * kl_loss
