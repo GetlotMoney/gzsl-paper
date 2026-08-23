@@ -37,6 +37,6 @@
 | V2-INNOVATION-033 | IDEA-067 | PBOR父原型方向部分正交 | rejected（best退回OCLR） | `INNOVATION-033_pbor/` |
 | V2-INNOVATION-034 | IDEA-068 | ORER OCLR后episode重校准 | rejected（best退回OCLR） | `INNOVATION-034_orer/` |
 | V2-INNOVATION-035 | IDEA-069 | ORMR GPT-5.6 role-matched正交残差 | rejected below OCLR（正向对照H=77.935371） | `INNOVATION-035_ormr/` |
-| V2-INNOVATION-036 | IDEA-070 | OESR GPT-5.6八句正交残差 | planned | `INNOVATION-036_oesr/` |
+| V2-INNOVATION-036 | IDEA-070 | OESR GPT-5.6八句正交残差 | weak H candidate（78.105812，seed7待跑） | `INNOVATION-036_oesr/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
