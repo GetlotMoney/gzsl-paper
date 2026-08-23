@@ -4,15 +4,15 @@ idea_id: IDEA-082
 framework_id: FRAMEWORK-V2
 title: Residual Symmetric Diagonal Metric
 base_commit: 47f473a57db4ae34752e23e631f5a0d7b9d99b84
-code_commit: null
-status: planned
+code_commit: bcdcc8f7036db04f81733de5af753652a51566af
+status: rejected_wrong_placement
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-048_rsdm/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: bcdcc8f7036db04f81733de5af753652a51566af
     config_ref: experiments/v2/innovation/INNOVATION-048_rsdm/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-048_rsdm/RUN-001
-    status: planned
+    status: completed_failed_parent_only

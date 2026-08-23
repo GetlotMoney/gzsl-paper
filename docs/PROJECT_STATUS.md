@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 155
+completed_try_count: 156
 minimum_required_try_count: 50
 ```
 
@@ -331,6 +331,8 @@ R-MGSR最终0.005 L2补救仍以关闭态`H=78.320510%`为best。MGSR家族的�
 NCSR用SDCR原型的top-5近邻差分正交方向训练一个有界gamma；首次RUN所有非零条件都降低H，best退回SDCR `H=78.320510%`、gamma=0。构造正交误差低于`7e-08`，实现有效；下一补救只把单参数学习率降10倍，区分方向无效与优化振荡。当前累计154组。
 
 NCSR降学习率到0.001后gamma振荡减弱，但所有非零条件仍低于父模型，best再次为`H=78.320510%`、gamma=0。近邻差分正交方向本身无效，IDEA-081拒绝并提前止损。当前累计155组，最高可靠结果仍为SDCR seed5 `H=78.320510%`。
+
+RSDM只对SDCR残差分支学习图像/文本共享对角度量；权重真实分化但所有非单位条件均降低H，best退回`H=78.320510%`与全1权重。IDEA-082拒绝，故障定位为单独改变残差分支破坏三原型分支尺度平衡。当前累计156组；下一实验只允许把同一度量施加到完整语义链。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
