@@ -97,6 +97,7 @@ V2-H-PLUS-3PP
       ├─ supported_candidate：IDEA-071 / AOSR自适应八句正交残差（seed5有效H=78.210580；seed7塌缩）
       ├─ supported_candidate：IDEA-072 / CASR保守自适应句子路由（两seed可靠，最高H=78.285719）
       ├─ rejected_branch：IDEA-073 / CCSR类别条件保守句子路由（rejected，best退回CASR）
+      ├─ testing_branch：IDEA-074 / ICSR图像条件保守句子路由（testing，零初始化动态门控）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

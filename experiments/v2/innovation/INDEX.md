@@ -41,5 +41,6 @@
 | V2-INNOVATION-037 | IDEA-071 | AOSR自适应八句正交残差 | supported seed5（有效H=78.210580；seed7更高但塌缩） | `INNOVATION-037_aosr/` |
 | V2-INNOVATION-038 | IDEA-072 | CASR保守自适应句子路由 | supported two-seed strong candidate（最高H=78.285719） | `INNOVATION-038_casr/` |
 | V2-INNOVATION-039 | IDEA-073 | CCSR类别条件保守句子路由 | rejected（best退回CASR） | `INNOVATION-039_ccsr/` |
+| V2-INNOVATION-040 | IDEA-074 | ICSR图像条件保守句子路由 | planned | `INNOVATION-040_icsr/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

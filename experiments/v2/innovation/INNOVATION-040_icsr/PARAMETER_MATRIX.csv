@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,image_variation,weight_min,weight_max,test_used_for_selection,output_uri,decision
+RUN-001,,experiments/v2/innovation/INNOVATION-040_icsr/configs/RUN-001.yaml,acd1ebfe4bac4397eb82f55f10fe052ee63633a2420b383c5c6cacb025b40f8a,7,planned,,,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-040_icsr/RUN-001,pending
