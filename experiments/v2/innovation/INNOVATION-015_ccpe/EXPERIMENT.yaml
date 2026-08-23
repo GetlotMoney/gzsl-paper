@@ -4,15 +4,15 @@ idea_id: IDEA-049
 framework_id: FRAMEWORK-V2
 title: Class-Conditioned Patch Evidence
 base_commit: d8f590d8d2e4a7c3f4ae9f2105637d99fdecfb6c
-code_commit: null
-status: planned
+code_commit: 511b582d35cc1a5f8fb7f66f32c20d331efc2309
+status: run001_weak_rescue_pending
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-015_ccpe/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 511b582d35cc1a5f8fb7f66f32c20d331efc2309
     config_ref: experiments/v2/innovation/INNOVATION-015_ccpe/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-015_ccpe/RUN-001
-    status: planned
+    status: completed
