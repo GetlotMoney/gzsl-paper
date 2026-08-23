@@ -10,3 +10,4 @@ success_condition: seed5 H大于稳定SNPS top-3 78.466710；正提升后追加s
 failure_condition: H不超过top-3、度数差退化或U/S任一下降超过2个百分点。
 experiment: V2-INNOVATION-084
 paper_core_innovation: false
+interim_result: seed5 H=78.478738，相对稳定SNPS top-3 +0.012027；追加seed7。

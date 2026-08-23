@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 209
+completed_try_count: 210
 minimum_required_try_count: 50
 ```
 
@@ -477,6 +477,8 @@ CSDS seed5最高`U/S/H/ZS=76.883179/80.116844/78.466710/84.121209%`，与稳定S
 RUGS seed5初始态精确复现SNPS父模型`H=78.466710%`，但seen CE持续把gamma推向负方向，非负投影使其全程回到0；所有评估点均无新增收益。IDEA-117拒绝且不追加seed7。当前累计209组。
 
 下一实验`V2-INNOVATION-084 / NDPS`固定稳定SNPS top-3图，新增top1/top2的`log1p(semantic degree)`差值，让selector感知两个候选类别所处语义区域的竞争密度。
+
+NDPS seed5达到`U/S/H/ZS=76.916522/80.105728/78.478738/84.121209%`，相对稳定SNPS top-3提高H `0.012027`。log degree diff权重非零但增益较小，追加seed7验证。当前累计210组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
