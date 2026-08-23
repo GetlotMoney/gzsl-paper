@@ -10,3 +10,4 @@ success_condition: seed5 H大于同seed C-RGWPS 78.393178，且若追加seed7则
 failure_condition: H不超过C-RGWPS或仍出现跨seed增量方向不一致。
 experiment: V2-INNOVATION-073
 paper_core_innovation: false
+interim_result: seed5 patch-free H=78.459247，相对C-RGWPS +0.066069、低于SNPS 0.021463；追加seed7检验稳定性。
