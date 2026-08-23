@@ -30,6 +30,16 @@ class DSPETest(unittest.TestCase):
         self.assertEqual(config["normalized_max_beta"], 2.0)
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_stagewise_dspe_binds_ccpe_parent(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-019_dspe/configs/RUN-003.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.dspe.v2")
+        self.assertEqual(
+            config["ccpe_model_sha256"],
+            "e3b2685b07883b976962c38804825e4043c500679003a869b4bc6997f60cfaf9",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

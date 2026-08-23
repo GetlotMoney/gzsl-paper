@@ -60,12 +60,12 @@ def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    expected_keys = (
-        CONFIG_KEYS | {"normalized_max_beta"}
-        if isinstance(config, dict)
-        and config.get("schema_version") == "gzsl-paper.dspe.v1"
-        else CONFIG_KEYS
-    )
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    expected_keys = CONFIG_KEYS
+    if schema in ("gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2"):
+        expected_keys = expected_keys | {"normalized_max_beta"}
+    if schema == "gzsl-paper.dspe.v2":
+        expected_keys = expected_keys | {"ccpe_model", "ccpe_model_sha256"}
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"CCPE配置字段错误；缺少={sorted(expected_keys-actual)}，"
@@ -79,6 +79,7 @@ def load_config(path: Path):
         "gzsl-paper.mppe.v1": ("V2-INNOVATION-017", "IDEA-051", 1, 4, 10.0),
         "gzsl-paper.cnpe.v1": ("V2-INNOVATION-018", "IDEA-052", 2, 16, 2.0),
         "gzsl-paper.dspe.v1": ("V2-INNOVATION-019", "IDEA-053", 2, 16, 10.0),
+        "gzsl-paper.dspe.v2": ("V2-INNOVATION-019", "IDEA-053", 2, 16, 10.0),
     }
     identity = identity_by_schema.get(config.get("schema_version"))
     if (
@@ -117,7 +118,7 @@ def load_config(path: Path):
     ):
         raise ValueError("CCPE优化参数错误。")
     if (
-        config["schema_version"] == "gzsl-paper.dspe.v1"
+        config["schema_version"] in ("gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2")
         and float(config["normalized_max_beta"]) != 2.0
     ):
         raise ValueError("DSPE normalized_max_beta必须为2.0。")
@@ -147,7 +148,7 @@ def _precompute_scores(config, text_prototypes, device):
                 chunk_size=int(config["patch_chunk_size"]),
             )
         del patches
-    if config["schema_version"] == "gzsl-paper.dspe.v1":
+    if config["schema_version"] in ("gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2"):
         normalized, _, _ = normalize_patch_scores_by_seen_reference(scores)
         scores = {
             split: torch.cat((values, normalized[split]), dim=1)
@@ -205,6 +206,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     for key in ("base_model", "sdrs_model", "sebc_model", "class_name_embeddings"):
         if sha256_file(Path(config[key])) != config[f"{key}_sha256"]:
             raise ValueError(f"CCPE {key} SHA错误。")
+    if (
+        config["schema_version"] == "gzsl-paper.dspe.v2"
+        and sha256_file(Path(config["ccpe_model"])) != config["ccpe_model_sha256"]
+    ):
+        raise ValueError("DSPE CCPE父模型SHA错误。")
     device = torch.device(config["device"])
     output_dir = prepare_output_dir(output_dir)
     with (output_dir / "config.snapshot.yaml").open("x", encoding="utf-8") as stream:
@@ -273,11 +279,20 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 max_absolute_beta=float(config["max_beta"]),
                 max_normalized_beta=float(config["normalized_max_beta"]),
             )
-            if config["schema_version"] == "gzsl-paper.dspe.v1"
+            if config["schema_version"] in ("gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2")
             else ClassConditionedPatchEvidence(max_beta=float(config["max_beta"]))
         ).to(device)
+        if config["schema_version"] == "gzsl-paper.dspe.v2":
+            ccpe_payload = torch.load(
+                Path(config["ccpe_model"]), map_location="cpu", weights_only=False
+            )
+            model.raw_absolute_beta.data.copy_(
+                ccpe_payload["ccpe_state_dict"]["raw_beta"].to(device)
+            )
+            model.raw_absolute_beta.requires_grad_(False)
         optimizer = torch.optim.Adam(
-            model.parameters(), lr=float(config["learning_rate"]), weight_decay=0.0
+            (parameter for parameter in model.parameters() if parameter.requires_grad),
+            lr=float(config["learning_rate"]), weight_decay=0.0
         )
         mapping = torch.full((200,), -1, dtype=torch.long)
         mapping[seen_classes] = torch.arange(150)
@@ -391,6 +406,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "sdrs_model": config["sdrs_model_sha256"],
                 "sebc_model": config["sebc_model_sha256"],
                 "class_name_embeddings": config["class_name_embeddings_sha256"],
+                **(
+                    {"ccpe_model": config["ccpe_model_sha256"]}
+                    if config["schema_version"] == "gzsl-paper.dspe.v2"
+                    else {}
+                ),
             },
         )
         best_beta = (
@@ -404,7 +424,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     * float(config["normalized_max_beta"])
                 ),
             }
-            if config["schema_version"] == "gzsl-paper.dspe.v1"
+            if config["schema_version"] in ("gzsl-paper.dspe.v1", "gzsl-paper.dspe.v2")
             else float(
                 torch.tanh(best_state["raw_beta"]) * float(config["max_beta"])
             )
