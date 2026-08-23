@@ -6,6 +6,7 @@ import torch
 from model.innovations.gpes import (
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
+    RoleAwareGatedPairSelector,
     SemanticGatedPairSelector,
     TextOnlyGatedPairSelector,
 )
@@ -230,6 +231,29 @@ class GPESTest(unittest.TestCase):
             ROOT / "experiments/v2/innovation/INNOVATION-069_sgwps/configs/RUN-001.yaml"
         )
         self.assertEqual(config["schema_version"], "gzsl-paper.sgwps.v1")
+        self.assertNotIn("patch_inputs", config)
+
+    def test_role_aware_selector_adds_eight_sentence_differences(self):
+        groups = torch.arange(200) // 2
+        model = RoleAwareGatedPairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(12), torch.ones(12), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+        )
+        self.assertEqual(model.selector_weight.numel(), 12)
+        top, _, _, features = model._top2_context(
+            torch.randn(2, 200), torch.randn(2, 768), None, torch.arange(200)
+        )
+        self.assertEqual(tuple(top.indices.shape), (2, 2))
+        self.assertEqual(tuple(features.shape), (2, 12))
+
+    def test_rgwps_config_is_patch_free(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-070_rgwps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.rgwps.v1")
         self.assertNotIn("patch_inputs", config)
 
 

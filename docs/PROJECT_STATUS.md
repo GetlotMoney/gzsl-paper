@@ -400,6 +400,8 @@ S-GWPS在patch-free T-GWPS上增加短类名差值，seed5达到`U/S/H/ZS=76.747
 
 S-GWPS seed7达到`U/S/H/ZS=76.713103/80.059719/78.350691/83.920079%`，相对同seed SDCR父条件提高H `0.047835`。seed5/7均为正提升，S-GWPS晋级为两seed支持的patch-free辅助候选；按owner口径最高取seed5 `H=78.368367%`。绝对最高仍为patch依赖且provenance不完整的GWPS seed7 `H=78.414246%`。当前累计186组。
 
+下一实验`V2-INNOVATION-070 / R-GWPS`保持S-GWPS的线性选择器与Chen-style训练边界，只新增GPT-5.6八个角色句各自的top1-top2差值，检验细粒度角色分歧能否以patch-free方式超过S-GWPS。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

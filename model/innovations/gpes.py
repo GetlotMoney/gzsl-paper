@@ -34,9 +34,9 @@ class GatedPairEvidenceSelector(nn.Module):
         if (
             feature_mean.ndim != 1
             or feature_std.shape != feature_mean.shape
-            or feature_mean.numel() not in (3, 4)
+            or feature_mean.numel() not in (3, 4, 12)
         ):
-            raise ValueError("GPES特征统计必须是[3]或[4]。")
+            raise ValueError("GPES特征统计必须是[3]、[4]或[12]。")
         self.register_buffer(
             "sdcr_prototypes", F.normalize(sdcr_prototypes.detach().float(), dim=-1)
         )
@@ -264,4 +264,45 @@ class SemanticGatedPairSelector(TextOnlyGatedPairSelector):
             global_ids,
             same_group,
             torch.cat((text_features, class_diff.unsqueeze(1)), dim=1),
+        )
+
+
+class RoleAwareGatedPairSelector(SemanticGatedPairSelector):
+    """增加八个角色句差值，以patch-free方式保留细粒度语义分歧。"""
+
+    def __init__(
+        self, *args, role_sentence_prototypes: torch.Tensor, **kwargs
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        if tuple(role_sentence_prototypes.shape) != (200, 8, 768):
+            raise ValueError("R-GWPS角色句原型必须是[200,8,768]。")
+        self.register_buffer(
+            "role_sentence_prototypes",
+            F.normalize(role_sentence_prototypes.detach().float(), dim=-1),
+        )
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top, global_ids, same_group, semantic_features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        role_logits = torch.einsum(
+            "bd,crd->bcr",
+            F.normalize(images.float(), dim=-1),
+            self.role_sentence_prototypes.index_select(0, ids),
+        )
+        role_top2 = role_logits.gather(
+            1, top.indices.unsqueeze(-1).expand(-1, -1, 8)
+        )
+        role_diffs = role_top2[:, 0] - role_top2[:, 1]
+        return (
+            top,
+            global_ids,
+            same_group,
+            torch.cat((semantic_features, role_diffs), dim=1),
         )
