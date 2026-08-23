@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-041 SDCR</title></head>
 <body>
 <h1>SDCR：训练期句子dropout保守路由</h1>
-<p><strong>Base commit：</strong>561dfc4f4e279556ea047dc610adf422ca199d9b；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>561dfc4f4e279556ea047dc610adf422ca199d9b；<strong>RUN-001 code commit：</strong>e5aeb9453b8f4e18b875785374cd64ad3f4a8eb0。</p>
 <h2>推理结构</h2><p>推理与CASR相同：固定OESR beta，使用完整8句全局softmax权重，无新增门控。</p>
 <h2>训练期dropout</h2>
 <pre>full_w = softmax(log(CASR_w) + 0.5 × tanh(residual))

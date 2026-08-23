@@ -308,6 +308,8 @@ CCSR固定CASR后按句子-类名独立度学习类别差异，所有非零delta
 
 ICSR在CASR上增加零初始化图像门控，但所有动态条件均未超过父模型，image variation最终衰减到0。IDEA-074拒绝；下一方向保持全局句权重，改用训练期句子dropout增强稳健性，推理仍使用完整8句。
 
+SDCR训练期每批mask一句、推理恢复完整8句，seed7达到`U/S/H/ZS=76.713103/79.959893/78.302856/83.920079%`，H比CASR仅高`0.017137`；权重非塌缩且mask覆盖均衡。暂列弱候选，追加seed5可靠性。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

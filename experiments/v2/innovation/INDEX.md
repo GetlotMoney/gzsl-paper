@@ -42,6 +42,6 @@
 | V2-INNOVATION-038 | IDEA-072 | CASR保守自适应句子路由 | supported two-seed strong candidate（最高H=78.285719） | `INNOVATION-038_casr/` |
 | V2-INNOVATION-039 | IDEA-073 | CCSR类别条件保守句子路由 | rejected（best退回CASR） | `INNOVATION-039_ccsr/` |
 | V2-INNOVATION-040 | IDEA-074 | ICSR图像条件保守句子路由 | rejected（动态性退化为0） | `INNOVATION-040_icsr/` |
-| V2-INNOVATION-041 | IDEA-075 | SDCR训练期句子dropout路由 | planned | `INNOVATION-041_sdcr/` |
+| V2-INNOVATION-041 | IDEA-075 | SDCR训练期句子dropout路由 | weak candidate（H=78.302856，seed5待跑） | `INNOVATION-041_sdcr/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
