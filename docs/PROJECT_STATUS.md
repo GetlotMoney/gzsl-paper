@@ -288,6 +288,8 @@ BOCR同时去除类名和TG父原型方向后最高H仅`77.629049%`，完整删�
 
 PBOR从OCLR起步学习父方向部分去除，seen CE把系数推到`-1`边界但H降到约`77.740104%`，best严格退回lambda=0。IDEA-067拒绝并关闭父方向调整轴；下一方向固定OCLR语义，使用class-exclusive episode重校准seen竞争gamma。
 
+ORER在OCLR后用episode学习gamma残差，残差趋近`+0.1`上限且H降到`77.658158%`，best严格退回原gamma。IDEA-068拒绝；OCLR后的语义几何、局部组合与竞争重校准轴均已收口，当前最高仍为两seed可靠的OCLR `H=78.072185%`。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

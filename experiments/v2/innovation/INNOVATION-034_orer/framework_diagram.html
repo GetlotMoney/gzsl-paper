@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-034 ORER</title></head>
 <body>
 <h1>ORER：OCLR后的episode竞争重校准</h1>
-<p><strong>Base commit：</strong>73ad43377d6c586970c7d0cac8b7d3f7abf3f5c8；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>73ad43377d6c586970c7d0cac8b7d3f7abf3f5c8；<strong>RUN-001 code commit：</strong>aeac7a637075f99c41fc9ad75c356f13977fc80c。</p>
 <h2>固定路径</h2><p>固定TG-VPR/TST/CCGR → NCRA → SDRS → OCLR，OCLR beta从SHA绑定best加载。</p>
 <h2>唯一训练参数</h2>
 <pre>gamma = fixed_SEBC_gamma + 0.1 × tanh(raw_residual)
