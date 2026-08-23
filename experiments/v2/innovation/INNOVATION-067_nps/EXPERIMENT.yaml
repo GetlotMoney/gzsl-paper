@@ -4,15 +4,15 @@ idea_id: IDEA-101
 framework_id: FRAMEWORK-V2
 title: Nonlinear Pair Selector
 base_commit: 47ddadb73e4f21c80b18624301f03478bc46be88
-code_commit: null
-status: planned
+code_commit: f4c2bbf7e60ca73e24c2b2ba77dbc24f71dcc032
+status: rejected_equal_but_not_better
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-067_nps/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: f4c2bbf7e60ca73e24c2b2ba77dbc24f71dcc032
     config_ref: experiments/v2/innovation/INNOVATION-067_nps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-067_nps/RUN-001
-    status: planned
+    status: completed_equal_below_gwps
