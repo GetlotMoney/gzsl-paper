@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-051 CLCR</title></head>
+<body>
+<h1>CLCR：跨LLM互补语义残差</h1>
+<p><strong>Base commit：</strong>d2ae02a53e9d66491863a46e7b546d4ca26711da；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<pre>冻结父logits
+  + 固定beta × GPT-5.6 SDCR八句残差
+  + 可训练beta × Claude描述对类名正交残差
+                     ↑
+               seen CE只训练1个标量</pre>
+<p>Claude beta=0严格复现SDCR；与旧OCLR不同，本实验测试Claude是否能补充已经成立的GPT-5.6 SDCR，而不是替代SEBC父模型。</p>
+<p>训练固定batch 50、28,228次更新、每141次official test，整次RUN按完整模型H保存一个best。unseen图像不进入梯度；test_used_for_selection=true；strict_blind_claim=false。</p>
+</body></html>
