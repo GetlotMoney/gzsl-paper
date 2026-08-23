@@ -13,3 +13,4 @@ paper_core_innovation: false
 result: seed5/seed7 patch-free H=78.480710/78.386251，范围0.094459；均超过SDCR，但相对同seed C-RGWPS的增量为+0.087533/-0.026458。
 decision: 按owner口径保留seed5为当前最高成绩；语义近邻增量未在两seed同号，不晋级独立核心创新。
 rescue_2: RUN-003使用union top-3中间关系密度；只在seed5超过C-RGWPS后追加seed7。
+rescue_2_interim: seed5 H=78.466710、ZS=84.121209，超过C-RGWPS且ZS为三种图规则最高；追加seed7。

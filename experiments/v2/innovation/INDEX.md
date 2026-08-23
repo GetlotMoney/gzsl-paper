@@ -73,7 +73,7 @@
 | V2-INNOVATION-069 | IDEA-103 | S-GWPS四语义特征pair选择器 | supported two-seed patch-free（最高H=78.368367） | `INNOVATION-069_sgwps/` |
 | V2-INNOVATION-070 | IDEA-104 | R-GWPS角色感知pair选择器 | rejected（八角色差值重复放大seen偏好） | `INNOVATION-070_rgwps/` |
 | V2-INNOVATION-071 | IDEA-105 | C-RGWPS中心化角色pair选择器 | supported two-seed patch-free（最高H=78.412709） | `INNOVATION-071_crgwps/` |
-| V2-INNOVATION-072 | IDEA-106 | SNPS语义近邻pair选择器 | testing RESCUE-2 union top-3（当前最高H=78.480710） | `INNOVATION-072_snps/` |
+| V2-INNOVATION-072 | IDEA-106 | SNPS语义近邻pair选择器 | testing RESCUE-2 union top-3 seed7（seed5 H=78.466710） | `INNOVATION-072_snps/` |
 | V2-INNOVATION-073 | IDEA-107 | M-SNPS互为语义近邻pair选择器 | supported two-seed patch-free（最高H=78.459247） | `INNOVATION-073_msnps/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

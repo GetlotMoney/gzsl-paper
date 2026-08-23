@@ -129,7 +129,7 @@ V2-H-PLUS-3PP
       ├─ supported_candidate：IDEA-103 / S-GWPS四语义特征pair选择器（两seed成立，patch-free最高H=78.368367）
       ├─ rejected_branch：IDEA-104 / R-GWPS角色感知pair选择器（八角色差值直接并列无增益）
       ├─ supported_candidate：IDEA-105 / C-RGWPS中心化角色pair选择器（两seed成立，patch-free最高H=78.412709）
-      ├─ testing_branch：IDEA-106 / SNPS语义近邻pair选择器（RESCUE-2 union top-3；当前最高H=78.480710）
+      ├─ testing_branch：IDEA-106 / SNPS语义近邻pair选择器（RESCUE-2 union top-3 seed5 H=78.466710）
       ├─ supported_candidate：IDEA-107 / M-SNPS互为语义近邻pair选择器（两seed稳定，最高H=78.459247）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
