@@ -139,7 +139,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-113 / S-RDSS分阶段角色尺度选择器（尺度不能独立叠加）
       ├─ rejected_branch：IDEA-114 / TR-RDSS信赖域角色尺度选择器（只改善seed5）
       ├─ rejected_branch：IDEA-115 / RVPS角色投票成对选择器（多数投票无增益）
-      ├─ testing_branch：IDEA-116 / CSDS跨来源分歧选择器（planned，来源可靠性）
+      ├─ rejected_branch：IDEA-116 / CSDS跨来源分歧选择器（新增特征被忽略）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

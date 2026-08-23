@@ -1,6 +1,6 @@
 # IDEA-116：Cross-Source Disagreement Selector
 
-status: testing
+status: rejected
 problem: 当前selector分别输入Claude和merge差值，但线性层不能直接表达两来源的绝对矛盾程度。
 hypothesis: 增加`abs(Claude pair diff - merge pair diff)`，可提供跨文本源可靠性并提高稳定SNPS H。
 evidence_refs: IDEA-103双文本pair特征有效；MAGT显示两来源全局余弦很高但局部差异仍可能影响选择；角色投票轴失败。
@@ -10,3 +10,5 @@ success_condition: seed5 H大于稳定SNPS top-3 78.466710；正提升后追加s
 failure_condition: H不超过top-3、来源分歧退化或U/S任一下降超过2个百分点。
 experiment: V2-INNOVATION-082
 paper_core_innovation: false
+result: RUN-001 H=78.466710，与稳定SNPS top-3逐项相同；新增特征权重仅0.001265。
+decision: 来源绝对分歧被模型忽略，拒绝且不追加seed7。

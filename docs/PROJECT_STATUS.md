@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 207
+completed_try_count: 208
 minimum_required_try_count: 50
 ```
 
@@ -469,6 +469,8 @@ TR-RDSS seed7完整训练后best严格退回SNPS父模型`H=78.446100%`，role s
 RVPS seed5完整运行后best严格退回父模型`H=78.320510%`、selected iteration=`-1`。signed role vote分布有效但所有非零selector均更差，说明多数投票重复已有角色方向并强化seen偏好；IDEA-115拒绝且不追加seed7。当前累计207组。
 
 下一实验`V2-INNOVATION-082 / CSDS`固定稳定SNPS top-3图，新增`abs(Claude pair diff - merge pair diff)`作为第13维跨文本源可靠性；不再调整角色尺度或投票。
+
+CSDS seed5最高`U/S/H/ZS=76.883179/80.116844/78.466710/84.121209%`，与稳定SNPS top-3逐项相同。来源绝对分歧分布有效但权重仅`0.001265`，模型退化为原SNPS；IDEA-116拒绝且不追加seed7。当前累计208组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
