@@ -323,6 +323,16 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["semantic_neighbor_k"], 5)
         self.assertNotIn("patch_inputs", config)
 
+    def test_snps_top3_rescue_config_is_bound(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-072_snps/configs/RUN-003.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.snps.v1")
+        self.assertEqual(config["semantic_neighbor_k"], 3)
+        self.assertEqual(
+            config["pair_training_scope"], "suffix_or_semantic_top3_soft_gate"
+        )
+
     def test_msnps_config_uses_mutual_top5(self):
         config, _ = load_config(
             ROOT / "experiments/v2/innovation/INNOVATION-073_msnps/configs/RUN-001.yaml"

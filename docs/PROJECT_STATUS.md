@@ -422,6 +422,8 @@ M-SNPS seed5达到`U/S/H/ZS=76.810980/80.179805/78.459247/83.981764%`，相对C-
 
 M-SNPS seed7达到`U/S/H/ZS=76.849276/80.070651/78.426898/83.987314%`，相对C-RGWPS提高H `0.014189`。seed5/7增量均为正且M-SNPS自身H范围仅`0.032349`，mutual规则成功修复SNPS增量跨seed不一致；M-SNPS晋级为稳定patch-free辅助候选。最高成绩仍按owner口径取SNPS seed5 `H=78.480710%`。当前累计193组。
 
+SNPS方法级RESCUE-2只把union邻居数从top-5改为top-3，作为union约800边与mutual约200边之间的中间关系密度；先运行seed5，超过同seedC-RGWPS后才追加seed7。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

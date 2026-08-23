@@ -224,8 +224,8 @@ def load_config(path: Path):
         raise ValueError("GWPS必须使用全同族top2与soft gate加权。")
     if schema == "gzsl-paper.snps.v1" and config[
         "pair_training_scope"
-    ] != "suffix_or_semantic_top5_soft_gate":
-        raise ValueError("SNPS必须使用类名族群并语义top5 soft gate。")
+    ] != f"suffix_or_semantic_top{int(config['semantic_neighbor_k'])}_soft_gate":
+        raise ValueError("SNPS pair scope必须与semantic_neighbor_k一致。")
     if schema == "gzsl-paper.msnps.v1" and config[
         "pair_training_scope"
     ] != "suffix_or_mutual_semantic_top5_soft_gate":
@@ -246,10 +246,14 @@ def load_config(path: Path):
         "selector_hidden_dim"
     ]) != 8:
         raise ValueError("NPS hidden_dim必须为8。")
-    if schema in ("gzsl-paper.snps.v1", "gzsl-paper.msnps.v1") and int(config[
+    if schema == "gzsl-paper.snps.v1" and int(config[
+        "semantic_neighbor_k"
+    ]) not in (3, 5):
+        raise ValueError("SNPS semantic_neighbor_k只允许3或5。")
+    if schema == "gzsl-paper.msnps.v1" and int(config[
         "semantic_neighbor_k"
     ]) != 5:
-        raise ValueError("SNPS系列semantic_neighbor_k必须为5。")
+        raise ValueError("M-SNPS semantic_neighbor_k必须为5。")
     if schema == "gzsl-paper.msnps.v1" and config[
         "semantic_neighbor_rule"
     ] != "mutual_top5":
@@ -559,7 +563,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 relation_name=(
                     "suffix_group_or_mutual_semantic_top5"
                     if config["schema_version"] == "gzsl-paper.msnps.v1"
-                    else "suffix_group_or_semantic_top5"
+                    else f"suffix_group_or_semantic_top{int(config['semantic_neighbor_k'])}"
                 ),
             )
         else:

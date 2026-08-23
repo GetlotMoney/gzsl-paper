@@ -1,6 +1,6 @@
 # V2-INNOVATION-072 结果
 
-状态：`retained_highest_seed_patch_free`。
+状态：`testing_rescue2_top3`。
 
 RUN-001（seed5）最高`U/S/H/ZS=76.916498/80.109864/78.480710/84.056246%`，selected iteration=`282`。相对SDCR父条件四项分别提高`0.169498/0.149971/0.160200/0.102270`，相对C-RGWPS提高H `0.087533`；它是当前绝对最高H，且不读取patch。
 
@@ -13,3 +13,5 @@ RUN-002（seed7）最高`U/S/H/ZS=76.781482/80.059534/78.386251/83.953416%`，se
 两seed绝对H范围=`0.094459`，按owner口径主成绩取seed5最高`78.480710%`。不过SNPS相对C-RGWPS的增量为seed5 `+0.087533`、seed7 `-0.026458`，方向不完全一致；因此保留为最高成绩候选，不作为稳定独立核心创新。
 
 RUN-002模型SHA256：`c01ab7cebaa9513dad88d866ce0c77cca6bfac2efdc068043141cb5dda1ea9c0`；最后checkpoint SHA256：`977967ee3c6d14221954176bd563767cfbc67d5ac728a4aad85505ed95696cb3`。
+
+RESCUE-2 / RUN-003预注册union top-3，仅改变语义近邻数量；真实结果完成后回填。

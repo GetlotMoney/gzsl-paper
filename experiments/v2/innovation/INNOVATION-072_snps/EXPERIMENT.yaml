@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Semantic Neighborhood Pair Selector
 base_commit: e55bf98571dfcef3c90eaad5cc4793d6549c0b77
 code_commit: 29b801d33e835ba6af202335120977ba295dbef8
-status: retained_highest_seed_patch_free
+status: testing_rescue2_top3
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -21,3 +21,8 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-072_snps/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-072_snps/RUN-002
     status: completed_positive_vs_parent_below_same_seed_crgwps
+  - run_id: RUN-003
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-072_snps/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-072_snps/RUN-003
+    status: planned_rescue2_union_top3
