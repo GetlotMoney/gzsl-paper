@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-050 JSCF</title></head>
+<body>
+<h1>JSCF：联合语义协调微调</h1>
+<p><strong>Base commit：</strong>dce549ffbb507eefd375c1b324403854cbcc5561；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<pre>阶段1-3已有best：冻结TG-VPR / TST-NTR / CCGR主网络
+
+SDRS共享斜率 1维 ─┐
+SEBC seen偏置 1维 ─┼─ 联合seen CE + 0.01×SDCR KL ─ 共10个参数
+SDCR八句残差 8维 ─┘
+
+训练期SDCR继续每批mask 1句；评估恢复完整8句
+最终推理结构不增加模块</pre>
+<p>这是分阶段后的协调阶段，不分别挑三个模块的best；整次RUN只按组合模型official H保存一个checkpoint。真实unseen图像不进入梯度，test_used_for_selection=true，strict_blind_claim=false。</p>
+</body></html>
