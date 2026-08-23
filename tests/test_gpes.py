@@ -6,6 +6,7 @@ import torch
 from model.innovations.gpes import (
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
+    TextOnlyGatedPairSelector,
 )
 from model.innovations.train_gpes import (
     class_balanced_pair_weights,
@@ -185,6 +186,30 @@ class GPESTest(unittest.TestCase):
         )
         self.assertEqual(config["schema_version"], "gzsl-paper.nps.v1")
         self.assertEqual(config["selector_hidden_dim"], 8)
+
+    def test_text_only_selector_uses_three_features_and_no_patch(self):
+        groups = torch.arange(200) // 2
+        model = TextOnlyGatedPairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(3), torch.ones(3), 0.5,
+        )
+        self.assertEqual(model.selector_weight.numel(), 3)
+        images = torch.randn(2, 768)
+        parent = torch.randn(2, 200)
+        expected = parent + model.sdcr_beta * (
+            torch.nn.functional.normalize(images, dim=-1)
+            @ model.sdcr_prototypes.T
+        )
+        self.assertTrue(torch.equal(model(parent, images, None), expected))
+
+    def test_tgwps_config_has_no_patch_fields(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-068_tgwps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.tgwps.v1")
+        self.assertNotIn("patch_inputs", config)
+        self.assertNotIn("feature_provenance_complete", config)
 
 
 if __name__ == "__main__":

@@ -13,6 +13,7 @@ from model.innovations.ebc import EpisodicBiasCalibration
 from model.innovations.gpes import (
     GatedPairEvidenceSelector,
     NonlinearGatedPairSelector,
+    TextOnlyGatedPairSelector,
 )
 from model.innovations.lpsr import orthogonal_local_text_residuals
 from model.innovations.sdcr import SentenceDropoutConservativeRouting
@@ -80,7 +81,15 @@ def load_config(path: Path):
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    if schema == "gzsl-paper.nps.v1":
+    if schema == "gzsl-paper.tgwps.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {"pair_training_scope"}
+    elif schema == "gzsl-paper.nps.v1":
         expected_keys = CONFIG_KEYS | {"pair_training_scope", "selector_hidden_dim"}
     elif schema == "gzsl-paper.egpes.v1":
         expected_keys = CONFIG_KEYS | {"pair_training_quantile"}
@@ -102,6 +111,7 @@ def load_config(path: Path):
         "gzsl-paper.mbgwps.v1": ("V2-INNOVATION-065", "IDEA-099"),
         "gzsl-paper.egpes.v1": ("V2-INNOVATION-066", "IDEA-100"),
         "gzsl-paper.nps.v1": ("V2-INNOVATION-067", "IDEA-101"),
+        "gzsl-paper.tgwps.v1": ("V2-INNOVATION-068", "IDEA-102"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -114,13 +124,19 @@ def load_config(path: Path):
         or config["strict_blind_claim"] is not False
     ):
         raise ValueError("GPES协议边界错误。")
-    if config["feature_provenance_complete"] is not False or config[
-        "text_cache_provenance_complete"
-    ] is not False:
+    if (
+        schema != "gzsl-paper.tgwps.v1"
+        and config["feature_provenance_complete"] is not False
+    ) or config["text_cache_provenance_complete"] is not False:
         raise ValueError("GPES cache provenance边界错误。")
     if (
-        int(config["patch_top_k"]) != 2
-        or int(config["patch_chunk_size"]) != 16
+        (
+            schema != "gzsl-paper.tgwps.v1"
+            and (
+                int(config["patch_top_k"]) != 2
+                or int(config["patch_chunk_size"]) != 16
+            )
+        )
         or config["group_rule"] != "class_name_last_token_min2"
         or config["threshold_source"] != "train_wrong_same_group_margin"
         or float(config["threshold_quantile"]) != 0.25
@@ -137,7 +153,7 @@ def load_config(path: Path):
         raise ValueError("GPES训练参数错误。")
     if schema in (
         "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
-        "gzsl-paper.nps.v1",
+        "gzsl-paper.nps.v1", "gzsl-paper.tgwps.v1",
     ) and config[
         "pair_training_scope"
     ] != "all_same_group_top2_soft_gate":
@@ -191,21 +207,22 @@ def extract_pair_examples(
     normalized = F.normalize(images.float(), dim=-1)
     claude_logits = normalized @ claude_prototypes.index_select(0, ids).T
     merge_logits = normalized @ merge_prototypes.index_select(0, ids).T
-    local_patch = patch_scores.to(logits.device).float()
-    if local_patch.shape[1] == 200 and ids.numel() != 200:
-        local_patch = local_patch.index_select(1, ids)
-    features = torch.stack(
-        (
-            margin,
-            claude_logits.gather(1, top.indices)[:, 0]
-            - claude_logits.gather(1, top.indices)[:, 1],
-            merge_logits.gather(1, top.indices)[:, 0]
-            - merge_logits.gather(1, top.indices)[:, 1],
+    values = [
+        margin,
+        claude_logits.gather(1, top.indices)[:, 0]
+        - claude_logits.gather(1, top.indices)[:, 1],
+        merge_logits.gather(1, top.indices)[:, 0]
+        - merge_logits.gather(1, top.indices)[:, 1],
+    ]
+    if patch_scores is not None:
+        local_patch = patch_scores.to(logits.device).float()
+        if local_patch.shape[1] == 200 and ids.numel() != 200:
+            local_patch = local_patch.index_select(1, ids)
+        values.append(
             local_patch.gather(1, top.indices)[:, 0]
-            - local_patch.gather(1, top.indices)[:, 1],
-        ),
-        dim=1,
-    )
+            - local_patch.gather(1, top.indices)[:, 1]
+        )
+    features = torch.stack(values, dim=1)
     pair_targets = top.indices[:, 1].eq(targets).long()
     return (
         top.values[selected].detach().cpu(),
@@ -229,15 +246,22 @@ def evaluate(
         parent_logits = calibrator(
             parent_logits, torch.isin(ids.cpu(), seen_classes).to(device)
         )
+        local_patch = None if patch_scores is None else patch_scores.to(device)
         predictions = model(
-            parent_logits, images, patch_scores.to(device), ids
+            parent_logits, images, local_patch, ids
         ).argmax(1).cpu()
         return predictions if class_ids is None else class_ids[predictions]
 
-    seen_predictions = predict(tensors["seen_features"], scores["seen"])
-    unseen_predictions = predict(tensors["unseen_features"], scores["unseen"])
+    seen_predictions = predict(
+        tensors["seen_features"], None if scores is None else scores["seen"]
+    )
+    unseen_predictions = predict(
+        tensors["unseen_features"], None if scores is None else scores["unseen"]
+    )
     zsl_predictions = predict(
-        tensors["unseen_features"], scores["unseen"], unseen_classes
+        tensors["unseen_features"],
+        None if scores is None else scores["unseen"],
+        unseen_classes,
     )
     seen = h1.per_class_accuracy(tensors["seen_labels"], seen_predictions, seen_classes)
     unseen = h1.per_class_accuracy(
@@ -269,9 +293,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     ):
         if sha256_file(Path(config[key])) != config[f"{key}_sha256"]:
             raise ValueError(f"GPES {key} SHA错误。")
-    for split, path_text in config["patch_inputs"].items():
-        if sha256_file(h1.repo_path(path_text)) != config["patch_sha256"][split]:
-            raise ValueError(f"GPES {split} patch SHA错误。")
+    text_only = config["schema_version"] == "gzsl-paper.tgwps.v1"
+    if not text_only:
+        for split, path_text in config["patch_inputs"].items():
+            if sha256_file(h1.repo_path(path_text)) != config["patch_sha256"][split]:
+                raise ValueError(f"GPES {split} patch SHA错误。")
     device = torch.device(config["device"])
     output_dir = prepare_output_dir(output_dir)
     with (output_dir / "config.snapshot.yaml").open("x", encoding="utf-8") as stream:
@@ -379,10 +405,16 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             merge_n - (merge_n * names_n).sum(dim=-1, keepdim=True) * names_n,
             dim=-1,
         )
-        print("precomputing GPES patch scores")
-        scores = _precompute_scores(
-            config, orthogonal_local_text_residuals(sentence, class_names_tensor), device
-        )
+        if text_only:
+            print("using patch-free text-only pair features")
+            scores = None
+        else:
+            print("precomputing GPES patch scores")
+            scores = _precompute_scores(
+                config,
+                orthogonal_local_text_residuals(sentence, class_names_tensor),
+                device,
+            )
         mapping = torch.full((200,), -1, dtype=torch.long)
         mapping[seen_classes] = torch.arange(150)
         ids = seen_classes.to(device)
@@ -402,7 +434,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             package = extract_pair_examples(
                 logits,
                 images,
-                scores["train"][start : start + 512],
+                None if scores is None else scores["train"][start : start + 512],
                 mapping[labels[start : start + 512]].to(device),
                 ids,
                 group_ids,
@@ -455,11 +487,12 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "training_threshold": float(pair_training_threshold),
             "training_threshold_stats": pair_training_threshold_stats,
         }
-        model_class = (
-            NonlinearGatedPairSelector
-            if config["schema_version"] == "gzsl-paper.nps.v1"
-            else GatedPairEvidenceSelector
-        )
+        if config["schema_version"] == "gzsl-paper.nps.v1":
+            model_class = NonlinearGatedPairSelector
+        elif config["schema_version"] == "gzsl-paper.tgwps.v1":
+            model_class = TextOnlyGatedPairSelector
+        else:
+            model_class = GatedPairEvidenceSelector
         model_kwargs = {
             "sdcr_prototypes": sdcr.prototypes(use_dropout=False).detach(),
             "sdcr_beta": float(sdcr_payload["fixed_beta"]),
@@ -577,7 +610,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             output_dir / "data_fingerprints.json",
             {
                 "files": input_sha,
-                "patch_files": config["patch_sha256"],
+                **(
+                    {}
+                    if text_only
+                    else {"patch_files": config["patch_sha256"]}
+                ),
                 "base_model": config["base_model_sha256"],
                 "sdrs_model": config["sdrs_model_sha256"],
                 "sebc_model": config["sebc_model_sha256"],

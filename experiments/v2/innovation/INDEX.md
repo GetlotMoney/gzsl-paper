@@ -69,5 +69,6 @@
 | V2-INNOVATION-065 | IDEA-099 | M-BGWPS温和平衡pair选择器 | rejected（平方根平衡仍过强） | `INNOVATION-065_mbgwps/` |
 | V2-INNOVATION-066 | IDEA-100 | E-GPES适度扩展硬pair选择器 | rejected（H=78.367537，低于GWPS） | `INNOVATION-066_egpes/` |
 | V2-INNOVATION-067 | IDEA-101 | NPS非线性成对证据选择器 | rejected（H=78.414029，等价但不优） | `INNOVATION-067_nps/` |
+| V2-INNOVATION-068 | IDEA-102 | T-GWPS纯文本pair选择器 | planned（patch-free三特征） | `INNOVATION-068_tgwps/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

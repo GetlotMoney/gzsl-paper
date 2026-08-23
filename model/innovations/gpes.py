@@ -31,8 +31,12 @@ class GatedPairEvidenceSelector(nn.Module):
                 raise ValueError(f"GPES {name}原型必须是[200,768]。")
         if tuple(group_ids.shape) != (200,):
             raise ValueError("GPES group_ids必须是[200]。")
-        if tuple(feature_mean.shape) != (4,) or tuple(feature_std.shape) != (4,):
-            raise ValueError("GPES特征统计必须是[4]。")
+        if (
+            feature_mean.ndim != 1
+            or feature_std.shape != feature_mean.shape
+            or feature_mean.numel() not in (3, 4)
+        ):
+            raise ValueError("GPES特征统计必须是[3]或[4]。")
         self.register_buffer(
             "sdcr_prototypes", F.normalize(sdcr_prototypes.detach().float(), dim=-1)
         )
@@ -49,7 +53,8 @@ class GatedPairEvidenceSelector(nn.Module):
         self.register_buffer("feature_std", feature_std.detach().float().clamp_min(1e-6))
         self.margin_temperature = float(margin_temperature)
         self.max_delta = float(max_delta)
-        self.selector_weight = nn.Parameter(torch.zeros(4))
+        self.feature_dim = int(feature_mean.numel())
+        self.selector_weight = nn.Parameter(torch.zeros(self.feature_dim))
         self.selector_bias = nn.Parameter(torch.zeros(()))
 
     def pair_delta(self, raw_features: torch.Tensor) -> torch.Tensor:
@@ -150,7 +155,7 @@ class NonlinearGatedPairSelector(GatedPairEvidenceSelector):
         del self.selector_weight
         del self.selector_bias
         self.selector = nn.Sequential(
-            nn.Linear(4, int(hidden_dim)),
+            nn.Linear(self.feature_dim, int(hidden_dim)),
             nn.GELU(),
             nn.Linear(int(hidden_dim), 1),
         )
@@ -176,3 +181,49 @@ class NonlinearGatedPairSelector(GatedPairEvidenceSelector):
             "margin_threshold": float(self.margin_threshold),
             "margin_temperature": self.margin_temperature,
         }
+
+
+class TextOnlyGatedPairSelector(GatedPairEvidenceSelector):
+    """仅使用parent margin、Claude差和merge差的patch-free选择器。"""
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top = logits.detach().topk(2, dim=1)
+        global_ids = ids.index_select(0, top.indices.reshape(-1)).reshape_as(
+            top.indices
+        )
+        groups = self.group_ids.index_select(
+            0, global_ids.reshape(-1).to(self.group_ids.device)
+        ).reshape_as(global_ids)
+        same_group = groups[:, 0].eq(groups[:, 1]) & groups[:, 0].ge(0)
+        normalized_images = F.normalize(images.float(), dim=-1)
+        claude_logits = normalized_images @ self.claude_prototypes.index_select(0, ids).T
+        merge_logits = normalized_images @ self.merge_prototypes.index_select(0, ids).T
+        raw_features = torch.stack(
+            (
+                top.values[:, 0] - top.values[:, 1],
+                claude_logits.gather(1, top.indices)[:, 0]
+                - claude_logits.gather(1, top.indices)[:, 1],
+                merge_logits.gather(1, top.indices)[:, 0]
+                - merge_logits.gather(1, top.indices)[:, 1],
+            ),
+            dim=1,
+        )
+        return top, global_ids, same_group, raw_features
+
+    def forward(
+        self,
+        parent_logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None = None,
+        class_ids: torch.Tensor | None = None,
+        enabled: bool = True,
+    ) -> torch.Tensor:
+        return super().forward(
+            parent_logits, images, patch_scores, class_ids, enabled
+        )
