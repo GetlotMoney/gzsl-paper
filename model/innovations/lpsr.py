@@ -5,6 +5,26 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def orthogonal_local_text_residuals(
+    sentence_embeddings: torch.Tensor,
+    class_name_prototypes: torch.Tensor,
+) -> torch.Tensor:
+    if tuple(sentence_embeddings.shape) != (200, 8, 768):
+        raise ValueError("八角色语义必须是[200,8,768]。")
+    if tuple(class_name_prototypes.shape) != (200, 768):
+        raise ValueError("类名原型必须是[200,768]。")
+    names = F.normalize(class_name_prototypes.detach().float(), dim=-1)
+    local = F.normalize(
+        sentence_embeddings.detach().float().to(names.device)[:, :6].mean(dim=1),
+        dim=-1,
+    )
+    projection = (local * names).sum(dim=-1, keepdim=True) * names
+    residual = F.normalize(local - projection, dim=-1)
+    if not torch.isfinite(residual).all():
+        raise ValueError("局部文本残差包含NaN/Inf。")
+    return residual
+
+
 def pool_fgvd_local_features(
     patches: torch.Tensor,
     top_k: int,
@@ -39,19 +59,9 @@ class LocalPatchSemanticResidual(nn.Module):
         max_beta: float = 10.0,
     ) -> None:
         super().__init__()
-        if tuple(sentence_embeddings.shape) != (200, 8, 768):
-            raise ValueError("八角色语义必须是[200,8,768]。")
-        if tuple(class_name_prototypes.shape) != (200, 768):
-            raise ValueError("类名原型必须是[200,768]。")
-        names = F.normalize(class_name_prototypes.detach().float(), dim=-1)
-        local = F.normalize(
-            sentence_embeddings.detach().float().to(names.device)[:, :6].mean(dim=1),
-            dim=-1,
+        residual = orthogonal_local_text_residuals(
+            sentence_embeddings, class_name_prototypes
         )
-        projection = (local * names).sum(dim=-1, keepdim=True) * names
-        residual = F.normalize(local - projection, dim=-1)
-        if not torch.isfinite(residual).all():
-            raise ValueError("局部文本残差包含NaN/Inf。")
         self.register_buffer("local_text_residual", residual)
         self.max_beta = float(max_beta)
         self.raw_beta = nn.Parameter(torch.zeros(()))
