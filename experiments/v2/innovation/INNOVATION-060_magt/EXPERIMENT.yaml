@@ -4,15 +4,15 @@ idea_id: IDEA-094
 framework_id: FRAMEWORK-V2
 title: Multi-Source Ambiguity-Gated Tie-Breaker
 base_commit: 99a36a2edec690f322e45f2bfd61e71b5ed49c31
-code_commit: null
-status: planned
+code_commit: fa851e7c2fd80e17bea9863b9c05bbff7d20440b
+status: rejected_duplicate_sources
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-060_magt/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: fa851e7c2fd80e17bea9863b9c05bbff7d20440b
     config_ref: experiments/v2/innovation/INNOVATION-060_magt/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-060_magt/RUN-001
-    status: planned
+    status: completed_failed_parent_only
