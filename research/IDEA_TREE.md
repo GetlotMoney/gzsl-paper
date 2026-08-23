@@ -83,7 +83,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-057 / LVPG局部视觉原型生成（rejected，seen视觉域偏置）
       ├─ supported_candidate：IDEA-058 / CLRE跨LLM描述残差（H=77.808093，provenance/新颖性待补）
       ├─ rejected_branch：IDEA-059 / CLEC跨LLM全局与局部组合（rejected，两分支不互补）
-      ├─ testing_branch：IDEA-060 / MLRE融合LLM文本残差（testing，替换为merge语义）
+      ├─ supported_candidate：IDEA-060 / MLRE融合LLM文本残差（最高H=77.829140，ZS低于CLRE）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）
