@@ -12,6 +12,7 @@ from model.innovations.gpes import (
     SemanticNeighborPairSelector,
     SemanticGatedPairSelector,
     TextOnlyGatedPairSelector,
+    TriadicCompetitionPairSelector,
     semantic_neighbor_adjacency,
     reciprocal_neighbor_confidence,
 )
@@ -378,6 +379,35 @@ class GPESTest(unittest.TestCase):
             config["semantic_neighbor_rule"], "reciprocity_weighted_top5"
         )
         self.assertNotIn("patch_inputs", config)
+
+    def test_triadic_selector_adds_third_class_gap(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        model = TriadicCompetitionPairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(13), torch.ones(13), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+        )
+        logits = torch.randn(2, 200)
+        _, _, _, features = model._top2_context(
+            logits, torch.randn(2, 768), None, torch.arange(200)
+        )
+        expected_gap = logits.topk(3, dim=1).values[:, 1] - logits.topk(
+            3, dim=1
+        ).values[:, 2]
+        self.assertEqual(tuple(features.shape), (2, 13))
+        self.assertTrue(torch.equal(features[:, -1], expected_gap))
+
+    def test_tcps_config_binds_top3_context(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-075_tcps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.tcps.v1")
+        self.assertEqual(config["semantic_neighbor_k"], 3)
+        self.assertEqual(config["context_feature"], "top2_minus_top3_margin")
 
 
 if __name__ == "__main__":

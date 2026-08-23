@@ -434,6 +434,8 @@ R-SNPS seed5达到`U/S/H/ZS=76.876497/80.143785/78.476148/84.015107%`，相对�
 
 R-SNPS seed7达到`U/S/H/ZS=76.844305/80.079335/78.428474/83.949006%`，比稳定top-3低`0.017626`；R-SNPS相对top-3的seed5/7增量一正一负，不能替代。语义图首次union top-5加三次方法级补救预算已用完，固定union top-3为稳定结构、union top-5 seed5 `78.480710%`为最高观察，并关闭图密度与权重轴。当前累计197组。
 
+下一实验`V2-INNOVATION-075 / TCPS`固定稳定SNPS union top-3关系图，只在12维selector中新增parent top2-top3间隔，补充第三类竞争上下文；这是新的输入轴，不再改变语义图。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

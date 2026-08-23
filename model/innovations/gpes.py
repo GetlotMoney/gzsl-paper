@@ -72,9 +72,9 @@ class GatedPairEvidenceSelector(nn.Module):
         if (
             feature_mean.ndim != 1
             or feature_std.shape != feature_mean.shape
-            or feature_mean.numel() not in (3, 4, 12)
+            or feature_mean.numel() not in (3, 4, 12, 13)
         ):
-            raise ValueError("GPES特征统计必须是[3]、[4]或[12]。")
+            raise ValueError("GPES特征统计必须是[3]、[4]、[12]或[13]。")
         self.register_buffer(
             "sdcr_prototypes", F.normalize(sdcr_prototypes.detach().float(), dim=-1)
         )
@@ -455,3 +455,26 @@ class ReciprocalSemanticNeighborPairSelector(CenteredRoleGatedPairSelector):
         output = logits.clone()
         output.scatter_add_(1, top.indices, correction)
         return output
+
+
+class TriadicCompetitionPairSelector(SemanticNeighborPairSelector):
+    """用top2与top3间隔补充二元pair纠错的第三类竞争上下文。"""
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top, global_ids, related, features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        top3 = logits.detach().topk(3, dim=1)
+        third_gap = top3.values[:, 1] - top3.values[:, 2]
+        return (
+            top,
+            global_ids,
+            related,
+            torch.cat((features, third_gap.unsqueeze(1)), dim=1),
+        )

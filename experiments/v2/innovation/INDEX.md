@@ -76,5 +76,6 @@
 | V2-INNOVATION-072 | IDEA-106 | SNPS语义近邻pair选择器 | supported top-3 two-seed（稳定H=78.466710；最高观察78.480710） | `INNOVATION-072_snps/` |
 | V2-INNOVATION-073 | IDEA-107 | M-SNPS互为语义近邻pair选择器 | supported two-seed patch-free（最高H=78.459247） | `INNOVATION-073_msnps/` |
 | V2-INNOVATION-074 | IDEA-108 | R-SNPS互惠加权语义近邻选择器 | rejected（seed7低于稳定top-3，图补救轴关闭） | `INNOVATION-074_rsnps/` |
+| V2-INNOVATION-075 | IDEA-109 | TCPS三元竞争pair选择器 | planned（top2-top3上下文，patch-free） | `INNOVATION-075_tcps/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
