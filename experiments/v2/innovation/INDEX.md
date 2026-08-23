@@ -35,5 +35,6 @@
 | V2-INNOVATION-031 | IDEA-065 | OMLR正交merge语义残差 | retained strong secondary（H=78.051283/ZS=84.291506） | `INNOVATION-031_omlr/` |
 | V2-INNOVATION-032 | IDEA-066 | BOCR类名+GPT父原型二维正交 | rejected（过度正交化） | `INNOVATION-032_bocr/` |
 | V2-INNOVATION-033 | IDEA-067 | PBOR父原型方向部分正交 | rejected（best退回OCLR） | `INNOVATION-033_pbor/` |
+| V2-INNOVATION-034 | IDEA-068 | ORER OCLR后episode重校准 | planned | `INNOVATION-034_orer/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
