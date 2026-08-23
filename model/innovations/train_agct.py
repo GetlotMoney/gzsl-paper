@@ -81,16 +81,24 @@ def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    expected_keys = (
+        CONFIG_KEYS | {"consensus_only"}
+        if schema == "gzsl-paper.cctb.v1"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"AGCT配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"AGCT配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
-    if (
-        config["schema_version"] != "gzsl-paper.agct.v1"
-        or config["experiment_id"] != "V2-INNOVATION-058"
-        or config["idea_id"] != "IDEA-092"
-    ):
+    identity = {
+        "gzsl-paper.agct.v1": ("V2-INNOVATION-058", "IDEA-092"),
+        "gzsl-paper.cctb.v1": ("V2-INNOVATION-059", "IDEA-093"),
+    }.get(schema)
+    if identity is None or (
+        config["experiment_id"], config["idea_id"]
+    ) != identity:
         raise ValueError("AGCT身份错误。")
     if (
         config["evaluation_protocol"] != EVALUATION_PROTOCOL
@@ -116,6 +124,8 @@ def load_config(path: Path):
         or float(config["weight_decay"]) != 0.0
     ):
         raise ValueError("AGCT训练参数错误。")
+    if schema == "gzsl-paper.cctb.v1" and config["consensus_only"] is not True:
+        raise ValueError("CCTB必须只对Claude与SDCR共识样本启用门控。")
     return config, sha256_file(path)
 
 
@@ -188,7 +198,7 @@ def evaluate(
         logits = parent_without_sdcr + model.sdcr_beta * (
             F.normalize(images, dim=-1) @ model.sdcr_prototypes.index_select(0, ids).T
         )
-        gate, same_group, _ = model.gate_values(logits, ids)
+        gate, same_group, _ = model.gate_values(logits, ids, images)
         gate_values.append(gate.cpu())
         same_group_values.append(same_group.cpu())
         predictions = model(parent_without_sdcr, images, ids).argmax(1).cpu()
@@ -346,6 +356,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             threshold,
             float(config["margin_temperature"]),
             float(config["max_beta"]),
+            bool(config.get("consensus_only", False)),
         ).to(device)
         optimizer = torch.optim.Adam(
             model.parameters(), lr=float(config["learning_rate"]), weight_decay=0.0

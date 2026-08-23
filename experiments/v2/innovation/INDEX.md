@@ -60,5 +60,6 @@
 | V2-INNOVATION-056 | IDEA-090 | TWLS同族logit差值缩放 | rejected（统一锐化放大错误排名） | `INNOVATION-056_twls/` |
 | V2-INNOVATION-057 | IDEA-091 | TPLD同族成对logit去卷积 | rejected（非均匀图仍放大错误邻接） | `INNOVATION-057_tpld/` |
 | V2-INNOVATION-058 | IDEA-092 | AGCT歧义门控跨LLM二选一 | supported two-seed weak gain（最高H=78.339523） | `INNOVATION-058_agct/` |
+| V2-INNOVATION-059 | IDEA-093 | CCTB反共识二选一 | planned（AGCT共识子集） | `INNOVATION-059_cctb/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

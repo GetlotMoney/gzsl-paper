@@ -17,6 +17,7 @@ class AmbiguityGatedCrossLLMTieBreaker(nn.Module):
         margin_threshold: float,
         margin_temperature: float = 0.1,
         max_beta: float = 5.0,
+        consensus_only: bool = False,
     ) -> None:
         super().__init__()
         if tuple(sdcr_prototypes.shape) != (200, 768):
@@ -42,13 +43,17 @@ class AmbiguityGatedCrossLLMTieBreaker(nn.Module):
         )
         self.margin_temperature = float(margin_temperature)
         self.max_beta = float(max_beta)
+        self.consensus_only = bool(consensus_only)
         self.raw_beta = nn.Parameter(torch.zeros(()))
 
     def beta(self) -> torch.Tensor:
         return self.max_beta * torch.tanh(self.raw_beta)
 
     def gate_values(
-        self, logits: torch.Tensor, class_ids: torch.Tensor | None = None
+        self,
+        logits: torch.Tensor,
+        class_ids: torch.Tensor | None = None,
+        images: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         ids = (
             torch.arange(200, device=logits.device)
@@ -68,6 +73,14 @@ class AmbiguityGatedCrossLLMTieBreaker(nn.Module):
             (self.margin_threshold - margin) / self.margin_temperature
         )
         gate = soft_gate * same_group.to(soft_gate.dtype)
+        if self.consensus_only:
+            if images is None:
+                raise ValueError("CCTB计算共识门控时必须提供图像特征。")
+            claude = self.claude_prototypes.index_select(0, ids)
+            claude_logits = F.normalize(images.float(), dim=-1) @ claude.T
+            claude_top_scores = claude_logits.gather(1, top.indices)
+            agreement = claude_top_scores[:, 0] >= claude_top_scores[:, 1]
+            gate = gate * agreement.to(gate.dtype)
         return gate, same_group, top.indices
 
     def stats(self) -> dict[str, float]:
@@ -75,6 +88,7 @@ class AmbiguityGatedCrossLLMTieBreaker(nn.Module):
             "tie_beta": float(self.beta().detach()),
             "margin_threshold": float(self.margin_threshold),
             "margin_temperature": self.margin_temperature,
+            "consensus_only": self.consensus_only,
         }
 
     def forward(
@@ -94,7 +108,7 @@ class AmbiguityGatedCrossLLMTieBreaker(nn.Module):
         logits = parent_logits + self.sdcr_beta * (normalized @ sdcr.T)
         if not enabled:
             return logits
-        gate, _, top_positions = self.gate_values(logits, ids)
+        gate, _, top_positions = self.gate_values(logits, ids, images)
         claude = self.claude_prototypes.index_select(0, ids)
         claude_logits = normalized @ claude.T
         top_scores = claude_logits.gather(1, top_positions)

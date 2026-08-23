@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-059 CCTB</title></head>
+<body>
+<h1>CCTB：反共识二选一</h1>
+<p><strong>Base commit：</strong>1a7294ab515970cc20f6a4aeef2530cf6dc2a1ad；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<pre>AGCT同族低margin gate
+        × [Claude在top2中也选择SDCR top1]
+        ↓
+仅对“双模型共识但低置信”的样本启用Claude centered top2校正
+
+beta由seen CE训练；AGCT两seed稳定学到负beta，负值会反转Claude偏好，
+用于纠正两模型共享的系统性错误。</pre>
+<p>其余样本严格保持SDCR；阈值仍只来自train seen错误margin。真实unseen图像不进入梯度。</p>
+</body></html>

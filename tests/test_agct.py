@@ -66,6 +66,34 @@ class AGCTTest(unittest.TestCase):
         self.assertTrue(config["claude_embeddings_sha256"])
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_consensus_gate_requires_claude_to_agree_with_sdcr_top1(self):
+        generator = torch.Generator().manual_seed(881)
+        groups = torch.full((200,), -1, dtype=torch.long)
+        groups[:2] = 0
+        sdcr = torch.randn(200, 768, generator=generator)
+        claude = torch.randn(200, 768, generator=generator)
+        image = torch.zeros(1, 768)
+        image[0, 0] = 1.0
+        claude[0].zero_(); claude[0, 0] = 1.0
+        claude[1].zero_(); claude[1, 0] = -1.0
+        model = AmbiguityGatedCrossLLMTieBreaker(
+            sdcr, 13.0, claude, groups, 0.5, 0.1, 5.0, consensus_only=True
+        )
+        logits = torch.full((1, 200), -10.0)
+        logits[0, 0], logits[0, 1] = 1.0, 0.8
+        gate, _, _ = model.gate_values(logits, images=image)
+        self.assertGreater(float(gate[0]), 0.5)
+        model.claude_prototypes[[0, 1]] = model.claude_prototypes[[1, 0]]
+        gate, _, _ = model.gate_values(logits, images=image)
+        self.assertEqual(float(gate[0]), 0.0)
+
+    def test_cctb_config_binds_consensus_only_gate(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-059_cctb/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.cctb.v1")
+        self.assertTrue(config["consensus_only"])
+
 
 if __name__ == "__main__":
     unittest.main()
