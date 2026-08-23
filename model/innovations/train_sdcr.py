@@ -47,6 +47,26 @@ COMMON_CONFIG_KEYS = {
 }
 
 
+def sample_importance_mask(
+    sentence_weights: torch.Tensor, generator: torch.Generator
+) -> int:
+    """按当前完整句权重采样一句；采样本身不参与梯度。"""
+    probabilities = sentence_weights.detach().float().cpu()
+    if tuple(probabilities.shape) != (8,):
+        raise ValueError("IADR句权重必须是[8]。")
+    if not torch.isfinite(probabilities).all() or bool((probabilities < 0).any()):
+        raise ValueError("IADR句权重必须有限且非负。")
+    total = probabilities.sum()
+    if float(total) <= 0:
+        raise ValueError("IADR句权重之和必须大于0。")
+    probabilities = probabilities / total
+    return int(
+        torch.multinomial(
+            probabilities, 1, replacement=False, generator=generator
+        ).item()
+    )
+
+
 def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -60,6 +80,8 @@ def load_config(path: Path):
         }
     elif schema == "gzsl-paper.wsdr.v1":
         expected_keys = COMMON_CONFIG_KEYS | {"candidate_masks"}
+    elif schema == "gzsl-paper.iadr.v1":
+        expected_keys = COMMON_CONFIG_KEYS | {"sampling_strategy"}
     else:
         expected_keys = COMMON_CONFIG_KEYS
     if not isinstance(config, dict) or actual != expected_keys:
@@ -72,6 +94,7 @@ def load_config(path: Path):
         "gzsl-paper.sdcr.v2": ("V2-INNOVATION-041", "IDEA-075"),
         "gzsl-paper.sdcc.v1": ("V2-INNOVATION-042", "IDEA-076"),
         "gzsl-paper.wsdr.v1": ("V2-INNOVATION-043", "IDEA-077"),
+        "gzsl-paper.iadr.v1": ("V2-INNOVATION-044", "IDEA-078"),
     }
     identity = identity_by_schema.get(config["schema_version"])
     if (
@@ -111,6 +134,11 @@ def load_config(path: Path):
         raise ValueError("SDCC一致性权重/温度错误。")
     if schema == "gzsl-paper.wsdr.v1" and int(config["candidate_masks"]) != 2:
         raise ValueError("WSDR candidate_masks必须为2。")
+    if (
+        schema == "gzsl-paper.iadr.v1"
+        and config["sampling_strategy"] != "current_weight_proportional"
+    ):
+        raise ValueError("IADR必须按当前完整句权重采样mask。")
     return config, sha256_file(path)
 
 
@@ -252,6 +280,15 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     mask_counts[role] += 1
                 ce_loss = torch.stack(candidate_losses).max()
                 logits = candidate_logits
+            elif config["schema_version"] == "gzsl-paper.iadr.v1":
+                role = sample_importance_mask(
+                    model.full_sentence_weights(), generator
+                )
+                logits = model(
+                    parent_logits, images, class_ids, mask_roles=[role]
+                )
+                mask_counts[role] += 1
+                ce_loss = F.cross_entropy(logits, targets)
             else:
                 logits = model(parent_logits, images, class_ids)
                 for role in model.last_masked_roles:

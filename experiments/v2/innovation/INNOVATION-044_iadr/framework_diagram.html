@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-044 IADR</title></head>
+<body>
+<h1>IADR：重要句优先dropout路由</h1>
+<p><strong>Base commit：</strong>a70dad04517b1f96621f7a71aa092447aa472e25；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<h2>训练数据流</h2>
+<pre>7,057张seen图像 → 冻结TG-VPR/NTR/CCGR/SEBC → parent logits
+CASR当前完整8句权重 → 按权重概率采样1句 → mask该句 → SDCR residual logits
+parent logits + residual logits → 150类seen CE + 0.01×KL(完整权重 || CASR权重)
+仅更新8维受限句权重</pre>
+<p>与SDCR的唯一变化：不再均匀随机mask，而是高权重句更常被mask；推理仍恢复完整8句。</p>
+<h2>测试出口与边界</h2>
+<p>U/S/H在200类联合竞争，ZS在50个unseen类竞争。28,228次更新，每141次评估official test并按整模型H保存一个best；test_used_for_selection=true，unseen图像不进入梯度，strict_blind_claim=false。</p>
+</body></html>
