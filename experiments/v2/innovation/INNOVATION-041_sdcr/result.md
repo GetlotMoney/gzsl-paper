@@ -1,9 +1,11 @@
 # V2-INNOVATION-041 结果
 
-状态：`weak_candidate_seed5_pending`。
+状态：`reliability_seed5_planned`。
 
 RUN-001得到`U/S/H/ZS=76.713103/79.959893/78.302856/83.920079%`，H比CASR高`0.017137`，属于弱增益。推理权重std/min/max=`0.055924/0.049531/0.233719`，未塌缩。
 
 8句mask次数为`[3499,3481,3568,3487,3469,3614,3568,3542]`，训练dropout覆盖均衡。模型SHA256：`d1371389438b2f8b4b65f8735c683bd19ffe54f220ac593ee302d51c4d123773`；最后checkpoint SHA256：`2f7c074962bb2003f4138b9915661921029577e079876107fc36ab6bf9205392`。
 
 因增益仅0.017137，追加seed5完整链可靠性后再决定。
+
+RUN-002使用CASR seed5正式best与seed5随机链，其余dropout、KL和优化参数不变。

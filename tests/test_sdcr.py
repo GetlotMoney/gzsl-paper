@@ -36,6 +36,16 @@ class SDCRTest(unittest.TestCase):
         )
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_seed5_reliability_binds_seed5_casr(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-041_sdcr/configs/RUN-002.yaml"
+        )
+        self.assertEqual(config["random_seed"], 5)
+        self.assertEqual(
+            config["casr_model_sha256"],
+            "281658e2e01aef4ad5d2fa598af0039cc70774a76ec43328399aa2545b6515a7",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
