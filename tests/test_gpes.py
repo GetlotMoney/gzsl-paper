@@ -81,6 +81,37 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["threshold_quantile"], 0.25)
         self.assertFalse(config["unseen_images_used_for_gradient"])
 
+    def test_gwps_expands_pair_scope_and_returns_soft_weights(self):
+        logits = torch.tensor([[1.0, 0.9, 0.0], [2.0, 0.0, -1.0]])
+        images = torch.randn(2, 4)
+        patch = torch.randn(2, 3)
+        targets = torch.tensor([1, 1])
+        ids = torch.tensor([0, 1, 2])
+        groups = torch.tensor([0, 0, 1])
+        claude = torch.randn(3, 4)
+        merge = torch.randn(3, 4)
+        narrow = extract_pair_examples(
+            logits, images, patch, targets, ids, groups,
+            claude, merge, threshold=0.2, hard_margin_only=True
+        )
+        expanded = extract_pair_examples(
+            logits, images, patch, targets, ids, groups,
+            claude, merge, threshold=0.2, hard_margin_only=False
+        )
+        self.assertEqual(narrow[3], 1)
+        self.assertEqual(expanded[3], 2)
+        self.assertEqual(expanded[4].numel(), 2)
+        self.assertTrue(bool((expanded[4] > 0).all()))
+
+    def test_gwps_config_binds_soft_gate_scope(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-063_gwps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.gwps.v1")
+        self.assertEqual(
+            config["pair_training_scope"], "all_same_group_top2_soft_gate"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

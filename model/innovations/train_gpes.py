@@ -60,16 +60,24 @@ def load_config(path: Path):
     path = h1.repo_path(path)
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    expected_keys = (
+        CONFIG_KEYS | {"pair_training_scope"}
+        if schema == "gzsl-paper.gwps.v1"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"GPES配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"GPES配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
-    if (
-        config["schema_version"] != "gzsl-paper.gpes.v1"
-        or config["experiment_id"] != "V2-INNOVATION-062"
-        or config["idea_id"] != "IDEA-096"
-    ):
+    identity = {
+        "gzsl-paper.gpes.v1": ("V2-INNOVATION-062", "IDEA-096"),
+        "gzsl-paper.gwps.v1": ("V2-INNOVATION-063", "IDEA-097"),
+    }.get(schema)
+    if identity is None or (
+        config["experiment_id"], config["idea_id"]
+    ) != identity:
         raise ValueError("GPES身份错误。")
     if (
         config["evaluation_protocol"] != EVALUATION_PROTOCOL
@@ -99,6 +107,10 @@ def load_config(path: Path):
         or float(config["weight_decay"]) != 0.0001
     ):
         raise ValueError("GPES训练参数错误。")
+    if schema == "gzsl-paper.gwps.v1" and config[
+        "pair_training_scope"
+    ] != "all_same_group_top2_soft_gate":
+        raise ValueError("GWPS必须使用全同族top2与soft gate加权。")
     return config, sha256_file(path)
 
 
@@ -112,6 +124,8 @@ def extract_pair_examples(
     claude_prototypes,
     merge_prototypes,
     threshold,
+    hard_margin_only: bool = True,
+    margin_temperature: float = 0.1,
 ):
     top = logits.topk(2, dim=1)
     global_ids = ids.index_select(0, top.indices.reshape(-1)).reshape_as(top.indices)
@@ -121,7 +135,12 @@ def extract_pair_examples(
     same_group = groups[:, 0].eq(groups[:, 1]) & groups[:, 0].ge(0)
     contains_true = top.indices.eq(targets.unsqueeze(1)).any(dim=1)
     margin = top.values[:, 0] - top.values[:, 1]
-    selected = same_group & contains_true & margin.le(float(threshold))
+    selected = same_group & contains_true
+    if hard_margin_only:
+        selected = selected & margin.le(float(threshold))
+    soft_weights = torch.sigmoid(
+        (float(threshold) - margin) / float(margin_temperature)
+    )
     normalized = F.normalize(images.float(), dim=-1)
     claude_logits = normalized @ claude_prototypes.index_select(0, ids).T
     merge_logits = normalized @ merge_prototypes.index_select(0, ids).T
@@ -146,6 +165,7 @@ def extract_pair_examples(
         features[selected].detach().cpu(),
         pair_targets[selected].detach().cpu(),
         int(selected.sum()),
+        soft_weights[selected].detach().cpu(),
     )
 
 
@@ -304,7 +324,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         mapping = torch.full((200,), -1, dtype=torch.long)
         mapping[seen_classes] = torch.arange(150)
         ids = seen_classes.to(device)
-        pair_logits_list, feature_list, target_list = [], [], []
+        pair_logits_list, feature_list, target_list, pair_weight_list = [], [], [], []
+        hard_margin_only = config["schema_version"] != "gzsl-paper.gwps.v1"
         for start in range(0, features.shape[0], 512):
             images = features[start : start + 512].to(device).float()
             parent_logits = F.normalize(images, dim=-1) @ parent.prototypes().index_select(0, ids).T * parent.scale()
@@ -323,13 +344,17 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 claude_orth,
                 merge_orth,
                 threshold,
+                hard_margin_only=hard_margin_only,
+                margin_temperature=float(config["margin_temperature"]),
             )
             pair_logits_list.append(package[0])
             feature_list.append(package[1])
             target_list.append(package[2])
+            pair_weight_list.append(package[4])
         pair_logits = torch.cat(pair_logits_list)
         pair_features = torch.cat(feature_list)
         pair_targets = torch.cat(target_list)
+        pair_weights = torch.cat(pair_weight_list)
         if pair_targets.numel() < 50 or pair_targets.unique().numel() != 2:
             raise ValueError("GPES成对训练样本不足或标签退化。")
         feature_mean = pair_features.mean(dim=0)
@@ -339,6 +364,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "top1_target_rate": float(pair_targets.eq(0).float().mean()),
             "feature_mean": [float(value) for value in feature_mean],
             "feature_std": [float(value) for value in feature_std],
+            "pair_weight_mean": float(pair_weights.mean()),
+            "pair_weight_std": float(pair_weights.std(unbiased=False)),
         }
         model = GatedPairEvidenceSelector(
             sdcr.prototypes(use_dropout=False).detach(),
@@ -390,9 +417,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 pair_logits.index_select(0, batch).to(device),
                 pair_features.index_select(0, batch).to(device),
             )
-            loss = F.cross_entropy(
-                corrected, pair_targets.index_select(0, batch).to(device)
+            per_pair_loss = F.cross_entropy(
+                corrected,
+                pair_targets.index_select(0, batch).to(device),
+                reduction="none",
             )
+            batch_weights = pair_weights.index_select(0, batch).to(device)
+            loss = (per_pair_loss * batch_weights).sum() / batch_weights.sum().clamp_min(1e-8)
             optimizer.zero_grad(set_to_none=True)
             loss.backward()
             require_finite_gradients(model)
