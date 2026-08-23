@@ -1,2 +1,3 @@
 run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,pair_count,selector_bias,test_used_for_selection,output_uri,decision
 RUN-001,1e2228bf9ee6a0d2c21e367e94fcdff5f0317a21,experiments/v2/innovation/INNOVATION-084_ndps/configs/RUN-001.yaml,50c18f0f94c5ee6ebc30b0f7ae851c2a8bb4dbe06689a5bbc297d71398a5b6d9,5,completed,76.916522,80.105728,78.478738,84.121209,564,4458,0.022617,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-084_ndps/RUN-001,keep_test_seed7
+RUN-002,,experiments/v2/innovation/INNOVATION-084_ndps/configs/RUN-002.yaml,074fa6b347516c9a4fe126c390ccef8f46fb2006cc1cb274e3fcd73174f42b33,7,planned,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-084_ndps/RUN-002,pending
