@@ -8,7 +8,7 @@ framework_diagram: experiments/v2/confirmation/CONFIRM-005_chen_style_stagewise/
 base_commit: 53528de2687bd06094ed6bd13547072756b30454
 code_commit: 4b9e9fc757b8db5bae4ddfb90f5eba8bb918a171
 research_question: 固定边界分阶段训练是否能使无专家路线超过Chen-style端到端H 74.933940并达到77.023目标？
-status: rescue2_transport_cap_0.75_planned
+status: rescue2_rejected_rescue_budget_exhausted
 evaluation_protocol: chen_shiming_code_aligned_stagewise_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -41,8 +41,8 @@ runs:
     status: completed
   - run_id: RUN-003
     condition: no_expert_stagewise_transport_cap_0.75
-    code_commit: null
+    code_commit: a8b5dc9f639958d0ce08f2958d8bb39a5c93968a
     seed: 5
     config_ref: experiments/v2/confirmation/CONFIRM-005_chen_style_stagewise/configs/RUN-003.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-005_chen_style_stagewise/RUN-003
-    status: planned
+    status: completed
