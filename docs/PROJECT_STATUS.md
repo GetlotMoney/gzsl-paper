@@ -62,6 +62,8 @@ V2-CONFIRM-005 RESCUE-2步长上限0.75得到`H=75.830543%`，低于0.5条件，
 
 `V2-CONFIRM-006`已预注册：沿用最佳0.5步长上限，只在阶段2增加`0.25×pseudo-unseen CE`。pseudo-unseen由150个seen类固定三折模拟，真实unseen图像仍不进入梯度；loss语义改变因此使用独立Experiment。
 
+V2-CONFIRM-006完成后H=`75.948676%`，比CONFIRM-005最佳低`0.058172`，拒绝。失败原因是父TG-VPR已见全部150类，简单pseudo样本加权不构成class-exclusive迁移；下一Experiment必须训练三个仅见100类的fold父模型。
+
 owner已授权直接迁移H1旧实验的轻量证据。组件消融、多seed和参数收口证据位于`experiments/v2/evidence/legacy_h1/`；`IDEA-001 / TG-VPR-H1`现为论文核心创新1，状态`supported`。
 
 ## 当前待办
