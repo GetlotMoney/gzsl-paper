@@ -274,6 +274,8 @@ MLRE用merge文本原型达到`U/S/H/ZS=75.798345/79.971749/77.829140/83.225495%
 
 ACLM全局凸混合最高H `77.811876%`低于MLRE，Claude权重`0.980989`退化到端点。IDEA-061拒绝；下一补救按类别Claude/merge一致度学习不同混合权重，若仍失败则关闭跨LLM混合轴。
 
+CACM类别权重最高仍为H `77.811876%`，mean/std=`0.990835/0.000207`，退化为Claude常数端点。IDEA-062拒绝并关闭跨LLM混合轴；下一方向对Claude原型去除类名身份方向，只保留独立跨LLM残差。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

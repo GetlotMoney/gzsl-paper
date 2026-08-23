@@ -4,15 +4,15 @@ idea_id: IDEA-062
 framework_id: FRAMEWORK-V2
 title: Class-Adaptive Cross-LLM Mixture
 base_commit: 5928b6976d50d435007ec2683c911620763c1696
-code_commit: null
-status: planned
+code_commit: d8b5b63c5ef04ffcb9132298e90840a13d3585f9
+status: rejected_constant_endpoint
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-028_cacm/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: d8b5b63c5ef04ffcb9132298e90840a13d3585f9
     config_ref: experiments/v2/innovation/INNOVATION-028_cacm/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-028_cacm/RUN-001
-    status: planned
+    status: completed

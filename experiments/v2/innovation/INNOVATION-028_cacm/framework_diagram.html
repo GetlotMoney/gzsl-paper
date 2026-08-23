@@ -2,7 +2,7 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-028 CACM</title></head>
 <body>
 <h1>CACM：类别自适应跨LLM混合</h1>
-<p><strong>Base commit：</strong>5928b6976d50d435007ec2683c911620763c1696；<strong>RUN code commit：</strong>正式运行后回填。</p>
+<p><strong>Base commit：</strong>5928b6976d50d435007ec2683c911620763c1696；<strong>RUN-001 code commit：</strong>d8b5b63c5ef04ffcb9132298e90840a13d3585f9。</p>
 <h2>类别条件权重</h2>
 <pre>agreement_c = standardized cos(Claude_text_c, merge_text_c)
 w_c = sigmoid(bias + slope × agreement_c)
