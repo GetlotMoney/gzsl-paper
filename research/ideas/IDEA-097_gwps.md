@@ -9,3 +9,4 @@ core_change: GPES模型和推理不变；pair训练范围扩为全部同族真�
 success_condition: H大于78.357224，pair数量显著大于169、权重非零且selector有限。
 failure_condition: H不超过AGCT、扩大pair后仍过拟合或高margin样本淹没低margin规则。
 experiment: V2-INNOVATION-063
+interim_result: seed5 H=78.375328、ZS=84.009010，超过AGCT；pair 4041但top1标签占93.17%，追加seed7。

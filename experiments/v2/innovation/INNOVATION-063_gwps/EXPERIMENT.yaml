@@ -4,15 +4,15 @@ idea_id: IDEA-097
 framework_id: FRAMEWORK-V2
 title: Gate-Weighted Pair Selector
 base_commit: 161c281c2775197ae89638ee9d3a987c62ec5510
-code_commit: null
-status: planned
+code_commit: b9129edfad26531fa79d74ae2667decefe8d4205
+status: testing_seed7_reliability
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-063_gwps/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: b9129edfad26531fa79d74ae2667decefe8d4205
     config_ref: experiments/v2/innovation/INNOVATION-063_gwps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-063_gwps/RUN-001
-    status: planned
+    status: completed_weak_positive
