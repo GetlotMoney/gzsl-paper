@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Matched Hard-Pair Selector
 base_commit: 9bb13d82b348f4f3219ef2949af92b64435b4ed5
 code_commit: null
-status: planned
+status: rejected_below_top3
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -23,7 +23,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-087_mhps/RUN-001
     status: failed_runtime
   - run_id: RUN-001-RERUN
-    code_commit: null
+    code_commit: 4d4655f4ec2487e3864455ac30e601cf00df9869
     config_ref: experiments/v2/innovation/INNOVATION-087_mhps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-087_mhps/RUN-001-RERUN
-    status: planned
+    status: completed_below_top3
