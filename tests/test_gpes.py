@@ -988,6 +988,10 @@ class GPESTest(unittest.TestCase):
         self.assertIn(schema, STAGED_SNPS_SCHEMAS)
         self.assertEqual(config["consistency_weight"], 0.1)
         self.assertEqual(config["learning_rate"], 0.0001)
+        rescue, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-096_ceps/configs/RUN-002.yaml"
+        )
+        self.assertEqual(rescue["consistency_weight"], 100.0)
 
     def test_lscr_dispatch_is_specialized_not_twelve_feature(self):
         schema = "gzsl-paper.lscr.v1"

@@ -898,7 +898,7 @@ def load_config(path: Path):
         != "initialize_snps_then_evidence_consistency_finetune"
         or config["training_objective"]
         != "masked_pair_ce_plus_full_correction_consistency"
-        or float(config["consistency_weight"]) != 0.1
+        or float(config["consistency_weight"]) not in (0.1, 100.0)
         or float(config["learning_rate"]) != 0.0001
     ):
         raise ValueError("CEPS分阶段一致性配置错误。")
