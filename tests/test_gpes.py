@@ -4,6 +4,7 @@ import unittest
 import torch
 
 from model.innovations.gpes import (
+    AntisymmetricPairSelector,
     BiasFreeSemanticNeighborSelector,
     CenteredRoleGatedPairSelector,
     CrossSourceDisagreementSelector,
@@ -29,6 +30,7 @@ from model.innovations.gpes import (
 )
 from model.innovations.train_gpes import (
     class_balanced_pair_weights,
+    antisymmetric_pair_augmentation,
     extract_pair_examples,
     extract_triplet_examples,
     focal_pair_losses,
@@ -803,6 +805,46 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.bfps.v1")
         self.assertEqual(config["selector_bias_mode"], "fixed_zero")
         self.assertEqual(config["semantic_neighbor_k"], 3)
+
+    def test_antisymmetric_augmentation_is_exact_mirror(self):
+        logits = torch.tensor([[2.0, 1.0], [3.0, 0.5]])
+        features = torch.randn(2, 12)
+        targets = torch.tensor([0, 1])
+        weights = torch.tensor([0.2, 0.8])
+        augmented = antisymmetric_pair_augmentation(
+            logits, features, targets, weights
+        )
+        self.assertTrue(torch.equal(augmented[0][2:], logits.flip(1)))
+        self.assertTrue(torch.equal(augmented[1][2:], -features))
+        self.assertTrue(torch.equal(augmented[2], torch.tensor([0, 1, 1, 0])))
+        self.assertTrue(torch.equal(augmented[3], torch.tensor([0.2, 0.8, 0.2, 0.8])))
+
+    def test_antisymmetric_selector_is_swap_equivariant(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        model = AntisymmetricPairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(12), torch.ones(12), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+        )
+        with torch.no_grad():
+            model.selector_weight.copy_(torch.randn(12))
+        logits = torch.tensor([[2.0, 1.0]])
+        features = torch.randn(1, 12)
+        original = model.corrected_pair_logits(logits, features)
+        mirrored = model.corrected_pair_logits(logits.flip(1), -features).flip(1)
+        self.assertTrue(torch.allclose(original, mirrored))
+
+    def test_aps_config_binds_mirror_training(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-090_aps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.aps.v1")
+        self.assertEqual(config["pair_augmentation"], "swap_and_negate")
+        self.assertEqual(config["gate_margin_mode"], "absolute")
 
 
 if __name__ == "__main__":

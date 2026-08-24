@@ -941,3 +941,17 @@ class BiasFreeSemanticNeighborSelector(SemanticNeighborPairSelector):
         super().__init__(*args, **kwargs)
         del self.selector_bias
         self.register_buffer("selector_bias", torch.zeros(()))
+
+
+class AntisymmetricPairSelector(BiasFreeSemanticNeighborSelector):
+    """用绝对margin门控支持原pair与镜像pair共享同一反对称公式。"""
+
+    def corrected_pair_logits(
+        self, pair_logits: torch.Tensor, raw_features: torch.Tensor
+    ) -> torch.Tensor:
+        margin = raw_features[:, 0].abs()
+        gate = torch.sigmoid(
+            (self.margin_threshold - margin) / self.margin_temperature
+        )
+        delta = gate * self.pair_delta(raw_features)
+        return pair_logits + torch.stack((delta, -delta), dim=1)

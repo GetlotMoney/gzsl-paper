@@ -500,6 +500,8 @@ FBPS seed7达到`U/S/H/ZS=76.848710/79.939705/78.363739/83.953404%`，比稳定S
 
 BFPS seed5最高`U/S/H/ZS=76.814806/80.172402/78.457698/84.121209%`，比稳定SNPS top-3低H `0.009012`。固定零bias未改善H，说明bias差异不是主要不稳定来源；IDEA-123拒绝且不追加seed7。当前累计216组。
 
+下一实验`V2-INNOVATION-090 / APS`为每个训练pair加入swap-and-negate镜像，固定bias=0并用abs margin门控，强制交换top1/top2后的修正严格等变，从结构上消除输入方向不平衡。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
