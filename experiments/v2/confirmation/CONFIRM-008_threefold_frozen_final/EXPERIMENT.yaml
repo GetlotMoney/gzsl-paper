@@ -1,0 +1,26 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-CONFIRM-008
+slug: threefold_frozen_final
+kind: confirmation
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+base_commit: fdaaeb2
+code_commit: null
+status: planned
+research_question: 三折validation冻结的三个核心模块在完整150类重训后，单次official test得到什么U/S/H/ZS？
+evaluation_protocol: xlsa17_ps_gzsl_after_validation_freeze
+validation_selection: V2-TUNE-003/RUN-001
+test_used_for_selection: false
+official_test_evaluations: 1
+unseen_images_used_for_gradient: false
+historical_test_informed_architecture: true
+strict_blind_claim: false
+framework_diagram: experiments/v2/confirmation/CONFIRM-008_threefold_frozen_final/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    condition: threefold_frozen_no_expert
+    code_commit: null
+    seed: 7
+    config_ref: experiments/v2/confirmation/CONFIRM-008_threefold_frozen_final/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-008_threefold_frozen_final/RUN-001
+    status: planned

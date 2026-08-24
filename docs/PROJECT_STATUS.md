@@ -576,6 +576,8 @@ V2-TUNE-003 transport=`0.5`严重偏向U且mean H降至`74.539610%`；transport=
 
 V2-TUNE-003 CCGR幅度=`0.05`造成U下降和range扩大；幅度=`0.1`虽把mean H/ZS提高到`76.545806/80.702031%`，但mean U下降`1.004955`且range更大。最终冻结RUN-001参数：topology=`0.1`、transport=`1.5`、CCGR幅度=`0.2`、epoch=`17`。全部三折选参未加载official test。当前累计有效实验242组。
 
+建立`V2-CONFIRM-008`执行三折冻结后的最终训练：从随机初始化使用150类/7057张seen图像训练17轮，绑定V2-TUNE-003/RUN-001全部超参数；checkpoint写入后official test只评估一次，结果不得回改方法。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

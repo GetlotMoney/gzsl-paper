@@ -31,6 +31,20 @@ class StandardFinalTest(unittest.TestCase):
         self.assertLess(loop, checkpoint)
         self.assertLess(checkpoint, official)
 
+    def test_threefold_final_binds_frozen_validation_recipe(self):
+        config, _ = load_config(
+            ROOT
+            / "experiments/v2/confirmation/CONFIRM-008_threefold_frozen_final/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["validation_selection"]["experiment_id"], "V2-TUNE-003")
+        self.assertEqual(config["validation_selection"]["run_id"], "RUN-001")
+        self.assertEqual(config["epochs"], 17)
+        self.assertEqual(config["topology_weight"], 0.1)
+        self.assertEqual(config["max_transport_step"], 1.5)
+        self.assertEqual(config["max_generator_magnitude"], 0.2)
+        self.assertFalse(config["test_used_for_selection"])
+        self.assertEqual(config["official_test_evaluations"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

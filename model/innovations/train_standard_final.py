@@ -83,11 +83,21 @@ def load_config(path: Path) -> tuple[dict, str]:
             f"标准最终配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
             f"多出={sorted(actual-CONFIG_KEYS)}。"
         )
-    if config["schema_version"] != "gzsl-paper.standard-final.v1":
+    if config["schema_version"] not in (
+        "gzsl-paper.standard-final.v1",
+        "gzsl-paper.threefold-final.v1",
+    ):
         raise ValueError("标准最终配置schema错误。")
-    if config["experiment_id"] != "V2-CONFIRM-003":
+    threefold_final = config["schema_version"] == "gzsl-paper.threefold-final.v1"
+    expected_experiment = "V2-CONFIRM-008" if threefold_final else "V2-CONFIRM-003"
+    if config["experiment_id"] != expected_experiment:
         raise ValueError("标准最终实验身份错误。")
-    if config["condition_id"] not in ("NO-EXPERT", "EXPERT"):
+    allowed_conditions = (
+        ("THREEFOLD-NO-EXPERT",)
+        if threefold_final
+        else ("NO-EXPERT", "EXPERT")
+    )
+    if config["condition_id"] not in allowed_conditions:
         raise ValueError("最终condition只允许NO-EXPERT或EXPERT。")
     if config["framework_id"] != "FRAMEWORK-V2" or config["dataset"] != "CUB":
         raise ValueError("标准最终评估只接受FRAMEWORK-V2/CUB。")
@@ -106,23 +116,54 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("必须披露方法结构受历史test探索影响。")
     if config["strict_blind_claim_eligible"] is not False:
         raise ValueError("当前结果不得标记为严格blind-test。")
-    if config["owner_authorized_final_test"] != "2026-08-23":
+    expected_authorization = "2026-08-25" if threefold_final else "2026-08-23"
+    if config["owner_authorized_final_test"] != expected_authorization:
         raise ValueError("缺少owner当前最终test授权。")
-    expected = {
-        "NO-EXPERT": {"epochs": 24, "topology_weight": 0.1, "validation_run": "RUN-001"},
-        "EXPERT": {"epochs": 22, "topology_weight": 0.2, "validation_run": "RUN-006"},
-    }[config["condition_id"]]
+    expected = (
+        {
+            "epochs": 17,
+            "topology_weight": 0.1,
+            "validation_experiment": "V2-TUNE-003",
+            "validation_run": "RUN-001",
+        }
+        if threefold_final
+        else {
+            "NO-EXPERT": {
+                "epochs": 24,
+                "topology_weight": 0.1,
+                "validation_experiment": "V2-TUNE-001",
+                "validation_run": "RUN-001",
+            },
+            "EXPERT": {
+                "epochs": 22,
+                "topology_weight": 0.2,
+                "validation_experiment": "V2-TUNE-001",
+                "validation_run": "RUN-006",
+            },
+        }[config["condition_id"]]
+    )
     if int(config["epochs"]) != expected["epochs"]:
         raise ValueError("最终epoch必须等于validation选择。")
     if float(config["topology_weight"]) != expected["topology_weight"]:
         raise ValueError("最终topology权重必须等于validation选择。")
     selection = config["validation_selection"]
-    if selection.get("experiment_id") != "V2-TUNE-001" or selection.get("run_id") != expected["validation_run"]:
+    if selection.get("experiment_id") != expected[
+        "validation_experiment"
+    ] or selection.get("run_id") != expected["validation_run"]:
         raise ValueError("最终配置绑定的validation RUN错误。")
     if int(selection.get("selected_epoch", -1)) != expected["epochs"]:
         raise ValueError("validation selected_epoch绑定错误。")
-    if sum(int(stage["epochs"]) for stage in config["lr_stages"]) != int(config["epochs"]):
-        raise ValueError("最终学习率阶段总轮数与validation epoch不一致。")
+    lr_horizon = sum(int(stage["epochs"]) for stage in config["lr_stages"])
+    if (
+        (not threefold_final and lr_horizon != int(config["epochs"]))
+        or (threefold_final and lr_horizon != 50)
+    ):
+        raise ValueError("最终学习率阶段必须复现validation训练时的调度horizon。")
+    if threefold_final and (
+        float(config["max_transport_step"]) != 1.5
+        or float(config["max_generator_magnitude"]) != 0.2
+    ):
+        raise ValueError("三折冻结最终配置的transport/CCGR参数错误。")
     if set(config["inputs"]) != set(INPUT_KEYS) or set(config["expected_sha256"]) != set(INPUT_KEYS):
         raise ValueError("最终输入或SHA字段不完整。")
     return config, sha256_file(path)
