@@ -11,4 +11,5 @@ failure_condition: H不超过top-3、尺度特征退化或U/S任一下降超过2
 experiment: V2-INNOVATION-078
 paper_core_innovation: false
 result: seed5/seed7 H=78.555039/78.431289；尺度权重均为负，但相对top-3增量+0.088329/-0.014811。
-decision: 保留最高seed观察；新增分阶段Experiment冻结SNPS旧12维，只训练尺度系数，检验是否消除父权重扰动。
+decision: 保留最高seed观察；分阶段S-RDSS已冻结SNPS旧12维并只训练尺度系数，但最优结果退回父模型，因此不再重复该补救。
+seed6_result: 同一seed5父链H=78.349575，与seed5差0.205464；高峰不稳定，最终只保留最高seed观察。

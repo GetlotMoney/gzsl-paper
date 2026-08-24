@@ -1,8 +1,12 @@
 # V2-INNOVATION-078 结果
 
-状态：`revised_highest_seed_staged_rescue_planned`。
+状态：`retained_highest_seed_not_stable`。
 
 RUN-003预注册：保持RUN-001的seed5父链与全部公式不变，只把selector训练随机种子改为6，用于最高值搜索和随机性审计。
+
+RUN-003（selector seed6、seed5父链）最高`U/S/H/ZS=76.747000/80.020505/78.349575/83.953977%`，selected iteration=`282`。同一父链的selector seed5/6 H=`78.555039/78.349575`，差`0.205464`；结合seed7链`78.431289`，RDSS高峰不稳定。
+
+按owner口径主成绩仍取seed5 `78.555039%`，但RDSS只保留最高seed观察，不作为稳定核心创新。RUN-003模型SHA256：`d14537ff386501d88026537a0757a139e8319fee4ddc41f14e388d43e720a929`；最后checkpoint SHA256：`73ff74a215be1e90e38fd22878f5e53c00293ec7e675672b3aa00dcd43589f6b`。
 
 RUN-001（seed5）最高`U/S/H/ZS=76.915932/80.265528/78.555039/84.053975%`，selected iteration=`705`。相对稳定SNPS top-3提高H `0.088329`，相对原最高SNPS top-5提高`0.074329`，成为新的patch-free最高。
 

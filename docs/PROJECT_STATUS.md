@@ -522,6 +522,8 @@ EDPS2 seed5达到`U/S/H/ZS=76.848692/80.265528/78.519956/84.020644%`，相对稳
 
 EDPS2 seed7达到`U/S/H/ZS=76.846421/80.017334/78.399828/83.920074%`，比稳定SNPS top-3低`0.046272`。相对top-3增量seed5/7一正一负，集中化实现虽有效但方法不稳定，IDEA-127最终拒绝。当前累计有效实验221组。
 
+RDSS RUN-003保持seed5父链、只改selector随机种子为6，得到`U/S/H/ZS=76.747000/80.020505/78.349575/83.953977%`。同父链seed5/6 H差`0.205464`，结合seed7链`78.431289`确认RDSS高峰不稳定；按owner口径仍取seed5 `78.555039%`为最高观察，但不作稳定核心创新。当前累计有效实验222组。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

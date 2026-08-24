@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Role Disagreement Scale Selector
 base_commit: 0dce83c9b8530402b89efb594f69761f66d2d3fa
 code_commit: 372d26f25a95f3197f9b7ee9021a2b925cce59d0
-status: testing_seed6_selector_randomness
+status: retained_highest_seed_not_stable
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -22,7 +22,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-078_rdss/RUN-002
     status: completed_positive_vs_sdcr_below_top3
   - run_id: RUN-003
-    code_commit: null
+    code_commit: f95544256c87406b76c959593e363f2f7b56994e
     config_ref: experiments/v2/innovation/INNOVATION-078_rdss/configs/RUN-003.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-078_rdss/RUN-003
-    status: planned_seed6_on_seed5_parent
+    status: completed_below_seed5
