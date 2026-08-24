@@ -50,6 +50,7 @@ from model.innovations.train_gpes import (
     load_config,
     matched_hard_pair_indices,
     mask_pair_evidence_feature,
+    pair_correction_consistency_loss,
     true_class_balancing_weights,
     minimal_flip_delta_targets,
 )
@@ -968,6 +969,25 @@ class GPESTest(unittest.TestCase):
         )
         self.assertEqual(rescue["random_seed"], 7)
         self.assertEqual(rescue["learning_rate"], 0.0001)
+
+    def test_pair_correction_consistency_is_zero_only_for_equal_outputs(self):
+        full = torch.tensor([[1.0, 0.5], [0.3, 0.2]])
+        self.assertEqual(float(pair_correction_consistency_loss(full, full)), 0.0)
+        masked = full.clone()
+        masked[0, 0] += 0.1
+        self.assertGreater(
+            float(pair_correction_consistency_loss(masked, full)), 0.0
+        )
+
+    def test_ceps_config_binds_staged_consistency_objective(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-096_ceps/configs/RUN-001.yaml"
+        )
+        schema = config["schema_version"]
+        self.assertIn(schema, EVIDENCE_DROPOUT_SCHEMAS)
+        self.assertIn(schema, STAGED_SNPS_SCHEMAS)
+        self.assertEqual(config["consistency_weight"], 0.1)
+        self.assertEqual(config["learning_rate"], 0.0001)
 
     def test_lscr_dispatch_is_specialized_not_twelve_feature(self):
         schema = "gzsl-paper.lscr.v1"

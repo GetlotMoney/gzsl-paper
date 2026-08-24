@@ -96,5 +96,6 @@
 | V2-INNOVATION-093 | IDEA-127 | EDPS证据Dropout成对选择器 | failed_runtime closed（两次训练前接线错误，无方法结论） | `INNOVATION-093_edps/` |
 | V2-INNOVATION-094 | IDEA-127 | EDPS2集中化证据Dropout选择器 | rejected（seed7低于top-3） | `INNOVATION-094_edps2/` |
 | V2-INNOVATION-095 | IDEA-128 | S-EDPS分阶段证据Dropout选择器 | supported two-seed stagewise（最高H=78.572828） | `INNOVATION-095_sedps/` |
+| V2-INNOVATION-096 | IDEA-129 | CEPS证据一致性分阶段选择器 | planned（masked/full修正一致性） | `INNOVATION-096_ceps/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

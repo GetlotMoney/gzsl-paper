@@ -94,7 +94,7 @@ SOFT_PAIR_SCHEMAS = frozenset({
     "gzsl-paper.lscr.v1", "gzsl-paper.mhps.v1", "gzsl-paper.fbps.v1",
     "gzsl-paper.bfps.v1", "gzsl-paper.aps.v1", "gzsl-paper.cups.v1",
     "gzsl-paper.tfps.v1", "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1",
-    "gzsl-paper.sedps.v1",
+    "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1",
 })
 TEXT_ONLY_SCHEMAS = SOFT_PAIR_SCHEMAS - frozenset({
     "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
@@ -127,10 +127,11 @@ ADJACENCY_MODEL_SCHEMAS = SEMANTIC_NEIGHBOR_SCHEMAS - frozenset({
 })
 EVIDENCE_DROPOUT_SCHEMAS = frozenset({
     "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1", "gzsl-paper.sedps.v1",
+    "gzsl-paper.ceps.v1",
 })
 STAGED_SNPS_SCHEMAS = frozenset({
     "gzsl-paper.srdss.v1", "gzsl-paper.trdss.v1", "gzsl-paper.rugs.v1",
-    "gzsl-paper.sedps.v1",
+    "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1",
 })
 
 
@@ -258,6 +259,19 @@ def mask_pair_evidence_feature(
     masked = features.clone()
     masked[:, int(feature_index)] = feature_mean[int(feature_index)]
     return masked
+
+
+def pair_correction_consistency_loss(
+    masked_correction: torch.Tensor, full_correction: torch.Tensor
+) -> torch.Tensor:
+    """约束缺失一个证据时的pair修正接近完整证据修正。"""
+    if (
+        masked_correction.ndim != 2
+        or masked_correction.shape[1] != 2
+        or full_correction.shape != masked_correction.shape
+    ):
+        raise ValueError("CEPS一致性输入必须是相同形状的[N,2]。")
+    return F.mse_loss(masked_correction, full_correction)
 
 
 def hard_margin_only_for_schema(schema: str) -> bool:
@@ -438,6 +452,19 @@ def load_config(path: Path):
             "pair_training_scope", "semantic_neighbor_k", "training_scope",
             "error_weight_floor",
         }
+    elif schema == "gzsl-paper.ceps.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {
+            "pair_training_scope", "semantic_neighbor_k", "evidence_drop_count",
+            "evidence_drop_scope", "evidence_drop_schedule", "snps_model",
+            "snps_model_sha256", "training_scope", "training_objective",
+            "consistency_weight",
+        }
     elif schema == "gzsl-paper.sedps.v1":
         expected_keys = (
             CONFIG_KEYS
@@ -529,6 +556,7 @@ def load_config(path: Path):
         "gzsl-paper.edps.v1": ("V2-INNOVATION-093", "IDEA-127"),
         "gzsl-paper.edps2.v1": ("V2-INNOVATION-094", "IDEA-127"),
         "gzsl-paper.sedps.v1": ("V2-INNOVATION-095", "IDEA-128"),
+        "gzsl-paper.ceps.v1": ("V2-INNOVATION-096", "IDEA-129"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -570,7 +598,7 @@ def load_config(path: Path):
         or config["optimizer"] != "Adam"
         or float(config["learning_rate"]) not in (
             (0.001, 0.0001)
-            if schema == "gzsl-paper.sedps.v1"
+            if schema in {"gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1"}
             else (0.001,)
         )
         or float(config["weight_decay"]) != 0.0001
@@ -865,6 +893,15 @@ def load_config(path: Path):
         "training_scope"
     ] != "initialize_snps_then_evidence_dropout_finetune":
         raise ValueError("S-EDPS必须从SNPS权重开始证据dropout微调。")
+    if schema == "gzsl-paper.ceps.v1" and (
+        config["training_scope"]
+        != "initialize_snps_then_evidence_consistency_finetune"
+        or config["training_objective"]
+        != "masked_pair_ce_plus_full_correction_consistency"
+        or float(config["consistency_weight"]) != 0.1
+        or float(config["learning_rate"]) != 0.0001
+    ):
+        raise ValueError("CEPS分阶段一致性配置错误。")
     return config, sha256_file(path)
 
 
@@ -1684,7 +1721,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         if config["schema_version"] == "gzsl-paper.rugs.v1":
             model_kwargs["max_gamma"] = float(config["max_gamma"])
         model = model_class(**model_kwargs).to(device)
-        if config["schema_version"] == "gzsl-paper.sedps.v1":
+        if config["schema_version"] in {
+            "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1"
+        }:
             snps_payload = torch.load(
                 Path(config["snps_model"]), map_location="cpu", weights_only=False
             )
@@ -1726,6 +1765,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             batch_pair_logits = pair_logits.index_select(0, batch).to(device)
             batch_pair_targets = pair_targets.index_select(0, batch).to(device)
             batch_features = pair_features.index_select(0, batch).to(device)
+            full_batch_features = batch_features
             if config["schema_version"] in EVIDENCE_DROPOUT_SCHEMAS:
                 masked_feature = 1 + ((iteration + seed) % 11)
                 batch_features = mask_pair_evidence_feature(
@@ -1759,6 +1799,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 )
             batch_weights = pair_weights.index_select(0, batch).to(device)
             loss = (per_pair_loss * batch_weights).sum() / batch_weights.sum().clamp_min(1e-8)
+            if config["schema_version"] == "gzsl-paper.ceps.v1":
+                full_corrected = model.corrected_pair_logits(
+                    batch_pair_logits, full_batch_features
+                )
+                loss = loss + float(config["consistency_weight"]) * (
+                    pair_correction_consistency_loss(corrected, full_corrected)
+                )
             if config["schema_version"] == "gzsl-paper.trdss.v1":
                 loss = loss + float(config["trust_region_weight"]) * model.trust_region_loss()
             optimizer.zero_grad(set_to_none=True)
