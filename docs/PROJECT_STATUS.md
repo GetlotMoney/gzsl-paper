@@ -490,6 +490,8 @@ LSCR seed5构建5241个相关top3真类包含样本且三标签完整，但完�
 
 MHPS首次RUN因schema漏接12维特征在训练前失败；有效RERUN使用304错误+304最低margin正确pair，标签严格1:1，最高`U/S/H/ZS=76.843750/79.966521/78.374042/84.016234%`，低于稳定SNPS top-3。样本匹配避免大权重但仍因样本量下降而过拟合seen，IDEA-121拒绝。当前累计213组。
 
+下一实验`V2-INNOVATION-088 / FBPS`保留稳定SNPS全部pair，把普通CE改为gamma=2 focal pair CE，平滑降低容易正确pair影响，避免高权重与小样本两个极端。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

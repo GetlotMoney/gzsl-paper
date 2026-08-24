@@ -30,6 +30,7 @@ from model.innovations.train_gpes import (
     class_balanced_pair_weights,
     extract_pair_examples,
     extract_triplet_examples,
+    focal_pair_losses,
     hard_margin_only_for_schema,
     load_config,
     matched_hard_pair_indices,
@@ -760,6 +761,23 @@ class GPESTest(unittest.TestCase):
             config["pair_sampling"],
             "all_errors_plus_equal_lowest_margin_correct",
         )
+
+    def test_focal_pair_loss_downweights_easy_correct_pair(self):
+        losses = focal_pair_losses(
+            torch.tensor([[5.0, 0.0], [0.1, 0.0]]),
+            torch.tensor([0, 0]),
+            gamma=2.0,
+        )
+        self.assertLess(float(losses[0]), float(losses[1]))
+        self.assertTrue(bool(torch.isfinite(losses).all()))
+
+    def test_fbps_config_binds_focal_objective(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-088_fbps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.fbps.v1")
+        self.assertEqual(config["training_objective"], "focal_pair_ce")
+        self.assertEqual(config["focal_gamma"], 2.0)
 
 
 if __name__ == "__main__":
