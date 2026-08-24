@@ -163,6 +163,37 @@ def random_batch_indices(count: int, batch_size: int, generator: torch.Generator
     return torch.randperm(int(count), generator=generator)[: int(batch_size)]
 
 
+def build_three_module_model(
+    config: dict,
+    tensors: dict,
+    manifest: dict,
+    device: torch.device,
+    *,
+    dropout_override: float | None = None,
+) -> PaperV2ThreeModuleModel:
+    seen_classes = torch.tensor(manifest["seen_classes"], dtype=torch.long)
+    centroids = h1.visual_centroids(
+        tensors["train_features"], tensors["train_labels"].long(), seen_classes
+    )
+    return PaperV2ThreeModuleModel(
+        tensors["role_sentence_embeds"],
+        seen_classes,
+        centroids,
+        tg_vpr_mode=config["tg_vpr_mode"],
+        transport_mode=config["transport_mode"],
+        ccgr_mode=config["ccgr_mode"],
+        dropout=(float(config["dropout"]) if dropout_override is None else float(dropout_override)),
+        inner_ratio=float(config["inner_ratio"]),
+        outer_ratio=float(config["outer_ratio"]),
+        temperature=float(config["temperature"]),
+        transport_hidden_dim=int(config["transport_hidden_dim"]),
+        generator_hidden_dim=int(config["generator_hidden_dim"]),
+        max_transport_step=float(config["max_transport_step"]),
+        max_ntr_delta=float(config["max_ntr_delta"]),
+        max_generator_magnitude=float(config["max_generator_magnitude"]),
+    ).to(device)
+
+
 def stage_for_iteration(ntrain: int, iteration: int) -> tuple[str, float]:
     if 0 <= iteration < ntrain:
         return "TG_ONLY", 0.25
@@ -271,24 +302,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 prototypes = F.normalize(tensors["role_sentence_embeds"].mean(dim=1), dim=-1).to(device)
                 scale = torch.tensor(1.0 / float(config["temperature"]), device=device)
             else:
-                centroids = h1.visual_centroids(tensors["train_features"], train_labels, seen_classes)
-                frozen_model = PaperV2ThreeModuleModel(
-                    tensors["role_sentence_embeds"],
-                    seen_classes,
-                    centroids,
-                    tg_vpr_mode=config["tg_vpr_mode"],
-                    transport_mode=config["transport_mode"],
-                    ccgr_mode=config["ccgr_mode"],
-                    dropout=0.0,
-                    inner_ratio=float(config["inner_ratio"]),
-                    outer_ratio=float(config["outer_ratio"]),
-                    temperature=float(config["temperature"]),
-                    transport_hidden_dim=int(config["transport_hidden_dim"]),
-                    generator_hidden_dim=int(config["generator_hidden_dim"]),
-                    max_transport_step=float(config["max_transport_step"]),
-                    max_ntr_delta=float(config["max_ntr_delta"]),
-                    max_generator_magnitude=float(config["max_generator_magnitude"]),
-                ).to(device).eval()
+                frozen_model = build_three_module_model(
+                    config, tensors, manifest, device, dropout_override=0.0
+                ).eval()
                 if any(frozen_model.parameter_groups().values()):
                     raise ValueError("no_training内部消融仍含活动模块参数。")
                 prototypes = frozen_model.prototypes()
@@ -311,24 +327,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             selected = {"iteration": None, "epoch": None, "stage": "NO_TRAINING", "metrics": metrics, "diagnostics": {}}
             stage_gradient_norms = {}
         else:
-            centroids = h1.visual_centroids(tensors["train_features"], train_labels, seen_classes)
-            model = PaperV2ThreeModuleModel(
-                tensors["role_sentence_embeds"],
-                seen_classes,
-                centroids,
-                tg_vpr_mode=config["tg_vpr_mode"],
-                transport_mode=config["transport_mode"],
-                ccgr_mode=config["ccgr_mode"],
-                dropout=float(config["dropout"]),
-                inner_ratio=float(config["inner_ratio"]),
-                outer_ratio=float(config["outer_ratio"]),
-                temperature=float(config["temperature"]),
-                transport_hidden_dim=int(config["transport_hidden_dim"]),
-                generator_hidden_dim=int(config["generator_hidden_dim"]),
-                max_transport_step=float(config["max_transport_step"]),
-                max_ntr_delta=float(config["max_ntr_delta"]),
-                max_generator_magnitude=float(config["max_generator_magnitude"]),
-            ).to(device)
+            model = build_three_module_model(config, tensors, manifest, device)
             ntrain = int(train_labels.numel())
             niters = ntrain * int(config["nominal_epochs"]) // int(config["batch_size"])
             if niters != 4 * ntrain:

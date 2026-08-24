@@ -8,9 +8,12 @@ from pathlib import Path
 
 import torch
 
-from model.paper_v2 import PaperV2ThreeModuleModel
-from model.tg_vpr_h1 import train as h1
-from model.train_paper_v2 import _evaluate_model, load_assets, load_config
+from model.train_paper_v2 import (
+    _evaluate_model,
+    build_three_module_model,
+    load_assets,
+    load_config,
+)
 from tools.runtime import sha256_file
 
 
@@ -25,25 +28,7 @@ def run(config_path: Path, model_path: Path, output: Path, device_name: str) -> 
     if payload.get("config_sha256") != config_sha:
         raise ValueError("model_best与配置SHA不一致。")
     device = torch.device(device_name)
-    seen_classes = torch.tensor(manifest["seen_classes"], dtype=torch.long)
-    centroids = h1.visual_centroids(tensors["train_features"], tensors["train_labels"].long(), seen_classes)
-    model = PaperV2ThreeModuleModel(
-        tensors["role_sentence_embeds"],
-        seen_classes,
-        centroids,
-        tg_vpr_mode=config["tg_vpr_mode"],
-        transport_mode=config["transport_mode"],
-        ccgr_mode=config["ccgr_mode"],
-        dropout=float(config["dropout"]),
-        inner_ratio=float(config["inner_ratio"]),
-        outer_ratio=float(config["outer_ratio"]),
-        temperature=float(config["temperature"]),
-        transport_hidden_dim=int(config["transport_hidden_dim"]),
-        generator_hidden_dim=int(config["generator_hidden_dim"]),
-        max_transport_step=float(config["max_transport_step"]),
-        max_ntr_delta=float(config["max_ntr_delta"]),
-        max_generator_magnitude=float(config["max_generator_magnitude"]),
-    ).to(device)
+    model = build_three_module_model(config, tensors, manifest, device)
     model.load_state_dict(payload["model_state_dict"], strict=True)
     model.eval()
     original_transport = model.transport_mode

@@ -269,6 +269,8 @@ def run(config_path: Path, output_dir: Path, *, device_name: str, batch_size: in
         "class_order_sha256": class_order_sha256(split.class_names),
         "role_names": roles,
         "role_text_generator": generator_identity,
+        "source_uris": {name: str(path.resolve()) for name, path in paths.items()},
+        "raw_image_example_uri": str(image_paths[0].resolve()),
         "inputs_sha256": input_sha,
         "outputs_sha256": outputs,
     }
