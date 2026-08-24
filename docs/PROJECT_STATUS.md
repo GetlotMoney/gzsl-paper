@@ -514,6 +514,8 @@ TFPS seed5构建4604个相关pair，比稳定SNPS多146个教师强制错误pair
 
 下一实验`V2-INNOVATION-093 / EDPS`保持稳定SNPS数据、loss与推理，训练每batch循环屏蔽11个非margin证据之一，推理恢复完整12维，检验多源证据dropout能否复现SDCR的鲁棒增益。
 
+EDPS首次RUN和RERUN均在进入训练前因schema未进入有效12维特征分发而失败，两个输出保留且不计有效实验。按连续两次停止修补规则关闭当前实现；IDEA-127状态改为revised而非rejected，有效实验累计仍为219组。后续新实验前必须先集中化schema特征分组，消除重复漏接风险。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

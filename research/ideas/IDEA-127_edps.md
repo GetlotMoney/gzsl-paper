@@ -1,6 +1,6 @@
 # IDEA-127：Evidence-Dropout Pair Selector
 
-status: testing
+status: revised
 problem: selector可能过度依赖某一个文本证据维度，导致seed变化时权重组合不稳定。
 hypothesis: 训练每批屏蔽一个非margin证据、推理恢复完整证据，可学习更鲁棒的多源组合并提高H。
 evidence_refs: SDCR训练期句子dropout两seed有效；SNPS seed5/7权重方向相近但局部权重差异存在；静态特征和loss调整已收口。
@@ -10,3 +10,5 @@ success_condition: seed5 H大于稳定SNPS top-3 78.466710；正提升后追加s
 failure_condition: H不超过top-3、11维覆盖不均或U/S任一下降超过2个百分点。
 experiment: V2-INNOVATION-093
 paper_core_innovation: false
+result: 两次启动均在训练前因schema特征分发错误失败，没有有效方法结果。
+decision: 按连续两次工程失败规则关闭当前实现；不把工程失败写成方法失败。
