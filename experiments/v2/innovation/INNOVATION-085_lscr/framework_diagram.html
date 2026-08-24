@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-085 LSCR</title></head>
+<body>
+<h1>LSCR：局部语义竞争解析器</h1>
+<p><strong>Base commit：</strong>ad1687793e35359a049ba417ea9a6fb786fe7c75；<strong>RUN-001 code commit：</strong>pre-run后绑定。</p>
+<pre>parent top-3候选
+→ 若top1与top2/top3存在suffix或语义top-3关系则启用
+
+每个候选11种证据：
+Claude / merge / 类名 / 八角色
+→ 每种证据在3候选内中心化
+→ shared 11维source weight
+→ 零和三类delta
+→ 同时修正top1/top2/top3
+→ 200-way U/S/H；50-way ZS</pre>
+<p>训练样本要求真实类位于top3且候选相关，使用三类局部CE与train-derived soft gate。训练仅使用seen图像，official test按陈式协议选择最高H。</p>
+</body></html>

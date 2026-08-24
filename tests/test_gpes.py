@@ -7,6 +7,7 @@ from model.innovations.gpes import (
     CenteredRoleGatedPairSelector,
     CrossSourceDisagreementSelector,
     GatedPairEvidenceSelector,
+    LocalSemanticCompetitionResolver,
     NonlinearGatedPairSelector,
     NeighborhoodDegreePairSelector,
     PairDiscriminativeRoleSelector,
@@ -28,6 +29,7 @@ from model.innovations.gpes import (
 from model.innovations.train_gpes import (
     class_balanced_pair_weights,
     extract_pair_examples,
+    extract_triplet_examples,
     hard_margin_only_for_schema,
     load_config,
     minimal_flip_delta_targets,
@@ -683,6 +685,59 @@ class GPESTest(unittest.TestCase):
             config["context_feature"], "semantic_log_degree_difference"
         )
         self.assertEqual(config["semantic_neighbor_k"], 3)
+
+    def test_local_competition_resolver_starts_as_exact_parent(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        model = LocalSemanticCompetitionResolver(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768),
+            torch.randn(200, 768), torch.randn(200, 8, 768),
+            groups, adjacency, 0.25, 0.1,
+            torch.zeros(11), torch.ones(11), 0.5,
+        )
+        images = torch.randn(2, 768)
+        parent = torch.randn(2, 200)
+        expected = parent + model.sdcr_beta * (
+            torch.nn.functional.normalize(images, dim=-1)
+            @ model.sdcr_prototypes.T
+        )
+        self.assertTrue(torch.equal(model(parent, images, None), expected))
+        top, _, _, features = model.candidate_context(
+            expected, images, torch.arange(200)
+        )
+        self.assertEqual(tuple(features.shape), (2, 3, 11))
+        self.assertTrue(torch.equal(
+            model.corrected_candidate_logits(top.values, features), top.values
+        ))
+
+    def test_extract_triplet_examples_builds_three_way_targets(self):
+        logits = torch.tensor([
+            [3.0, 2.0, 1.0, 0.0],
+            [3.0, 2.0, 1.0, 0.0],
+        ])
+        package = extract_triplet_examples(
+            logits,
+            torch.randn(2, 768),
+            torch.tensor([0, 2]),
+            torch.arange(4),
+            torch.zeros(4, dtype=torch.long),
+            torch.ones(4, 4, dtype=torch.bool).fill_diagonal_(False),
+            torch.randn(4, 768), torch.randn(4, 768),
+            torch.randn(4, 768), torch.randn(4, 8, 768),
+            threshold=1.0,
+        )
+        self.assertEqual(tuple(package[0].shape), (2, 3))
+        self.assertEqual(tuple(package[1].shape), (2, 3, 11))
+        self.assertTrue(torch.equal(package[2], torch.tensor([0, 2])))
+
+    def test_lscr_config_binds_three_way_training(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-085_lscr/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.lscr.v1")
+        self.assertEqual(config["candidate_count"], 3)
+        self.assertEqual(config["training_scope"], "related_top3_true_contained")
 
 
 if __name__ == "__main__":

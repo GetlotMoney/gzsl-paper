@@ -14,6 +14,7 @@ from model.innovations.gpes import (
     CenteredRoleGatedPairSelector,
     CrossSourceDisagreementSelector,
     GatedPairEvidenceSelector,
+    LocalSemanticCompetitionResolver,
     NonlinearGatedPairSelector,
     NeighborhoodDegreePairSelector,
     PairDiscriminativeRoleSelector,
@@ -137,6 +138,7 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.csds.v1",
         "gzsl-paper.rugs.v1",
         "gzsl-paper.ndps.v1",
+        "gzsl-paper.lscr.v1",
     )
 
 
@@ -243,6 +245,17 @@ def load_config(path: Path):
                 "patch_top_k", "patch_chunk_size",
             }
         ) | {"pair_training_scope", "semantic_neighbor_k", "context_feature"}
+    elif schema == "gzsl-paper.lscr.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {
+            "pair_training_scope", "semantic_neighbor_k", "candidate_count",
+            "training_scope",
+        }
     elif schema == "gzsl-paper.snps.v1":
         expected_keys = (
             CONFIG_KEYS
@@ -301,6 +314,7 @@ def load_config(path: Path):
         "gzsl-paper.csds.v1": ("V2-INNOVATION-082", "IDEA-116"),
         "gzsl-paper.rugs.v1": ("V2-INNOVATION-083", "IDEA-117"),
         "gzsl-paper.ndps.v1": ("V2-INNOVATION-084", "IDEA-118"),
+        "gzsl-paper.lscr.v1": ("V2-INNOVATION-085", "IDEA-119"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -330,6 +344,7 @@ def load_config(path: Path):
             "gzsl-paper.csds.v1",
             "gzsl-paper.rugs.v1",
             "gzsl-paper.ndps.v1",
+            "gzsl-paper.lscr.v1",
         )
         and config["feature_provenance_complete"] is not False
     ) or config["text_cache_provenance_complete"] is not False:
@@ -352,6 +367,7 @@ def load_config(path: Path):
                 "gzsl-paper.csds.v1",
                 "gzsl-paper.rugs.v1",
                 "gzsl-paper.ndps.v1",
+                "gzsl-paper.lscr.v1",
             )
             and (
                 int(config["patch_top_k"]) != 2
@@ -374,6 +390,7 @@ def load_config(path: Path):
                 "gzsl-paper.csds.v1",
                 "gzsl-paper.rugs.v1",
                 "gzsl-paper.ndps.v1",
+                "gzsl-paper.lscr.v1",
             )
             else "train_wrong_same_group_margin"
         )
@@ -450,6 +467,10 @@ def load_config(path: Path):
         "pair_training_scope"
     ] != "suffix_or_semantic_top3_soft_gate":
         raise ValueError("NDPS必须使用稳定语义top3 soft gate。")
+    if schema == "gzsl-paper.lscr.v1" and config[
+        "pair_training_scope"
+    ] != "related_top3_true_contained_soft_gate":
+        raise ValueError("LSCR必须使用相关top3真类包含样本。")
     if schema == "gzsl-paper.bgwps.v1" and config[
         "pair_class_balance"
     ] != "inverse_frequency":
@@ -518,6 +539,10 @@ def load_config(path: Path):
         "semantic_neighbor_k"
     ]) != 3:
         raise ValueError("NDPS semantic_neighbor_k必须为3。")
+    if schema == "gzsl-paper.lscr.v1" and int(config[
+        "semantic_neighbor_k"
+    ]) != 3:
+        raise ValueError("LSCR semantic_neighbor_k必须为3。")
     if schema == "gzsl-paper.msnps.v1" and config[
         "semantic_neighbor_rule"
     ] != "mutual_top5":
@@ -571,6 +596,11 @@ def load_config(path: Path):
         "context_feature"
     ] != "semantic_log_degree_difference":
         raise ValueError("NDPS必须使用semantic_log_degree_difference。")
+    if schema == "gzsl-paper.lscr.v1" and (
+        int(config["candidate_count"]) != 3
+        or config["training_scope"] != "related_top3_true_contained"
+    ):
+        raise ValueError("LSCR三类训练配置错误。")
     return config, sha256_file(path)
 
 
@@ -700,6 +730,62 @@ def extract_pair_examples(
         pair_targets[selected].detach().cpu(),
         int(selected.sum()),
         (soft_weights[selected] * relation_weights[selected]).detach().cpu(),
+    )
+
+
+def extract_triplet_examples(
+    logits,
+    images,
+    targets,
+    ids,
+    group_ids,
+    semantic_adjacency,
+    claude_prototypes,
+    merge_prototypes,
+    class_name_prototypes,
+    role_prototypes,
+    threshold,
+    margin_temperature=0.1,
+):
+    top = logits.topk(3, dim=1)
+    global_ids = ids.index_select(0, top.indices.reshape(-1)).reshape_as(top.indices)
+    groups = group_ids.to(logits.device).index_select(
+        0, global_ids.reshape(-1)
+    ).reshape_as(global_ids)
+    related = (
+        ((groups[:, 0:1] == groups[:, 1:]) & groups[:, 0:1].ge(0)).any(dim=1)
+        | semantic_adjacency.to(logits.device)[
+            global_ids[:, 0:1].expand(-1, 2), global_ids[:, 1:]
+        ].any(dim=1)
+    )
+    target_matches = top.indices.eq(targets.unsqueeze(1))
+    selected = related & target_matches.any(dim=1)
+    margin = top.values[:, 0] - top.values[:, 1]
+    soft_weights = torch.sigmoid(
+        (float(threshold) - margin) / float(margin_temperature)
+    )
+    normalized_images = F.normalize(images.float(), dim=-1)
+    sources = []
+    for prototypes in (
+        claude_prototypes, merge_prototypes, class_name_prototypes
+    ):
+        scores = normalized_images @ prototypes.index_select(0, ids).T
+        sources.append(scores.gather(1, top.indices).unsqueeze(-1))
+    role_logits = torch.einsum(
+        "bd,crd->bcr", normalized_images, role_prototypes.index_select(0, ids)
+    )
+    role_top3 = role_logits.gather(
+        1, top.indices.unsqueeze(-1).expand(-1, -1, 8)
+    )
+    features = torch.cat((*sources, role_top3), dim=2)
+    features = features - features.mean(dim=1, keepdim=True)
+    local_targets = target_matches.long().argmax(dim=1)
+    return (
+        top.values[selected].detach().cpu(),
+        features[selected].detach().cpu(),
+        local_targets[selected].detach().cpu(),
+        int(selected.sum()),
+        soft_weights[selected].detach().cpu(),
     )
 
 
@@ -835,6 +921,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         "gzsl-paper.csds.v1",
         "gzsl-paper.rugs.v1",
         "gzsl-paper.ndps.v1",
+        "gzsl-paper.lscr.v1",
     )
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
@@ -932,6 +1019,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.csds.v1",
             "gzsl-paper.rugs.v1",
             "gzsl-paper.ndps.v1",
+            "gzsl-paper.lscr.v1",
         ):
             if config["schema_version"] == "gzsl-paper.rsnps.v1":
                 semantic_confidence = reciprocal_neighbor_confidence(
@@ -1007,6 +1095,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         mapping[seen_classes] = torch.arange(150)
         ids = seen_classes.to(device)
         pair_logits_list, feature_list, target_list, pair_weight_list = [], [], [], []
+        triplet_mode = config["schema_version"] == "gzsl-paper.lscr.v1"
         hard_margin_only = hard_margin_only_for_schema(config["schema_version"])
         for start in range(0, features.shape[0], 512):
             images = features[start : start + 512].to(device).float()
@@ -1016,7 +1105,23 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 parent_logits, torch.ones(150, dtype=torch.bool, device=device)
             )
             logits = sdcr(parent_logits, images, ids)
-            package = extract_pair_examples(
+            if triplet_mode:
+                package = extract_triplet_examples(
+                    logits,
+                    images,
+                    mapping[labels[start : start + 512]].to(device),
+                    ids,
+                    group_ids,
+                    semantic_adjacency,
+                    claude_orth,
+                    merge_orth,
+                    names_n,
+                    F.normalize(sentence8.float(), dim=-1),
+                    pair_training_threshold,
+                    margin_temperature=float(config["margin_temperature"]),
+                )
+            else:
+                package = extract_pair_examples(
                 logits,
                 images,
                 None if scores is None else scores["train"][start : start + 512],
@@ -1122,7 +1227,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.gpes.v1", "gzsl-paper.egpes.v1"
         ):
             pair_weights = torch.ones_like(pair_weights)
-        pair_class_weights = torch.ones(2)
+        pair_class_weights = torch.ones(3 if triplet_mode else 2)
         if config["schema_version"] in (
             "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1"
         ):
@@ -1135,10 +1240,17 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     else 1.0
                 ),
             )
-        if pair_targets.numel() < 50 or pair_targets.unique().numel() != 2:
+        expected_target_count = 3 if triplet_mode else 2
+        if (
+            pair_targets.numel() < 50
+            or pair_targets.unique().numel() != expected_target_count
+        ):
             raise ValueError("GPES成对训练样本不足或标签退化。")
-        feature_mean = pair_features.mean(dim=0)
-        feature_std = pair_features.std(dim=0, unbiased=False).clamp_min(1e-6)
+        feature_rows = (
+            pair_features.reshape(-1, 11) if triplet_mode else pair_features
+        )
+        feature_mean = feature_rows.mean(dim=0)
+        feature_std = feature_rows.std(dim=0, unbiased=False).clamp_min(1e-6)
         pair_dataset_stats = {
             "count": int(pair_targets.numel()),
             "top1_target_rate": float(pair_targets.eq(0).float().mean()),
@@ -1204,6 +1316,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = RoleUncertaintyGatedSelector
         elif config["schema_version"] == "gzsl-paper.ndps.v1":
             model_class = NeighborhoodDegreePairSelector
+        elif config["schema_version"] == "gzsl-paper.lscr.v1":
+            model_class = LocalSemanticCompetitionResolver
         else:
             model_class = GatedPairEvidenceSelector
         model_kwargs = {
@@ -1235,6 +1349,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.csds.v1",
             "gzsl-paper.rugs.v1",
             "gzsl-paper.ndps.v1",
+            "gzsl-paper.lscr.v1",
         ):
             model_kwargs["class_name_prototypes"] = names_n
         if config["schema_version"] in (
@@ -1252,6 +1367,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.csds.v1",
             "gzsl-paper.rugs.v1",
             "gzsl-paper.ndps.v1",
+            "gzsl-paper.lscr.v1",
         ):
             model_kwargs["role_sentence_prototypes"] = sentence8
         if config["schema_version"] in (
@@ -1266,6 +1382,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.csds.v1",
             "gzsl-paper.rugs.v1",
             "gzsl-paper.ndps.v1",
+            "gzsl-paper.lscr.v1",
         ):
             model_kwargs["semantic_adjacency"] = semantic_adjacency
         if config["schema_version"] == "gzsl-paper.rsnps.v1":
@@ -1324,9 +1441,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             )
             batch_pair_logits = pair_logits.index_select(0, batch).to(device)
             batch_pair_targets = pair_targets.index_select(0, batch).to(device)
-            corrected = model.corrected_pair_logits(
-                batch_pair_logits,
-                pair_features.index_select(0, batch).to(device),
+            batch_features = pair_features.index_select(0, batch).to(device)
+            corrected = (
+                model.corrected_candidate_logits(batch_pair_logits, batch_features)
+                if triplet_mode
+                else model.corrected_pair_logits(batch_pair_logits, batch_features)
             )
             if config["schema_version"] == "gzsl-paper.etpc.v1":
                 target_delta = minimal_flip_delta_targets(

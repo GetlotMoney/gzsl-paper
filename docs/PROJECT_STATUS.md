@@ -482,6 +482,8 @@ NDPS seed5达到`U/S/H/ZS=76.916522/80.105728/78.478738/84.121209%`，相对稳�
 
 NDPS seed7达到`U/S/H/ZS=76.847547/80.112571/78.446100/83.987880%`，与同seed稳定SNPS top-3逐项相同。相对top-3增量seed5/7为`+0.012027/+0.000000`，未跨seed成立，IDEA-118拒绝。当前累计211组。
 
+下一实验`V2-INNOVATION-085 / LSCR`不再增加单一静态特征，而是把二元pair改为相关top3局部三类解析：Claude、merge、类名和八角色共11种证据在候选内中心化，学习零和三类logit修正。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

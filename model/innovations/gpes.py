@@ -796,3 +796,139 @@ class NeighborhoodDegreePairSelector(SemanticNeighborPairSelector):
             related,
             torch.cat((features, degree_diff.unsqueeze(1)), dim=1),
         )
+
+
+class LocalSemanticCompetitionResolver(nn.Module):
+    """在语义相关top3内用11种文本证据学习零和logit修正。"""
+
+    def __init__(
+        self,
+        sdcr_prototypes: torch.Tensor,
+        sdcr_beta: float,
+        claude_prototypes: torch.Tensor,
+        merge_prototypes: torch.Tensor,
+        class_name_prototypes: torch.Tensor,
+        role_sentence_prototypes: torch.Tensor,
+        group_ids: torch.Tensor,
+        semantic_adjacency: torch.Tensor,
+        margin_threshold: float,
+        margin_temperature: float,
+        feature_mean: torch.Tensor,
+        feature_std: torch.Tensor,
+        max_delta: float = 0.5,
+    ) -> None:
+        super().__init__()
+        for name, tensor in (
+            ("SDCR", sdcr_prototypes),
+            ("Claude", claude_prototypes),
+            ("merge", merge_prototypes),
+            ("class_name", class_name_prototypes),
+        ):
+            if tuple(tensor.shape) != (200, 768):
+                raise ValueError(f"LSCR {name}原型必须是[200,768]。")
+        if tuple(role_sentence_prototypes.shape) != (200, 8, 768):
+            raise ValueError("LSCR角色句原型必须是[200,8,768]。")
+        if tuple(group_ids.shape) != (200,) or tuple(
+            semantic_adjacency.shape
+        ) != (200, 200):
+            raise ValueError("LSCR类别关系形状错误。")
+        if tuple(feature_mean.shape) != (11,) or tuple(feature_std.shape) != (11,):
+            raise ValueError("LSCR特征统计必须是[11]。")
+        self.register_buffer("sdcr_prototypes", F.normalize(sdcr_prototypes.float(), dim=-1))
+        self.register_buffer("sdcr_beta", torch.tensor(float(sdcr_beta)))
+        self.register_buffer("claude_prototypes", F.normalize(claude_prototypes.float(), dim=-1))
+        self.register_buffer("merge_prototypes", F.normalize(merge_prototypes.float(), dim=-1))
+        self.register_buffer("class_name_prototypes", F.normalize(class_name_prototypes.float(), dim=-1))
+        self.register_buffer("role_sentence_prototypes", F.normalize(role_sentence_prototypes.float(), dim=-1))
+        self.register_buffer("group_ids", group_ids.long())
+        self.register_buffer("semantic_adjacency", semantic_adjacency.bool())
+        self.register_buffer("margin_threshold", torch.tensor(float(margin_threshold)))
+        self.register_buffer("feature_mean", feature_mean.float())
+        self.register_buffer("feature_std", feature_std.float().clamp_min(1e-6))
+        self.margin_temperature = float(margin_temperature)
+        self.max_delta = float(max_delta)
+        self.source_weight = nn.Parameter(torch.zeros(11))
+
+    def candidate_context(
+        self, logits: torch.Tensor, images: torch.Tensor, ids: torch.Tensor
+    ):
+        top = logits.detach().topk(3, dim=1)
+        global_ids = ids.index_select(0, top.indices.reshape(-1)).reshape_as(top.indices)
+        groups = self.group_ids.index_select(0, global_ids.reshape(-1)).reshape_as(global_ids)
+        same_suffix = (
+            (groups[:, 0:1] == groups[:, 1:])
+            & groups[:, 0:1].ge(0)
+        ).any(dim=1)
+        semantic_related = self.semantic_adjacency[
+            global_ids[:, 0:1].expand(-1, 2), global_ids[:, 1:]
+        ].any(dim=1)
+        related = same_suffix | semantic_related
+        normalized_images = F.normalize(images.float(), dim=-1)
+        candidate_indices = top.indices.unsqueeze(-1)
+        source_logits = []
+        for prototypes in (
+            self.claude_prototypes,
+            self.merge_prototypes,
+            self.class_name_prototypes,
+        ):
+            scores = normalized_images @ prototypes.index_select(0, ids).T
+            source_logits.append(scores.gather(1, top.indices).unsqueeze(-1))
+        role_logits = torch.einsum(
+            "bd,crd->bcr",
+            normalized_images,
+            self.role_sentence_prototypes.index_select(0, ids),
+        )
+        role_top3 = role_logits.gather(
+            1, candidate_indices.expand(-1, -1, 8)
+        )
+        raw_features = torch.cat((*source_logits, role_top3), dim=2)
+        raw_features = raw_features - raw_features.mean(dim=1, keepdim=True)
+        return top, global_ids, related, raw_features
+
+    def corrected_candidate_logits(
+        self, candidate_logits: torch.Tensor, raw_features: torch.Tensor
+    ) -> torch.Tensor:
+        normalized = (raw_features.float() - self.feature_mean) / self.feature_std
+        raw_delta = normalized @ self.source_weight
+        raw_delta = raw_delta - raw_delta.mean(dim=1, keepdim=True)
+        delta = self.max_delta * torch.tanh(raw_delta)
+        delta = delta - delta.mean(dim=1, keepdim=True)
+        margin = candidate_logits[:, 0] - candidate_logits[:, 1]
+        gate = torch.sigmoid(
+            (self.margin_threshold - margin) / self.margin_temperature
+        )
+        return candidate_logits + gate.unsqueeze(1) * delta
+
+    def forward(
+        self,
+        parent_logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None = None,
+        class_ids: torch.Tensor | None = None,
+        enabled: bool = True,
+    ) -> torch.Tensor:
+        ids = (
+            torch.arange(200, device=images.device)
+            if class_ids is None
+            else class_ids.to(images.device)
+        )
+        logits = parent_logits + self.sdcr_beta * (
+            F.normalize(images.float(), dim=-1)
+            @ self.sdcr_prototypes.index_select(0, ids).T
+        )
+        if not enabled:
+            return logits
+        top, _, related, features = self.candidate_context(logits, images, ids)
+        corrected = self.corrected_candidate_logits(top.values, features)
+        correction = (corrected - top.values) * related.to(logits.dtype).unsqueeze(1)
+        output = logits.clone()
+        output.scatter_add_(1, top.indices, correction)
+        return output
+
+    def stats(self) -> dict[str, object]:
+        return {
+            "source_weight": [float(value) for value in self.source_weight.detach().cpu()],
+            "source_weight_norm": float(self.source_weight.detach().norm()),
+            "margin_threshold": float(self.margin_threshold),
+            "margin_temperature": self.margin_temperature,
+        }
