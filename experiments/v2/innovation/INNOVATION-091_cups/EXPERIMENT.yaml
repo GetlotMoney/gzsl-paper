@@ -4,15 +4,15 @@ idea_id: IDEA-125
 framework_id: FRAMEWORK-V2
 title: Class-Uniform Pair Selector
 base_commit: 94fc604202d431e5743f60c41d23146bb9066cd1
-code_commit: null
-status: planned
+code_commit: a88251657b872ffbee4ce2e6dad502585215bd8f
+status: rejected_extreme_class_weights
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-091_cups/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: a88251657b872ffbee4ce2e6dad502585215bd8f
     config_ref: experiments/v2/innovation/INNOVATION-091_cups/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-091_cups/RUN-001
-    status: planned
+    status: completed_below_top3
