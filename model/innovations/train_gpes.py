@@ -19,6 +19,7 @@ from model.innovations.gpes import (
     LocalSemanticCompetitionResolver,
     NonlinearGatedPairSelector,
     NeighborhoodDegreePairSelector,
+    NonlinearResidualPairSelector,
     PairDiscriminativeRoleSelector,
     ReciprocalSemanticNeighborPairSelector,
     RoleDisagreementScaleSelector,
@@ -95,6 +96,7 @@ SOFT_PAIR_SCHEMAS = frozenset({
     "gzsl-paper.bfps.v1", "gzsl-paper.aps.v1", "gzsl-paper.cups.v1",
     "gzsl-paper.tfps.v1", "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1",
     "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1", "gzsl-paper.jeds.v1",
+    "gzsl-paper.nrps.v1",
 })
 TEXT_ONLY_SCHEMAS = SOFT_PAIR_SCHEMAS - frozenset({
     "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
@@ -127,12 +129,13 @@ ADJACENCY_MODEL_SCHEMAS = SEMANTIC_NEIGHBOR_SCHEMAS - frozenset({
 })
 EVIDENCE_DROPOUT_SCHEMAS = frozenset({
     "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1", "gzsl-paper.sedps.v1",
-    "gzsl-paper.ceps.v1", "gzsl-paper.jeds.v1",
+    "gzsl-paper.ceps.v1", "gzsl-paper.jeds.v1", "gzsl-paper.nrps.v1",
 })
 STAGED_SNPS_SCHEMAS = frozenset({
     "gzsl-paper.srdss.v1", "gzsl-paper.trdss.v1", "gzsl-paper.rugs.v1",
     "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1", "gzsl-paper.jeds.v1",
 })
+STAGED_SEDPS_SCHEMAS = frozenset({"gzsl-paper.nrps.v1"})
 
 
 def class_balanced_pair_weights(
@@ -469,6 +472,19 @@ def load_config(path: Path):
             "pair_training_scope", "semantic_neighbor_k", "training_scope",
             "error_weight_floor",
         }
+    elif schema == "gzsl-paper.nrps.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {
+            "pair_training_scope", "semantic_neighbor_k", "evidence_drop_count",
+            "evidence_drop_scope", "evidence_drop_schedule", "sedps_model",
+            "sedps_model_sha256", "training_scope", "selector_hidden_dim",
+            "max_raw_residual",
+        }
     elif schema == "gzsl-paper.jeds.v1":
         expected_keys = (
             CONFIG_KEYS
@@ -587,6 +603,7 @@ def load_config(path: Path):
         "gzsl-paper.sedps.v1": ("V2-INNOVATION-095", "IDEA-128"),
         "gzsl-paper.ceps.v1": ("V2-INNOVATION-096", "IDEA-129"),
         "gzsl-paper.jeds.v1": ("V2-INNOVATION-097", "IDEA-130"),
+        "gzsl-paper.nrps.v1": ("V2-INNOVATION-098", "IDEA-131"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -631,6 +648,7 @@ def load_config(path: Path):
             if schema in {
                 "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1",
                 "gzsl-paper.jeds.v1",
+                "gzsl-paper.nrps.v1",
             }
             else (0.001,)
         )
@@ -931,6 +949,14 @@ def load_config(path: Path):
         or float(config["learning_rate"]) != 0.0001
     ):
         raise ValueError("JEDS jackknife训练配置错误。")
+    if schema == "gzsl-paper.nrps.v1" and (
+        config["training_scope"]
+        != "freeze_sedps_train_nonlinear_residual_only"
+        or int(config["selector_hidden_dim"]) != 8
+        or float(config["max_raw_residual"]) != 0.25
+        or float(config["learning_rate"]) != 0.0001
+    ):
+        raise ValueError("NRPS非线性残差配置错误。")
     if schema == "gzsl-paper.sedps.v1" and config[
         "training_scope"
     ] != "initialize_snps_then_evidence_dropout_finetune":
@@ -1321,6 +1347,10 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         Path(config["snps_model"])
     ) != config["snps_model_sha256"]:
         raise ValueError("分阶段SNPS父模型SHA错误。")
+    if config["schema_version"] in STAGED_SEDPS_SCHEMAS and sha256_file(
+        Path(config["sedps_model"])
+    ) != config["sedps_model_sha256"]:
+        raise ValueError("分阶段S-EDPS父模型SHA错误。")
     text_only = config["schema_version"] in TEXT_ONLY_SCHEMAS
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
@@ -1705,6 +1735,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = RoleUncertaintyGatedSelector
         elif config["schema_version"] == "gzsl-paper.ndps.v1":
             model_class = NeighborhoodDegreePairSelector
+        elif config["schema_version"] == "gzsl-paper.nrps.v1":
+            model_class = NonlinearResidualPairSelector
         elif config["schema_version"] == "gzsl-paper.lscr.v1":
             model_class = LocalSemanticCompetitionResolver
         elif config["schema_version"] == "gzsl-paper.mhps.v1":
@@ -1762,6 +1794,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             )
         if config["schema_version"] == "gzsl-paper.rugs.v1":
             model_kwargs["max_gamma"] = float(config["max_gamma"])
+        if config["schema_version"] == "gzsl-paper.nrps.v1":
+            sedps_payload = torch.load(
+                Path(config["sedps_model"]), map_location="cpu", weights_only=False
+            )
+            sedps_state = sedps_payload["gpes_state_dict"]
+            model_kwargs.update(
+                {
+                    "base_selector_weight": sedps_state["selector_weight"],
+                    "base_selector_bias": sedps_state["selector_bias"],
+                    "base_feature_mean": sedps_state["feature_mean"],
+                    "base_feature_std": sedps_state["feature_std"],
+                    "hidden_dim": int(config["selector_hidden_dim"]),
+                    "max_raw_residual": float(config["max_raw_residual"]),
+                }
+            )
         model = model_class(**model_kwargs).to(device)
         if config["schema_version"] in {
             "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1",
@@ -1946,6 +1993,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 **(
                     {"snps_model": config["snps_model_sha256"]}
                     if config["schema_version"] in STAGED_SNPS_SCHEMAS
+                    else {}
+                ),
+                **(
+                    {"sedps_model": config["sedps_model_sha256"]}
+                    if config["schema_version"] in STAGED_SEDPS_SCHEMAS
                     else {}
                 ),
             },

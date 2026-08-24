@@ -544,6 +544,10 @@ CEPS RESCUE-1的`consistency_weight=100`条件达到`H=78.528077%`，比S-EDPS�
 
 JEDS seed5完成全部11种单证据缺失覆盖后，`U/S/H/ZS=76.982599/80.230141/78.572828/84.121776%`，与S-EDPS逐项相同但视图计算约增11倍。IDEA-130拒绝并关闭证据dropout形式轴；稳定最高仍为S-EDPS `78.572828%`。当前累计有效实验229组。
 
+`SEDPS_ERROR_AUDIT_001`显示剩余错误中seen 150个、unseen 281个真类仍在可处理top2关系内，top2-related oracle H=`87.565486%`。`SEDPS_MARGIN_AUDIT_001`进一步显示可达top2错误中seen仅61/155、unseen仅110/288获得正确delta方向，且全局放大delta会降低H；瓶颈是方向判断而非幅度。
+
+下一实验`V2-INNOVATION-098 / NRPS`冻结S-EDPS线性selector，只训练零初始化、raw残差上限0.25的`12→8→1`非线性残差，检验证据条件交互能否修复方向错误。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

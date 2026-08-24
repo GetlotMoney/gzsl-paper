@@ -12,6 +12,7 @@ from model.innovations.gpes import (
     LocalSemanticCompetitionResolver,
     NonlinearGatedPairSelector,
     NeighborhoodDegreePairSelector,
+    NonlinearResidualPairSelector,
     PairDiscriminativeRoleSelector,
     ReciprocalSemanticNeighborPairSelector,
     RoleDisagreementScaleSelector,
@@ -38,6 +39,7 @@ from model.innovations.train_gpes import (
     SEMANTIC_NEIGHBOR_SCHEMAS,
     SOFT_PAIR_SCHEMAS,
     STAGED_SNPS_SCHEMAS,
+    STAGED_SEDPS_SCHEMAS,
     TEXT_ONLY_SCHEMAS,
     TWELVE_FEATURE_SCHEMAS,
     class_balanced_pair_weights,
@@ -1015,6 +1017,41 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.jeds.v1")
         self.assertEqual(config["evidence_drop_count"], 11)
         self.assertEqual(config["evidence_drop_schedule"], "all_omissions_each_batch")
+
+    def test_nrps_zero_residual_exactly_reproduces_sedps_parent(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        base_weight = torch.randn(12)
+        base_bias = torch.randn(())
+        model = NonlinearResidualPairSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(12), torch.ones(12), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+            base_selector_weight=base_weight,
+            base_selector_bias=base_bias,
+            base_feature_mean=torch.zeros(12),
+            base_feature_std=torch.ones(12),
+            hidden_dim=8,
+            max_raw_residual=0.25,
+        )
+        features = torch.randn(4, 12)
+        expected = 0.5 * torch.tanh(features @ base_weight + base_bias)
+        self.assertTrue(torch.equal(model.pair_delta(features), expected))
+        self.assertTrue(
+            all(name.startswith("residual_selector.") for name, _ in model.named_parameters())
+        )
+
+    def test_nrps_config_binds_frozen_sedps_nonlinear_residual(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-098_nrps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.nrps.v1")
+        self.assertIn(config["schema_version"], STAGED_SEDPS_SCHEMAS)
+        self.assertEqual(config["selector_hidden_dim"], 8)
+        self.assertEqual(config["max_raw_residual"], 0.25)
 
     def test_lscr_dispatch_is_specialized_not_twelve_feature(self):
         schema = "gzsl-paper.lscr.v1"

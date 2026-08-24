@@ -418,6 +418,79 @@ class SemanticNeighborPairSelector(CenteredRoleGatedPairSelector):
         return top, global_ids, same_group | semantic_neighbor, features
 
 
+class NonlinearResidualPairSelector(SemanticNeighborPairSelector):
+    """冻结S-EDPS线性方向，只学习受限非线性证据交互残差。"""
+
+    def __init__(
+        self,
+        *args,
+        base_selector_weight: torch.Tensor,
+        base_selector_bias: torch.Tensor,
+        base_feature_mean: torch.Tensor,
+        base_feature_std: torch.Tensor,
+        hidden_dim: int = 8,
+        max_raw_residual: float = 0.25,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        if self.feature_dim != 12 or tuple(base_selector_weight.shape) != (12,):
+            raise ValueError("NRPS要求12维证据和12维S-EDPS父权重。")
+        if tuple(base_feature_mean.shape) != (12,) or tuple(
+            base_feature_std.shape
+        ) != (12,):
+            raise ValueError("NRPS父特征统计必须是[12]。")
+        if not torch.allclose(
+            self.feature_mean.cpu(), base_feature_mean.float().cpu(), atol=1e-6
+        ) or not torch.allclose(
+            self.feature_std.cpu(), base_feature_std.float().cpu(), atol=1e-6
+        ):
+            raise ValueError("NRPS特征统计未复现S-EDPS父模型。")
+        if int(hidden_dim) <= 0 or float(max_raw_residual) <= 0:
+            raise ValueError("NRPS hidden_dim和max_raw_residual必须为正。")
+        del self.selector_weight
+        del self.selector_bias
+        self.register_buffer(
+            "base_selector_weight", base_selector_weight.detach().float()
+        )
+        self.register_buffer(
+            "base_selector_bias", base_selector_bias.detach().float().reshape(())
+        )
+        self.residual_selector = nn.Sequential(
+            nn.Linear(12, int(hidden_dim)),
+            nn.GELU(),
+            nn.Linear(int(hidden_dim), 1),
+        )
+        nn.init.zeros_(self.residual_selector[-1].weight)
+        nn.init.zeros_(self.residual_selector[-1].bias)
+        self.hidden_dim = int(hidden_dim)
+        self.max_raw_residual = float(max_raw_residual)
+
+    def pair_delta(self, raw_features: torch.Tensor) -> torch.Tensor:
+        normalized = (raw_features.float() - self.feature_mean) / self.feature_std
+        base_raw = normalized @ self.base_selector_weight + self.base_selector_bias
+        residual = self.max_raw_residual * torch.tanh(
+            self.residual_selector(normalized).squeeze(1)
+        )
+        return self.max_delta * torch.tanh(base_raw + residual)
+
+    def stats(self) -> dict[str, object]:
+        return {
+            "base_selector_weight_norm": float(self.base_selector_weight.norm()),
+            "base_selector_bias": float(self.base_selector_bias),
+            "hidden_dim": self.hidden_dim,
+            "max_raw_residual": self.max_raw_residual,
+            "first_layer_weight_norm": float(
+                self.residual_selector[0].weight.detach().norm()
+            ),
+            "output_weight_norm": float(
+                self.residual_selector[-1].weight.detach().norm()
+            ),
+            "output_bias": float(self.residual_selector[-1].bias.detach()),
+            "margin_threshold": float(self.margin_threshold),
+            "margin_temperature": self.margin_temperature,
+        }
+
+
 class ReciprocalSemanticNeighborPairSelector(CenteredRoleGatedPairSelector):
     """按互惠性连续缩放语义邻居的训练外推修正。"""
 
