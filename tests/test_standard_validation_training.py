@@ -6,6 +6,7 @@ import torch
 from model.innovations.train_standard_validation import (
     evaluate_validation,
     load_config,
+    pseudo_unseen_fold_batch,
 )
 
 
@@ -81,12 +82,30 @@ class StandardValidationTrainingTest(unittest.TestCase):
             / "experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-003.yaml"
         )
         self.assertEqual(rescue2["inner_gradient_scope"], "transport_generator_only")
+        rescue3, _ = load_config(
+            ROOT
+            / "experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-004.yaml"
+        )
+        self.assertEqual(rescue3["inner_batch_mode"], "pseudo_unseen_only")
+
+    def test_pseudo_unseen_inner_batch_contains_no_support_class(self):
+        labels = torch.tensor([0] * 80 + [1] * 80 + [2] * 80)
+        indices = pseudo_unseen_fold_batch(
+            labels,
+            torch.tensor([2]),
+            64,
+            torch.Generator().manual_seed(9),
+        )
+        self.assertEqual(indices.numel(), 64)
+        self.assertTrue(labels.index_select(0, indices).eq(2).all())
 
     def test_nested_training_samples_inner_batches_only_from_fit_labels(self):
         source = (ROOT / "model/innovations/train_standard_validation.py").read_text(
             encoding="utf-8"
         )
-        self.assertIn("balanced_fold_batch(\n                            fit_labels", source)
+        self.assertIn("balanced_fold_batch(", source)
+        self.assertIn("pseudo_unseen_fold_batch(", source)
+        self.assertIn("fit_labels,", source)
         self.assertIn("inner_fold_scope", source)
         self.assertNotIn("val_unseen_positions].to(device)", source)
 

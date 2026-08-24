@@ -81,6 +81,7 @@ NESTED_CONFIG_KEYS = CONFIG_KEYS | {
     "inner_pseudo_unseen_images_used_for_gradient",
 }
 NESTED_V2_CONFIG_KEYS = NESTED_CONFIG_KEYS | {"inner_gradient_scope"}
+NESTED_V3_CONFIG_KEYS = NESTED_V2_CONFIG_KEYS | {"inner_batch_mode"}
 INPUT_KEYS = (
     "sentence_embeds",
     "train_features",
@@ -101,6 +102,7 @@ def load_config(path: Path) -> tuple[dict, str]:
     expected_keys = {
         "gzsl-paper.standard-nested-validation.v1": NESTED_CONFIG_KEYS,
         "gzsl-paper.standard-nested-validation.v2": NESTED_V2_CONFIG_KEYS,
+        "gzsl-paper.standard-nested-validation.v3": NESTED_V3_CONFIG_KEYS,
     }.get(schema, CONFIG_KEYS)
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
@@ -111,11 +113,13 @@ def load_config(path: Path) -> tuple[dict, str]:
         "gzsl-paper.standard-validation.v1",
         "gzsl-paper.standard-nested-validation.v1",
         "gzsl-paper.standard-nested-validation.v2",
+        "gzsl-paper.standard-nested-validation.v3",
     ):
         raise ValueError("标准validation配置schema错误。")
     nested = schema in (
         "gzsl-paper.standard-nested-validation.v1",
         "gzsl-paper.standard-nested-validation.v2",
+        "gzsl-paper.standard-nested-validation.v3",
     )
     expected_experiment = "V2-TUNE-002" if nested else "V2-TUNE-001"
     if config["experiment_id"] != expected_experiment:
@@ -162,10 +166,17 @@ def load_config(path: Path) -> tuple[dict, str]:
         or config["inner_pseudo_unseen_images_used_for_gradient"] is not True
     ):
         raise ValueError("嵌套validation内层三折配置错误。")
-    if schema == "gzsl-paper.standard-nested-validation.v2" and config[
+    if schema in (
+        "gzsl-paper.standard-nested-validation.v2",
+        "gzsl-paper.standard-nested-validation.v3",
+    ) and config[
         "inner_gradient_scope"
     ] != "transport_generator_only":
         raise ValueError("嵌套validation v2只允许迁移与生成模块接收inner梯度。")
+    if schema == "gzsl-paper.standard-nested-validation.v3" and config[
+        "inner_batch_mode"
+    ] != "pseudo_unseen_only":
+        raise ValueError("嵌套validation v3只允许pseudo-unseen inner batch。")
     if set(config["inputs"]) != set(INPUT_KEYS):
         raise ValueError("validation输入字段不完整或包含非开发数据。")
     if set(config["expected_sha256"]) != set(INPUT_KEYS):
@@ -203,6 +214,20 @@ def _per_class_accuracy(labels, predictions, classes) -> float:
             raise ValueError(f"validation缺少类别{int(class_id)}。")
         values.append((predictions.cpu().long()[mask] == class_id).float().mean())
     return float(torch.stack(values).mean())
+
+
+def pseudo_unseen_fold_batch(
+    labels: torch.Tensor,
+    pseudo_unseen: torch.Tensor,
+    batch_size: int,
+    generator: torch.Generator,
+) -> torch.Tensor:
+    pool = torch.isin(labels, pseudo_unseen).nonzero(as_tuple=False).flatten()
+    if int(batch_size) <= 0 or pool.numel() < int(batch_size):
+        raise ValueError("pseudo-unseen inner batch样本不足。")
+    return pool[
+        torch.randperm(pool.numel(), generator=generator)[: int(batch_size)]
+    ]
 
 
 @torch.no_grad()
@@ -321,9 +346,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         nested = config["schema_version"] in (
             "gzsl-paper.standard-nested-validation.v1",
             "gzsl-paper.standard-nested-validation.v2",
+            "gzsl-paper.standard-nested-validation.v3",
         )
         detach_inner_tg = (
-            config["schema_version"] == "gzsl-paper.standard-nested-validation.v2"
+            config["schema_version"] in (
+                "gzsl-paper.standard-nested-validation.v2",
+                "gzsl-paper.standard-nested-validation.v3",
+            )
         )
         inner_folds = []
         inner_fold_models = []
@@ -444,13 +473,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     for fold_id, ((pseudo_seen, pseudo_unseen), fold_model) in enumerate(
                         zip(inner_folds, inner_fold_models)
                     ):
-                        inner_relative = balanced_fold_batch(
-                            fit_labels,
-                            pseudo_seen,
-                            pseudo_unseen,
-                            int(config["inner_batch_half"]),
-                            inner_generators[fold_id],
-                        )
+                        if config.get("inner_batch_mode") == "pseudo_unseen_only":
+                            inner_relative = pseudo_unseen_fold_batch(
+                                fit_labels,
+                                pseudo_unseen,
+                                2 * int(config["inner_batch_half"]),
+                                inner_generators[fold_id],
+                            )
+                        else:
+                            inner_relative = balanced_fold_batch(
+                                fit_labels,
+                                pseudo_seen,
+                                pseudo_unseen,
+                                int(config["inner_batch_half"]),
+                                inner_generators[fold_id],
+                            )
                         inner_positions = fit_positions.index_select(0, inner_relative)
                         inner_images = features.index_select(
                             0, inner_positions
@@ -574,6 +611,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "inner_fold_manifest": inner_manifest,
                 "inner_gradient_scope": (
                     config.get("inner_gradient_scope", "all_three_modules")
+                    if nested
+                    else None
+                ),
+                "inner_batch_mode": (
+                    config.get("inner_batch_mode", "balanced_pseudo_seen_unseen")
                     if nested
                     else None
                 ),

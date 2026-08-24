@@ -25,3 +25,5 @@ RUN-003预注册RESCUE-2：`inner_gradient_scope=transport_generator_only`；主
 RUN-003最佳epoch=`16`，`U/S/H/ZS_val=73.057747/81.389427/76.998860/79.036897%`，H相对旧baseline提高`0.525896`，但U/ZS仍低`3.366995/0.897938`，不能仅凭H宣称unseen泛化增强。
 
 RESCUE-3按episode-based ZSL的support/refining语义，将inner loss的图像batch改为pseudo-unseen-only；inner梯度仍只更新TST-NTR与CCGR，权重保持0.1。模型SHA256：`fc7a1f315e516380da98d5a57da9515b3819a6b6b82e34ed1aa8b6897608267f`；最后checkpoint SHA256相同。
+
+RUN-004预注册RESCUE-3：每折inner batch固定64张pseudo-unseen图像，不再混入pseudo-seen图像。
