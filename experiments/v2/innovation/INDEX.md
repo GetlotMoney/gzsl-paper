@@ -98,6 +98,6 @@
 | V2-INNOVATION-095 | IDEA-128 | S-EDPS分阶段证据Dropout选择器 | supported two-seed stagewise（最高H=78.572828） | `INNOVATION-095_sedps/` |
 | V2-INNOVATION-096 | IDEA-129 | CEPS证据一致性分阶段选择器 | rejected（弱一致性无效、强一致性降低H） | `INNOVATION-096_ceps/` |
 | V2-INNOVATION-097 | IDEA-130 | JEDS Jackknife证据选择器 | rejected（11倍视图计算与S-EDPS逐项相同） | `INNOVATION-097_jeds/` |
-| V2-INNOVATION-098 | IDEA-131 | NRPS非线性残差Pair选择器 | planned（冻结S-EDPS，只训练受限MLP残差） | `INNOVATION-098_nrps/` |
+| V2-INNOVATION-098 | IDEA-131 | NRPS非线性残差Pair选择器 | rejected（MLP真实训练但best退回父模型） | `INNOVATION-098_nrps/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

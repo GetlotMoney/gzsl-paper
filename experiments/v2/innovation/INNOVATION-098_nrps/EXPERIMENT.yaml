@@ -4,15 +4,15 @@ idea_id: IDEA-131
 framework_id: FRAMEWORK-V2
 title: Nonlinear Residual Pair Selector
 base_commit: d9d526b880c25dec5c4112208ad22d6c9fdcc0bf
-code_commit: null
-status: planned
+code_commit: 9b8710d3fcebf4231f41183062f42ebd19f42c08
+status: rejected_nonlinear_seen_ce
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-098_nrps/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 9b8710d3fcebf4231f41183062f42ebd19f42c08
     config_ref: experiments/v2/innovation/INNOVATION-098_nrps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-098_nrps/RUN-001
-    status: planned_seed5
+    status: completed_parent_only

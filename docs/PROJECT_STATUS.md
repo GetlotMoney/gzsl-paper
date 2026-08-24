@@ -548,6 +548,8 @@ JEDS seed5完成全部11种单证据缺失覆盖后，`U/S/H/ZS=76.982599/80.230
 
 下一实验`V2-INNOVATION-098 / NRPS`冻结S-EDPS线性selector，只训练零初始化、raw残差上限0.25的`12→8→1`非线性残差，检验证据条件交互能否修复方向错误。
 
+NRPS seed5的MLP真实训练到输出层范数`0.886818`，但所有非零状态均低于父模型，best严格退回S-EDPS `H=78.572828%`、selected iteration=`-1`。IDEA-131拒绝；方向问题不能靠增加seen CE模型容量解决。当前累计有效实验230组。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

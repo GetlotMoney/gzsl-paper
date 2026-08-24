@@ -1,6 +1,6 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-098 NRPS</title><style>body{font-family:system-ui;margin:32px;background:#f7f9fc;color:#172033}.box{background:#fff;border:1px solid #b9c4d6;border-radius:12px;padding:16px;margin:12px}.arrow{text-align:center;font-size:24px}.tag{font-weight:700;color:#3156a3}code{background:#eef2f8;padding:2px 5px}</style></head><body>
 <h1>NRPS 非线性残差Pair选择器</h1>
-<div class="box"><span class="tag">代码身份</span>：pre-run commit待回填；base <code>d9d526b880c25dec5c4112208ad22d6c9fdcc0bf</code></div>
+<div class="box"><span class="tag">代码身份</span>：<code>9b8710d3fcebf4231f41183062f42ebd19f42c08</code>；base <code>d9d526b880c25dec5c4112208ad22d6c9fdcc0bf</code></div>
 <div class="box"><span class="tag">阶段一</span>：加载两seed支持的S-EDPS selector；冻结其12维线性权重、bias和证据统计。</div><div class="arrow">↓</div>
 <div class="box"><span class="tag">阶段二</span>：标准化12维证据进入<code>Linear(12,8)→GELU→Linear(8,1)</code>；末层零初始化，输出经tanh限制为raw score的±0.25残差。</div><div class="arrow">↓</div>
 <div class="box"><span class="tag">最终修正</span>：<code>delta=0.5*tanh(linear_parent+nonlinear_residual)</code>，再由原margin gate作用于相关top2。</div><div class="arrow">↓</div>

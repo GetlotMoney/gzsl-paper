@@ -139,7 +139,7 @@ V2-H-PLUS-3PP
       ├─ supported_branch：IDEA-128 / S-EDPS分阶段证据稳健化（两seed均提升，最高H=78.572828）
       ├─ rejected_branch：IDEA-129 / CEPS证据一致性选择器（弱约束无效、强约束有害）
       ├─ rejected_branch：IDEA-130 / JEDS Jackknife证据选择器（全缺失覆盖无新增益）
-      ├─ testing_branch：IDEA-131 / NRPS非线性残差Pair选择器（修复线性方向错误）
+      ├─ rejected_branch：IDEA-131 / NRPS非线性残差Pair选择器（seen CE下容量增加无效）
       ├─ rejected_branch：IDEA-113 / S-RDSS分阶段角色尺度选择器（尺度不能独立叠加）
       ├─ rejected_branch：IDEA-114 / TR-RDSS信赖域角色尺度选择器（只改善seed5）
       ├─ rejected_branch：IDEA-115 / RVPS角色投票成对选择器（多数投票无增益）
