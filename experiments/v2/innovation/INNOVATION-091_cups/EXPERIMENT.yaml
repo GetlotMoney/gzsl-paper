@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-091
+idea_id: IDEA-125
+framework_id: FRAMEWORK-V2
+title: Class-Uniform Pair Selector
+base_commit: 94fc604202d431e5743f60c41d23146bb9066cd1
+code_commit: null
+status: planned
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-091_cups/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-091_cups/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-091_cups/RUN-001
+    status: planned

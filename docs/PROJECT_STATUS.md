@@ -504,6 +504,8 @@ BFPS seed5最高`U/S/H/ZS=76.814806/80.172402/78.457698/84.121209%`，比稳定S
 
 APS seed5把4458个pair镜像为8916个标签严格1:1样本，交换等变和零bias边界成立，但最高`U/S/H/ZS=76.815343/79.963911/78.358011/83.989006%`，低于稳定SNPS top-3。严格反对称删除了父排序中有用的非对称信息，IDEA-124拒绝且不追加seed7。当前累计217组。
 
+下一实验`V2-INNOVATION-091 / CUPS`保留稳定SNPS全量pair，并按pair真实seen类别的出现频次乘以均值1逆频率权重，使150类对loss贡献更均匀；它不平衡top1/top2标签。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

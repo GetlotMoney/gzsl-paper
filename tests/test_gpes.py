@@ -37,6 +37,7 @@ from model.innovations.train_gpes import (
     hard_margin_only_for_schema,
     load_config,
     matched_hard_pair_indices,
+    true_class_balancing_weights,
     minimal_flip_delta_targets,
 )
 
@@ -845,6 +846,23 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.aps.v1")
         self.assertEqual(config["pair_augmentation"], "swap_and_negate")
         self.assertEqual(config["gate_margin_mode"], "absolute")
+
+    def test_true_class_balancing_weights_have_mean_one(self):
+        weights, stats = true_class_balancing_weights(
+            torch.tensor([0, 0, 1, 2, 2, 2])
+        )
+        self.assertAlmostEqual(float(weights.mean()), 1.0, places=6)
+        self.assertEqual(stats["present_class_count"], 3.0)
+        self.assertGreater(stats["max_weight"], stats["min_weight"])
+
+    def test_cups_config_binds_true_class_balance(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-091_cups/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.cups.v1")
+        self.assertEqual(
+            config["true_class_balance"], "inverse_pair_frequency_mean1"
+        )
 
 
 if __name__ == "__main__":

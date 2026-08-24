@@ -91,5 +91,6 @@
 | V2-INNOVATION-088 | IDEA-122 | FBPS焦点边界成对选择器 | rejected（seed7低于top-3） | `INNOVATION-088_fbps/` |
 | V2-INNOVATION-089 | IDEA-123 | BFPS无偏置成对选择器 | rejected（H低于top-3） | `INNOVATION-089_bfps/` |
 | V2-INNOVATION-090 | IDEA-124 | APS反对称成对选择器 | rejected（H低于top-3） | `INNOVATION-090_aps/` |
+| V2-INNOVATION-091 | IDEA-125 | CUPS类别均匀成对选择器 | planned（按真实类别pair频次均衡） | `INNOVATION-091_cups/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
