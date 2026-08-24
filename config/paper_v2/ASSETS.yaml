@@ -1,0 +1,43 @@
+schema_version: gzsl-paper.paper-assets.v1
+code_semantics_commit: b7e25c2758da896411236c2ea60662439a01244b
+clip:
+  implementation_commit: d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
+  checkpoint_sha256: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02
+  model: ViT-L/14@336px
+datasets:
+  CUB:
+    asset_id: f61a4af0d7644477
+    manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/openai_d05afc4_codex_roles_v1/asset_manifest.json
+    manifest_sha256: 6e54351f1249d1bea1f559d1237ece21450ef0e5d9314df0e863da740df24ec5
+    role_text_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/frozen/CUB_role_texts.json
+    role_text_sha256: 80ab16ae6efe0ddecb3a687208d2a6625837a2ea63a46bb2ce063ec0400b23da
+    classes: 200
+    seen_classes: 150
+    unseen_classes: 50
+    train_images: 7057
+    test_seen_images: 1764
+    test_unseen_images: 2967
+  AWA2:
+    asset_id: 803b2f38aae164e5
+    manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/AWA2/openai_d05afc4_codex_roles_v1/asset_manifest.json
+    manifest_sha256: d391e4bc2014af79a9adbca3509b49f7883bac86a32b0e66e02df6a971b543dc
+    role_text_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/frozen/AWA2_role_texts.json
+    role_text_sha256: acfa1b07f60b31f61721bf393482814c74687c85bd2d2188a5476aa5cfbf4e98
+    classes: 50
+    seen_classes: 40
+    unseen_classes: 10
+    train_images: 23527
+    test_seen_images: 5882
+    test_unseen_images: 7913
+  SUN:
+    asset_id: baaea1e1bfdc31e4
+    manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/SUN/openai_d05afc4_codex_roles_v1/asset_manifest.json
+    manifest_sha256: 3e507e1cfdb02211748f891722d2f11af1d700312aa4ffa4cc90d0a2a41fcef6
+    role_text_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/frozen/SUN_role_texts.json
+    role_text_sha256: 0111e6f2eae2bc8d7d24519e5f98e89487b62af69c23bf64c9a6fbf1e9deb727
+    classes: 717
+    seen_classes: 645
+    unseen_classes: 72
+    train_images: 10320
+    test_seen_images: 2580
+    test_unseen_images: 1440

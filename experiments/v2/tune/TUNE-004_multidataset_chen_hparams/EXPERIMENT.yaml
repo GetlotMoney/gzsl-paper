@@ -1,0 +1,20 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-TUNE-004
+slug: multidataset_chen_hparams
+kind: tune
+framework_id: FRAMEWORK-V2
+code_semantics_commit: b7e25c2758da896411236c2ea60662439a01244b
+asset_registry: config/paper_v2/ASSETS.yaml
+status: planned_topology_coarse
+question: 在Chen-style协议下，三个数据集分别应使用什么topology、transport、CCGR幅度和学习率
+evaluation_protocol: chen_shiming_code_aligned_multidataset_test_selected_gzsl
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+nested_official_test_selection: false
+training_strategy: stagewise_50_100_50
+baseline_ref: V2-ABLATION-003/{dataset}-STAGEWISE-S7 with topology_weight=0.1
+search_order: [topology_coarse, topology_fine, transport_coarse, transport_fine, ccgr_coarse, ccgr_fine, learning_rate]
+framework_diagram: experiments/v2/tune/TUNE-004_multidataset_chen_hparams/framework_diagram.html
+output_root: /data/lby/projects/cv_project/GZSL_Warehouse/tune/v2/TUNE-004_multidataset_chen_hparams

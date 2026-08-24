@@ -10,3 +10,4 @@
 | V2-CONFIRM-006 | Chen-style分阶段pseudo-unseen辅助目标 | rejected; H 75.948676 | `CONFIRM-006_chen_stagewise_pseudo_unseen/` |
 | V2-CONFIRM-007 | Chen-style真正class-exclusive三fold共享迁移 | closed; best H 75.849154 | `CONFIRM-007_chen_class_exclusive/` |
 | V2-CONFIRM-008 | 三折validation冻结后的完整150类最终评估 | completed; H 74.814246 | `CONFIRM-008_threefold_frozen_final/` |
+| V2-CONFIRM-009 | 三数据集可追溯Pure CLIP与Mean8基线 | planned | `CONFIRM-009_multidataset_traceable_baselines/` |

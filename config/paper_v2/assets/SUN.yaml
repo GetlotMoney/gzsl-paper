@@ -1,0 +1,17 @@
+schema_version: gzsl-paper.clip-asset-source.v1
+dataset: SUN
+raw_root: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/raw/SUN
+raw_archive: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/downloads/SUNAttributeDB_Images.tar.gz
+image_path_anchors:
+- SUN/images
+- images
+res101: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/splits/xlsa17/data/SUN/res101.mat
+att_splits: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/splits/xlsa17/data/SUN/att_splits.mat
+role_texts: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/frozen/SUN_role_texts.json
+clip_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_checkpoints/ViT-L-14-336px.pt
+expected_sha256:
+  raw_archive: ba27e21563227a915ad8b2f38877235984c7a200631cb39fd8e4a558f843fa86
+  res101: f511e7280b28316312b0ddfa1f43a0289c3931b184a6a608b2e264d85e53cf65
+  att_splits: 274b7f0761d1e76a63fca11dea1db6f5780fb1be919dfed0a24b3fda12f9616b
+  role_texts: 0111e6f2eae2bc8d7d24519e5f98e89487b62af69c23bf64c9a6fbf1e9deb727
+  clip_checkpoint: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02

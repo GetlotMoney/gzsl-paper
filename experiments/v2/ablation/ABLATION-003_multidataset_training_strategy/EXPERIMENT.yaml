@@ -1,0 +1,20 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-ABLATION-003
+slug: multidataset_training_strategy
+kind: ablation
+framework_id: FRAMEWORK-V2
+code_semantics_commit: b7e25c2758da896411236c2ea60662439a01244b
+asset_registry: config/paper_v2/ASSETS.yaml
+status: planned
+question: 相同三模块、数据、seed、loss和更新数下，End-to-End与固定50/100/50 Stagewise哪个更好
+evaluation_protocol: chen_shiming_code_aligned_multidataset_test_selected_gzsl
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: false
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+nested_official_test_selection: false
+selection_scope: whole_run_whole_model_only
+datasets: [CUB, AWA2, SUN]
+default_parameters: {topology_weight: 0.1, max_transport_step: 1.5, max_generator_magnitude: 0.2}
+framework_diagram: experiments/v2/ablation/ABLATION-003_multidataset_training_strategy/framework_diagram.html
+output_root: /data/lby/projects/cv_project/GZSL_Warehouse/ablation/v2/ABLATION-003_multidataset_training_strategy

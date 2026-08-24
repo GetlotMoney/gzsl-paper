@@ -9,7 +9,7 @@ import torch
 import torch.nn.functional as F
 
 from model.paper_v2 import PaperV2ThreeModuleModel
-from model.train_paper_v2 import random_batch_indices, stage_for_iteration
+from model.train_paper_v2 import load_config, random_batch_indices, stage_for_iteration
 from tools.create_clip_asset_source_config import build_config as build_asset_source_config
 from tools.gzsl_data import (
     clean_class_name,
@@ -113,6 +113,25 @@ class PaperV2ModelTest(unittest.TestCase):
 
 
 class PaperV2DataTest(unittest.TestCase):
+    def test_prerun_configs_cover_three_datasets_and_protocol_boundaries(self):
+        root = Path(__file__).resolve().parents[1]
+        patterns = (
+            "experiments/v2/confirmation/CONFIRM-009_multidataset_traceable_baselines/configs/*.yaml",
+            "experiments/v2/ablation/ABLATION-003_multidataset_training_strategy/configs/*.yaml",
+            "experiments/v2/tune/TUNE-004_multidataset_chen_hparams/configs/*.yaml",
+        )
+        files = [path for pattern in patterns for path in root.glob(pattern)]
+        self.assertEqual(len(files), 21)
+        configs = [load_config(path)[0] for path in files]
+        self.assertEqual({config["dataset"] for config in configs}, {"CUB", "AWA2", "SUN"})
+        baselines = [config for config in configs if config["training_strategy"] == "no_training"]
+        self.assertEqual(len(baselines), 6)
+        self.assertTrue(all(config["test_used_for_selection"] is False for config in baselines))
+        tuned = [config for config in configs if config["experiment_id"] == "V2-TUNE-004"]
+        self.assertEqual(len(tuned), 9)
+        self.assertTrue(all(config["test_used_for_hyperparameter_selection"] is True for config in tuned))
+        self.assertTrue(all(config["nested_official_test_selection"] is False for config in configs))
+
     def test_clip_reproducibility_distinguishes_repeat_from_batch_shape_roundoff(self):
         base = F.normalize(torch.randn(768, generator=torch.Generator().manual_seed(920)), dim=0)
         configured = F.normalize(base + 1e-5, dim=0)
