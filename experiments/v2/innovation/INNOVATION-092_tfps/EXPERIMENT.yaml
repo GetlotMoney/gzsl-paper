@@ -4,15 +4,15 @@ idea_id: IDEA-126
 framework_id: FRAMEWORK-V2
 title: Teacher-Forced Pair Selector
 base_commit: 8aefc076b1342eb5642e7fa9f8103822b475b484
-code_commit: null
-status: planned
+code_commit: ffc06d444cd0da01784424122c36a7847ccca090
+status: rejected_below_top3
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-092_tfps/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: ffc06d444cd0da01784424122c36a7847ccca090
     config_ref: experiments/v2/innovation/INNOVATION-092_tfps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-092_tfps/RUN-001
-    status: planned
+    status: completed_below_top3

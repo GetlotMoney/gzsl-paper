@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 218
+completed_try_count: 219
 minimum_required_try_count: 50
 ```
 
@@ -509,6 +509,8 @@ APS seed5把4458个pair镜像为8916个标签严格1:1样本，交换等变和�
 CUPS seed5最高`U/S/H/ZS=76.916522/80.072731/78.462899/84.087873%`，比稳定SNPS top-3低H `0.003811`。pair只覆盖134类且类别计数1–52，逆频率权重最高达`33.268658`，形成极端梯度；IDEA-125拒绝且不追加seed7。当前累计218组。
 
 下一实验`V2-INNOVATION-092 / TFPS`扩大seen错误监督覆盖：父预测错误时构造top1-vs-真实类pair，正确时仍用top1-vs-top2；推理保持普通top1/top2且不使用真实标签。
+
+TFPS seed5构建4604个相关pair，比稳定SNPS多146个教师强制错误pair；最高`U/S/H/ZS=76.917076/80.062246/78.458154/84.055674%`，低于稳定top-3。扩大seen错误覆盖提高loss波动但未改善unseen泛化，IDEA-126拒绝且不追加seed7。当前累计219组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
