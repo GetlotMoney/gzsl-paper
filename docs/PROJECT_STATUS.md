@@ -528,6 +528,8 @@ RDSS RUN-003保持seed5父链、只改selector随机种子为6，得到`U/S/H/ZS
 
 S-EDPS seed5达到`U/S/H/ZS=76.883745/80.285692/78.547901/84.055108%`，相对稳定SNPS提高H `0.081191`；最佳位于第282次更新，后续继续训练反而下降。追加seed7检验短程分阶段微调是否可靠。当前累计有效实验223组。
 
+S-EDPS seed7完整训练后best严格退回SNPS父模型`H=78.446100%`、selected iteration=`-1`；首次方案跨seed不成立。RESCUE-1只把阶段二学习率从`1e-3`降到`1e-4`，先复验失败seed7。当前累计有效实验224组。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

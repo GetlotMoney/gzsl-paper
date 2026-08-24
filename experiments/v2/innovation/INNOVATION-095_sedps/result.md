@@ -12,4 +12,10 @@ RUN-001（seed5）得到`U/S/H/ZS=76.883745/80.285692/78.547901/84.055108%`，se
 
 RUN-002预注册：使用seed7稳定SNPS top-3父checkpoint，只改变对应训练随机种子为7，其余分阶段公式和Chen-style评估频率不变。
 
+RUN-002（seed7）完整训练后best严格保持SNPS父模型`U/S/H/ZS=76.847547/80.112571/78.446100/83.987880%`，selected iteration=`-1`。首次S-EDPS的seed5/7增量为`+0.081191/+0.000000`，不能晋级稳定创新。
+
+失败模式是阶段二`1e-3`学习率下seed7从第一次更新起即破坏父权重；RESCUE-1只把学习率降到`1e-4`，先在seed7复验，不增加新loss或输入。
+
+RUN-002模型SHA256：`e04e81f0f7c7493d3a1d2526196e576ad372f2cff422db79fd6ac2426fd6b30c`；最后checkpoint SHA256：`9ce9e8a025c4502a809824ddc1b202075400f3d659f680424ec0b24b50d7f711`。
+
 模型SHA256：`c76f88eaeae02adf8b3de83753b0179103f4e4c2ba109fc8396dc674d77ab529`；最后checkpoint SHA256：`31f64c75a9e06ce43160a9ea0496e0831382e6c7a233a82848972deb0cd578f8`。

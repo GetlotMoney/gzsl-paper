@@ -10,4 +10,4 @@ success_condition: seed5 H高于78.466710；通过后追加seed7验证。
 failure_condition: best退回父模型或H低于父模型，不重复相同分阶段方案。
 experiment: V2-INNOVATION-095
 paper_core_innovation: false
-result: seed5 H=78.547901，相对稳定SNPS提高0.081191；最佳位于第282次更新，追加seed7验证。
+result: seed5 H=78.547901、相对父模型+0.081191；seed7 best退回父模型H=78.446100、增量0。首次方案不稳定，RESCUE-1降低阶段二学习率到1e-4。

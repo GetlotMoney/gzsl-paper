@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Staged Evidence-Dropout Pair Selector
 base_commit: 08df694bfb1ba520f5bcff24174ffbb6bacf0f1e
 code_commit: e7571cbe1099b8ea5facd01d99c5a5da0e92363e
-status: testing_seed7_required
+status: rescue1_planned_lower_learning_rate
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -17,7 +17,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-001
     status: completed_positive
   - run_id: RUN-002
-    code_commit: null
+    code_commit: 63295e0a40fbcfa9e42098e0485e5b1def9a2888
     config_ref: experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-002
-    status: planned_seed7
+    status: completed_parent_only
