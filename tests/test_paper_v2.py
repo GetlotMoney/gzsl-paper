@@ -1,6 +1,7 @@
 from pathlib import Path
 import tempfile
 import unittest
+import json
 
 import numpy as np
 import scipy.io as sio
@@ -16,6 +17,7 @@ from tools.gzsl_data import (
     load_xlsa_split,
     resolve_xlsa_image_path,
 )
+from tools.summarize_paper_runs import summarize
 
 
 class PaperV2ModelTest(unittest.TestCase):
@@ -110,6 +112,34 @@ class PaperV2ModelTest(unittest.TestCase):
 
 
 class PaperV2DataTest(unittest.TestCase):
+    def test_summary_uses_highest_seed_and_reports_range(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            paths = []
+            for seed, harmonic in ((5, 70.0), (7, 71.0), (8, 70.5)):
+                path = Path(temporary) / f"seed{seed}.json"
+                path.write_text(
+                    json.dumps(
+                        {
+                            "evaluation_protocol": "chen_shiming_code_aligned_multidataset_test_selected_gzsl",
+                            "dataset": "AWA2",
+                            "condition_id": "M3_CCGR",
+                            "training_strategy": "stagewise_50_100_50",
+                            "seed": seed,
+                            "asset_id": "asset",
+                            "code_commit": "commit",
+                            "selected_iteration": seed,
+                            "selected_stage": "TRANSFER_CCGR",
+                            "best_metrics_percent": {"U": 69.0, "S": 72.0, "H": harmonic, "ZS": 80.0},
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                paths.append(path)
+            result = summarize(paths)["summaries"][0]
+            self.assertEqual(result["highest_H_seed"], 7)
+            self.assertEqual(result["H_mean"], 70.5)
+            self.assertEqual(result["H_range"], 1.0)
+
     def test_asset_source_config_binds_each_dataset_archive(self):
         with tempfile.TemporaryDirectory() as temporary:
             role_texts = Path(temporary) / "roles.json"
