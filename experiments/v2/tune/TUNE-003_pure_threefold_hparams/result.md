@@ -27,3 +27,11 @@ RUN-005（transport=`1.0`）在epoch 17得到`mean U/S/H/ZS=75.902977/75.687253/
 RUN-004模型SHA256：`8c6ce80566b0052825361760ae8ba913e51af7876745f9d7fdc3cb60362eb148`；RUN-005模型SHA256：`b975bf43dedc7e36dc20101cfdcda1f5e47aa97925e050ad6bdb9c95f30d6533`；各自checkpoint SHA256相同。
 
 RUN-006/007预注册CCGR幅度轴：固定topology=`0.1`、transport=`1.5`，只把`max_generator_magnitude`改为`0.05/0.1`。
+
+RUN-006（CCGR幅度=`0.05`）在epoch 12得到`mean U/S/H/ZS=72.122111/80.505784/75.988339/80.627890%`，U明显下降且range=`1.775089`，淘汰。
+
+RUN-007（CCGR幅度=`0.1`）在epoch 13得到`mean U/S/H/ZS=73.920937/79.424107/76.545806/80.702031%`，H/ZS提高，但U低于基线`1.004955`且range扩大为`1.306691`，按泛化约束不保留。
+
+最终冻结RUN-001：`topology_weight=0.1 / max_transport_step=1.5 / max_generator_magnitude=0.2 / epoch=17`。三折mean U/S/H/ZS=`74.925892/77.350948/76.113854/79.673799%`，min H=`75.703050`，range=`1.032817`。所有选参均未加载official test。
+
+RUN-006模型SHA256：`58759d43b032aba127a3058a3f71309dd2bb416bf80baa3db4da7d3036eca46b`；RUN-007模型SHA256：`9bce4f15ec53e55d71633815751f0f382f192164ec3f31749e17afbba4dd5b2e`；各自checkpoint SHA256相同。
