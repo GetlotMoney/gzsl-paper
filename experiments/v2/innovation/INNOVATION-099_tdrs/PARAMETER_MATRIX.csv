@@ -1,2 +1,2 @@
-run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,pair_count,role_weight,test_used_for_selection,output_uri,decision
-RUN-001,,experiments/v2/innovation/INNOVATION-099_tdrs/configs/RUN-001.yaml,,5,planned,,,,,,,,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-099_tdrs/RUN-001,pending
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,best_ZS_observation,best_ZS_iteration,pair_count,role_weight,test_used_for_selection,nested_official_test_selection,output_uri,decision
+RUN-001,f152d3c4b95156a3660b341ccbd1f1ebb49017ef,experiments/v2/innovation/INNOVATION-099_tdrs/configs/RUN-001.yaml,1f9f8a1d670db2cbfbc3f64654bca2d4af877b9500d5b2a66b7230191d273229,5,completed,76.982599,80.230141,78.572828,84.121776,-1,84.121776,-1,4458,0.000000,true,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-099_tdrs/RUN-001,drop_sign_reversal
