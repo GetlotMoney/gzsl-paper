@@ -4,15 +4,15 @@ idea_id: IDEA-122
 framework_id: FRAMEWORK-V2
 title: Focal Boundary Pair Selector
 base_commit: bede006f8ce3c362296c816db95ffc55dba8c096
-code_commit: null
-status: planned
+code_commit: fbee96469caec6c4fa7a38f460d08f7443d5440e
+status: testing_seed7_reliability
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-088_fbps/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: fbee96469caec6c4fa7a38f460d08f7443d5440e
     config_ref: experiments/v2/innovation/INNOVATION-088_fbps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-088_fbps/RUN-001
-    status: planned
+    status: completed_weak_positive
