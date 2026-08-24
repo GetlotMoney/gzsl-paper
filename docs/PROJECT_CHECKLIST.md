@@ -93,7 +93,7 @@
 
 ## 当前唯一下一步
 
-- [ ] 完成CUB/AWA2/SUN Attribute官方原图、xlsa17和OpenAI CLIP ViT-L/14@336px资产校验。
+- [x] 完成CUB/AWA2/SUN Attribute官方原图、xlsa17和OpenAI CLIP ViT-L/14@336px源资产校验。
 - [ ] 冻结三套数据集专属八角色原文并生成同checkpoint图像/文本缓存。
 - [ ] 完成三数据集统一入口测试、正式Experiment配置和pre-run commit。
 - [ ] 按Pure CLIP→Mean8→TG-VPR→TST-NTR→CCGR顺序执行Chen-style矩阵。

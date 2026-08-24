@@ -5,20 +5,34 @@ downloads:
     url: https://data.caltech.edu/records/65de6-vp158/files/CUB_200_2011.tgz?download=1
     publisher: CaltechDATA
     published_md5: 97eceeb196236b17998738112f37df78
+    sha256: 0c685df5597a8b24909f6a7c9db6d11e008733779a671760afef78feb49bf081
   AWA2:
     archive: AwA2-data.zip
     url: https://cvml.ista.ac.at/AwA2/AwA2-data.zip
     publisher: Institute of Science and Technology Austria
+    sha256: cc5a849879165acaa2b52f1de3f146ffcd1c475f6ef85bab0152c763e573744f
   SUN:
     archive: SUNAttributeDB_Images.tar.gz
     url: https://cs.brown.edu/~gen/Attributes/SUNAttributeDB_Images.tar.gz
     publisher: Brown University SUN Attribute Database
+    sha256: ba27e21563227a915ad8b2f38877235984c7a200631cb39fd8e4a558f843fa86
   xlsa17:
     archive: xlsa17.zip
     url: https://cvml.ista.ac.at/AwA2/xlsa17.zip
     publisher: Institute of Science and Technology Austria
+    sha256: 1223b4f57fea3249bcd1d0d9d30f779474df19f47d81fdea71a88a56dfc7ff12
 clip:
   implementation: https://github.com/openai/CLIP
   model: ViT-L/14@336px
   checkpoint_url: https://openaipublic.azureedge.net/clip/models/3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02/ViT-L-14-336px.pt
   checkpoint_sha256: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02
+xlsa_files:
+  CUB:
+    res101_sha256: 9a97c71951f9ac9f5c3708e6e55386e53f3d433289ed5e87a18b4af2a1a0fca1
+    att_splits_sha256: d7f5b4c2cb7853acdce43a9e87607ceed30bdf18c60344be3a266de29b6751e3
+  AWA2:
+    res101_sha256: 3592d2002a4e2d7ea4ef19069f9c35b8ad86c5e1a43b2d30257eba7018fd6dfa
+    att_splits_sha256: 8bb1527856c797dcd3bac981b25832bca8e7fe04f3fc2ab2322850a74e848df1
+  SUN:
+    res101_sha256: f511e7280b28316312b0ddfa1f43a0289c3931b184a6a608b2e264d85e53cf65
+    att_splits_sha256: 274b7f0761d1e76a63fca11dea1db6f5780fb1be919dfed0a24b3fda12f9616b

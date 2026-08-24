@@ -580,7 +580,7 @@ V2-TUNE-003 CCGR幅度=`0.05`造成U下降和range扩大；幅度=`0.1`虽把mea
 
 V2-CONFIRM-008完成单次official test，`U/S/H/ZS=73.589277/76.080686/74.814246/80.644178%`，低于77%目标且比旧无专家validation-frozen结果低`0.157066`。该test不用于选模；继续研究必须回到三折validation提出新方法。当前累计有效实验243组。
 
-owner随后冻结最终论文实验为CUB/AWA2/SUN Attribute三数据集、OpenAI CLIP ViT-L/14@336px可追溯缓存、TG-VPR→TST-NTR→CCGR三模块与Chen-style test-selected协议。三数据集通用xlsa17加载、动态类别轴、Pure CLIP/Mean8和全部模块开关、End-to-End/50-100-50 Stagewise统一训练入口已开始实现；AWA2官方原图与xlsa17已下载校验，CUB和SUN官方原图仍在服务器断点续传。尚未创建pre-run commit或启动正式模型训练。
+owner随后冻结最终论文实验为CUB/AWA2/SUN Attribute三数据集、OpenAI CLIP ViT-L/14@336px可追溯缓存、TG-VPR→TST-NTR→CCGR三模块与Chen-style test-selected协议。三数据集通用xlsa17加载、动态类别轴、Pure CLIP/Mean8和全部模块开关、End-to-End/50-100-50 Stagewise统一训练入口已实现。三套官方原图与xlsa17均完成压缩包哈希、解压和逐路径校验：CUB/AWA2/SUN分别解析11,788/37,322/14,340张且无重复；OpenAI checkpoint SHA也已通过。当前由owner授权的独立Agent生成7,736句八角色原文，尚未生成正式CLIP缓存、pre-run commit或训练结果。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

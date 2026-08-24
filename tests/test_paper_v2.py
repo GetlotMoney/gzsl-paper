@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 from model.paper_v2 import PaperV2ThreeModuleModel
 from model.train_paper_v2 import random_batch_indices, stage_for_iteration
+from tools.create_clip_asset_source_config import build_config as build_asset_source_config
 from tools.gzsl_data import (
     clean_class_name,
     evaluate_prototypes,
@@ -94,6 +95,19 @@ class PaperV2ModelTest(unittest.TestCase):
 
 
 class PaperV2DataTest(unittest.TestCase):
+    def test_asset_source_config_binds_each_dataset_archive(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            role_texts = Path(temporary) / "roles.json"
+            role_texts.write_text("{}", encoding="utf-8")
+            awa2 = build_asset_source_config("AWA2", role_texts)
+            sun = build_asset_source_config("SUN", role_texts)
+            self.assertTrue(awa2["raw_archive"].endswith("AwA2-data.zip"))
+            self.assertTrue(sun["raw_archive"].endswith("SUNAttributeDB_Images.tar.gz"))
+            self.assertNotEqual(
+                awa2["expected_sha256"]["raw_archive"],
+                sun["expected_sha256"]["raw_archive"],
+            )
+
     def test_double_slash_xlsa_path_resolves_against_anchor(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
