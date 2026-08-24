@@ -486,6 +486,8 @@ NDPS seed7达到`U/S/H/ZS=76.847547/80.112571/78.446100/83.987880%`，与同seed
 
 LSCR seed5构建5241个相关top3真类包含样本且三标签完整，但完整运行后best严格退回父模型`H=78.320510%`、selected iteration=`-1`；所有非零source weight均显著降低H。seen三类局部CE不能迁移到unseen，IDEA-119拒绝且不追加seed7。当前累计212组。
 
+下一实验`V2-INNOVATION-087 / MHPS`从稳定SNPS top-3全部pair中保留全部真实top2错误，再按margin选等量最困难正确pair；用确定性1:1样本匹配代替此前失败的高权重类别平衡。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

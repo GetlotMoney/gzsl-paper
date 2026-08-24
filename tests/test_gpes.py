@@ -32,6 +32,7 @@ from model.innovations.train_gpes import (
     extract_triplet_examples,
     hard_margin_only_for_schema,
     load_config,
+    matched_hard_pair_indices,
     minimal_flip_delta_targets,
 )
 
@@ -738,6 +739,27 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.lscr.v1")
         self.assertEqual(config["candidate_count"], 3)
         self.assertEqual(config["training_scope"], "related_top3_true_contained")
+
+    def test_matched_hard_pairs_keep_all_errors_and_equal_correct(self):
+        logits = torch.tensor([
+            [1.1, 1.0], [2.0, 1.0], [1.2, 1.0],
+            [3.0, 1.0], [1.3, 1.0], [4.0, 1.0],
+        ])
+        targets = torch.tensor([0, 1, 0, 0, 1, 0])
+        selected, stats = matched_hard_pair_indices(logits, targets)
+        self.assertTrue(torch.equal(selected, torch.tensor([0, 1, 2, 4])))
+        self.assertEqual(stats["error_count"], 2)
+        self.assertEqual(stats["matched_correct_count"], 2)
+
+    def test_mhps_config_binds_matched_sampling(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-087_mhps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.mhps.v1")
+        self.assertEqual(
+            config["pair_sampling"],
+            "all_errors_plus_equal_lowest_margin_correct",
+        )
 
 
 if __name__ == "__main__":
