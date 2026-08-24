@@ -1,0 +1,35 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-TUNE-002
+slug: nested_three_module_validation
+kind: tune
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+base_commit: 2a5611e629facf51f78b6cf4a8f029b4afff19ac
+code_commit: null
+status: planned
+research_question: 内层仅在外层100个训练类中进行语义平衡三折，能否提高TG-VPR、TST-NTR与CCGR联合模型在外层50个类别不相交validation类上的泛化？
+evaluation_protocol: xlsa17_class_disjoint_gzsl_validation
+validation_used_for_selection: true
+test_used_for_selection: false
+official_test_loaded: false
+validation_images_used_for_gradient: false
+inner_pseudo_unseen_images_used_for_gradient: true
+historical_test_informed_architecture: true
+final_test_eligible: false
+framework_diagram: experiments/v2/tune/TUNE-002_nested_three_module_validation/framework_diagram.html
+split:
+  outer_fit_images: 3724
+  outer_train_classes: 100
+  outer_validation_seen_images: 978
+  outer_validation_unseen_images: 2355
+  outer_validation_unseen_classes: 50
+  inner_fold_sizes: [34, 33, 33]
+  inner_fold_fit_image_counts: [1264, 1229, 1231]
+  inner_fold_sha256: d8ed7bb33165f3320cdce7473144cb24d4b672cd9fd951710ad586ad314813b9
+runs:
+  - run_id: RUN-001
+    code_commit: null
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-001
+    status: planned

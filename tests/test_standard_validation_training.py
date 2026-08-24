@@ -56,6 +56,30 @@ class StandardValidationTrainingTest(unittest.TestCase):
         )
         self.assertEqual(metrics, {"U": 100.0, "S": 100.0, "H": 100.0, "ZS": 100.0})
 
+    def test_nested_config_keeps_outer_validation_out_of_gradient(self):
+        config, _ = load_config(
+            ROOT
+            / "experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-001.yaml"
+        )
+        self.assertEqual(
+            config["schema_version"],
+            "gzsl-paper.standard-nested-validation.v1",
+        )
+        self.assertEqual(config["inner_fold_scope"], "outer_train_classes_only")
+        self.assertEqual(config["inner_fold_count"], 3)
+        self.assertTrue(config["inner_pseudo_unseen_images_used_for_gradient"])
+        self.assertFalse(config["validation_images_used_for_gradient"])
+        self.assertFalse(config["official_test_loaded"])
+        self.assertFalse(config["test_used_for_selection"])
+
+    def test_nested_training_samples_inner_batches_only_from_fit_labels(self):
+        source = (ROOT / "model/innovations/train_standard_validation.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("balanced_fold_batch(\n                            fit_labels", source)
+        self.assertIn("inner_fold_scope", source)
+        self.assertNotIn("val_unseen_positions].to(device)", source)
+
     def test_training_source_has_no_official_cache_names(self):
         source = (ROOT / "model/innovations/train_standard_validation.py").read_text(
             encoding="utf-8"

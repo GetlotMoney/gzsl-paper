@@ -150,6 +150,29 @@ class UnifiedSeenPrototypeModel(nn.Module):
             "generator_weights": direction_weights,
         }
 
+    def shared_fold_tg_vpr(
+        self,
+        pseudo_seen_classes: torch.Tensor,
+        pseudo_seen_centroids: torch.Tensor,
+    ) -> VariableClassTGVPR:
+        """创建共享TG-VPR可训练权重、但仅适配pseudo-seen类的fold父模型。"""
+        fold = VariableClassTGVPR(
+            self.tg_vpr.sentence_embeds,
+            pseudo_seen_classes,
+            pseudo_seen_centroids,
+            dropout=float(self.tg_vpr.dropout.p),
+            inner_ratio=self.tg_vpr.inner_ratio,
+            outer_ratio=self.tg_vpr.outer_ratio,
+            temperature=float(self.tg_vpr.logit_scale.detach().exp().reciprocal()),
+        )
+        fold.tg_value_projection = self.tg_vpr.tg_value_projection
+        fold.tg_output_projection = self.tg_vpr.tg_output_projection
+        fold.post_projection = self.tg_vpr.post_projection
+        fold.layer_norm = self.tg_vpr.layer_norm
+        fold.semantic_group_logits = self.tg_vpr.semantic_group_logits
+        fold.logit_scale = self.tg_vpr.logit_scale
+        return fold
+
     def prototype_stages(self) -> dict[str, torch.Tensor]:
         return self.prototype_stages_from_tg(self.tg_vpr, self.seenclasses)
 

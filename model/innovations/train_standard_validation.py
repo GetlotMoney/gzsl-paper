@@ -12,6 +12,11 @@ import torch
 import torch.nn.functional as F
 import yaml
 
+from model.innovations.elpt import (
+    class_fold_sha256,
+    semantic_balanced_class_folds,
+)
+from model.innovations.train_chen_class_exclusive import balanced_fold_batch
 from model.innovations.train_unified_seen import full_epoch_batches
 from model.innovations.unified_expert import ExpertAttributeUnifiedModel
 from model.innovations.unified_seen import UnifiedSeenPrototypeModel
@@ -66,6 +71,15 @@ CONFIG_KEYS = {
     "expected_sha256",
     "class_order_sha256",
 }
+NESTED_CONFIG_KEYS = CONFIG_KEYS | {
+    "inner_fold_scope",
+    "inner_fold_method",
+    "inner_fold_count",
+    "inner_fold_sha256",
+    "inner_episode_weight",
+    "inner_batch_half",
+    "inner_pseudo_unseen_images_used_for_gradient",
+}
 INPUT_KEYS = (
     "sentence_embeds",
     "train_features",
@@ -82,16 +96,30 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise FileNotFoundError(f"标准validation配置不存在：{path}")
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    expected_keys = (
+        NESTED_CONFIG_KEYS
+        if schema == "gzsl-paper.standard-nested-validation.v1"
+        else CONFIG_KEYS
+    )
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"标准validation配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，"
-            f"多出={sorted(actual-CONFIG_KEYS)}。"
+            f"标准validation配置字段错误；缺少={sorted(expected_keys-actual)}，"
+            f"多出={sorted(actual-expected_keys)}。"
         )
-    if config["schema_version"] != "gzsl-paper.standard-validation.v1":
+    if schema not in (
+        "gzsl-paper.standard-validation.v1",
+        "gzsl-paper.standard-nested-validation.v1",
+    ):
         raise ValueError("标准validation配置schema错误。")
-    if config["experiment_id"] != "V2-TUNE-001":
+    nested = schema == "gzsl-paper.standard-nested-validation.v1"
+    expected_experiment = "V2-TUNE-002" if nested else "V2-TUNE-001"
+    if config["experiment_id"] != expected_experiment:
         raise ValueError("标准validation实验身份错误。")
-    if config["condition_id"] not in ("NO-EXPERT", "EXPERT"):
+    allowed_conditions = (
+        ("NESTED-THREE-MODULE",) if nested else ("NO-EXPERT", "EXPERT")
+    )
+    if config["condition_id"] not in allowed_conditions:
         raise ValueError("condition_id只允许NO-EXPERT或EXPERT。")
     if config["framework_id"] != "FRAMEWORK-V2" or config["dataset"] != "CUB":
         raise ValueError("标准validation只接受FRAMEWORK-V2/CUB。")
@@ -119,6 +147,17 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("首次validation固定50轮、batch size 64。")
     if [int(stage["epochs"]) for stage in config["lr_stages"]] != [20, 20, 10]:
         raise ValueError("validation训练固定20/20/10学习率阶段。")
+    if nested and (
+        config["inner_fold_scope"] != "outer_train_classes_only"
+        or config["inner_fold_method"]
+        != "semantic_pca_round_robin_image_balance_v1"
+        or int(config["inner_fold_count"]) != 3
+        or len(config["inner_fold_sha256"]) != 64
+        or float(config["inner_episode_weight"]) != 1.0
+        or int(config["inner_batch_half"]) != 32
+        or config["inner_pseudo_unseen_images_used_for_gradient"] is not True
+    ):
+        raise ValueError("嵌套validation内层三折配置错误。")
     if set(config["inputs"]) != set(INPUT_KEYS):
         raise ValueError("validation输入字段不完整或包含非开发数据。")
     if set(config["expected_sha256"]) != set(INPUT_KEYS):
@@ -271,6 +310,53 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         else:
             model = text_model
         model = model.to(device)
+        nested = config["schema_version"] == "gzsl-paper.standard-nested-validation.v1"
+        inner_folds = []
+        inner_fold_models = []
+        inner_generators = []
+        inner_manifest = None
+        if nested:
+            if config["condition_id"] != "NESTED-THREE-MODULE":
+                raise ValueError("嵌套validation只允许无专家三模块条件。")
+            class_sample_counts = torch.stack(
+                [fit_labels.eq(class_id).sum() for class_id in seenclasses]
+            )
+            inner_folds = semantic_balanced_class_folds(
+                seenclasses,
+                sentence_embeds,
+                class_sample_counts,
+                fold_count=int(config["inner_fold_count"]),
+            )
+            actual_fold_sha = class_fold_sha256(inner_folds)
+            if actual_fold_sha != config["inner_fold_sha256"]:
+                raise ValueError("嵌套validation内层类别折SHA不匹配。")
+            inner_manifest = {
+                "method": config["inner_fold_method"],
+                "sha256": actual_fold_sha,
+                "pseudo_unseen_classes": [
+                    [int(value) for value in pseudo_unseen]
+                    for _, pseudo_unseen in inner_folds
+                ],
+            }
+            for fold_id, (pseudo_seen, _) in enumerate(inner_folds):
+                pseudo_seen_mask = torch.isin(fit_labels, pseudo_seen)
+                pseudo_seen_positions = fit_positions[pseudo_seen_mask]
+                pseudo_seen_labels = fit_labels[pseudo_seen_mask]
+                pseudo_seen_centroids = h1.visual_centroids(
+                    features.index_select(0, pseudo_seen_positions),
+                    pseudo_seen_labels,
+                    pseudo_seen,
+                )
+                fold_model = text_model.shared_fold_tg_vpr(
+                    pseudo_seen,
+                    pseudo_seen_centroids.to(device),
+                ).to(device)
+                inner_fold_models.append(fold_model)
+                inner_generators.append(
+                    torch.Generator(device="cpu").manual_seed(
+                        seed * 100003 + fold_id
+                    )
+                )
         optimizer = torch.optim.Adam(
             model.parameters(),
             lr=float(config["lr_stages"][0]["lr"]),
@@ -302,6 +388,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             f"开发梯度图像={fit_positions.numel()} val-seen={split['val_seen_positions'].numel()} "
             f"val-unseen={split['val_unseen_positions'].numel()} official-test-loaded=false"
         )
+        if nested:
+            print(
+                f"内层三折scope=outer-train-only fold_sha={inner_manifest['sha256']} "
+                f"sizes={[len(values) for values in inner_manifest['pseudo_unseen_classes']]}"
+            )
 
         for epoch in range(1, int(config["epochs"]) + 1):
             target_stage = next(
@@ -318,8 +409,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     eta_min=float(stage["eta_min"]),
                 )
             model.train()
-            loss_sum = 0.0
+            for fold_model in inner_fold_models:
+                fold_model.train()
+            loss_sum = main_ce_sum = topology_sum = episode_sum = 0.0
             sample_count = 0
+            inner_episode_sample_count = 0
             for relative_indices in full_epoch_batches(
                 fit_positions.numel(), int(config["batch_size"]), generator
             ):
@@ -330,12 +424,53 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 ce = F.cross_entropy(model.logits(images, seenclasses), targets)
                 topology = model.topology_loss()
                 loss = ce + float(config["topology_weight"]) * topology
+                episode_loss = ce.new_zeros(())
+                if nested:
+                    fold_losses = []
+                    for fold_id, ((pseudo_seen, pseudo_unseen), fold_model) in enumerate(
+                        zip(inner_folds, inner_fold_models)
+                    ):
+                        inner_relative = balanced_fold_batch(
+                            fit_labels,
+                            pseudo_seen,
+                            pseudo_unseen,
+                            int(config["inner_batch_half"]),
+                            inner_generators[fold_id],
+                        )
+                        inner_positions = fit_positions.index_select(0, inner_relative)
+                        inner_images = features.index_select(
+                            0, inner_positions
+                        ).to(device).float()
+                        inner_targets = global_to_seen[
+                            labels.index_select(0, inner_positions)
+                        ].to(device)
+                        fold_stages = text_model.prototype_stages_from_tg(
+                            fold_model,
+                            pseudo_seen.to(device),
+                        )
+                        competition = fold_stages["final"].index_select(
+                            0, seenclasses.to(device)
+                        )
+                        inner_logits = (
+                            F.normalize(inner_images, dim=-1)
+                            @ competition.T
+                            * text_model.scale()
+                        )
+                        fold_losses.append(
+                            F.cross_entropy(inner_logits, inner_targets)
+                        )
+                        inner_episode_sample_count += inner_images.size(0)
+                    episode_loss = torch.stack(fold_losses).mean()
+                    loss = loss + float(config["inner_episode_weight"]) * episode_loss
                 if not torch.isfinite(loss):
                     raise FloatingPointError("validation训练loss包含NaN/Inf。")
                 loss.backward()
                 require_finite_gradients(model)
                 optimizer.step()
                 loss_sum += float(loss.detach()) * images.size(0)
+                main_ce_sum += float(ce.detach()) * images.size(0)
+                topology_sum += float(topology.detach()) * images.size(0)
+                episode_sum += float(episode_loss.detach()) * images.size(0)
                 sample_count += images.size(0)
             if sample_count != fit_positions.numel():
                 raise RuntimeError("每个epoch必须完整且唯一遍历开发梯度图像。")
@@ -345,8 +480,12 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             row = {
                 "epoch": epoch,
                 "train_loss": loss_sum / sample_count,
+                "train_main_ce": main_ce_sum / sample_count,
+                "train_topology": topology_sum / sample_count,
+                "train_inner_episode_ce": episode_sum / sample_count,
                 "sample_count": sample_count,
                 "unique_sample_count": sample_count,
+                "inner_episode_sample_count": inner_episode_sample_count,
                 "validation_metrics_percent": metrics,
                 "diagnostics": diagnostics,
             }
@@ -379,6 +518,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "optimizer_state_dict": optimizer.state_dict(),
             "scheduler_state_dict": scheduler.state_dict(),
             "history": history,
+            "inner_fold_manifest": inner_manifest,
             "reproducibility": reproducibility,
         }
         atomic_torch_save(output_dir / "model_best.pth", checkpoint)
@@ -396,6 +536,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "test_used_for_selection": False,
                 "official_test_loaded": False,
                 "validation_images_used_for_gradient": False,
+                "inner_pseudo_unseen_images_used_for_gradient": bool(nested),
                 "expert_attributes_used": bool(config["expert_attributes_used"]),
                 "feature_backbone": config["feature_backbone"],
                 "feature_provenance_complete": False,
@@ -406,6 +547,12 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "seed": seed,
                 "selected_epoch": best_epoch,
                 "fit_images_per_epoch": int(fit_positions.numel()),
+                "inner_episode_samples_per_epoch": (
+                    int(history[-1]["inner_episode_sample_count"])
+                    if nested
+                    else 0
+                ),
+                "inner_fold_manifest": inner_manifest,
                 "best_validation_metrics_percent": best_metrics,
                 "diagnostics": _diagnostics(model),
                 "model_sha256": sha256_file(output_dir / "model_best.pth"),

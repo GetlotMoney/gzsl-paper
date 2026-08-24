@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 
 import torch
@@ -165,6 +167,97 @@ def semantic_pca_folds(
         mask[order[fold_id * 50 : (fold_id + 1) * 50]] = True
         folds.append((classes[~mask], classes[mask]))
     return folds
+
+
+def semantic_balanced_class_folds(
+    classes: torch.Tensor,
+    sentence_embeds: torch.Tensor,
+    class_sample_counts: torch.Tensor,
+    fold_count: int = 3,
+) -> list[tuple[torch.Tensor, torch.Tensor]]:
+    """把语义邻近类别分散到各折，同时平衡类别数和训练图像数。"""
+    classes = torch.as_tensor(classes).detach().cpu().long().sort().values
+    counts = torch.as_tensor(class_sample_counts).detach().cpu().long()
+    if classes.ndim != 1 or classes.numel() < int(fold_count):
+        raise ValueError("语义平衡折要求类别数不少于fold_count。")
+    if classes.unique().numel() != classes.numel() or tuple(counts.shape) != (
+        classes.numel(),
+    ):
+        raise ValueError("语义平衡折类别必须唯一，样本计数必须逐类对齐。")
+    if int(fold_count) != 3 or bool((counts <= 0).any()):
+        raise ValueError("当前嵌套validation固定三折且每类必须有训练图像。")
+    if tuple(sentence_embeds.shape) != (200, 8, 768):
+        raise ValueError("语义平衡折要求[200,8,768]句子缓存。")
+
+    semantics = F.normalize(
+        sentence_embeds.detach().cpu().float().mean(dim=1), dim=-1
+    ).index_select(0, classes)
+    centered = semantics - semantics.mean(dim=0, keepdim=True)
+    _, _, vh = torch.linalg.svd(centered, full_matrices=False)
+    direction = vh[0]
+    pivot = direction.abs().argmax()
+    if direction[pivot] < 0:
+        direction = -direction
+    order = torch.argsort(centered @ direction, stable=True)
+
+    base_size, remainder = divmod(classes.numel(), int(fold_count))
+    capacities = [base_size + (1 if index < remainder else 0) for index in range(3)]
+    fold_positions: list[list[int]] = [[], [], []]
+    fold_image_counts = [0, 0, 0]
+    ordered_positions = order.tolist()
+    for start in range(0, len(ordered_positions), 3):
+        block = ordered_positions[start : start + 3]
+        block.sort(key=lambda position: (-int(counts[position]), int(classes[position])))
+        used_in_block: set[int] = set()
+        for position in block:
+            candidates = [
+                fold_id
+                for fold_id in range(3)
+                if len(fold_positions[fold_id]) < capacities[fold_id]
+                and fold_id not in used_in_block
+            ]
+            if not candidates:
+                candidates = [
+                    fold_id
+                    for fold_id in range(3)
+                    if len(fold_positions[fold_id]) < capacities[fold_id]
+                ]
+            fold_id = min(
+                candidates,
+                key=lambda index: (
+                    fold_image_counts[index],
+                    len(fold_positions[index]),
+                    index,
+                ),
+            )
+            fold_positions[fold_id].append(position)
+            fold_image_counts[fold_id] += int(counts[position])
+            used_in_block.add(fold_id)
+
+    folds = []
+    coverage = []
+    for positions in fold_positions:
+        pseudo_unseen = classes[torch.tensor(sorted(positions), dtype=torch.long)]
+        pseudo_seen = classes[~torch.isin(classes, pseudo_unseen)]
+        folds.append((pseudo_seen, pseudo_unseen))
+        coverage.append(pseudo_unseen)
+    joined = torch.cat(coverage)
+    if joined.unique().numel() != classes.numel() or not torch.equal(
+        joined.sort().values, classes
+    ):
+        raise RuntimeError("语义平衡三折必须互斥且完整覆盖开发训练类。")
+    return folds
+
+
+def class_fold_sha256(
+    folds: list[tuple[torch.Tensor, torch.Tensor]],
+) -> str:
+    manifest = [
+        [int(value) for value in pseudo_unseen.detach().cpu().sort().values]
+        for _, pseudo_unseen in folds
+    ]
+    serialized = json.dumps(manifest, separators=(",", ":"))
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
 def gate_features(

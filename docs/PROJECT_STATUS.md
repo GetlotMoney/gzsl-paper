@@ -556,6 +556,8 @@ NRPS seed5的MLP真实训练到输出层范数`0.886818`，但所有非零状态
 
 TDRS seed5的best-H与独立best-ZS均严格退回S-EDPS父模型；最后role_weight=`-0.202035`，与official unseen审计希望的正方向相反。训练pair中top2错误仅112/304支持正方向，确认trainval/unseen符号翻转；IDEA-132拒绝。该分阶段实验明确`nested_official_test_selection: true`。当前累计有效实验231组。
 
+按owner确认的新严格开发方案建立`V2-TUNE-002`：外层保持xlsa17 100类训练/50类validation不变，内层只在100个训练类中生成语义平衡三折`34/33/33`，fold SHA=`d8ed7bb33165f3320cdce7473144cb24d4b672cd9fd951710ad586ad314813b9`。外层validation图像不进入梯度，official test不加载。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

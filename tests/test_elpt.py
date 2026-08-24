@@ -10,6 +10,8 @@ from model.innovations.elpt import (
     VariableClassTGVPR,
     blend_prototypes,
     fixed_class_folds,
+    semantic_balanced_class_folds,
+    class_fold_sha256,
     gate_features,
 )
 from model.innovations.train_elpt import load_config
@@ -54,6 +56,26 @@ def test_fixed_folds_are_disjoint_and_cover_seen_classes():
     assert torch.equal(merged, seen.sort().values)
     assert all(
         not torch.isin(pseudo_unseen[i], pseudo_unseen[j]).any()
+        for i in range(3)
+        for j in range(i + 1, 3)
+    )
+
+
+def test_semantic_balanced_folds_cover_outer_train_classes_deterministically():
+    generator = torch.Generator().manual_seed(2407)
+    sentences = torch.randn(200, 8, 768, generator=generator)
+    classes = torch.arange(100)
+    counts = torch.arange(1, 101)
+    first = semantic_balanced_class_folds(classes, sentences, counts)
+    second = semantic_balanced_class_folds(classes, sentences, counts)
+    assert [fold[1].numel() for fold in first] == [34, 33, 33]
+    assert torch.equal(
+        torch.cat([fold[1] for fold in first]).sort().values,
+        classes,
+    )
+    assert class_fold_sha256(first) == class_fold_sha256(second)
+    assert all(
+        not torch.isin(first[i][1], first[j][1]).any()
         for i in range(3)
         for j in range(i + 1, 3)
     )
@@ -154,6 +176,9 @@ class ELPTTest(unittest.TestCase):
 
     def test_folds(self):
         test_fixed_folds_are_disjoint_and_cover_seen_classes()
+
+    def test_semantic_balanced_folds(self):
+        test_semantic_balanced_folds_cover_outer_train_classes_deterministically()
 
     def test_gate_gradient(self):
         test_gate_initializes_at_point_one_and_receives_gradients()
