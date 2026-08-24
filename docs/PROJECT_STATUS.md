@@ -536,6 +536,8 @@ S-EDPS RESCUE-1的seed5低学习率条件达到`U/S/H/ZS=76.982599/80.230141/78.
 
 下一实验`V2-INNOVATION-096 / CEPS`在相同SNPS分阶段起点和低学习率上，新增训练期完整证据与缺失证据pair修正一致性MSE；检验显式证据不变性是否能超过S-EDPS，而不是继续调学习率。
 
+CEPS seed5的`consistency_weight=0.1`条件与S-EDPS逐项相同，`H=78.572828%`；权重虽有微小变化，但一致性loss量级不足。RESCUE-1依据实测loss尺度只把一致性权重提高到`100`。当前累计有效实验227组。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

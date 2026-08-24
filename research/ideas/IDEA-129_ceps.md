@@ -10,3 +10,4 @@ success_condition: seed5 H超过同seed S-EDPS 78.572828；通过后追加seed7�
 failure_condition: H不超过S-EDPS或best退回SNPS父权重；最多三次方法级补救。
 experiment: V2-INNOVATION-096
 paper_core_innovation: false
+result: consistency_weight=0.1与S-EDPS指标逐项相同，H=78.572828；loss量级不足，RESCUE-1按实测尺度提高到100。
