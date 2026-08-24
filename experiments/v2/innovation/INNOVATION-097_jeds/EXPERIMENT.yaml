@@ -4,15 +4,15 @@ idea_id: IDEA-130
 framework_id: FRAMEWORK-V2
 title: Jackknife Evidence-Dropout Selector
 base_commit: 630c7bbb4edf1bf2eff1eea4e97ad9c038865f2a
-code_commit: null
-status: planned
+code_commit: 62fcf4c0a45eb226aabfda565c0ba6c371108fff
+status: rejected_no_gain_extra_compute
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-097_jeds/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: 62fcf4c0a45eb226aabfda565c0ba6c371108fff
     config_ref: experiments/v2/innovation/INNOVATION-097_jeds/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-097_jeds/RUN-001
-    status: planned_seed5
+    status: completed_equal_sedps

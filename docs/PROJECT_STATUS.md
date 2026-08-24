@@ -542,6 +542,8 @@ CEPS RESCUE-1的`consistency_weight=100`条件达到`H=78.528077%`，比S-EDPS�
 
 下一实验`V2-INNOVATION-097 / JEDS`不再强制full/masked修正相同，而是每个seen batch平均全部11种单证据缺失CE，消除mask与随机batch内容的偶然耦合；推理结构不变。
 
+JEDS seed5完成全部11种单证据缺失覆盖后，`U/S/H/ZS=76.982599/80.230141/78.572828/84.121776%`，与S-EDPS逐项相同但视图计算约增11倍。IDEA-130拒绝并关闭证据dropout形式轴；稳定最高仍为S-EDPS `78.572828%`。当前累计有效实验229组。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

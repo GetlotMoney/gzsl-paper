@@ -97,6 +97,6 @@
 | V2-INNOVATION-094 | IDEA-127 | EDPS2集中化证据Dropout选择器 | rejected（seed7低于top-3） | `INNOVATION-094_edps2/` |
 | V2-INNOVATION-095 | IDEA-128 | S-EDPS分阶段证据Dropout选择器 | supported two-seed stagewise（最高H=78.572828） | `INNOVATION-095_sedps/` |
 | V2-INNOVATION-096 | IDEA-129 | CEPS证据一致性分阶段选择器 | rejected（弱一致性无效、强一致性降低H） | `INNOVATION-096_ceps/` |
-| V2-INNOVATION-097 | IDEA-130 | JEDS Jackknife证据选择器 | planned（每batch平均11种单证据缺失CE） | `INNOVATION-097_jeds/` |
+| V2-INNOVATION-097 | IDEA-130 | JEDS Jackknife证据选择器 | rejected（11倍视图计算与S-EDPS逐项相同） | `INNOVATION-097_jeds/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
