@@ -102,8 +102,12 @@ class UnifiedSeenPrototypeModel(nn.Module):
         """用共享迁移/生成权重处理任意100类或150类TG-VPR父模型。"""
         allclasses = torch.arange(200, device=tg_vpr.sentence_embeds.device)
         support_classes = torch.as_tensor(support_classes).to(allclasses.device).long()
-        if support_classes.ndim != 1 or support_classes.numel() not in (100, 150):
-            raise ValueError("外部TG父模型support必须包含100或150类。")
+        if (
+            support_classes.ndim != 1
+            or not 5 <= support_classes.numel() <= 150
+            or support_classes.unique().numel() != support_classes.numel()
+        ):
+            raise ValueError("外部TG父模型support必须包含5至150个唯一类别。")
         tg_prototypes = tg_vpr.prototypes()
         value_prototypes = tg_vpr.value_candidate(allclasses)
         support = tg_prototypes.index_select(0, support_classes)

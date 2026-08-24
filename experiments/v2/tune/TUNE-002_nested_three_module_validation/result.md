@@ -6,4 +6,6 @@
 
 RUN-001唯一新增训练语义：每个主训练batch额外计算三个inner fold的平衡pseudo-seen/pseudo-unseen CE，三折取mean并以固定权重`1.0`加入总loss。official test不会被加载。
 
+RUN-001在第一批训练前因共享原型接口仍限制support类只能为100/150而失败；内层折实际需要66/67类。该工程失败没有方法结果，修复接口守卫后以`RUN-001-RERUN`同条件重跑。
+
 对照条件为`V2-TUNE-001/RUN-001`：`U/S/H/ZS_val=76.424742/76.521248/76.472964/79.934835%`。

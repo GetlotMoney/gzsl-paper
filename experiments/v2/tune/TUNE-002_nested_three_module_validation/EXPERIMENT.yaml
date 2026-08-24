@@ -28,8 +28,14 @@ split:
   inner_fold_sha256: d8ed7bb33165f3320cdce7473144cb24d4b672cd9fd951710ad586ad314813b9
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: ac647fb06b2fc786f05545ee148d3b68869e502d
     seed: 7
     config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-001
-    status: planned
+    status: failed_runtime_support_class_guard
+  - run_id: RUN-001-RERUN
+    code_commit: null
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-001-RERUN
+    status: planned_engineering_rerun

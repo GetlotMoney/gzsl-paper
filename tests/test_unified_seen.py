@@ -68,7 +68,7 @@ class UnifiedSeenTrainingTest(unittest.TestCase):
             fold.tg_value_projection,
             model.tg_vpr.tg_value_projection,
         )
-        stages = model.prototype_stages_from_tg(fold, torch.arange(100))
+        stages = model.prototype_stages_from_tg(fold, torch.arange(67))
         images = torch.randn(8, 768, generator=torch.Generator().manual_seed(303))
         logits = F.normalize(images, dim=-1) @ stages["final"][:150].T * model.scale()
         F.cross_entropy(logits, torch.arange(8)).backward()
