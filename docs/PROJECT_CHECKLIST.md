@@ -93,4 +93,8 @@
 
 ## 当前唯一下一步
 
-端到端专家已过78；若继续无专家提升，另建分阶段Experiment并保持整套模型统一Chen-style选模，不能覆盖V2-CONFIRM-004。
+- [ ] 完成CUB/AWA2/SUN Attribute官方原图、xlsa17和OpenAI CLIP ViT-L/14@336px资产校验。
+- [ ] 冻结三套数据集专属八角色原文并生成同checkpoint图像/文本缓存。
+- [ ] 完成三数据集统一入口测试、正式Experiment配置和pre-run commit。
+- [ ] 按Pure CLIP→Mean8→TG-VPR→TST-NTR→CCGR顺序执行Chen-style矩阵。
+- [ ] 每个数据集完成End-to-End/Stagewise与seed 5/7/8，不混用历史未知CLIP缓存。

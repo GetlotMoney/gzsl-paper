@@ -1,6 +1,6 @@
 # gzsl-paper
 
-面向 CUB Generalized Zero-Shot Learning（GZSL）的干净研究仓库。
+面向 CUB、AWA2 和 SUN Attribute Generalized Zero-Shot Learning（GZSL）的干净研究仓库。
 
 ## 正式框架
 
@@ -9,16 +9,16 @@
 - V1与V2是两套独立训练路径；V2不接入或静默修改V1。
 - 两套框架都只迁入必要代码与来源信息，不继承旧Git历史、旧实验账本或旧研究知识。
 - owner已选择`FRAMEWORK-V2`作为论文主框架；当前目标为`H >= 77.023182%`并形成三个相互连贯、获得实验支持的创新点。
-- 当前核心创新只保留TG-VPR-H1。固定10%保守unseen迁移保留为测试时观察；训练式ELPT正在验证。
+- 当前论文三模块主线固定为`TG-VPR → TST-NTR → CCGR`；辅助头单独报告，不计入三项核心创新。
 
 ## 评估协议
 
-owner选择的论文主结果使用Chen-style test-selected inductive GZSL：
+owner选择的论文主结果使用Chen-style test-selected inductive GZSL。三数据集统一协议见[最终实验协议](docs/FINAL_THREE_DATASET_PROTOCOL.md)：
 
-1. 使用`trainval_loc`的150类、7,057张图像训练；unseen图像不进入梯度。
-2. 每步独立随机抽50张，训练28,228次更新，相当于200名义epoch。
-3. 每141步评估official test，并根据整套模型official H保存best checkpoint。
-4. U/S/H在200类联合空间计算，ZS在50个unseen类空间计算。
+1. 每个数据集使用全部`trainval_loc`图像；unseen图像不进入梯度。
+2. 每步独立随机抽50张，总更新数为`ntrain×200//50`。
+3. 每`niters//200`步评估official test，并根据整套模型official H保存best checkpoint。
+4. U/S/H在该数据集全部seen+unseen类联合空间计算，ZS只在unseen类空间计算。
 5. 固定披露`test_used_for_selection: true`，不描述为blind-test。
 
 现有validation-first结果继续作为更严格协议对照。CLIP-based与经典ResNet-101 GZSL分开报告，不能直接混表比较。
@@ -54,3 +54,5 @@ conda run -n dvsr_gpu python train.py `
 - 独立训练入口：`python -m model.tg_vpr_h1.train`
 - 冻结配置：`config/tg_vpr_h1.yaml`
 - 来源身份：`INNOVATION-MODULE-1`
+- 三数据集统一模型：`model/paper_v2.py`
+- 三数据集正式训练：`python -m model.train_paper_v2`

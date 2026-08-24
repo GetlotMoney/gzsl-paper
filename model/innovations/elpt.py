@@ -26,15 +26,16 @@ class VariableClassTGVPR(TGVPRH1FixedEqual):
         temperature: float = 0.07,
     ):
         nn.Module.__init__(self)
-        if tuple(sentence_embeds.shape) != (200, 8, 768):
-            raise ValueError("sentence_embeds必须是[200, 8, 768]。")
+        if sentence_embeds.ndim != 3 or tuple(sentence_embeds.shape[1:]) != (8, 768):
+            raise ValueError("sentence_embeds必须是[class_count, 8, 768]。")
         if not torch.isfinite(sentence_embeds).all():
             raise ValueError("sentence_embeds包含NaN/Inf。")
         classes = torch.as_tensor(adapted_classes).detach().cpu().long().sort().values
         if classes.ndim != 1 or classes.numel() == 0 or classes.unique().numel() != classes.numel():
             raise ValueError("adapted_classes必须是非空唯一类编号。")
-        if classes.min() < 0 or classes.max() >= 200:
-            raise ValueError("adapted_classes必须位于[0, 199]。")
+        class_count = int(sentence_embeds.shape[0])
+        if classes.min() < 0 or classes.max() >= class_count:
+            raise ValueError("adapted_classes必须位于全局类别轴范围内。")
         centroids = F.normalize(torch.as_tensor(visual_centroids).detach().float(), dim=-1)
         if tuple(centroids.shape) != (classes.numel(), 768):
             raise ValueError("visual_centroids数量必须等于adapted_classes。")
@@ -52,6 +53,7 @@ class VariableClassTGVPR(TGVPRH1FixedEqual):
         )
         self.register_buffer("adapted_classes", classes, persistent=True)
         self.register_buffer("visual_centroids", centroids, persistent=True)
+        self.class_count = class_count
         self.tg_value_projection = nn.Linear(768, 768)
         self.tg_output_projection = nn.Linear(768, 768)
         self.post_projection = nn.Linear(768, 768)
@@ -67,10 +69,10 @@ class VariableClassTGVPR(TGVPRH1FixedEqual):
         count = self.adapted_classes.numel()
         weights = self.semantic_group_weights().unsqueeze(0).expand(count, -1)
         base_vectors = self.candidate_base_vectors()
-        base_scale = base_vectors.new_ones((200,))
+        base_scale = base_vectors.new_ones((self.class_count,))
         base_scale[self.adapted_classes] = 1.0 - self.outer_ratio
         base_part = base_scale.unsqueeze(-1) * base_vectors
-        role_part = groups.new_zeros((200, 3, 768))
+        role_part = groups.new_zeros((self.class_count, 3, 768))
         role_part[self.adapted_classes] = self.outer_ratio * weights.unsqueeze(-1) * groups
         return base_part + role_part.sum(dim=1), base_part, role_part
 

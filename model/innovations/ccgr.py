@@ -12,6 +12,13 @@ def tangent_direction_basis(
     value_prototypes: torch.Tensor,
     role_prototypes: torch.Tensor,
 ) -> torch.Tensor:
+    if base_prototypes.ndim != 2 or base_prototypes.size(1) != 768:
+        raise ValueError("base_prototypes必须是[class_count,768]。")
+    class_count = int(base_prototypes.size(0))
+    if tuple(value_prototypes.shape) != (class_count, 768):
+        raise ValueError("value_prototypes必须与base_prototypes逐类对齐。")
+    if tuple(role_prototypes.shape) != (class_count, 3, 768):
+        raise ValueError("role_prototypes必须是[class_count,3,768]。")
     base = F.normalize(base_prototypes, dim=-1)
     candidates = torch.cat(
         (value_prototypes.unsqueeze(1), role_prototypes), dim=1

@@ -1,0 +1,24 @@
+schema_version: gzsl-paper.data-sources.v1
+downloads:
+  CUB:
+    archive: CUB_200_2011.tgz
+    url: https://data.caltech.edu/records/65de6-vp158/files/CUB_200_2011.tgz?download=1
+    publisher: CaltechDATA
+    published_md5: 97eceeb196236b17998738112f37df78
+  AWA2:
+    archive: AwA2-data.zip
+    url: https://cvml.ista.ac.at/AwA2/AwA2-data.zip
+    publisher: Institute of Science and Technology Austria
+  SUN:
+    archive: SUNAttributeDB_Images.tar.gz
+    url: https://cs.brown.edu/~gen/Attributes/SUNAttributeDB_Images.tar.gz
+    publisher: Brown University SUN Attribute Database
+  xlsa17:
+    archive: xlsa17.zip
+    url: https://cvml.ista.ac.at/AwA2/xlsa17.zip
+    publisher: Institute of Science and Technology Austria
+clip:
+  implementation: https://github.com/openai/CLIP
+  model: ViT-L/14@336px
+  checkpoint_url: https://openaipublic.azureedge.net/clip/models/3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02/ViT-L-14-336px.pt
+  checkpoint_sha256: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02
