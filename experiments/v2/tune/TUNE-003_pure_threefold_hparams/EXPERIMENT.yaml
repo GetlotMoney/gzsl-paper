@@ -6,7 +6,7 @@ framework_id: FRAMEWORK-V2
 framework_ref: v2
 base_commit: 21b58d64c795a59ea23511f71b8e63fa4b46f2c2
 code_commit: eebc7dc163228007012a4f4e6cef75fe2cc7cc47
-status: transport_tuning
+status: generator_magnitude_tuning
 research_question: 在不使用pseudo-unseen训练loss和official test的条件下，三模块超参数在150类纯三折validation上的mean/min/range是多少？
 evaluation_protocol: threefold_class_disjoint_gzsl_validation
 validation_used_for_selection: true
@@ -47,15 +47,15 @@ runs:
     status: completed_h_gain_u_zs_drop
   - run_id: RUN-004
     condition: transport_0_5
-    code_commit: null
+    code_commit: b1a4182e2f9976194fd8aa9457c34e1a38df9917
     seed: 7
     config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-004.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-004
-    status: planned
+    status: completed_u_bias_low_h
   - run_id: RUN-005
     condition: transport_1_0
-    code_commit: null
+    code_commit: b1a4182e2f9976194fd8aa9457c34e1a38df9917
     seed: 7
     config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-005.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-005
-    status: planned
+    status: completed_below_baseline

@@ -19,3 +19,9 @@ RUN-003（topology=`0.2`）在epoch 24得到`mean U/S/H/ZS=74.431213/78.602773/7
 RUN-002模型SHA256：`9d6566ccbc28e243603f1c89d744e3bf6e800ac356c1d5824f5c383a1028178f`；RUN-003模型SHA256：`23f9f945307dfe2d340bc7b5cb1b724aec93ed7fff2df3936ba41c56c366a499`；各自checkpoint SHA256相同。
 
 RUN-004/005预注册transport轴：固定topology=`0.1`和CCGR幅度=`0.2`，只把`max_transport_step`改为`0.5/1.0`。
+
+RUN-004（transport=`0.5`）在epoch 17得到`mean U/S/H/ZS=78.943970/70.611630/74.539610/81.470446%`，明显偏向U并破坏S/H，淘汰。
+
+RUN-005（transport=`1.0`）在epoch 17得到`mean U/S/H/ZS=75.902977/75.687253/75.792818/79.824275%`，U/ZS高于基线但H低`0.321036`，不保留。transport轴固定`1.5`。
+
+RUN-004模型SHA256：`8c6ce80566b0052825361760ae8ba913e51af7876745f9d7fdc3cb60362eb148`；RUN-005模型SHA256：`b975bf43dedc7e36dc20101cfdcda1f5e47aa97925e050ad6bdb9c95f30d6533`；各自checkpoint SHA256相同。
