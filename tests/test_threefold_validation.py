@@ -60,6 +60,16 @@ class ThreefoldValidationTest(unittest.TestCase):
         self.assertFalse(config["pseudo_unseen_images_used_for_gradient"])
         self.assertNotIn("seen_features", config["inputs"])
         self.assertNotIn("unseen_features", config["inputs"])
+        topology_low, _ = load_config(
+            ROOT
+            / "experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-002.yaml"
+        )
+        topology_high, _ = load_config(
+            ROOT
+            / "experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-003.yaml"
+        )
+        self.assertEqual(topology_low["topology_weight"], 0.03)
+        self.assertEqual(topology_high["topology_weight"], 0.2)
 
     def test_source_does_not_reference_official_test_cache(self):
         source = (

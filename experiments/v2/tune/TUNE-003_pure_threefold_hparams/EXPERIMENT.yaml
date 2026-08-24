@@ -31,3 +31,17 @@ runs:
     config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-001
     status: completed_baseline
+  - run_id: RUN-002
+    condition: topology_0_03
+    code_commit: null
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-002
+    status: planned
+  - run_id: RUN-003
+    condition: topology_0_2
+    code_commit: null
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-003
+    status: planned
