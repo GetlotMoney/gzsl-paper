@@ -102,7 +102,13 @@ def load_config(path: Path) -> tuple[dict, str]:
         config["schema_version"] != "gzsl-paper.pure-threefold-validation.v1"
         or config["experiment_id"] != "V2-TUNE-003"
         or config["condition_id"]
-        not in ("BASELINE", "TOPOLOGY-0.03", "TOPOLOGY-0.2")
+        not in (
+            "BASELINE",
+            "TOPOLOGY-0.03",
+            "TOPOLOGY-0.2",
+            "TRANSPORT-0.5",
+            "TRANSPORT-1.0",
+        )
         or config["framework_id"] != "FRAMEWORK-V2"
         or config["dataset"] != "CUB"
         or config["evaluation_protocol"] != EVALUATION_PROTOCOL
