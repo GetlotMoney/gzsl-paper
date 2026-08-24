@@ -86,6 +86,21 @@ class PaperV2ModelTest(unittest.TestCase):
         self.assertEqual(stage_for_iteration(ntrain, 111)[0], "JOINT_FINETUNE")
         self.assertEqual(stage_for_iteration(ntrain, 147)[0], "JOINT_FINETUNE")
 
+    def test_cached_topology_reference_matches_direct_formula(self):
+        model = self.make_model(50, 37).eval()
+        adapted = model.prototypes()
+        base = model.tg_vpr.base_prototypes()
+        off_diag = ~torch.eye(50, dtype=torch.bool)
+        x = (base @ base.T).detach()[off_diag]
+        y = (adapted @ adapted.T)[off_diag]
+        x = x - x.mean()
+        y = y - y.mean()
+        direct = 1.0 - (x * y).sum() / (
+            torch.sqrt(x.square().sum() + 1e-8)
+            * torch.sqrt(y.square().sum() + 1e-8)
+        )
+        self.assertTrue(torch.allclose(model.topology_loss(adapted), direct, atol=1e-7, rtol=1e-7))
+
     def test_chen_random_batch_contract_is_dataset_agnostic(self):
         generator = torch.Generator().manual_seed(7)
         first = random_batch_indices(1234, 50, generator)

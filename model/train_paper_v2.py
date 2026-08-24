@@ -368,8 +368,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 images = tensors["train_features"].index_select(0, indices).to(device).float()
                 targets = global_to_seen[train_labels.index_select(0, indices)].to(device)
                 optimizer.zero_grad(set_to_none=True)
-                ce = F.cross_entropy(model.logits(images, seen_classes), targets)
-                topology = model.topology_loss()
+                prototypes = model.prototypes()
+                seen_prototypes = prototypes.index_select(0, seen_classes.to(device))
+                logits = F.normalize(images, dim=-1) @ seen_prototypes.T * model.scale()
+                ce = F.cross_entropy(logits, targets)
+                topology = model.topology_loss(prototypes)
                 loss = ce + float(config["topology_weight"]) * topology
                 if not torch.isfinite(loss):
                     raise FloatingPointError("训练loss包含NaN/Inf。")

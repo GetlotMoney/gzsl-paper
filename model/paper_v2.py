@@ -75,6 +75,18 @@ class PaperV2ThreeModuleModel(nn.Module):
             outer_ratio=outer_ratio,
             temperature=temperature,
         )
+        with torch.no_grad():
+            base = self.tg_vpr.base_prototypes()
+            off_diag = ~torch.eye(class_count, dtype=torch.bool)
+            reference = (base @ base.T)[off_diag]
+            reference = reference - reference.mean()
+        self.register_buffer("_topology_off_diag", off_diag, persistent=False)
+        self.register_buffer("_topology_reference", reference, persistent=False)
+        self.register_buffer(
+            "_topology_reference_norm",
+            torch.sqrt(reference.square().sum() + 1e-8),
+            persistent=False,
+        )
 
         self.transport_trunk = nn.Sequential(nn.Linear(4, int(transport_hidden_dim)), nn.GELU())
         self.transport_head = nn.Linear(int(transport_hidden_dim), 1)
@@ -202,17 +214,13 @@ class PaperV2ThreeModuleModel(nn.Module):
             prototypes = prototypes.index_select(0, class_ids.to(prototypes.device).long())
         return F.normalize(image_features.float(), dim=-1) @ prototypes.T * self.scale()
 
-    def topology_loss(self) -> torch.Tensor:
-        base = self.tg_vpr.base_prototypes()
-        adapted = self.prototypes()
-        count = self.class_count
-        off_diag = ~torch.eye(count, dtype=torch.bool, device=base.device)
-        x = (base @ base.T).detach()[off_diag]
-        y = (adapted @ adapted.T)[off_diag]
-        x = x - x.mean()
+    def topology_loss(self, adapted: torch.Tensor | None = None) -> torch.Tensor:
+        if adapted is None:
+            adapted = self.prototypes()
+        y = (adapted @ adapted.T)[self._topology_off_diag]
         y = y - y.mean()
-        return 1.0 - (x * y).sum() / (
-            torch.sqrt(x.square().sum() + 1e-8) * torch.sqrt(y.square().sum() + 1e-8)
+        return 1.0 - (self._topology_reference * y).sum() / (
+            self._topology_reference_norm * torch.sqrt(y.square().sum() + 1e-8)
         )
 
     def parameter_groups(self) -> dict[str, list[nn.Parameter]]:
