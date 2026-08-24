@@ -21,6 +21,7 @@ from model.innovations.gpes import (
     RoleAwareGatedPairSelector,
     SemanticNeighborPairSelector,
     StagedRoleDisagreementScaleSelector,
+    StagedDiscriminativeRoleSelector,
     SemanticGatedPairSelector,
     TextOnlyGatedPairSelector,
     TriadicCompetitionPairSelector,
@@ -28,6 +29,7 @@ from model.innovations.gpes import (
     semantic_neighbor_adjacency,
     reciprocal_neighbor_confidence,
     pair_role_distance_weights,
+    top_discriminative_role_difference,
 )
 from model.innovations.train_gpes import (
     ADJACENCY_MODEL_SCHEMAS,
@@ -1052,6 +1054,48 @@ class GPESTest(unittest.TestCase):
         self.assertIn(config["schema_version"], STAGED_SEDPS_SCHEMAS)
         self.assertEqual(config["selector_hidden_dim"], 8)
         self.assertEqual(config["max_raw_residual"], 0.25)
+
+    def test_top_discriminative_role_selects_largest_text_distance(self):
+        roles = torch.zeros(200, 8, 768)
+        roles[:, :, 0] = 1.0
+        roles[1, 3, 0] = -1.0
+        differences = torch.arange(8, dtype=torch.float32).reshape(1, 8)
+        selected = top_discriminative_role_difference(
+            roles, torch.tensor([[0, 1]]), differences
+        )
+        self.assertTrue(torch.equal(selected, torch.tensor([3.0])))
+
+    def test_tdrs_zero_role_weight_exactly_reproduces_sedps_parent(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        base_weight = torch.randn(12)
+        base_bias = torch.randn(())
+        model = StagedDiscriminativeRoleSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(13), torch.ones(13), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+            base_selector_weight=base_weight,
+            base_selector_bias=base_bias,
+            base_feature_mean=torch.zeros(12),
+            base_feature_std=torch.ones(12),
+        )
+        features = torch.randn(4, 13)
+        expected = 0.5 * torch.tanh(features[:, :12] @ base_weight + base_bias)
+        self.assertTrue(torch.equal(model.pair_delta(features), expected))
+        self.assertEqual([name for name, _ in model.named_parameters()], ["role_weight"])
+
+    def test_tdrs_config_binds_single_discriminative_role_feature(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-099_tdrs/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.tdrs.v1")
+        self.assertEqual(
+            config["context_feature"],
+            "top_text_distance_role_image_difference",
+        )
 
     def test_lscr_dispatch_is_specialized_not_twelve_feature(self):
         schema = "gzsl-paper.lscr.v1"

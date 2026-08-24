@@ -550,6 +550,10 @@ JEDS seed5完成全部11种单证据缺失覆盖后，`U/S/H/ZS=76.982599/80.230
 
 NRPS seed5的MLP真实训练到输出层范数`0.886818`，但所有非零状态均低于父模型，best严格退回S-EDPS `H=78.572828%`、selected iteration=`-1`。IDEA-131拒绝；方向问题不能靠增加seen CE模型容量解决。当前累计有效实验230组。
 
+`LOCAL_VISUAL_DIRECTION_AUDIT_001`显示seen语义到视觉中心ridge方向在seen错误上约68%正确，但unseen仅22%–26%，因此正式实验前止损。`ROLE_DIRECTION_AUDIT_001`显示文本距离最大角色在unseen错误上方向正确125/288；其中71个是S-EDPS错而角色对，另有476个正确样本可修复S-EDPS风险。
+
+下一实验`V2-INNOVATION-099 / TDRS`冻结S-EDPS 12维selector，只新增“top1/top2文本距离最大角色”的图像差值并训练一个系数，避免seen视觉映射域偏置。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

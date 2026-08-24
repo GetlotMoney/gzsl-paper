@@ -29,12 +29,14 @@ from model.innovations.gpes import (
     SemanticNeighborPairSelector,
     SemanticGatedPairSelector,
     StagedRoleDisagreementScaleSelector,
+    StagedDiscriminativeRoleSelector,
     TextOnlyGatedPairSelector,
     TriadicCompetitionPairSelector,
     TrustRegionRoleDisagreementScaleSelector,
     semantic_neighbor_adjacency,
     reciprocal_neighbor_confidence,
     pair_role_distance_weights,
+    top_discriminative_role_difference,
 )
 from model.innovations.lpsr import orthogonal_local_text_residuals
 from model.innovations.sdcr import SentenceDropoutConservativeRouting
@@ -96,7 +98,7 @@ SOFT_PAIR_SCHEMAS = frozenset({
     "gzsl-paper.bfps.v1", "gzsl-paper.aps.v1", "gzsl-paper.cups.v1",
     "gzsl-paper.tfps.v1", "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1",
     "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1", "gzsl-paper.jeds.v1",
-    "gzsl-paper.nrps.v1",
+    "gzsl-paper.nrps.v1", "gzsl-paper.tdrs.v1",
 })
 TEXT_ONLY_SCHEMAS = SOFT_PAIR_SCHEMAS - frozenset({
     "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
@@ -135,7 +137,9 @@ STAGED_SNPS_SCHEMAS = frozenset({
     "gzsl-paper.srdss.v1", "gzsl-paper.trdss.v1", "gzsl-paper.rugs.v1",
     "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1", "gzsl-paper.jeds.v1",
 })
-STAGED_SEDPS_SCHEMAS = frozenset({"gzsl-paper.nrps.v1"})
+STAGED_SEDPS_SCHEMAS = frozenset({
+    "gzsl-paper.nrps.v1", "gzsl-paper.tdrs.v1",
+})
 
 
 def class_balanced_pair_weights(
@@ -472,6 +476,17 @@ def load_config(path: Path):
             "pair_training_scope", "semantic_neighbor_k", "training_scope",
             "error_weight_floor",
         }
+    elif schema == "gzsl-paper.tdrs.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {
+            "pair_training_scope", "semantic_neighbor_k", "context_feature",
+            "sedps_model", "sedps_model_sha256", "training_scope",
+        }
     elif schema == "gzsl-paper.nrps.v1":
         expected_keys = (
             CONFIG_KEYS
@@ -604,6 +619,7 @@ def load_config(path: Path):
         "gzsl-paper.ceps.v1": ("V2-INNOVATION-096", "IDEA-129"),
         "gzsl-paper.jeds.v1": ("V2-INNOVATION-097", "IDEA-130"),
         "gzsl-paper.nrps.v1": ("V2-INNOVATION-098", "IDEA-131"),
+        "gzsl-paper.tdrs.v1": ("V2-INNOVATION-099", "IDEA-132"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -748,6 +764,10 @@ def load_config(path: Path):
         "pair_training_scope"
     ] != "suffix_or_semantic_top3_soft_gate":
         raise ValueError("EDPS必须使用稳定语义top3 soft gate。")
+    if schema == "gzsl-paper.tdrs.v1" and config[
+        "pair_training_scope"
+    ] != "suffix_or_semantic_top3_soft_gate":
+        raise ValueError("TDRS必须使用稳定语义top3 soft gate。")
     if schema == "gzsl-paper.bgwps.v1" and config[
         "pair_class_balance"
     ] != "inverse_frequency":
@@ -848,6 +868,10 @@ def load_config(path: Path):
         "semantic_neighbor_k"
     ]) != 3:
         raise ValueError("EDPS semantic_neighbor_k必须为3。")
+    if schema == "gzsl-paper.tdrs.v1" and int(config[
+        "semantic_neighbor_k"
+    ]) != 3:
+        raise ValueError("TDRS semantic_neighbor_k必须为3。")
     if schema == "gzsl-paper.msnps.v1" and config[
         "semantic_neighbor_rule"
     ] != "mutual_top5":
@@ -957,6 +981,12 @@ def load_config(path: Path):
         or float(config["learning_rate"]) != 0.0001
     ):
         raise ValueError("NRPS非线性残差配置错误。")
+    if schema == "gzsl-paper.tdrs.v1" and (
+        config["context_feature"] != "top_text_distance_role_image_difference"
+        or config["training_scope"]
+        != "freeze_sedps_train_discriminative_role_only"
+    ):
+        raise ValueError("TDRS判别角色配置错误。")
     if schema == "gzsl-paper.sedps.v1" and config[
         "training_scope"
     ] != "initialize_snps_then_evidence_dropout_finetune":
@@ -996,6 +1026,7 @@ def extract_pair_examples(
     role_vote_context: bool = False,
     source_disagreement_context: bool = False,
     neighbor_degree_context: bool = False,
+    discriminative_role_context: bool = False,
 ):
     top = logits.topk(2, dim=1)
     global_ids = ids.index_select(0, top.indices.reshape(-1)).reshape_as(top.indices)
@@ -1068,6 +1099,14 @@ def extract_pair_examples(
             values.append(role_scale)
         if role_vote_context:
             values.append(role_vote)
+        if discriminative_role_context:
+            values.append(
+                top_discriminative_role_difference(
+                    role_prototypes,
+                    global_ids,
+                    role_top2[:, 0] - role_top2[:, 1],
+                )
+            )
     if patch_scores is not None:
         local_patch = patch_scores.to(logits.device).float()
         if local_patch.shape[1] == 200 and ids.numel() != 200:
@@ -1603,6 +1642,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 neighbor_degree_context=(
                     config["schema_version"] == "gzsl-paper.ndps.v1"
                 ),
+                discriminative_role_context=(
+                    config["schema_version"] == "gzsl-paper.tdrs.v1"
+                ),
             )
             pair_logits_list.append(package[0])
             feature_list.append(package[1])
@@ -1737,6 +1779,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = NeighborhoodDegreePairSelector
         elif config["schema_version"] == "gzsl-paper.nrps.v1":
             model_class = NonlinearResidualPairSelector
+        elif config["schema_version"] == "gzsl-paper.tdrs.v1":
+            model_class = StagedDiscriminativeRoleSelector
         elif config["schema_version"] == "gzsl-paper.lscr.v1":
             model_class = LocalSemanticCompetitionResolver
         elif config["schema_version"] == "gzsl-paper.mhps.v1":
@@ -1794,21 +1838,24 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             )
         if config["schema_version"] == "gzsl-paper.rugs.v1":
             model_kwargs["max_gamma"] = float(config["max_gamma"])
-        if config["schema_version"] == "gzsl-paper.nrps.v1":
+        if config["schema_version"] in {
+            "gzsl-paper.nrps.v1", "gzsl-paper.tdrs.v1"
+        }:
             sedps_payload = torch.load(
                 Path(config["sedps_model"]), map_location="cpu", weights_only=False
             )
             sedps_state = sedps_payload["gpes_state_dict"]
-            model_kwargs.update(
-                {
-                    "base_selector_weight": sedps_state["selector_weight"],
-                    "base_selector_bias": sedps_state["selector_bias"],
-                    "base_feature_mean": sedps_state["feature_mean"],
-                    "base_feature_std": sedps_state["feature_std"],
+            model_kwargs.update({
+                "base_selector_weight": sedps_state["selector_weight"],
+                "base_selector_bias": sedps_state["selector_bias"],
+                "base_feature_mean": sedps_state["feature_mean"],
+                "base_feature_std": sedps_state["feature_std"],
+            })
+            if config["schema_version"] == "gzsl-paper.nrps.v1":
+                model_kwargs.update({
                     "hidden_dim": int(config["selector_hidden_dim"]),
                     "max_raw_residual": float(config["max_raw_residual"]),
-                }
-            )
+                })
         model = model_class(**model_kwargs).to(device)
         if config["schema_version"] in {
             "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1",

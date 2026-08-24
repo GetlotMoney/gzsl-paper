@@ -58,6 +58,26 @@ def pair_role_distance_weights(
     return distance / distance.mean(dim=1, keepdim=True).clamp_min(1e-6)
 
 
+def top_discriminative_role_difference(
+    role_sentence_prototypes: torch.Tensor,
+    class_pairs: torch.Tensor,
+    role_differences: torch.Tensor,
+) -> torch.Tensor:
+    """按类别文本距离选择最具判别性的单个角色图像差值。"""
+    if tuple(role_sentence_prototypes.shape) != (200, 8, 768):
+        raise ValueError("TDRS角色原型必须是[200,8,768]。")
+    if class_pairs.ndim != 2 or class_pairs.shape[1] != 2:
+        raise ValueError("TDRS class_pairs必须是[N,2]。")
+    if tuple(role_differences.shape) != (class_pairs.shape[0], 8):
+        raise ValueError("TDRS role_differences必须是[N,8]。")
+    normalized = F.normalize(role_sentence_prototypes.float(), dim=-1)
+    first = normalized.index_select(0, class_pairs[:, 0].long())
+    second = normalized.index_select(0, class_pairs[:, 1].long())
+    distance = (1.0 - (first * second).sum(dim=-1)).clamp_min(0.0)
+    role_index = distance.argmax(dim=1, keepdim=True)
+    return role_differences.gather(1, role_index).squeeze(1)
+
+
 class GatedPairEvidenceSelector(nn.Module):
     """用parent margin与三种证据差值学习top1/top2成对校正。"""
 
@@ -486,6 +506,97 @@ class NonlinearResidualPairSelector(SemanticNeighborPairSelector):
                 self.residual_selector[-1].weight.detach().norm()
             ),
             "output_bias": float(self.residual_selector[-1].bias.detach()),
+            "margin_threshold": float(self.margin_threshold),
+            "margin_temperature": self.margin_temperature,
+        }
+
+
+class StagedDiscriminativeRoleSelector(SemanticNeighborPairSelector):
+    """冻结S-EDPS，只训练最具判别性角色差值的一个系数。"""
+
+    def __init__(
+        self,
+        *args,
+        base_selector_weight: torch.Tensor,
+        base_selector_bias: torch.Tensor,
+        base_feature_mean: torch.Tensor,
+        base_feature_std: torch.Tensor,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        if self.feature_dim != 13 or tuple(base_selector_weight.shape) != (12,):
+            raise ValueError("TDRS要求13维输入和12维S-EDPS父权重。")
+        if not torch.allclose(
+            self.feature_mean[:12].cpu(), base_feature_mean.float().cpu(), atol=1e-6
+        ) or not torch.allclose(
+            self.feature_std[:12].cpu(), base_feature_std.float().cpu(), atol=1e-6
+        ):
+            raise ValueError("TDRS前12维统计未复现S-EDPS父模型。")
+        del self.selector_weight
+        del self.selector_bias
+        self.register_buffer(
+            "base_selector_weight", base_selector_weight.detach().float()
+        )
+        self.register_buffer(
+            "base_selector_bias", base_selector_bias.detach().float().reshape(())
+        )
+        self.register_buffer(
+            "base_feature_mean", base_feature_mean.detach().float()
+        )
+        self.register_buffer(
+            "base_feature_std", base_feature_std.detach().float().clamp_min(1e-6)
+        )
+        self.role_weight = nn.Parameter(torch.zeros(()))
+
+    def _top2_context(
+        self,
+        logits: torch.Tensor,
+        images: torch.Tensor,
+        patch_scores: torch.Tensor | None,
+        ids: torch.Tensor,
+    ):
+        top, global_ids, related, features = super()._top2_context(
+            logits, images, patch_scores, ids
+        )
+        role_logits = torch.einsum(
+            "bd,crd->bcr",
+            F.normalize(images.float(), dim=-1),
+            self.role_sentence_prototypes.index_select(0, ids),
+        )
+        role_top2 = role_logits.gather(
+            1, top.indices.unsqueeze(-1).expand(-1, -1, 8)
+        )
+        role_difference = top_discriminative_role_difference(
+            self.role_sentence_prototypes,
+            global_ids,
+            role_top2[:, 0] - role_top2[:, 1],
+        )
+        return (
+            top,
+            global_ids,
+            related,
+            torch.cat((features, role_difference.unsqueeze(1)), dim=1),
+        )
+
+    def pair_delta(self, raw_features: torch.Tensor) -> torch.Tensor:
+        base_features = (
+            raw_features[:, :12].float() - self.base_feature_mean
+        ) / self.base_feature_std
+        role_feature = (
+            raw_features[:, 12].float() - self.feature_mean[12]
+        ) / self.feature_std[12]
+        raw = (
+            base_features @ self.base_selector_weight
+            + self.base_selector_bias
+            + role_feature * self.role_weight
+        )
+        return self.max_delta * torch.tanh(raw)
+
+    def stats(self) -> dict[str, object]:
+        return {
+            "role_weight": float(self.role_weight.detach()),
+            "base_selector_weight_norm": float(self.base_selector_weight.norm()),
+            "base_selector_bias": float(self.base_selector_bias),
             "margin_threshold": float(self.margin_threshold),
             "margin_temperature": self.margin_temperature,
         }
