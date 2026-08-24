@@ -963,6 +963,12 @@ class GPESTest(unittest.TestCase):
         )
         self.assertEqual(config["parent_metrics_percent"]["H"], 78.46671032360116)
 
+        rescue, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-003.yaml"
+        )
+        self.assertEqual(rescue["random_seed"], 7)
+        self.assertEqual(rescue["learning_rate"], 0.0001)
+
     def test_lscr_dispatch_is_specialized_not_twelve_feature(self):
         schema = "gzsl-paper.lscr.v1"
         self.assertIn(schema, TEXT_ONLY_SCHEMAS)

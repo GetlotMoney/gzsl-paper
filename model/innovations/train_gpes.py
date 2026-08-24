@@ -568,7 +568,11 @@ def load_config(path: Path):
         or int(config["niters"]) != 28228
         or int(config["report_interval"]) != 141
         or config["optimizer"] != "Adam"
-        or float(config["learning_rate"]) != 0.001
+        or float(config["learning_rate"]) not in (
+            (0.001, 0.0001)
+            if schema == "gzsl-paper.sedps.v1"
+            else (0.001,)
+        )
         or float(config["weight_decay"]) != 0.0001
     ):
         raise ValueError("GPES训练参数错误。")

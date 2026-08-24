@@ -21,3 +21,8 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-002
     status: completed_parent_only
+  - run_id: RUN-003
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-003
+    status: planned_rescue1_seed7_lr1e4
