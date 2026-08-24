@@ -558,6 +558,8 @@ TDRS seed5的best-H与独立best-ZS均严格退回S-EDPS父模型；最后role_w
 
 按owner确认的新严格开发方案建立`V2-TUNE-002`：外层保持xlsa17 100类训练/50类validation不变，内层只在100个训练类中生成语义平衡三折`34/33/33`，fold SHA=`d8ed7bb33165f3320cdce7473144cb24d4b672cd9fd951710ad586ad314813b9`。外层validation图像不进入梯度，official test不加载。
 
+V2-TUNE-002首次有效RUN的inner CE权重`1.0`得到`H_val=75.544153%`，比旧外层baseline低`0.928811`；S快速升高而U持续下降，诊断为inner loss过强。RESCUE-1只把inner权重降到`0.1`，不改折或模型。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
