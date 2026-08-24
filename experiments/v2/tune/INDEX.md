@@ -3,4 +3,4 @@
 | Experiment | 目的 | 状态 | 目录 |
 |---|---|---|---|
 | V2-TUNE-001 | 标准类别不相交validation上的无专家/专家双路线 | topology axis closed | `TUNE-001_standard_clip_validation/` |
-| V2-TUNE-002 | 三模块内层语义平衡三折 + 外层标准validation | planned | `TUNE-002_nested_three_module_validation/` |
+| V2-TUNE-002 | 三模块内层语义平衡三折 + 外层标准validation | closed; no gain | `TUNE-002_nested_three_module_validation/` |

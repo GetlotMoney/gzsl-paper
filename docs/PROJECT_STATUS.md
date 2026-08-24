@@ -564,6 +564,8 @@ V2-TUNE-002 RESCUE-1达到`H_val=76.573831%`，略高于旧baseline，但U/ZS分
 
 V2-TUNE-002 RESCUE-2达到`H_val=76.998860%`，但U/ZS仍低于旧baseline`3.366995/0.897938`。最后一次补救将inner meta batch改为pseudo-unseen-only，符合support训练、refining类外层更新的episodic原理；其余不变。
 
+V2-TUNE-002 RESCUE-3得到`U/S/H/ZS_val=75.776690/77.134383/76.449509/79.792541%`，与旧baseline基本持平但H仍低`0.023455`。首次TRY加三次补救全部完成，停止inner-loss轴；嵌套三折和外层隔离基础设施保留，当前整体选模继续使用V2-TUNE-001/RUN-001。当前累计有效实验235组。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

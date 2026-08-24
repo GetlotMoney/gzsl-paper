@@ -1,6 +1,6 @@
 # V2-TUNE-002 结果
 
-状态：`rescue1_planned_lower_inner_weight`。
+状态：`closed_no_outer_validation_gain`。
 
 外层固定使用xlsa17标准100/50类别不相交validation。内层三折只覆盖外层100个训练类，pseudo-unseen类别数为`34/33/33`，外层50个validation类不进入任何梯度。
 
@@ -27,3 +27,7 @@ RUN-003最佳epoch=`16`，`U/S/H/ZS_val=73.057747/81.389427/76.998860/79.036897%
 RESCUE-3按episode-based ZSL的support/refining语义，将inner loss的图像batch改为pseudo-unseen-only；inner梯度仍只更新TST-NTR与CCGR，权重保持0.1。模型SHA256：`fc7a1f315e516380da98d5a57da9515b3819a6b6b82e34ed1aa8b6897608267f`；最后checkpoint SHA256相同。
 
 RUN-004预注册RESCUE-3：每折inner batch固定64张pseudo-unseen图像，不再混入pseudo-seen图像。
+
+RUN-004最佳epoch=`24`，`U/S/H/ZS_val=75.776690/77.134383/76.449509/79.792541%`。相对旧baseline的差值为`U=-0.648052 / S=+0.613135 / H=-0.023455 / ZS=-0.142294`，基本持平但没有新增泛化收益。
+
+首次TRY加三次方法级补救均已完成：权重1.0过强；权重0.1仍seen驱动；切断TG梯度提高H但U/ZS下降；pseudo-unseen-only恢复平衡但未超过baseline。停止该inner-loss轴，保留已验证的嵌套数据边界和三折工具，整体选模继续使用`V2-TUNE-001/RUN-001`。RUN-004模型SHA256：`1f9a16bbf17c24a97fe6c9cde7427cfbe658714ecea4717fbae1320d182ea397`；最后checkpoint SHA256相同。
