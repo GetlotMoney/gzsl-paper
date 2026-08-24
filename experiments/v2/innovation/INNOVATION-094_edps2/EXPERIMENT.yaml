@@ -5,7 +5,7 @@ framework_id: FRAMEWORK-V2
 title: Evidence-Dropout Pair Selector Reimplementation
 base_commit: 13c31770d1c1abc6e8aed0b560fcaac639b92eb6
 code_commit: 040d3c3419704e94f1f689f29d648c379e461f27
-status: testing_seed7_reliability
+status: rejected_not_two_seed_consistent
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
@@ -17,7 +17,7 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-094_edps2/RUN-001
     status: completed_positive
   - run_id: RUN-002
-    code_commit: null
+    code_commit: b01e1a6d0a35c600ff6c06109b7fa5a400859fe2
     config_ref: experiments/v2/innovation/INNOVATION-094_edps2/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-094_edps2/RUN-002
-    status: planned
+    status: completed_below_top3

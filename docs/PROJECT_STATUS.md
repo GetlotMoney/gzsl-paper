@@ -520,6 +520,8 @@ EDPS首次RUN和RERUN均在进入训练前因schema未进入有效12维特征分
 
 EDPS2 seed5达到`U/S/H/ZS=76.848692/80.265528/78.519956/84.020644%`，相对稳定SNPS top-3提高H `0.053246`；11维dropout次数严格均衡。方法方向为正，追加seed7验证。当前累计有效实验220组。
 
+EDPS2 seed7达到`U/S/H/ZS=76.846421/80.017334/78.399828/83.920074%`，比稳定SNPS top-3低`0.046272`。相对top-3增量seed5/7一正一负，集中化实现虽有效但方法不稳定，IDEA-127最终拒绝。当前累计有效实验221组。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

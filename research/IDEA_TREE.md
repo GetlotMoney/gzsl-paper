@@ -150,7 +150,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-125 / CUPS类别均匀成对选择器（稀有类权重极端）
       ├─ rejected_branch：IDEA-126 / TFPS教师强制错误成对选择器（错误覆盖不迁移）
       ├─ revised_branch：IDEA-127 / EDPS证据Dropout成对选择器（两次工程失败，无方法结论）
-      ├─ testing_branch：IDEA-127 / EDPS2集中化重实现（seed5 H=78.519956）
+      ├─ rejected_branch：IDEA-127 / EDPS2集中化重实现（证据dropout跨seed无效）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）
