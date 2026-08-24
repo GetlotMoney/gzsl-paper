@@ -80,6 +80,16 @@ class ThreefoldValidationTest(unittest.TestCase):
         )
         self.assertEqual(transport_low["max_transport_step"], 0.5)
         self.assertEqual(transport_mid["max_transport_step"], 1.0)
+        generator_low, _ = load_config(
+            ROOT
+            / "experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-006.yaml"
+        )
+        generator_mid, _ = load_config(
+            ROOT
+            / "experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-007.yaml"
+        )
+        self.assertEqual(generator_low["max_generator_magnitude"], 0.05)
+        self.assertEqual(generator_mid["max_generator_magnitude"], 0.1)
 
     def test_source_does_not_reference_official_test_cache(self):
         source = (

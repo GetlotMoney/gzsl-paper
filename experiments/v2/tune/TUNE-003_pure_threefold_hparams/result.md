@@ -25,3 +25,5 @@ RUN-004（transport=`0.5`）在epoch 17得到`mean U/S/H/ZS=78.943970/70.611630/
 RUN-005（transport=`1.0`）在epoch 17得到`mean U/S/H/ZS=75.902977/75.687253/75.792818/79.824275%`，U/ZS高于基线但H低`0.321036`，不保留。transport轴固定`1.5`。
 
 RUN-004模型SHA256：`8c6ce80566b0052825361760ae8ba913e51af7876745f9d7fdc3cb60362eb148`；RUN-005模型SHA256：`b975bf43dedc7e36dc20101cfdcda1f5e47aa97925e050ad6bdb9c95f30d6533`；各自checkpoint SHA256相同。
+
+RUN-006/007预注册CCGR幅度轴：固定topology=`0.1`、transport=`1.5`，只把`max_generator_magnitude`改为`0.05/0.1`。

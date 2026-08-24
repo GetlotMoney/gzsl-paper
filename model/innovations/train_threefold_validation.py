@@ -108,6 +108,8 @@ def load_config(path: Path) -> tuple[dict, str]:
             "TOPOLOGY-0.2",
             "TRANSPORT-0.5",
             "TRANSPORT-1.0",
+            "GENERATOR-0.05",
+            "GENERATOR-0.1",
         )
         or config["framework_id"] != "FRAMEWORK-V2"
         or config["dataset"] != "CUB"
