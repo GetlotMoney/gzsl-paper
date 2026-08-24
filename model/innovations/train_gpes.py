@@ -11,6 +11,7 @@ import yaml
 
 from model.innovations.ebc import EpisodicBiasCalibration
 from model.innovations.gpes import (
+    BiasFreeSemanticNeighborSelector,
     CenteredRoleGatedPairSelector,
     CrossSourceDisagreementSelector,
     GatedPairEvidenceSelector,
@@ -182,6 +183,7 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.lscr.v1",
         "gzsl-paper.mhps.v1",
         "gzsl-paper.fbps.v1",
+        "gzsl-paper.bfps.v1",
     )
 
 
@@ -318,6 +320,14 @@ def load_config(path: Path):
             "pair_training_scope", "semantic_neighbor_k", "training_objective",
             "focal_gamma",
         }
+    elif schema == "gzsl-paper.bfps.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {"pair_training_scope", "semantic_neighbor_k", "selector_bias_mode"}
     elif schema == "gzsl-paper.snps.v1":
         expected_keys = (
             CONFIG_KEYS
@@ -379,6 +389,7 @@ def load_config(path: Path):
         "gzsl-paper.lscr.v1": ("V2-INNOVATION-085", "IDEA-119"),
         "gzsl-paper.mhps.v1": ("V2-INNOVATION-087", "IDEA-121"),
         "gzsl-paper.fbps.v1": ("V2-INNOVATION-088", "IDEA-122"),
+        "gzsl-paper.bfps.v1": ("V2-INNOVATION-089", "IDEA-123"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -411,6 +422,7 @@ def load_config(path: Path):
             "gzsl-paper.lscr.v1",
             "gzsl-paper.mhps.v1",
             "gzsl-paper.fbps.v1",
+            "gzsl-paper.bfps.v1",
         )
         and config["feature_provenance_complete"] is not False
     ) or config["text_cache_provenance_complete"] is not False:
@@ -436,7 +448,8 @@ def load_config(path: Path):
                 "gzsl-paper.lscr.v1",
                 "gzsl-paper.mhps.v1",
                 "gzsl-paper.fbps.v1",
-                "gzsl-paper.fbps.v1",
+                "gzsl-paper.bfps.v1",
+                "gzsl-paper.bfps.v1",
             )
             and (
                 int(config["patch_top_k"]) != 2
@@ -462,7 +475,8 @@ def load_config(path: Path):
                 "gzsl-paper.lscr.v1",
                 "gzsl-paper.mhps.v1",
                 "gzsl-paper.fbps.v1",
-                "gzsl-paper.fbps.v1",
+                "gzsl-paper.bfps.v1",
+                "gzsl-paper.bfps.v1",
             )
             else "train_wrong_same_group_margin"
         )
@@ -551,6 +565,10 @@ def load_config(path: Path):
         "pair_training_scope"
     ] != "suffix_or_semantic_top3_soft_gate":
         raise ValueError("FBPS必须使用稳定语义top3 soft gate。")
+    if schema == "gzsl-paper.bfps.v1" and config[
+        "pair_training_scope"
+    ] != "suffix_or_semantic_top3_soft_gate":
+        raise ValueError("BFPS必须使用稳定语义top3 soft gate。")
     if schema == "gzsl-paper.bgwps.v1" and config[
         "pair_class_balance"
     ] != "inverse_frequency":
@@ -631,6 +649,10 @@ def load_config(path: Path):
         "semantic_neighbor_k"
     ]) != 3:
         raise ValueError("FBPS semantic_neighbor_k必须为3。")
+    if schema == "gzsl-paper.bfps.v1" and int(config[
+        "semantic_neighbor_k"
+    ]) != 3:
+        raise ValueError("BFPS semantic_neighbor_k必须为3。")
     if schema == "gzsl-paper.msnps.v1" and config[
         "semantic_neighbor_rule"
     ] != "mutual_top5":
@@ -698,6 +720,10 @@ def load_config(path: Path):
         or float(config["focal_gamma"]) != 2.0
     ):
         raise ValueError("FBPS focal配置错误。")
+    if schema == "gzsl-paper.bfps.v1" and config[
+        "selector_bias_mode"
+    ] != "fixed_zero":
+        raise ValueError("BFPS selector bias必须固定为0。")
     return config, sha256_file(path)
 
 
@@ -1021,6 +1047,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         "gzsl-paper.lscr.v1",
         "gzsl-paper.mhps.v1",
         "gzsl-paper.fbps.v1",
+        "gzsl-paper.bfps.v1",
     )
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
@@ -1121,6 +1148,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.lscr.v1",
             "gzsl-paper.mhps.v1",
             "gzsl-paper.fbps.v1",
+            "gzsl-paper.bfps.v1",
         ):
             if config["schema_version"] == "gzsl-paper.rsnps.v1":
                 semantic_confidence = reciprocal_neighbor_confidence(
@@ -1253,6 +1281,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.ndps.v1",
                         "gzsl-paper.mhps.v1",
                         "gzsl-paper.fbps.v1",
+                        "gzsl-paper.bfps.v1",
                     )
                     else None
                 ),
@@ -1275,6 +1304,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.ndps.v1",
                         "gzsl-paper.mhps.v1",
                         "gzsl-paper.fbps.v1",
+                        "gzsl-paper.bfps.v1",
                     )
                     else None
                 ),
@@ -1295,6 +1325,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.ndps.v1",
                         "gzsl-paper.mhps.v1",
                         "gzsl-paper.fbps.v1",
+                        "gzsl-paper.bfps.v1",
                     )
                 ),
                 pair_adjacency=semantic_adjacency,
@@ -1439,6 +1470,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = SemanticNeighborPairSelector
         elif config["schema_version"] == "gzsl-paper.fbps.v1":
             model_class = SemanticNeighborPairSelector
+        elif config["schema_version"] == "gzsl-paper.bfps.v1":
+            model_class = BiasFreeSemanticNeighborSelector
         else:
             model_class = GatedPairEvidenceSelector
         model_kwargs = {
@@ -1473,6 +1506,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.lscr.v1",
             "gzsl-paper.mhps.v1",
             "gzsl-paper.fbps.v1",
+            "gzsl-paper.bfps.v1",
         ):
             model_kwargs["class_name_prototypes"] = names_n
         if config["schema_version"] in (
@@ -1493,6 +1527,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.lscr.v1",
             "gzsl-paper.mhps.v1",
             "gzsl-paper.fbps.v1",
+            "gzsl-paper.bfps.v1",
         ):
             model_kwargs["role_sentence_prototypes"] = sentence8
         if config["schema_version"] in (
@@ -1510,6 +1545,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.lscr.v1",
             "gzsl-paper.mhps.v1",
             "gzsl-paper.fbps.v1",
+            "gzsl-paper.bfps.v1",
         ):
             model_kwargs["semantic_adjacency"] = semantic_adjacency
         if config["schema_version"] == "gzsl-paper.rsnps.v1":

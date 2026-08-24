@@ -932,3 +932,12 @@ class LocalSemanticCompetitionResolver(nn.Module):
             "margin_threshold": float(self.margin_threshold),
             "margin_temperature": self.margin_temperature,
         }
+
+
+class BiasFreeSemanticNeighborSelector(SemanticNeighborPairSelector):
+    """固定全局selector bias为0，只训练证据权重。"""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        del self.selector_bias
+        self.register_buffer("selector_bias", torch.zeros(()))

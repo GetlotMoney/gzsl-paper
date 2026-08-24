@@ -4,6 +4,7 @@ import unittest
 import torch
 
 from model.innovations.gpes import (
+    BiasFreeSemanticNeighborSelector,
     CenteredRoleGatedPairSelector,
     CrossSourceDisagreementSelector,
     GatedPairEvidenceSelector,
@@ -778,6 +779,30 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.fbps.v1")
         self.assertEqual(config["training_objective"], "focal_pair_ce")
         self.assertEqual(config["focal_gamma"], 2.0)
+
+    def test_bias_free_selector_has_no_trainable_bias(self):
+        groups = torch.arange(200) // 2
+        adjacency = semantic_neighbor_adjacency(torch.randn(200, 32), 3)
+        model = BiasFreeSemanticNeighborSelector(
+            torch.randn(200, 768), 13.0,
+            torch.randn(200, 768), torch.randn(200, 768), groups,
+            0.25, 0.1, torch.zeros(12), torch.ones(12), 0.5,
+            class_name_prototypes=torch.randn(200, 768),
+            role_sentence_prototypes=torch.randn(200, 8, 768),
+            semantic_adjacency=adjacency,
+        )
+        self.assertEqual(float(model.selector_bias), 0.0)
+        self.assertEqual(
+            [name for name, _ in model.named_parameters()], ["selector_weight"]
+        )
+
+    def test_bfps_config_binds_zero_bias(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-089_bfps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.bfps.v1")
+        self.assertEqual(config["selector_bias_mode"], "fixed_zero")
+        self.assertEqual(config["semantic_neighbor_k"], 3)
 
 
 if __name__ == "__main__":

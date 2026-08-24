@@ -145,6 +145,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-119 / LSCR局部语义竞争解析器（seen三类CE不迁移）
       ├─ rejected_branch：IDEA-121 / MHPS匹配困难成对选择器（平衡小样本仍过拟合）
       ├─ rejected_branch：IDEA-122 / FBPS焦点边界成对选择器（焦点CE跨seed无效）
+      ├─ testing_branch：IDEA-123 / BFPS无偏置成对选择器（planned，移除全局偏置）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）
