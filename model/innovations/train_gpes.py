@@ -1203,6 +1203,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.csds.v1",
                         "gzsl-paper.rugs.v1",
                         "gzsl-paper.ndps.v1",
+                        "gzsl-paper.mhps.v1",
                     )
                     else None
                 ),
@@ -1223,6 +1224,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.csds.v1",
                         "gzsl-paper.rugs.v1",
                         "gzsl-paper.ndps.v1",
+                        "gzsl-paper.mhps.v1",
                     )
                     else None
                 ),
@@ -1241,6 +1243,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "gzsl-paper.csds.v1",
                         "gzsl-paper.rugs.v1",
                         "gzsl-paper.ndps.v1",
+                        "gzsl-paper.mhps.v1",
                     )
                 ),
                 pair_adjacency=semantic_adjacency,

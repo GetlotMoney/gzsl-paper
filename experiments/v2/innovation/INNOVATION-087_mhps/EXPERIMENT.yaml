@@ -10,9 +10,20 @@ evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-087_mhps/framework_diagram.html
+runtime_failures:
+  - run_id: RUN-001
+    code_commit: e55446f99dc10552782853a2216d86b5cda9038e
+    status: failed_runtime
+    reason: mhps_schema_missing_from_twelve_feature_dispatch
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-087_mhps/RUN-001
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: e55446f99dc10552782853a2216d86b5cda9038e
     config_ref: experiments/v2/innovation/INNOVATION-087_mhps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-087_mhps/RUN-001
+    status: failed_runtime
+  - run_id: RUN-001-RERUN
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-087_mhps/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-087_mhps/RUN-001-RERUN
     status: planned
