@@ -83,6 +83,48 @@ CONFIG_KEYS = {
     "weight_decay", "inputs", "expected_sha256", "class_order_sha256",
 }
 
+SOFT_PAIR_SCHEMAS = frozenset({
+    "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
+    "gzsl-paper.nps.v1", "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
+    "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1", "gzsl-paper.snps.v1",
+    "gzsl-paper.msnps.v1", "gzsl-paper.rsnps.v1", "gzsl-paper.tcps.v1",
+    "gzsl-paper.pdrs.v1", "gzsl-paper.etpc.v1", "gzsl-paper.rdss.v1",
+    "gzsl-paper.srdss.v1", "gzsl-paper.trdss.v1", "gzsl-paper.rvps.v1",
+    "gzsl-paper.csds.v1", "gzsl-paper.rugs.v1", "gzsl-paper.ndps.v1",
+    "gzsl-paper.lscr.v1", "gzsl-paper.mhps.v1", "gzsl-paper.fbps.v1",
+    "gzsl-paper.bfps.v1", "gzsl-paper.aps.v1", "gzsl-paper.cups.v1",
+    "gzsl-paper.tfps.v1", "gzsl-paper.edps.v1",
+})
+TEXT_ONLY_SCHEMAS = SOFT_PAIR_SCHEMAS - frozenset({
+    "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
+    "gzsl-paper.nps.v1",
+})
+SEMANTIC_NEIGHBOR_SCHEMAS = frozenset({
+    schema for schema in TEXT_ONLY_SCHEMAS
+    if schema not in {
+        "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
+        "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
+    }
+})
+TWELVE_FEATURE_SCHEMAS = SEMANTIC_NEIGHBOR_SCHEMAS - frozenset({
+    "gzsl-paper.lscr.v1",
+}) | frozenset({"gzsl-paper.crgwps.v1"})
+NAME_FEATURE_SCHEMAS = TWELVE_FEATURE_SCHEMAS | frozenset({
+    "gzsl-paper.sgwps.v1",
+})
+ROLE_FEATURE_SCHEMAS = TWELVE_FEATURE_SCHEMAS | frozenset({
+    "gzsl-paper.rgwps.v1",
+})
+MODEL_CLASS_NAME_SCHEMAS = NAME_FEATURE_SCHEMAS | frozenset({
+    "gzsl-paper.lscr.v1",
+})
+MODEL_ROLE_SCHEMAS = ROLE_FEATURE_SCHEMAS | frozenset({
+    "gzsl-paper.lscr.v1",
+})
+ADJACENCY_MODEL_SCHEMAS = SEMANTIC_NEIGHBOR_SCHEMAS - frozenset({
+    "gzsl-paper.rsnps.v1",
+})
+
 
 def class_balanced_pair_weights(
     pair_targets: torch.Tensor,
@@ -211,38 +253,7 @@ def mask_pair_evidence_feature(
 
 
 def hard_margin_only_for_schema(schema: str) -> bool:
-    return schema not in (
-        "gzsl-paper.gwps.v1",
-        "gzsl-paper.bgwps.v1",
-        "gzsl-paper.mbgwps.v1",
-        "gzsl-paper.nps.v1",
-        "gzsl-paper.tgwps.v1",
-        "gzsl-paper.sgwps.v1",
-        "gzsl-paper.rgwps.v1",
-        "gzsl-paper.crgwps.v1",
-        "gzsl-paper.snps.v1",
-        "gzsl-paper.msnps.v1",
-        "gzsl-paper.rsnps.v1",
-        "gzsl-paper.tcps.v1",
-        "gzsl-paper.pdrs.v1",
-        "gzsl-paper.etpc.v1",
-        "gzsl-paper.rdss.v1",
-        "gzsl-paper.srdss.v1",
-        "gzsl-paper.trdss.v1",
-        "gzsl-paper.rvps.v1",
-        "gzsl-paper.csds.v1",
-        "gzsl-paper.rugs.v1",
-        "gzsl-paper.ndps.v1",
-        "gzsl-paper.lscr.v1",
-        "gzsl-paper.mhps.v1",
-        "gzsl-paper.fbps.v1",
-        "gzsl-paper.bfps.v1",
-        "gzsl-paper.aps.v1",
-                        "gzsl-paper.cups.v1",
-                        "gzsl-paper.tfps.v1",
-                        "gzsl-paper.edps.v1",
-        "gzsl-paper.edps.v1",
-    )
+    return schema not in SOFT_PAIR_SCHEMAS
 
 
 def load_config(path: Path):
@@ -509,63 +520,13 @@ def load_config(path: Path):
     ):
         raise ValueError("GPES协议边界错误。")
     if (
-        schema not in (
-            "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
-            "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
-            "gzsl-paper.snps.v1",
-            "gzsl-paper.msnps.v1",
-            "gzsl-paper.rsnps.v1",
-            "gzsl-paper.tcps.v1",
-            "gzsl-paper.pdrs.v1",
-            "gzsl-paper.etpc.v1",
-            "gzsl-paper.rdss.v1",
-            "gzsl-paper.srdss.v1",
-            "gzsl-paper.trdss.v1",
-            "gzsl-paper.rvps.v1",
-            "gzsl-paper.csds.v1",
-            "gzsl-paper.rugs.v1",
-            "gzsl-paper.ndps.v1",
-            "gzsl-paper.lscr.v1",
-            "gzsl-paper.mhps.v1",
-            "gzsl-paper.fbps.v1",
-            "gzsl-paper.bfps.v1",
-            "gzsl-paper.aps.v1",
-                        "gzsl-paper.cups.v1",
-                        "gzsl-paper.tfps.v1",
-                        "gzsl-paper.edps.v1",
-            "gzsl-paper.edps.v1",
-        )
+        schema not in TEXT_ONLY_SCHEMAS
         and config["feature_provenance_complete"] is not False
     ) or config["text_cache_provenance_complete"] is not False:
         raise ValueError("GPES cache provenance边界错误。")
     if (
         (
-            schema not in (
-                "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
-                "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
-                "gzsl-paper.snps.v1",
-                "gzsl-paper.msnps.v1",
-                "gzsl-paper.rsnps.v1",
-                "gzsl-paper.tcps.v1",
-                "gzsl-paper.pdrs.v1",
-                "gzsl-paper.etpc.v1",
-                "gzsl-paper.rdss.v1",
-                "gzsl-paper.srdss.v1",
-                "gzsl-paper.trdss.v1",
-                "gzsl-paper.rvps.v1",
-                "gzsl-paper.csds.v1",
-                "gzsl-paper.rugs.v1",
-                "gzsl-paper.ndps.v1",
-                "gzsl-paper.lscr.v1",
-                "gzsl-paper.mhps.v1",
-                "gzsl-paper.fbps.v1",
-                "gzsl-paper.bfps.v1",
-                "gzsl-paper.aps.v1",
-                        "gzsl-paper.cups.v1",
-                        "gzsl-paper.tfps.v1",
-                        "gzsl-paper.edps.v1",
-                "gzsl-paper.edps.v1",
-            )
+            schema not in TEXT_ONLY_SCHEMAS
             and (
                 int(config["patch_top_k"]) != 2
                 or int(config["patch_chunk_size"]) != 16
@@ -574,28 +535,7 @@ def load_config(path: Path):
         or config["group_rule"] != "class_name_last_token_min2"
         or config["threshold_source"] != (
             "train_wrong_suffix_or_semantic_neighbor_margin"
-            if schema in (
-                "gzsl-paper.snps.v1", "gzsl-paper.msnps.v1",
-                "gzsl-paper.rsnps.v1",
-                "gzsl-paper.tcps.v1",
-                "gzsl-paper.pdrs.v1",
-                "gzsl-paper.etpc.v1",
-                "gzsl-paper.rdss.v1",
-                "gzsl-paper.srdss.v1",
-                "gzsl-paper.trdss.v1",
-                "gzsl-paper.rvps.v1",
-                "gzsl-paper.csds.v1",
-                "gzsl-paper.rugs.v1",
-                "gzsl-paper.ndps.v1",
-                "gzsl-paper.lscr.v1",
-                "gzsl-paper.mhps.v1",
-                "gzsl-paper.fbps.v1",
-                "gzsl-paper.bfps.v1",
-                "gzsl-paper.aps.v1",
-                "gzsl-paper.cups.v1",
-                "gzsl-paper.tfps.v1",
-                "gzsl-paper.edps.v1",
-            )
+            if schema in SEMANTIC_NEIGHBOR_SCHEMAS
             else "train_wrong_same_group_margin"
         )
         or float(config["threshold_quantile"]) != 0.25
@@ -1272,31 +1212,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         "gzsl-paper.srdss.v1", "gzsl-paper.trdss.v1", "gzsl-paper.rugs.v1"
     ) and sha256_file(Path(config["snps_model"])) != config["snps_model_sha256"]:
         raise ValueError("S-RDSS SNPS父模型SHA错误。")
-    text_only = config["schema_version"] in (
-        "gzsl-paper.tgwps.v1", "gzsl-paper.sgwps.v1",
-        "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
-        "gzsl-paper.snps.v1",
-        "gzsl-paper.msnps.v1",
-        "gzsl-paper.rsnps.v1",
-        "gzsl-paper.tcps.v1",
-        "gzsl-paper.pdrs.v1",
-        "gzsl-paper.etpc.v1",
-        "gzsl-paper.rdss.v1",
-        "gzsl-paper.srdss.v1",
-        "gzsl-paper.trdss.v1",
-        "gzsl-paper.rvps.v1",
-        "gzsl-paper.csds.v1",
-        "gzsl-paper.rugs.v1",
-        "gzsl-paper.ndps.v1",
-        "gzsl-paper.lscr.v1",
-        "gzsl-paper.mhps.v1",
-        "gzsl-paper.fbps.v1",
-        "gzsl-paper.bfps.v1",
-        "gzsl-paper.aps.v1",
-        "gzsl-paper.cups.v1",
-        "gzsl-paper.tfps.v1",
-        "gzsl-paper.edps.v1",
-    )
+    text_only = config["schema_version"] in TEXT_ONLY_SCHEMAS
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
             if sha256_file(h1.repo_path(path_text)) != config["patch_sha256"][split]:
@@ -1380,28 +1296,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         group_ids = taxonomic_suffix_group_ids(load_class_names(paths["att_splits"]))
         semantic_adjacency = None
         semantic_confidence = None
-        if config["schema_version"] in (
-            "gzsl-paper.snps.v1", "gzsl-paper.msnps.v1",
-            "gzsl-paper.rsnps.v1",
-            "gzsl-paper.tcps.v1",
-            "gzsl-paper.pdrs.v1",
-            "gzsl-paper.etpc.v1",
-            "gzsl-paper.rdss.v1",
-            "gzsl-paper.srdss.v1",
-            "gzsl-paper.trdss.v1",
-            "gzsl-paper.rvps.v1",
-            "gzsl-paper.csds.v1",
-            "gzsl-paper.rugs.v1",
-            "gzsl-paper.ndps.v1",
-            "gzsl-paper.lscr.v1",
-            "gzsl-paper.mhps.v1",
-            "gzsl-paper.fbps.v1",
-            "gzsl-paper.bfps.v1",
-            "gzsl-paper.aps.v1",
-            "gzsl-paper.cups.v1",
-            "gzsl-paper.tfps.v1",
-            "gzsl-paper.edps.v1",
-        ):
+        if config["schema_version"] in SEMANTIC_NEIGHBOR_SCHEMAS:
             if config["schema_version"] == "gzsl-paper.rsnps.v1":
                 semantic_confidence = reciprocal_neighbor_confidence(
                     sdcr.prototypes(use_dropout=False),
@@ -1534,75 +1429,16 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 margin_temperature=float(config["margin_temperature"]),
                 extra_prototypes=(
                     names_n
-                    if config["schema_version"] in (
-                        "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1",
-                        "gzsl-paper.crgwps.v1", "gzsl-paper.snps.v1",
-                        "gzsl-paper.msnps.v1",
-                        "gzsl-paper.rsnps.v1",
-                        "gzsl-paper.tcps.v1",
-                        "gzsl-paper.pdrs.v1",
-                        "gzsl-paper.etpc.v1",
-                        "gzsl-paper.rdss.v1",
-                        "gzsl-paper.srdss.v1",
-                        "gzsl-paper.trdss.v1",
-                        "gzsl-paper.rvps.v1",
-                        "gzsl-paper.csds.v1",
-                        "gzsl-paper.rugs.v1",
-                        "gzsl-paper.ndps.v1",
-                        "gzsl-paper.mhps.v1",
-                        "gzsl-paper.fbps.v1",
-                        "gzsl-paper.bfps.v1",
-                        "gzsl-paper.aps.v1",
-                        "gzsl-paper.cups.v1",
-                    )
+                    if config["schema_version"] in NAME_FEATURE_SCHEMAS
                     else None
                 ),
                 role_prototypes=(
                     F.normalize(sentence8.float(), dim=-1)
-                    if config["schema_version"] in (
-                        "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
-                        "gzsl-paper.snps.v1",
-                        "gzsl-paper.msnps.v1",
-                        "gzsl-paper.rsnps.v1",
-                        "gzsl-paper.tcps.v1",
-                        "gzsl-paper.pdrs.v1",
-                        "gzsl-paper.etpc.v1",
-                        "gzsl-paper.rdss.v1",
-                        "gzsl-paper.srdss.v1",
-                        "gzsl-paper.trdss.v1",
-                        "gzsl-paper.rvps.v1",
-                        "gzsl-paper.csds.v1",
-                        "gzsl-paper.rugs.v1",
-                        "gzsl-paper.ndps.v1",
-                        "gzsl-paper.mhps.v1",
-                        "gzsl-paper.fbps.v1",
-                        "gzsl-paper.bfps.v1",
-                        "gzsl-paper.aps.v1",
-                        "gzsl-paper.cups.v1",
-                    )
+                    if config["schema_version"] in ROLE_FEATURE_SCHEMAS
                     else None
                 ),
                 center_role_features=(
-                    config["schema_version"] in (
-                        "gzsl-paper.crgwps.v1", "gzsl-paper.snps.v1",
-                        "gzsl-paper.msnps.v1",
-                        "gzsl-paper.rsnps.v1",
-                        "gzsl-paper.tcps.v1",
-                        "gzsl-paper.pdrs.v1",
-                        "gzsl-paper.etpc.v1",
-                        "gzsl-paper.rdss.v1",
-                        "gzsl-paper.srdss.v1",
-                        "gzsl-paper.trdss.v1",
-                        "gzsl-paper.rvps.v1",
-                        "gzsl-paper.csds.v1",
-                        "gzsl-paper.rugs.v1",
-                        "gzsl-paper.ndps.v1",
-                        "gzsl-paper.mhps.v1",
-                        "gzsl-paper.fbps.v1",
-                        "gzsl-paper.bfps.v1",
-                        "gzsl-paper.aps.v1",
-                        "gzsl-paper.cups.v1",
-                    )
+                    config["schema_version"] in TWELVE_FEATURE_SCHEMAS
                 ),
                 pair_adjacency=semantic_adjacency,
                 pair_confidence=semantic_confidence,
@@ -1792,77 +1628,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         }
         if config["schema_version"] == "gzsl-paper.nps.v1":
             model_kwargs["hidden_dim"] = int(config["selector_hidden_dim"])
-        if config["schema_version"] in (
-            "gzsl-paper.sgwps.v1", "gzsl-paper.rgwps.v1",
-            "gzsl-paper.crgwps.v1", "gzsl-paper.snps.v1",
-            "gzsl-paper.msnps.v1",
-            "gzsl-paper.rsnps.v1",
-            "gzsl-paper.tcps.v1",
-            "gzsl-paper.pdrs.v1",
-            "gzsl-paper.etpc.v1",
-            "gzsl-paper.rdss.v1",
-            "gzsl-paper.srdss.v1",
-            "gzsl-paper.trdss.v1",
-            "gzsl-paper.rvps.v1",
-            "gzsl-paper.csds.v1",
-            "gzsl-paper.rugs.v1",
-            "gzsl-paper.ndps.v1",
-            "gzsl-paper.lscr.v1",
-            "gzsl-paper.mhps.v1",
-            "gzsl-paper.fbps.v1",
-            "gzsl-paper.bfps.v1",
-            "gzsl-paper.aps.v1",
-            "gzsl-paper.cups.v1",
-            "gzsl-paper.tfps.v1",
-            "gzsl-paper.edps.v1",
-        ):
+        if config["schema_version"] in MODEL_CLASS_NAME_SCHEMAS:
             model_kwargs["class_name_prototypes"] = names_n
-        if config["schema_version"] in (
-            "gzsl-paper.rgwps.v1", "gzsl-paper.crgwps.v1",
-            "gzsl-paper.snps.v1",
-            "gzsl-paper.msnps.v1",
-            "gzsl-paper.rsnps.v1",
-            "gzsl-paper.tcps.v1",
-            "gzsl-paper.pdrs.v1",
-            "gzsl-paper.etpc.v1",
-            "gzsl-paper.rdss.v1",
-            "gzsl-paper.srdss.v1",
-            "gzsl-paper.trdss.v1",
-            "gzsl-paper.rvps.v1",
-            "gzsl-paper.csds.v1",
-            "gzsl-paper.rugs.v1",
-            "gzsl-paper.ndps.v1",
-            "gzsl-paper.lscr.v1",
-            "gzsl-paper.mhps.v1",
-            "gzsl-paper.fbps.v1",
-            "gzsl-paper.bfps.v1",
-            "gzsl-paper.aps.v1",
-            "gzsl-paper.cups.v1",
-            "gzsl-paper.tfps.v1",
-            "gzsl-paper.edps.v1",
-        ):
+        if config["schema_version"] in MODEL_ROLE_SCHEMAS:
             model_kwargs["role_sentence_prototypes"] = sentence8
-        if config["schema_version"] in (
-            "gzsl-paper.snps.v1", "gzsl-paper.msnps.v1",
-            "gzsl-paper.tcps.v1",
-            "gzsl-paper.pdrs.v1",
-            "gzsl-paper.etpc.v1",
-            "gzsl-paper.rdss.v1",
-            "gzsl-paper.srdss.v1",
-            "gzsl-paper.trdss.v1",
-            "gzsl-paper.rvps.v1",
-            "gzsl-paper.csds.v1",
-            "gzsl-paper.rugs.v1",
-            "gzsl-paper.ndps.v1",
-            "gzsl-paper.lscr.v1",
-            "gzsl-paper.mhps.v1",
-            "gzsl-paper.fbps.v1",
-            "gzsl-paper.bfps.v1",
-            "gzsl-paper.aps.v1",
-            "gzsl-paper.cups.v1",
-            "gzsl-paper.tfps.v1",
-            "gzsl-paper.edps.v1",
-        ):
+        if config["schema_version"] in ADJACENCY_MODEL_SCHEMAS:
             model_kwargs["semantic_adjacency"] = semantic_adjacency
         if config["schema_version"] == "gzsl-paper.rsnps.v1":
             model_kwargs["semantic_confidence"] = semantic_confidence

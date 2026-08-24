@@ -29,6 +29,15 @@ from model.innovations.gpes import (
     pair_role_distance_weights,
 )
 from model.innovations.train_gpes import (
+    ADJACENCY_MODEL_SCHEMAS,
+    MODEL_CLASS_NAME_SCHEMAS,
+    MODEL_ROLE_SCHEMAS,
+    NAME_FEATURE_SCHEMAS,
+    ROLE_FEATURE_SCHEMAS,
+    SEMANTIC_NEIGHBOR_SCHEMAS,
+    SOFT_PAIR_SCHEMAS,
+    TEXT_ONLY_SCHEMAS,
+    TWELVE_FEATURE_SCHEMAS,
     class_balanced_pair_weights,
     antisymmetric_pair_augmentation,
     extract_pair_examples,
@@ -914,6 +923,29 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["schema_version"], "gzsl-paper.edps.v1")
         self.assertEqual(config["evidence_drop_count"], 1)
         self.assertEqual(config["evidence_drop_scope"], "non_margin_11_features")
+
+    def test_edps_schema_has_complete_centralized_dispatch(self):
+        schema = "gzsl-paper.edps.v1"
+        for schema_set in (
+            SOFT_PAIR_SCHEMAS,
+            TEXT_ONLY_SCHEMAS,
+            SEMANTIC_NEIGHBOR_SCHEMAS,
+            TWELVE_FEATURE_SCHEMAS,
+            NAME_FEATURE_SCHEMAS,
+            ROLE_FEATURE_SCHEMAS,
+            MODEL_CLASS_NAME_SCHEMAS,
+            MODEL_ROLE_SCHEMAS,
+            ADJACENCY_MODEL_SCHEMAS,
+        ):
+            self.assertIn(schema, schema_set)
+
+    def test_lscr_dispatch_is_specialized_not_twelve_feature(self):
+        schema = "gzsl-paper.lscr.v1"
+        self.assertIn(schema, TEXT_ONLY_SCHEMAS)
+        self.assertIn(schema, SEMANTIC_NEIGHBOR_SCHEMAS)
+        self.assertNotIn(schema, TWELVE_FEATURE_SCHEMAS)
+        self.assertIn(schema, MODEL_CLASS_NAME_SCHEMAS)
+        self.assertIn(schema, MODEL_ROLE_SCHEMAS)
 
 
 if __name__ == "__main__":
