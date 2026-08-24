@@ -11,3 +11,4 @@ failure_condition: best退回父模型或H低于父模型，不重复相同分�
 experiment: V2-INNOVATION-095
 paper_core_innovation: false
 result: seed5 H=78.547901、相对父模型+0.081191；seed7 best退回父模型H=78.446100、增量0。首次方案不稳定，RESCUE-1降低阶段二学习率到1e-4。
+rescue1_result: seed7 lr=1e-4达到H=78.480820、相对父模型+0.034720；追加同学习率seed5。
