@@ -6,7 +6,7 @@ framework_id: FRAMEWORK-V2
 framework_ref: v2
 base_commit: 2a5611e629facf51f78b6cf4a8f029b4afff19ac
 code_commit: c99a585c0864a0133814b706db2053a6ad6a60f4
-status: rescue1_planned_lower_inner_weight
+status: rescue2_planned_transfer_generator_only
 research_question: 内层仅在外层100个训练类中进行语义平衡三折，能否提高TG-VPR、TST-NTR与CCGR联合模型在外层50个类别不相交validation类上的泛化？
 evaluation_protocol: xlsa17_class_disjoint_gzsl_validation
 validation_used_for_selection: true
@@ -40,8 +40,8 @@ runs:
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-001-RERUN
     status: completed_below_outer_baseline
   - run_id: RUN-002
-    code_commit: null
+    code_commit: 1aa276ec5dd017552a7e127cb2f607df8aa66340
     seed: 7
     config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-002.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-002
-    status: planned_rescue1_weight_0_1
+    status: completed_h_gain_unseen_drop

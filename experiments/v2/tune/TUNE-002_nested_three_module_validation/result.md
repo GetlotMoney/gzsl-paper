@@ -15,3 +15,7 @@ RUN-001-RERUN完成50轮，最佳epoch=`3`，`U/S/H/ZS_val=70.510274/81.352049/7
 RESCUE-1只把`inner_episode_weight`从`1.0`降为`0.1`，fold、外层数据、三模块结构和学习率均保持不变。模型SHA256：`6ee3f7d71f9e765290459db6a95712d3d94f26c7f84074cd53be8bf5e1b34e56`；最后checkpoint SHA256相同。
 
 RUN-002预注册为RESCUE-1：`inner_episode_weight=0.1`，其余配置逐项沿用RUN-001。
+
+RUN-002最佳epoch=`16`，`U/S/H/ZS_val=72.324175/81.354070/76.573831/78.784090%`。H相对旧baseline提高`0.100867`，但U下降`4.100567`、ZS下降`1.150745`，属于seen提升驱动，不能认定为更强unseen泛化。
+
+RESCUE-2保持inner权重`0.1`，只切断inner episode loss到TG-VPR的梯度，让inner pseudo-unseen监督仅更新TST-NTR与CCGR。模型SHA256：`cceffa925cfbfc9684b399067e81ef07d4e4143251e238f8791e9050fceee2d9`；最后checkpoint SHA256相同。
