@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 215
+completed_try_count: 216
 minimum_required_try_count: 50
 ```
 
@@ -497,6 +497,8 @@ FBPS seed5达到`U/S/H/ZS=76.917619/80.101538/78.477298/83.988434%`，相对稳�
 FBPS seed7达到`U/S/H/ZS=76.848710/79.939705/78.363739/83.953404%`，比稳定SNPS top-3低`0.082361`；相对top-3增量seed5/7一正一负，IDEA-122拒绝并保留普通pair CE。当前累计215组。
 
 只读审计显示SNPS top-3 seed5/7 selector权重余弦=`0.956653`、范数几乎相同，但bias为`0.023213/0.040247`。下一实验`V2-INNOVATION-089 / BFPS`固定bias=0，只训练12维证据权重，检验全局偏置是否为跨seed不稳定来源。
+
+BFPS seed5最高`U/S/H/ZS=76.814806/80.172402/78.457698/84.121209%`，比稳定SNPS top-3低H `0.009012`。固定零bias未改善H，说明bias差异不是主要不稳定来源；IDEA-123拒绝且不追加seed7。当前累计216组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

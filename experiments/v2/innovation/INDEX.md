@@ -89,6 +89,6 @@
 | V2-INNOVATION-085 | IDEA-119 | LSCR局部语义竞争解析器 | rejected（best退回父模型） | `INNOVATION-085_lscr/` |
 | V2-INNOVATION-087 | IDEA-121 | MHPS匹配困难成对选择器 | rejected（608个平衡pair低于top-3） | `INNOVATION-087_mhps/` |
 | V2-INNOVATION-088 | IDEA-122 | FBPS焦点边界成对选择器 | rejected（seed7低于top-3） | `INNOVATION-088_fbps/` |
-| V2-INNOVATION-089 | IDEA-123 | BFPS无偏置成对选择器 | planned（selector bias固定0） | `INNOVATION-089_bfps/` |
+| V2-INNOVATION-089 | IDEA-123 | BFPS无偏置成对选择器 | rejected（H低于top-3） | `INNOVATION-089_bfps/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
