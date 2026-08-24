@@ -238,8 +238,9 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.fbps.v1",
         "gzsl-paper.bfps.v1",
         "gzsl-paper.aps.v1",
-        "gzsl-paper.cups.v1",
-        "gzsl-paper.tfps.v1",
+                        "gzsl-paper.cups.v1",
+                        "gzsl-paper.tfps.v1",
+                        "gzsl-paper.edps.v1",
         "gzsl-paper.edps.v1",
     )
 
@@ -529,8 +530,9 @@ def load_config(path: Path):
             "gzsl-paper.fbps.v1",
             "gzsl-paper.bfps.v1",
             "gzsl-paper.aps.v1",
-            "gzsl-paper.cups.v1",
-            "gzsl-paper.tfps.v1",
+                        "gzsl-paper.cups.v1",
+                        "gzsl-paper.tfps.v1",
+                        "gzsl-paper.edps.v1",
             "gzsl-paper.edps.v1",
         )
         and config["feature_provenance_complete"] is not False
@@ -559,8 +561,9 @@ def load_config(path: Path):
                 "gzsl-paper.fbps.v1",
                 "gzsl-paper.bfps.v1",
                 "gzsl-paper.aps.v1",
-                "gzsl-paper.cups.v1",
-                "gzsl-paper.tfps.v1",
+                        "gzsl-paper.cups.v1",
+                        "gzsl-paper.tfps.v1",
+                        "gzsl-paper.edps.v1",
                 "gzsl-paper.edps.v1",
             )
             and (
