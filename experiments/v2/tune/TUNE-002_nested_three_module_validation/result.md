@@ -21,3 +21,7 @@ RUN-002最佳epoch=`16`，`U/S/H/ZS_val=72.324175/81.354070/76.573831/78.784090%
 RESCUE-2保持inner权重`0.1`，只切断inner episode loss到TG-VPR的梯度，让inner pseudo-unseen监督仅更新TST-NTR与CCGR。模型SHA256：`cceffa925cfbfc9684b399067e81ef07d4e4143251e238f8791e9050fceee2d9`；最后checkpoint SHA256相同。
 
 RUN-003预注册RESCUE-2：`inner_gradient_scope=transport_generator_only`；主训练CE和topology仍联合更新三个模块。
+
+RUN-003最佳epoch=`16`，`U/S/H/ZS_val=73.057747/81.389427/76.998860/79.036897%`，H相对旧baseline提高`0.525896`，但U/ZS仍低`3.366995/0.897938`，不能仅凭H宣称unseen泛化增强。
+
+RESCUE-3按episode-based ZSL的support/refining语义，将inner loss的图像batch改为pseudo-unseen-only；inner梯度仍只更新TST-NTR与CCGR，权重保持0.1。模型SHA256：`fc7a1f315e516380da98d5a57da9515b3819a6b6b82e34ed1aa8b6897608267f`；最后checkpoint SHA256相同。

@@ -562,6 +562,8 @@ V2-TUNE-002首次有效RUN的inner CE权重`1.0`得到`H_val=75.544153%`，比�
 
 V2-TUNE-002 RESCUE-1达到`H_val=76.573831%`，略高于旧baseline，但U/ZS分别下降`4.100567/1.150745`，提升由S驱动。RESCUE-2保持权重0.1，只允许inner episode更新TST-NTR与CCGR，避免pseudo-unseen图像通过共享TG-VPR被直接记忆。
 
+V2-TUNE-002 RESCUE-2达到`H_val=76.998860%`，但U/ZS仍低于旧baseline`3.366995/0.897938`。最后一次补救将inner meta batch改为pseudo-unseen-only，符合support训练、refining类外层更新的episodic原理；其余不变。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
