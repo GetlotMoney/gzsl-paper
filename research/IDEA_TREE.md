@@ -142,7 +142,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-116 / CSDS跨来源分歧选择器（新增特征被忽略）
       ├─ rejected_branch：IDEA-117 / RUGS角色不确定性门控选择器（不确定性方向与seen CE相反）
       ├─ rejected_branch：IDEA-118 / NDPS语义邻域密度选择器（仅seed5弱增益）
-      ├─ testing_branch：IDEA-119 / LSCR局部语义竞争解析器（planned，top3联合解析）
+      ├─ rejected_branch：IDEA-119 / LSCR局部语义竞争解析器（seen三类CE不迁移）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

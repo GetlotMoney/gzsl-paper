@@ -86,6 +86,6 @@
 | V2-INNOVATION-082 | IDEA-116 | CSDS跨来源分歧选择器 | rejected（退化为稳定top-3） | `INNOVATION-082_csds/` |
 | V2-INNOVATION-083 | IDEA-117 | RUGS角色不确定性门控选择器 | rejected（gamma全程投影回0） | `INNOVATION-083_rugs/` |
 | V2-INNOVATION-084 | IDEA-118 | NDPS语义邻域密度选择器 | rejected（seed7退化为top-3） | `INNOVATION-084_ndps/` |
-| V2-INNOVATION-085 | IDEA-119 | LSCR局部语义竞争解析器 | planned（相关top3三类零和修正） | `INNOVATION-085_lscr/` |
+| V2-INNOVATION-085 | IDEA-119 | LSCR局部语义竞争解析器 | rejected（best退回父模型） | `INNOVATION-085_lscr/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。

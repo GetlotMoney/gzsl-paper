@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 211
+completed_try_count: 212
 minimum_required_try_count: 50
 ```
 
@@ -483,6 +483,8 @@ NDPS seed5达到`U/S/H/ZS=76.916522/80.105728/78.478738/84.121209%`，相对稳�
 NDPS seed7达到`U/S/H/ZS=76.847547/80.112571/78.446100/83.987880%`，与同seed稳定SNPS top-3逐项相同。相对top-3增量seed5/7为`+0.012027/+0.000000`，未跨seed成立，IDEA-118拒绝。当前累计211组。
 
 下一实验`V2-INNOVATION-085 / LSCR`不再增加单一静态特征，而是把二元pair改为相关top3局部三类解析：Claude、merge、类名和八角色共11种证据在候选内中心化，学习零和三类logit修正。
+
+LSCR seed5构建5241个相关top3真类包含样本且三标签完整，但完整运行后best严格退回父模型`H=78.320510%`、selected iteration=`-1`；所有非零source weight均显著降低H。seen三类局部CE不能迁移到unseen，IDEA-119拒绝且不追加seed7。当前累计212组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
