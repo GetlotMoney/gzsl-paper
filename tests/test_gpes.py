@@ -37,6 +37,7 @@ from model.innovations.train_gpes import (
     ROLE_FEATURE_SCHEMAS,
     SEMANTIC_NEIGHBOR_SCHEMAS,
     SOFT_PAIR_SCHEMAS,
+    STAGED_SNPS_SCHEMAS,
     TEXT_ONLY_SCHEMAS,
     TWELVE_FEATURE_SCHEMAS,
     class_balanced_pair_weights,
@@ -947,6 +948,20 @@ class GPESTest(unittest.TestCase):
         )
         self.assertEqual(config["schema_version"], "gzsl-paper.edps2.v1")
         self.assertEqual(config["experiment_id"], "V2-INNOVATION-094")
+
+    def test_sedps_config_binds_staged_snps_evidence_dropout(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-001.yaml"
+        )
+        schema = config["schema_version"]
+        self.assertEqual(schema, "gzsl-paper.sedps.v1")
+        self.assertIn(schema, EVIDENCE_DROPOUT_SCHEMAS)
+        self.assertIn(schema, STAGED_SNPS_SCHEMAS)
+        self.assertEqual(
+            config["training_scope"],
+            "initialize_snps_then_evidence_dropout_finetune",
+        )
+        self.assertEqual(config["parent_metrics_percent"]["H"], 78.46671032360116)
 
     def test_lscr_dispatch_is_specialized_not_twelve_feature(self):
         schema = "gzsl-paper.lscr.v1"

@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-095
+idea_id: IDEA-128
+framework_id: FRAMEWORK-V2
+title: Staged Evidence-Dropout Pair Selector
+base_commit: 08df694bfb1ba520f5bcff24174ffbb6bacf0f1e
+code_commit: null
+status: planned
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-095_sedps/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-001
+    status: planned_seed5

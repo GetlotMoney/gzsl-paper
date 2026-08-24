@@ -136,6 +136,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-110 / PDRS类别对判别角色选择器（角色距离过度放大，无增益）
       ├─ rejected_branch：IDEA-111 / ETPC错误定向成对修正（seen最小翻转不迁移）
       ├─ revised_branch：IDEA-112 / RDSS角色分歧尺度选择器（最高H=78.555039，selector随机性不稳定）
+      ├─ testing_branch：IDEA-128 / S-EDPS分阶段证据稳健化（SNPS初始化后证据dropout微调）
       ├─ rejected_branch：IDEA-113 / S-RDSS分阶段角色尺度选择器（尺度不能独立叠加）
       ├─ rejected_branch：IDEA-114 / TR-RDSS信赖域角色尺度选择器（只改善seed5）
       ├─ rejected_branch：IDEA-115 / RVPS角色投票成对选择器（多数投票无增益）

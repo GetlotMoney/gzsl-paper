@@ -94,6 +94,7 @@ SOFT_PAIR_SCHEMAS = frozenset({
     "gzsl-paper.lscr.v1", "gzsl-paper.mhps.v1", "gzsl-paper.fbps.v1",
     "gzsl-paper.bfps.v1", "gzsl-paper.aps.v1", "gzsl-paper.cups.v1",
     "gzsl-paper.tfps.v1", "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1",
+    "gzsl-paper.sedps.v1",
 })
 TEXT_ONLY_SCHEMAS = SOFT_PAIR_SCHEMAS - frozenset({
     "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
@@ -125,7 +126,11 @@ ADJACENCY_MODEL_SCHEMAS = SEMANTIC_NEIGHBOR_SCHEMAS - frozenset({
     "gzsl-paper.rsnps.v1",
 })
 EVIDENCE_DROPOUT_SCHEMAS = frozenset({
-    "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1",
+    "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1", "gzsl-paper.sedps.v1",
+})
+STAGED_SNPS_SCHEMAS = frozenset({
+    "gzsl-paper.srdss.v1", "gzsl-paper.trdss.v1", "gzsl-paper.rugs.v1",
+    "gzsl-paper.sedps.v1",
 })
 
 
@@ -433,6 +438,18 @@ def load_config(path: Path):
             "pair_training_scope", "semantic_neighbor_k", "training_scope",
             "error_weight_floor",
         }
+    elif schema == "gzsl-paper.sedps.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {
+            "pair_training_scope", "semantic_neighbor_k", "evidence_drop_count",
+            "evidence_drop_scope", "evidence_drop_schedule", "snps_model",
+            "snps_model_sha256", "training_scope",
+        }
     elif schema in EVIDENCE_DROPOUT_SCHEMAS:
         expected_keys = (
             CONFIG_KEYS
@@ -511,6 +528,7 @@ def load_config(path: Path):
         "gzsl-paper.tfps.v1": ("V2-INNOVATION-092", "IDEA-126"),
         "gzsl-paper.edps.v1": ("V2-INNOVATION-093", "IDEA-127"),
         "gzsl-paper.edps2.v1": ("V2-INNOVATION-094", "IDEA-127"),
+        "gzsl-paper.sedps.v1": ("V2-INNOVATION-095", "IDEA-128"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -839,6 +857,10 @@ def load_config(path: Path):
         or config["evidence_drop_schedule"] != "cyclic_seed_offset"
     ):
         raise ValueError("EDPS证据dropout配置错误。")
+    if schema == "gzsl-paper.sedps.v1" and config[
+        "training_scope"
+    ] != "initialize_snps_then_evidence_dropout_finetune":
+        raise ValueError("S-EDPS必须从SNPS权重开始证据dropout微调。")
     return config, sha256_file(path)
 
 
@@ -1212,10 +1234,10 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
     ):
         if sha256_file(Path(config[key])) != config[f"{key}_sha256"]:
             raise ValueError(f"GPES {key} SHA错误。")
-    if config["schema_version"] in (
-        "gzsl-paper.srdss.v1", "gzsl-paper.trdss.v1", "gzsl-paper.rugs.v1"
-    ) and sha256_file(Path(config["snps_model"])) != config["snps_model_sha256"]:
-        raise ValueError("S-RDSS SNPS父模型SHA错误。")
+    if config["schema_version"] in STAGED_SNPS_SCHEMAS and sha256_file(
+        Path(config["snps_model"])
+    ) != config["snps_model_sha256"]:
+        raise ValueError("分阶段SNPS父模型SHA错误。")
     text_only = config["schema_version"] in TEXT_ONLY_SCHEMAS
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
@@ -1658,6 +1680,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         if config["schema_version"] == "gzsl-paper.rugs.v1":
             model_kwargs["max_gamma"] = float(config["max_gamma"])
         model = model_class(**model_kwargs).to(device)
+        if config["schema_version"] == "gzsl-paper.sedps.v1":
+            snps_payload = torch.load(
+                Path(config["snps_model"]), map_location="cpu", weights_only=False
+            )
+            model.load_state_dict(snps_payload["gpes_state_dict"], strict=True)
         optimizer = torch.optim.Adam(
             model.parameters(),
             lr=float(config["learning_rate"]),
@@ -1803,10 +1830,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 "merge_embeddings": config["merge_embeddings_sha256"],
                 **(
                     {"snps_model": config["snps_model_sha256"]}
-                    if config["schema_version"] in (
-                        "gzsl-paper.srdss.v1", "gzsl-paper.trdss.v1",
-                        "gzsl-paper.rugs.v1",
-                    )
+                    if config["schema_version"] in STAGED_SNPS_SCHEMAS
                     else {}
                 ),
             },
