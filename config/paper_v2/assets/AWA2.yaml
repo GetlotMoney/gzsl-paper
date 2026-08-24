@@ -1,0 +1,17 @@
+schema_version: gzsl-paper.clip-asset-source.v1
+dataset: AWA2
+raw_root: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/raw/AWA2
+raw_archive: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/downloads/AwA2-data.zip
+image_path_anchors:
+- Animals_with_Attributes2/JPEGImages
+- JPEGImages
+res101: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/splits/xlsa17/data/AWA2/res101.mat
+att_splits: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/splits/xlsa17/data/AWA2/att_splits.mat
+role_texts: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/frozen/AWA2_role_texts.json
+clip_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_checkpoints/ViT-L-14-336px.pt
+expected_sha256:
+  raw_archive: cc5a849879165acaa2b52f1de3f146ffcd1c475f6ef85bab0152c763e573744f
+  res101: 3592d2002a4e2d7ea4ef19069f9c35b8ad86c5e1a43b2d30257eba7018fd6dfa
+  att_splits: 8bb1527856c797dcd3bac981b25832bca8e7fe04f3fc2ab2322850a74e848df1
+  role_texts: acfa1b07f60b31f61721bf393482814c74687c85bd2d2188a5476aa5cfbf4e98
+  clip_checkpoint: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02

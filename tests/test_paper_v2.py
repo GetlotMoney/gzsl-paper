@@ -18,6 +18,7 @@ from tools.gzsl_data import (
     resolve_xlsa_image_path,
 )
 from tools.summarize_paper_runs import summarize
+from tools.prepare_paper_clip_assets import validate_clip_reproducibility
 
 
 class PaperV2ModelTest(unittest.TestCase):
@@ -112,6 +113,14 @@ class PaperV2ModelTest(unittest.TestCase):
 
 
 class PaperV2DataTest(unittest.TestCase):
+    def test_clip_reproducibility_distinguishes_repeat_from_batch_shape_roundoff(self):
+        base = F.normalize(torch.randn(768, generator=torch.Generator().manual_seed(920)), dim=0)
+        configured = F.normalize(base + 1e-5, dim=0)
+        stats = validate_clip_reproducibility(base, base.clone(), configured)
+        self.assertTrue(stats["same_batch_shape_bitwise_equal"])
+        with self.assertRaises(RuntimeError):
+            validate_clip_reproducibility(base, base + 1e-4, configured)
+
     def test_summary_uses_highest_seed_and_reports_range(self):
         with tempfile.TemporaryDirectory() as temporary:
             paths = []

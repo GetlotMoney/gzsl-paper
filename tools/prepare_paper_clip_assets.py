@@ -150,6 +150,25 @@ def _atomic_torch_save(path: Path, value) -> None:
     os.replace(temporary, path)
 
 
+def validate_clip_reproducibility(
+    repeat_a: torch.Tensor,
+    repeat_b: torch.Tensor,
+    configured_batch_value: torch.Tensor,
+) -> dict[str, float | bool]:
+    bitwise_equal = torch.equal(repeat_a, repeat_b)
+    max_abs_difference = float((repeat_a - configured_batch_value).abs().max())
+    cosine = float((repeat_a * configured_batch_value).sum())
+    if not bitwise_equal or max_abs_difference > 1e-3 or cosine < 0.99999:
+        raise RuntimeError("固定样本CLIP重复性或batch形状一致性检查失败。")
+    return {
+        "same_batch_shape_bitwise_equal": bitwise_equal,
+        "batch1_vs_configured_batch_max_abs_difference": max_abs_difference,
+        "batch1_vs_configured_batch_cosine": cosine,
+        "max_abs_tolerance": 0.001,
+        "minimum_cosine": 0.99999,
+    }
+
+
 def run(config_path: Path, output_dir: Path, *, device_name: str, batch_size: int, workers: int) -> dict:
     if output_dir.exists():
         raise FileExistsError(f"资产输出目录必须不存在：{output_dir}")
@@ -196,10 +215,9 @@ def run(config_path: Path, output_dir: Path, *, device_name: str, batch_size: in
     all_features = _encode_images(model, preprocess, image_paths, device, batch_size, workers)
     repeat_a = _encode_images(model, preprocess, [image_paths[0]], device, 1, 0)
     repeat_b = _encode_images(model, preprocess, [image_paths[0]], device, 1, 0)
-    if not torch.equal(repeat_a, repeat_b) or not torch.allclose(
-        repeat_a[0], all_features[0], atol=1e-6, rtol=1e-6
-    ):
-        raise RuntimeError("固定样本重复CLIP提取未逐值一致。")
+    determinism_check = validate_clip_reproducibility(
+        repeat_a[0], repeat_b[0], all_features[0]
+    )
 
     clean_names = [clean_class_name(name) for name in split.class_names]
     class_prompts = [f"a photo of a {name}." for name in clean_names]
@@ -261,6 +279,7 @@ def run(config_path: Path, output_dir: Path, *, device_name: str, batch_size: in
         "unseen_class_count": int(split.unseen_classes.numel()),
         "image_count": int(split.labels.numel()),
         "raw_image_order_and_size_sha256": image_order_sha,
+        "determinism_check": determinism_check,
         "train_count": int(split.train_indices.numel()),
         "test_seen_count": int(split.test_seen_indices.numel()),
         "test_unseen_count": int(split.test_unseen_indices.numel()),

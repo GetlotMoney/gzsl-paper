@@ -1,0 +1,17 @@
+schema_version: gzsl-paper.clip-asset-source.v1
+dataset: CUB
+raw_root: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/raw/CUB
+raw_archive: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/downloads/CUB_200_2011.tgz
+image_path_anchors:
+- CUB_200_2011/images
+- images
+res101: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/splits/xlsa17/data/CUB/res101.mat
+att_splits: /data/lby/projects/cv_project/GZSL_Warehouse/datasets/splits/xlsa17/data/CUB/att_splits.mat
+role_texts: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/frozen/CUB_role_texts.json
+clip_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_checkpoints/ViT-L-14-336px.pt
+expected_sha256:
+  raw_archive: 0c685df5597a8b24909f6a7c9db6d11e008733779a671760afef78feb49bf081
+  res101: 9a97c71951f9ac9f5c3708e6e55386e53f3d433289ed5e87a18b4af2a1a0fca1
+  att_splits: d7f5b4c2cb7853acdce43a9e87607ceed30bdf18c60344be3a266de29b6751e3
+  role_texts: 80ab16ae6efe0ddecb3a687208d2a6625837a2ea63a46bb2ce063ec0400b23da
+  clip_checkpoint: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02
