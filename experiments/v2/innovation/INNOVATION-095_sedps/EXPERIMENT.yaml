@@ -26,3 +26,8 @@ runs:
     config_ref: experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-003.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-003
     status: completed_positive_rescue1
+  - run_id: RUN-004
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-004.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-004
+    status: planned_rescue1_seed5_lr1e4

@@ -20,6 +20,8 @@ RESCUE-1 RUN-003（seed7、lr=`1e-4`）得到`U/S/H/ZS=76.914215/80.112571/78.48
 
 必须用同一`1e-4`在seed5运行后才能判断跨seed稳定，不能把RUN-001的`1e-3` seed5与RUN-003拼接为同一条件。
 
+RUN-004预注册：切换到seed5对应的SNPS top-3父checkpoint，保持RESCUE-1学习率`1e-4`和其余协议不变。
+
 RUN-003模型SHA256：`7d2c16704d999c4b650fd4c23f4911b5c3649da259bf34106d83b0e751e3b9fa`；最后checkpoint SHA256：`24c029ee8d5f83f7561ff381306a81688faeceeb579694f17e3142d969ede35e`。
 
 RUN-002模型SHA256：`e04e81f0f7c7493d3a1d2526196e576ad372f2cff422db79fd6ac2426fd6b30c`；最后checkpoint SHA256：`9ce9e8a025c4502a809824ddc1b202075400f3d659f680424ec0b24b50d7f711`。
