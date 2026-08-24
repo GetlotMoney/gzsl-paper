@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-097 JEDS</title><style>body{font-family:system-ui;margin:32px;background:#f7f9fc;color:#172033}.box{background:#fff;border:1px solid #b9c4d6;border-radius:12px;padding:16px;margin:12px}.arrow{text-align:center;font-size:24px}.tag{font-weight:700;color:#3156a3}code{background:#eef2f8;padding:2px 5px}</style></head><body>
+<h1>JEDS Jackknife证据训练</h1>
+<div class="box"><span class="tag">代码身份</span>：pre-run commit待回填；base <code>630c7bbb4edf1bf2eff1eea4e97ad9c038865f2a</code></div>
+<div class="box"><span class="tag">阶段一</span>：加载训练所得SNPS top-3 selector，固定父图和12维证据定义。</div><div class="arrow">↓</div>
+<div class="box"><span class="tag">Jackknife视图</span>：每个seen batch同时构造11份输入；每份只把一个非margin证据替换为训练均值。</div><div class="arrow">↓</div>
+<div class="box"><span class="tag">训练</span>：分别计算11个pair CE并取平均，只更新同一selector；Adam、lr=1e-4、28,228次更新。</div><div class="arrow">↓</div>
+<div class="box"><span class="tag">推理与指标</span>：恢复完整12维证据，输出200类联合logits；U/S/H联合竞争，ZS为50类。每141更新按official test H选择best，<code>test_used_for_selection=true</code>。</div>
+<div class="box"><span class="tag">边界</span>：true unseen图像不进入梯度；不存在测试时mask集成或手工调分。</div>
+</body></html>

@@ -51,6 +51,7 @@ from model.innovations.train_gpes import (
     matched_hard_pair_indices,
     mask_pair_evidence_feature,
     pair_correction_consistency_loss,
+    all_single_evidence_omissions,
     true_class_balancing_weights,
     minimal_flip_delta_targets,
 )
@@ -992,6 +993,28 @@ class GPESTest(unittest.TestCase):
             ROOT / "experiments/v2/innovation/INNOVATION-096_ceps/configs/RUN-002.yaml"
         )
         self.assertEqual(rescue["consistency_weight"], 100.0)
+
+    def test_jackknife_views_mask_each_non_margin_feature_once(self):
+        features = torch.arange(24, dtype=torch.float32).reshape(2, 12)
+        means = torch.arange(100, 112, dtype=torch.float32)
+        views = all_single_evidence_omissions(features, means)
+        self.assertEqual(tuple(views.shape), (11, 2, 12))
+        for view_index, feature_index in enumerate(range(1, 12)):
+            self.assertTrue(
+                torch.equal(
+                    views[view_index, :, feature_index],
+                    means[feature_index].expand(2),
+                )
+            )
+            self.assertTrue(torch.equal(views[view_index, :, 0], features[:, 0]))
+
+    def test_jeds_config_binds_all_omissions_each_batch(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-097_jeds/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.jeds.v1")
+        self.assertEqual(config["evidence_drop_count"], 11)
+        self.assertEqual(config["evidence_drop_schedule"], "all_omissions_each_batch")
 
     def test_lscr_dispatch_is_specialized_not_twelve_feature(self):
         schema = "gzsl-paper.lscr.v1"

@@ -540,6 +540,8 @@ CEPS seed5的`consistency_weight=0.1`条件与S-EDPS逐项相同，`H=78.572828%
 
 CEPS RESCUE-1的`consistency_weight=100`条件达到`H=78.528077%`，比S-EDPS低`0.044751`。弱一致性无效、强一致性有害，IDEA-129提前拒绝并关闭该loss轴；稳定最高保持S-EDPS `78.572828%`。当前累计有效实验228组。
 
+下一实验`V2-INNOVATION-097 / JEDS`不再强制full/masked修正相同，而是每个seen batch平均全部11种单证据缺失CE，消除mask与随机batch内容的偶然耦合；推理结构不变。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

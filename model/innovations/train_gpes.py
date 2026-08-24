@@ -94,7 +94,7 @@ SOFT_PAIR_SCHEMAS = frozenset({
     "gzsl-paper.lscr.v1", "gzsl-paper.mhps.v1", "gzsl-paper.fbps.v1",
     "gzsl-paper.bfps.v1", "gzsl-paper.aps.v1", "gzsl-paper.cups.v1",
     "gzsl-paper.tfps.v1", "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1",
-    "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1",
+    "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1", "gzsl-paper.jeds.v1",
 })
 TEXT_ONLY_SCHEMAS = SOFT_PAIR_SCHEMAS - frozenset({
     "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
@@ -127,11 +127,11 @@ ADJACENCY_MODEL_SCHEMAS = SEMANTIC_NEIGHBOR_SCHEMAS - frozenset({
 })
 EVIDENCE_DROPOUT_SCHEMAS = frozenset({
     "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1", "gzsl-paper.sedps.v1",
-    "gzsl-paper.ceps.v1",
+    "gzsl-paper.ceps.v1", "gzsl-paper.jeds.v1",
 })
 STAGED_SNPS_SCHEMAS = frozenset({
     "gzsl-paper.srdss.v1", "gzsl-paper.trdss.v1", "gzsl-paper.rugs.v1",
-    "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1",
+    "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1", "gzsl-paper.jeds.v1",
 })
 
 
@@ -272,6 +272,23 @@ def pair_correction_consistency_loss(
     ):
         raise ValueError("CEPS一致性输入必须是相同形状的[N,2]。")
     return F.mse_loss(masked_correction, full_correction)
+
+
+def all_single_evidence_omissions(
+    features: torch.Tensor, feature_mean: torch.Tensor
+) -> torch.Tensor:
+    """返回11个leave-one-evidence-out视图，margin维始终保留。"""
+    if features.ndim != 2 or features.shape[1] != 12:
+        raise ValueError("JEDS输入必须是[B,12]。")
+    if tuple(feature_mean.shape) != (12,):
+        raise ValueError("JEDS特征均值必须是[12]。")
+    return torch.stack(
+        [
+            mask_pair_evidence_feature(features, feature_mean, feature_index)
+            for feature_index in range(1, 12)
+        ],
+        dim=0,
+    )
 
 
 def hard_margin_only_for_schema(schema: str) -> bool:
@@ -452,6 +469,18 @@ def load_config(path: Path):
             "pair_training_scope", "semantic_neighbor_k", "training_scope",
             "error_weight_floor",
         }
+    elif schema == "gzsl-paper.jeds.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {
+            "pair_training_scope", "semantic_neighbor_k", "evidence_drop_count",
+            "evidence_drop_scope", "evidence_drop_schedule", "snps_model",
+            "snps_model_sha256", "training_scope", "training_objective",
+        }
     elif schema == "gzsl-paper.ceps.v1":
         expected_keys = (
             CONFIG_KEYS
@@ -557,6 +586,7 @@ def load_config(path: Path):
         "gzsl-paper.edps2.v1": ("V2-INNOVATION-094", "IDEA-127"),
         "gzsl-paper.sedps.v1": ("V2-INNOVATION-095", "IDEA-128"),
         "gzsl-paper.ceps.v1": ("V2-INNOVATION-096", "IDEA-129"),
+        "gzsl-paper.jeds.v1": ("V2-INNOVATION-097", "IDEA-130"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -598,7 +628,10 @@ def load_config(path: Path):
         or config["optimizer"] != "Adam"
         or float(config["learning_rate"]) not in (
             (0.001, 0.0001)
-            if schema in {"gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1"}
+            if schema in {
+                "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1",
+                "gzsl-paper.jeds.v1",
+            }
             else (0.001,)
         )
         or float(config["weight_decay"]) != 0.0001
@@ -883,12 +916,21 @@ def load_config(path: Path):
         or float(config["error_weight_floor"]) != 0.25
     ):
         raise ValueError("TFPS教师强制配置错误。")
-    if schema in EVIDENCE_DROPOUT_SCHEMAS and (
+    if schema in EVIDENCE_DROPOUT_SCHEMAS - {"gzsl-paper.jeds.v1"} and (
         int(config["evidence_drop_count"]) != 1
         or config["evidence_drop_scope"] != "non_margin_11_features"
         or config["evidence_drop_schedule"] != "cyclic_seed_offset"
     ):
         raise ValueError("EDPS证据dropout配置错误。")
+    if schema == "gzsl-paper.jeds.v1" and (
+        int(config["evidence_drop_count"]) != 11
+        or config["evidence_drop_scope"] != "all_non_margin_11_features"
+        or config["evidence_drop_schedule"] != "all_omissions_each_batch"
+        or config["training_scope"] != "initialize_snps_then_jackknife_finetune"
+        or config["training_objective"] != "mean_pair_ce_over_11_omissions"
+        or float(config["learning_rate"]) != 0.0001
+    ):
+        raise ValueError("JEDS jackknife训练配置错误。")
     if schema == "gzsl-paper.sedps.v1" and config[
         "training_scope"
     ] != "initialize_snps_then_evidence_dropout_finetune":
@@ -1722,7 +1764,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_kwargs["max_gamma"] = float(config["max_gamma"])
         model = model_class(**model_kwargs).to(device)
         if config["schema_version"] in {
-            "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1"
+            "gzsl-paper.sedps.v1", "gzsl-paper.ceps.v1",
+            "gzsl-paper.jeds.v1",
         }:
             snps_payload = torch.load(
                 Path(config["snps_model"]), map_location="cpu", weights_only=False
@@ -1766,7 +1809,15 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             batch_pair_targets = pair_targets.index_select(0, batch).to(device)
             batch_features = pair_features.index_select(0, batch).to(device)
             full_batch_features = batch_features
-            if config["schema_version"] in EVIDENCE_DROPOUT_SCHEMAS:
+            if config["schema_version"] == "gzsl-paper.jeds.v1":
+                batch_features = all_single_evidence_omissions(
+                    batch_features, feature_mean.to(device)
+                )
+                pair_dataset_stats["evidence_dropout_counts"] = [
+                    count + 1
+                    for count in pair_dataset_stats["evidence_dropout_counts"]
+                ]
+            elif config["schema_version"] in EVIDENCE_DROPOUT_SCHEMAS:
                 masked_feature = 1 + ((iteration + seed) % 11)
                 batch_features = mask_pair_evidence_feature(
                     batch_features, feature_mean.to(device), masked_feature
@@ -1774,11 +1825,18 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 pair_dataset_stats["evidence_dropout_counts"][
                     masked_feature - 1
                 ] += 1
-            corrected = (
-                model.corrected_candidate_logits(batch_pair_logits, batch_features)
-                if triplet_mode
-                else model.corrected_pair_logits(batch_pair_logits, batch_features)
-            )
+            if config["schema_version"] == "gzsl-paper.jeds.v1":
+                view_count, view_batch, feature_dim = batch_features.shape
+                corrected = model.corrected_pair_logits(
+                    batch_pair_logits.repeat(view_count, 1),
+                    batch_features.reshape(view_count * view_batch, feature_dim),
+                )
+            else:
+                corrected = (
+                    model.corrected_candidate_logits(batch_pair_logits, batch_features)
+                    if triplet_mode
+                    else model.corrected_pair_logits(batch_pair_logits, batch_features)
+                )
             if config["schema_version"] == "gzsl-paper.etpc.v1":
                 target_delta = minimal_flip_delta_targets(
                     batch_pair_logits,
@@ -1787,6 +1845,12 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 )
                 applied_delta = corrected[:, 0] - batch_pair_logits[:, 0]
                 per_pair_loss = (applied_delta - target_delta).square()
+            elif config["schema_version"] == "gzsl-paper.jeds.v1":
+                per_pair_loss = F.cross_entropy(
+                    corrected,
+                    batch_pair_targets.repeat(view_count),
+                    reduction="none",
+                ).reshape(view_count, view_batch).mean(dim=0)
             elif config["schema_version"] == "gzsl-paper.fbps.v1":
                 per_pair_loss = focal_pair_losses(
                     corrected, batch_pair_targets, float(config["focal_gamma"])
