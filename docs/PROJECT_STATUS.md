@@ -578,6 +578,8 @@ V2-TUNE-003 CCGR幅度=`0.05`造成U下降和range扩大；幅度=`0.1`虽把mea
 
 建立`V2-CONFIRM-008`执行三折冻结后的最终训练：从随机初始化使用150类/7057张seen图像训练17轮，绑定V2-TUNE-003/RUN-001全部超参数；checkpoint写入后official test只评估一次，结果不得回改方法。
 
+V2-CONFIRM-008完成单次official test，`U/S/H/ZS=73.589277/76.080686/74.814246/80.644178%`，低于77%目标且比旧无专家validation-frozen结果低`0.157066`。该test不用于选模；继续研究必须回到三折validation提出新方法。当前累计有效实验243组。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
