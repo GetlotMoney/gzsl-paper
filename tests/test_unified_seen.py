@@ -76,6 +76,28 @@ class UnifiedSeenTrainingTest(unittest.TestCase):
         self.assertIsNotNone(model.transport_head.weight.grad)
         self.assertIsNotNone(model.generator_magnitude_head.weight.grad)
 
+    def test_detached_inner_fold_only_updates_transfer_and_generator(self):
+        model = self.make_model().train()
+        fold = model.shared_fold_tg_vpr(
+            torch.arange(100), self.centroids[:100]
+        ).train()
+        stages = model.prototype_stages_from_tg(
+            fold,
+            torch.arange(67),
+            detach_tg_inputs=True,
+        )
+        images = torch.randn(8, 768, generator=torch.Generator().manual_seed(304))
+        logits = (
+            F.normalize(images, dim=-1)
+            @ stages["final"][:150].T
+            * model.scale().detach()
+        )
+        F.cross_entropy(logits, torch.arange(8)).backward()
+        self.assertIsNone(model.tg_vpr.tg_value_projection.weight.grad)
+        self.assertIsNone(model.tg_vpr.logit_scale.grad)
+        self.assertIsNotNone(model.transport_head.weight.grad)
+        self.assertIsNotNone(model.generator_magnitude_head.weight.grad)
+
     def test_full_epoch_batches_cover_every_sample_once(self):
         batches = full_epoch_batches(7057, 64, torch.Generator().manual_seed(7))
         joined = torch.cat(batches)

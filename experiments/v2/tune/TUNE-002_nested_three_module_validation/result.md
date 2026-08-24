@@ -19,3 +19,5 @@ RUN-002预注册为RESCUE-1：`inner_episode_weight=0.1`，其余配置逐项沿
 RUN-002最佳epoch=`16`，`U/S/H/ZS_val=72.324175/81.354070/76.573831/78.784090%`。H相对旧baseline提高`0.100867`，但U下降`4.100567`、ZS下降`1.150745`，属于seen提升驱动，不能认定为更强unseen泛化。
 
 RESCUE-2保持inner权重`0.1`，只切断inner episode loss到TG-VPR的梯度，让inner pseudo-unseen监督仅更新TST-NTR与CCGR。模型SHA256：`cceffa925cfbfc9684b399067e81ef07d4e4143251e238f8791e9050fceee2d9`；最后checkpoint SHA256相同。
+
+RUN-003预注册RESCUE-2：`inner_gradient_scope=transport_generator_only`；主训练CE和topology仍联合更新三个模块。

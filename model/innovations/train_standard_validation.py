@@ -80,6 +80,7 @@ NESTED_CONFIG_KEYS = CONFIG_KEYS | {
     "inner_batch_half",
     "inner_pseudo_unseen_images_used_for_gradient",
 }
+NESTED_V2_CONFIG_KEYS = NESTED_CONFIG_KEYS | {"inner_gradient_scope"}
 INPUT_KEYS = (
     "sentence_embeds",
     "train_features",
@@ -97,11 +98,10 @@ def load_config(path: Path) -> tuple[dict, str]:
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    expected_keys = (
-        NESTED_CONFIG_KEYS
-        if schema == "gzsl-paper.standard-nested-validation.v1"
-        else CONFIG_KEYS
-    )
+    expected_keys = {
+        "gzsl-paper.standard-nested-validation.v1": NESTED_CONFIG_KEYS,
+        "gzsl-paper.standard-nested-validation.v2": NESTED_V2_CONFIG_KEYS,
+    }.get(schema, CONFIG_KEYS)
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"标准validation配置字段错误；缺少={sorted(expected_keys-actual)}，"
@@ -110,9 +110,13 @@ def load_config(path: Path) -> tuple[dict, str]:
     if schema not in (
         "gzsl-paper.standard-validation.v1",
         "gzsl-paper.standard-nested-validation.v1",
+        "gzsl-paper.standard-nested-validation.v2",
     ):
         raise ValueError("标准validation配置schema错误。")
-    nested = schema == "gzsl-paper.standard-nested-validation.v1"
+    nested = schema in (
+        "gzsl-paper.standard-nested-validation.v1",
+        "gzsl-paper.standard-nested-validation.v2",
+    )
     expected_experiment = "V2-TUNE-002" if nested else "V2-TUNE-001"
     if config["experiment_id"] != expected_experiment:
         raise ValueError("标准validation实验身份错误。")
@@ -158,6 +162,10 @@ def load_config(path: Path) -> tuple[dict, str]:
         or config["inner_pseudo_unseen_images_used_for_gradient"] is not True
     ):
         raise ValueError("嵌套validation内层三折配置错误。")
+    if schema == "gzsl-paper.standard-nested-validation.v2" and config[
+        "inner_gradient_scope"
+    ] != "transport_generator_only":
+        raise ValueError("嵌套validation v2只允许迁移与生成模块接收inner梯度。")
     if set(config["inputs"]) != set(INPUT_KEYS):
         raise ValueError("validation输入字段不完整或包含非开发数据。")
     if set(config["expected_sha256"]) != set(INPUT_KEYS):
@@ -310,7 +318,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         else:
             model = text_model
         model = model.to(device)
-        nested = config["schema_version"] == "gzsl-paper.standard-nested-validation.v1"
+        nested = config["schema_version"] in (
+            "gzsl-paper.standard-nested-validation.v1",
+            "gzsl-paper.standard-nested-validation.v2",
+        )
+        detach_inner_tg = (
+            config["schema_version"] == "gzsl-paper.standard-nested-validation.v2"
+        )
         inner_folds = []
         inner_fold_models = []
         inner_generators = []
@@ -447,6 +461,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         fold_stages = text_model.prototype_stages_from_tg(
                             fold_model,
                             pseudo_seen.to(device),
+                            detach_tg_inputs=detach_inner_tg,
                         )
                         competition = fold_stages["final"].index_select(
                             0, seenclasses.to(device)
@@ -454,7 +469,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         inner_logits = (
                             F.normalize(inner_images, dim=-1)
                             @ competition.T
-                            * text_model.scale()
+                            * (
+                                text_model.scale().detach()
+                                if detach_inner_tg
+                                else text_model.scale()
+                            )
                         )
                         fold_losses.append(
                             F.cross_entropy(inner_logits, inner_targets)
@@ -553,6 +572,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     else 0
                 ),
                 "inner_fold_manifest": inner_manifest,
+                "inner_gradient_scope": (
+                    config.get("inner_gradient_scope", "all_three_modules")
+                    if nested
+                    else None
+                ),
                 "best_validation_metrics_percent": best_metrics,
                 "diagnostics": _diagnostics(model),
                 "model_sha256": sha256_file(output_dir / "model_best.pth"),

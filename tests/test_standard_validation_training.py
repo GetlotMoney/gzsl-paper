@@ -76,6 +76,11 @@ class StandardValidationTrainingTest(unittest.TestCase):
             / "experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-002.yaml"
         )
         self.assertEqual(rescue["inner_episode_weight"], 0.1)
+        rescue2, _ = load_config(
+            ROOT
+            / "experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-003.yaml"
+        )
+        self.assertEqual(rescue2["inner_gradient_scope"], "transport_generator_only")
 
     def test_nested_training_samples_inner_batches_only_from_fit_labels(self):
         source = (ROOT / "model/innovations/train_standard_validation.py").read_text(

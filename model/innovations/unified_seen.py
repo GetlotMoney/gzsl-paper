@@ -98,6 +98,8 @@ class UnifiedSeenPrototypeModel(nn.Module):
         self,
         tg_vpr: VariableClassTGVPR,
         support_classes: torch.Tensor,
+        *,
+        detach_tg_inputs: bool = False,
     ) -> dict[str, torch.Tensor]:
         """用共享迁移/生成权重处理任意100类或150类TG-VPR父模型。"""
         allclasses = torch.arange(200, device=tg_vpr.sentence_embeds.device)
@@ -110,6 +112,11 @@ class UnifiedSeenPrototypeModel(nn.Module):
             raise ValueError("外部TG父模型support必须包含5至150个唯一类别。")
         tg_prototypes = tg_vpr.prototypes()
         value_prototypes = tg_vpr.value_candidate(allclasses)
+        role_prototypes = tg_vpr.semantic_group_vectors()
+        if detach_tg_inputs:
+            tg_prototypes = tg_prototypes.detach()
+            value_prototypes = value_prototypes.detach()
+            role_prototypes = role_prototypes.detach()
         support = tg_prototypes.index_select(0, support_classes)
         transport_features = self._class_features(
             tg_prototypes, value_prototypes, support
@@ -121,7 +128,6 @@ class UnifiedSeenPrototypeModel(nn.Module):
             tg_prototypes, value_prototypes, transport_step
         )
 
-        role_prototypes = tg_vpr.semantic_group_vectors()
         direction_basis = tangent_direction_basis(
             transported, value_prototypes, role_prototypes
         )
