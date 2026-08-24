@@ -532,6 +532,8 @@ S-EDPS seed7完整训练后best严格退回SNPS父模型`H=78.446100%`、selecte
 
 S-EDPS RESCUE-1的seed7低学习率条件达到`U/S/H/ZS=76.914215/80.112571/78.480820/84.021211%`，相对同seed父模型H提高`0.034720`。追加同一`1e-4`条件seed5，避免跨参数拼接。当前累计有效实验225组。
 
+S-EDPS RESCUE-1的seed5低学习率条件达到`U/S/H/ZS=76.982599/80.230141/78.572828/84.121776%`，相对同seed父模型H提高`0.106118`。同条件seed5/7均提升、H范围`0.092007`，S-EDPS晋级为两seed支持的分阶段训练候选；当前稳定最高H更新为`78.572828%`。当前累计有效实验226组。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

@@ -1,6 +1,6 @@
 # V2-INNOVATION-095 结果
 
-状态：`testing_seed7_required`。
+状态：`supported_two_seed_stagewise`。
 
 研究问题：稳定SNPS top-3权重作为阶段一，阶段二用EDPS的循环证据屏蔽继续训练，能否保留父模型并降低从零训练的跨seed波动。
 
@@ -21,6 +21,12 @@ RESCUE-1 RUN-003（seed7、lr=`1e-4`）得到`U/S/H/ZS=76.914215/80.112571/78.48
 必须用同一`1e-4`在seed5运行后才能判断跨seed稳定，不能把RUN-001的`1e-3` seed5与RUN-003拼接为同一条件。
 
 RUN-004预注册：切换到seed5对应的SNPS top-3父checkpoint，保持RESCUE-1学习率`1e-4`和其余协议不变。
+
+RESCUE-1 RUN-004（seed5、lr=`1e-4`）得到`U/S/H/ZS=76.982599/80.230141/78.572828/84.121776%`，selected iteration=`2820`，相对同seed父模型H提高`0.106118`。
+
+同一低学习率条件的seed5/7 H=`78.572828/78.480820%`，增量=`+0.106118/+0.034720`，两seed均成立，H范围`0.092007`。S-EDPS晋级为两seed支持的分阶段训练候选；按owner最高seed口径主值为`78.572828%`，比RDSS最高观察`78.555039%`高`0.017789`。
+
+RUN-004模型SHA256：`20ad789bef913ee502d444c5575349abcd4cdae4473d3d219d120fcf10fe5882`；最后checkpoint SHA256：`c344a05daaa5115914c385146d992b47b64f6827bee9c4b9210763440ffbd0f4`。
 
 RUN-003模型SHA256：`7d2c16704d999c4b650fd4c23f4911b5c3649da259bf34106d83b0e751e3b9fa`；最后checkpoint SHA256：`24c029ee8d5f83f7561ff381306a81688faeceeb579694f17e3142d969ede35e`。
 

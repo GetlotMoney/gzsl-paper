@@ -1,6 +1,6 @@
 # IDEA-128：S-EDPS分阶段证据稳健化
 
-status: testing
+status: supported
 problem: EDPS2从零训练时seed5提升、seed7下降，随机起点会覆盖稳定SNPS已经学到的证据方向。
 hypothesis: 先固定稳定SNPS为阶段一结果，再用循环证据屏蔽继续训练，可在不破坏父决策的前提下学习证据冗余并提高H。
 evidence_refs: IDEA-106的SNPS top-3两seed稳定；IDEA-127的EDPS2 seed5正增益但跨seed不一致；S-RDSS证明分阶段执行边界可行但单一尺度无增益。
@@ -12,3 +12,5 @@ experiment: V2-INNOVATION-095
 paper_core_innovation: false
 result: seed5 H=78.547901、相对父模型+0.081191；seed7 best退回父模型H=78.446100、增量0。首次方案不稳定，RESCUE-1降低阶段二学习率到1e-4。
 rescue1_result: seed7 lr=1e-4达到H=78.480820、相对父模型+0.034720；追加同学习率seed5。
+final_result: 同一lr=1e-4条件seed5/7 H=78.572828/78.480820，均高于各自SNPS父模型；最高值78.572828。
+decision: 晋级为两seed支持的分阶段训练候选；是否作为论文核心创新待与后续结构模块统一叙事后决定。
