@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-092 TFPS</title></head>
+<body>
+<h1>TFPS：教师强制错误成对选择器</h1>
+<p><strong>Base commit：</strong>8aefc076b1342eb5642e7fa9f8103822b475b484；<strong>RUN-001 code commit：</strong>pre-run后绑定。</p>
+<pre>seen训练图像：
+若父预测正确 → pair=(top1, top2), target=top1
+若父预测错误 → pair=(top1, 真实类), target=真实类
+
+只保留suffix/语义top-3相关pair
+错误pair soft weight最低0.25
+→ 原12维selector CE
+
+推理仍只使用普通top1/top2，无真实标签
+→ 200-way U/S/H；50-way ZS</pre>
+<p>教师强制仅用于seen训练样本构造，使真实类掉出top2的错误也能提供监督。unseen图像不进入训练，official test按陈式协议选择最高H。</p>
+</body></html>

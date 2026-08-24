@@ -33,6 +33,7 @@ from model.innovations.train_gpes import (
     antisymmetric_pair_augmentation,
     extract_pair_examples,
     extract_triplet_examples,
+    extract_teacher_forced_pairs,
     focal_pair_losses,
     hard_margin_only_for_schema,
     load_config,
@@ -863,6 +864,39 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(
             config["true_class_balance"], "inverse_pair_frequency_mean1"
         )
+
+    def test_teacher_forced_pairs_use_true_class_for_errors(self):
+        logits = torch.tensor([
+            [3.0, 2.0, 1.0, 0.0],
+            [3.0, 2.0, 1.0, 0.0],
+        ])
+        package = extract_teacher_forced_pairs(
+            logits,
+            torch.randn(2, 768),
+            torch.tensor([0, 2]),
+            torch.arange(4),
+            torch.zeros(4, dtype=torch.long),
+            torch.ones(4, 4, dtype=torch.bool).fill_diagonal_(False),
+            torch.randn(4, 768), torch.randn(4, 768),
+            torch.randn(4, 768), torch.randn(4, 8, 768),
+            threshold=1.0,
+            error_weight_floor=0.25,
+        )
+        self.assertTrue(torch.equal(package[2], torch.tensor([0, 1])))
+        self.assertEqual(float(package[0][1, 1]), 1.0)
+        self.assertGreaterEqual(float(package[4][1]), 0.25)
+        self.assertEqual(tuple(package[1].shape), (2, 12))
+
+    def test_tfps_config_binds_teacher_forced_errors(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-092_tfps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.tfps.v1")
+        self.assertEqual(
+            config["training_scope"],
+            "wrong_top1_vs_true_correct_top1_vs_top2",
+        )
+        self.assertEqual(config["error_weight_floor"], 0.25)
 
 
 if __name__ == "__main__":

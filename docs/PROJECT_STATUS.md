@@ -508,6 +508,8 @@ APS seed5把4458个pair镜像为8916个标签严格1:1样本，交换等变和�
 
 CUPS seed5最高`U/S/H/ZS=76.916522/80.072731/78.462899/84.087873%`，比稳定SNPS top-3低H `0.003811`。pair只覆盖134类且类别计数1–52，逆频率权重最高达`33.268658`，形成极端梯度；IDEA-125拒绝且不追加seed7。当前累计218组。
 
+下一实验`V2-INNOVATION-092 / TFPS`扩大seen错误监督覆盖：父预测错误时构造top1-vs-真实类pair，正确时仍用top1-vs-top2；推理保持普通top1/top2且不使用真实标签。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

@@ -228,6 +228,7 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.bfps.v1",
         "gzsl-paper.aps.v1",
         "gzsl-paper.cups.v1",
+        "gzsl-paper.tfps.v1",
     )
 
 
@@ -394,6 +395,17 @@ def load_config(path: Path):
             "pair_training_scope", "semantic_neighbor_k",
             "true_class_balance",
         }
+    elif schema == "gzsl-paper.tfps.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {
+            "pair_training_scope", "semantic_neighbor_k", "training_scope",
+            "error_weight_floor",
+        }
     elif schema == "gzsl-paper.snps.v1":
         expected_keys = (
             CONFIG_KEYS
@@ -458,6 +470,7 @@ def load_config(path: Path):
         "gzsl-paper.bfps.v1": ("V2-INNOVATION-089", "IDEA-123"),
         "gzsl-paper.aps.v1": ("V2-INNOVATION-090", "IDEA-124"),
         "gzsl-paper.cups.v1": ("V2-INNOVATION-091", "IDEA-125"),
+        "gzsl-paper.tfps.v1": ("V2-INNOVATION-092", "IDEA-126"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -493,6 +506,7 @@ def load_config(path: Path):
             "gzsl-paper.bfps.v1",
             "gzsl-paper.aps.v1",
             "gzsl-paper.cups.v1",
+            "gzsl-paper.tfps.v1",
         )
         and config["feature_provenance_complete"] is not False
     ) or config["text_cache_provenance_complete"] is not False:
@@ -521,6 +535,7 @@ def load_config(path: Path):
                 "gzsl-paper.bfps.v1",
                 "gzsl-paper.aps.v1",
                 "gzsl-paper.cups.v1",
+                "gzsl-paper.tfps.v1",
             )
             and (
                 int(config["patch_top_k"]) != 2
@@ -549,6 +564,7 @@ def load_config(path: Path):
                 "gzsl-paper.bfps.v1",
                 "gzsl-paper.aps.v1",
                 "gzsl-paper.cups.v1",
+                "gzsl-paper.tfps.v1",
             )
             else "train_wrong_same_group_margin"
         )
@@ -649,6 +665,10 @@ def load_config(path: Path):
         "pair_training_scope"
     ] != "suffix_or_semantic_top3_soft_gate":
         raise ValueError("CUPS必须使用稳定语义top3 soft gate。")
+    if schema == "gzsl-paper.tfps.v1" and config[
+        "pair_training_scope"
+    ] != "teacher_forced_related_top1_true":
+        raise ValueError("TFPS必须使用教师强制相关pair。")
     if schema == "gzsl-paper.bgwps.v1" and config[
         "pair_class_balance"
     ] != "inverse_frequency":
@@ -741,6 +761,10 @@ def load_config(path: Path):
         "semantic_neighbor_k"
     ]) != 3:
         raise ValueError("CUPS semantic_neighbor_k必须为3。")
+    if schema == "gzsl-paper.tfps.v1" and int(config[
+        "semantic_neighbor_k"
+    ]) != 3:
+        raise ValueError("TFPS semantic_neighbor_k必须为3。")
     if schema == "gzsl-paper.msnps.v1" and config[
         "semantic_neighbor_rule"
     ] != "mutual_top5":
@@ -822,6 +846,11 @@ def load_config(path: Path):
         "true_class_balance"
     ] != "inverse_pair_frequency_mean1":
         raise ValueError("CUPS真实类别均衡配置错误。")
+    if schema == "gzsl-paper.tfps.v1" and (
+        config["training_scope"] != "wrong_top1_vs_true_correct_top1_vs_top2"
+        or float(config["error_weight_floor"]) != 0.25
+    ):
+        raise ValueError("TFPS教师强制配置错误。")
     return config, sha256_file(path)
 
 
@@ -1014,6 +1043,75 @@ def extract_triplet_examples(
     )
 
 
+def extract_teacher_forced_pairs(
+    logits,
+    images,
+    targets,
+    ids,
+    group_ids,
+    semantic_adjacency,
+    claude_prototypes,
+    merge_prototypes,
+    class_name_prototypes,
+    role_prototypes,
+    threshold,
+    margin_temperature=0.1,
+    error_weight_floor=0.25,
+):
+    top2 = logits.topk(2, dim=1)
+    predicted = top2.indices[:, 0]
+    wrong = predicted.ne(targets)
+    competitor = torch.where(wrong, targets, top2.indices[:, 1])
+    pair_indices = torch.stack((predicted, competitor), dim=1)
+    pair_values = logits.gather(1, pair_indices)
+    global_ids = ids.index_select(0, pair_indices.reshape(-1)).reshape_as(pair_indices)
+    groups = group_ids.to(logits.device).index_select(
+        0, global_ids.reshape(-1)
+    ).reshape_as(global_ids)
+    related = (
+        (groups[:, 0] == groups[:, 1]) & groups[:, 0].ge(0)
+    ) | semantic_adjacency.to(logits.device)[global_ids[:, 0], global_ids[:, 1]]
+    margin = pair_values[:, 0] - pair_values[:, 1]
+    soft_weights = torch.sigmoid(
+        (float(threshold) - margin) / float(margin_temperature)
+    )
+    soft_weights = torch.where(
+        wrong,
+        soft_weights.clamp_min(float(error_weight_floor)),
+        soft_weights,
+    )
+    normalized = F.normalize(images.float(), dim=-1)
+    values = [margin]
+    for prototypes in (
+        claude_prototypes, merge_prototypes, class_name_prototypes
+    ):
+        scores = normalized @ prototypes.index_select(0, ids).T
+        gathered = scores.gather(1, pair_indices)
+        values.append(gathered[:, 0] - gathered[:, 1])
+    role_logits = torch.einsum(
+        "bd,crd->bcr", normalized, role_prototypes.index_select(0, ids)
+    )
+    role_pair = role_logits.gather(
+        1, pair_indices.unsqueeze(-1).expand(-1, -1, 8)
+    )
+    role_diffs = role_pair[:, 0] - role_pair[:, 1]
+    role_diffs = role_diffs - role_diffs.mean(dim=1, keepdim=True)
+    role_diffs = role_diffs / role_diffs.std(
+        dim=1, keepdim=True, unbiased=False
+    ).clamp_min(1e-6)
+    values.extend(role_diffs.unbind(dim=1))
+    features = torch.stack(values, dim=1)
+    true_global_ids = ids.index_select(0, targets.long())
+    return (
+        pair_values[related].detach().cpu(),
+        features[related].detach().cpu(),
+        wrong[related].long().detach().cpu(),
+        int(related.sum()),
+        soft_weights[related].detach().cpu(),
+        true_global_ids[related].detach().cpu(),
+    )
+
+
 @torch.no_grad()
 def derive_relation_threshold(
     parent,
@@ -1152,6 +1250,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         "gzsl-paper.bfps.v1",
         "gzsl-paper.aps.v1",
         "gzsl-paper.cups.v1",
+        "gzsl-paper.tfps.v1",
     )
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
@@ -1255,6 +1354,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.bfps.v1",
             "gzsl-paper.aps.v1",
             "gzsl-paper.cups.v1",
+            "gzsl-paper.tfps.v1",
         ):
             if config["schema_version"] == "gzsl-paper.rsnps.v1":
                 semantic_confidence = reciprocal_neighbor_confidence(
@@ -1332,6 +1432,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         pair_logits_list, feature_list, target_list, pair_weight_list = [], [], [], []
         true_class_list = []
         triplet_mode = config["schema_version"] == "gzsl-paper.lscr.v1"
+        teacher_forced_mode = config["schema_version"] == "gzsl-paper.tfps.v1"
         hard_margin_only = hard_margin_only_for_schema(config["schema_version"])
         for start in range(0, features.shape[0], 512):
             images = features[start : start + 512].to(device).float()
@@ -1355,6 +1456,22 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     F.normalize(sentence8.float(), dim=-1),
                     pair_training_threshold,
                     margin_temperature=float(config["margin_temperature"]),
+                )
+            elif teacher_forced_mode:
+                package = extract_teacher_forced_pairs(
+                    logits,
+                    images,
+                    mapping[labels[start : start + 512]].to(device),
+                    ids,
+                    group_ids,
+                    semantic_adjacency,
+                    claude_orth,
+                    merge_orth,
+                    names_n,
+                    F.normalize(sentence8.float(), dim=-1),
+                    pair_training_threshold,
+                    margin_temperature=float(config["margin_temperature"]),
+                    error_weight_floor=float(config["error_weight_floor"]),
                 )
             else:
                 package = extract_pair_examples(
@@ -1608,6 +1725,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = AntisymmetricPairSelector
         elif config["schema_version"] == "gzsl-paper.cups.v1":
             model_class = SemanticNeighborPairSelector
+        elif config["schema_version"] == "gzsl-paper.tfps.v1":
+            model_class = SemanticNeighborPairSelector
         else:
             model_class = GatedPairEvidenceSelector
         model_kwargs = {
@@ -1645,6 +1764,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.bfps.v1",
             "gzsl-paper.aps.v1",
             "gzsl-paper.cups.v1",
+            "gzsl-paper.tfps.v1",
         ):
             model_kwargs["class_name_prototypes"] = names_n
         if config["schema_version"] in (
@@ -1668,6 +1788,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.bfps.v1",
             "gzsl-paper.aps.v1",
             "gzsl-paper.cups.v1",
+            "gzsl-paper.tfps.v1",
         ):
             model_kwargs["role_sentence_prototypes"] = sentence8
         if config["schema_version"] in (
@@ -1688,6 +1809,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.bfps.v1",
             "gzsl-paper.aps.v1",
             "gzsl-paper.cups.v1",
+            "gzsl-paper.tfps.v1",
         ):
             model_kwargs["semantic_adjacency"] = semantic_adjacency
         if config["schema_version"] == "gzsl-paper.rsnps.v1":
