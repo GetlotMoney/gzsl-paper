@@ -516,6 +516,8 @@ TFPS seed5构建4604个相关pair，比稳定SNPS多146个教师强制错误pair
 
 EDPS首次RUN和RERUN均在进入训练前因schema未进入有效12维特征分发而失败，两个输出保留且不计有效实验。按连续两次停止修补规则关闭当前实现；IDEA-127状态改为revised而非rejected，有效实验累计仍为219组。后续新实验前必须先集中化schema特征分组，消除重复漏接风险。
 
+`13c3177`已将text-only、语义图、12维提取、类名、角色和模型邻接schema集中为单一事实源，本地与服务器70项测试通过。新`V2-INNOVATION-094 / EDPS2`使用独立schema在根因消除后完成IDEA-127首次有效方法验证。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-094
+idea_id: IDEA-127
+framework_id: FRAMEWORK-V2
+title: Evidence-Dropout Pair Selector Reimplementation
+base_commit: 13c31770d1c1abc6e8aed0b560fcaac639b92eb6
+code_commit: null
+status: planned
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-094_edps2/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: null
+    config_ref: experiments/v2/innovation/INNOVATION-094_edps2/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-094_edps2/RUN-001
+    status: planned

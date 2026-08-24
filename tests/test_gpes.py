@@ -30,6 +30,7 @@ from model.innovations.gpes import (
 )
 from model.innovations.train_gpes import (
     ADJACENCY_MODEL_SCHEMAS,
+    EVIDENCE_DROPOUT_SCHEMAS,
     MODEL_CLASS_NAME_SCHEMAS,
     MODEL_ROLE_SCHEMAS,
     NAME_FEATURE_SCHEMAS,
@@ -925,19 +926,27 @@ class GPESTest(unittest.TestCase):
         self.assertEqual(config["evidence_drop_scope"], "non_margin_11_features")
 
     def test_edps_schema_has_complete_centralized_dispatch(self):
-        schema = "gzsl-paper.edps.v1"
-        for schema_set in (
-            SOFT_PAIR_SCHEMAS,
-            TEXT_ONLY_SCHEMAS,
-            SEMANTIC_NEIGHBOR_SCHEMAS,
-            TWELVE_FEATURE_SCHEMAS,
-            NAME_FEATURE_SCHEMAS,
-            ROLE_FEATURE_SCHEMAS,
-            MODEL_CLASS_NAME_SCHEMAS,
-            MODEL_ROLE_SCHEMAS,
-            ADJACENCY_MODEL_SCHEMAS,
-        ):
-            self.assertIn(schema, schema_set)
+        for schema in ("gzsl-paper.edps.v1", "gzsl-paper.edps2.v1"):
+            self.assertIn(schema, EVIDENCE_DROPOUT_SCHEMAS)
+            for schema_set in (
+                SOFT_PAIR_SCHEMAS,
+                TEXT_ONLY_SCHEMAS,
+                SEMANTIC_NEIGHBOR_SCHEMAS,
+                TWELVE_FEATURE_SCHEMAS,
+                NAME_FEATURE_SCHEMAS,
+                ROLE_FEATURE_SCHEMAS,
+                MODEL_CLASS_NAME_SCHEMAS,
+                MODEL_ROLE_SCHEMAS,
+                ADJACENCY_MODEL_SCHEMAS,
+            ):
+                self.assertIn(schema, schema_set)
+
+    def test_edps2_config_binds_centralized_reimplementation(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-094_edps2/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.edps2.v1")
+        self.assertEqual(config["experiment_id"], "V2-INNOVATION-094")
 
     def test_lscr_dispatch_is_specialized_not_twelve_feature(self):
         schema = "gzsl-paper.lscr.v1"

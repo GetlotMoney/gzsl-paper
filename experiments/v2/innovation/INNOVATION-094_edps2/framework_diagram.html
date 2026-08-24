@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-094 EDPS2</title></head>
+<body>
+<h1>EDPS2：集中化分发后的证据Dropout选择器</h1>
+<p><strong>Base commit：</strong>13c31770d1c1abc6e8aed0b560fcaac639b92eb6；<strong>RUN-001 code commit：</strong>pre-run后绑定。</p>
+<pre>稳定SNPS 12维pair特征
+→ margin始终保留
+→ 11个非margin证据按seed偏移循环
+→ 每batch用训练均值屏蔽1维
+→ 推理恢复全部12维
+→ 200-way U/S/H；50-way ZS</pre>
+<p>edps2已进入集中式text-only、语义图、12维提取、类名、角色和模型邻接集合；训练仍只使用seen图像。</p>
+</body></html>

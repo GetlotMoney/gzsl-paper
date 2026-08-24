@@ -93,7 +93,7 @@ SOFT_PAIR_SCHEMAS = frozenset({
     "gzsl-paper.csds.v1", "gzsl-paper.rugs.v1", "gzsl-paper.ndps.v1",
     "gzsl-paper.lscr.v1", "gzsl-paper.mhps.v1", "gzsl-paper.fbps.v1",
     "gzsl-paper.bfps.v1", "gzsl-paper.aps.v1", "gzsl-paper.cups.v1",
-    "gzsl-paper.tfps.v1", "gzsl-paper.edps.v1",
+    "gzsl-paper.tfps.v1", "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1",
 })
 TEXT_ONLY_SCHEMAS = SOFT_PAIR_SCHEMAS - frozenset({
     "gzsl-paper.gwps.v1", "gzsl-paper.bgwps.v1", "gzsl-paper.mbgwps.v1",
@@ -123,6 +123,9 @@ MODEL_ROLE_SCHEMAS = ROLE_FEATURE_SCHEMAS | frozenset({
 })
 ADJACENCY_MODEL_SCHEMAS = SEMANTIC_NEIGHBOR_SCHEMAS - frozenset({
     "gzsl-paper.rsnps.v1",
+})
+EVIDENCE_DROPOUT_SCHEMAS = frozenset({
+    "gzsl-paper.edps.v1", "gzsl-paper.edps2.v1",
 })
 
 
@@ -430,7 +433,7 @@ def load_config(path: Path):
             "pair_training_scope", "semantic_neighbor_k", "training_scope",
             "error_weight_floor",
         }
-    elif schema == "gzsl-paper.edps.v1":
+    elif schema in EVIDENCE_DROPOUT_SCHEMAS:
         expected_keys = (
             CONFIG_KEYS
             - {
@@ -507,6 +510,7 @@ def load_config(path: Path):
         "gzsl-paper.cups.v1": ("V2-INNOVATION-091", "IDEA-125"),
         "gzsl-paper.tfps.v1": ("V2-INNOVATION-092", "IDEA-126"),
         "gzsl-paper.edps.v1": ("V2-INNOVATION-093", "IDEA-127"),
+        "gzsl-paper.edps2.v1": ("V2-INNOVATION-094", "IDEA-127"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -639,7 +643,7 @@ def load_config(path: Path):
         "pair_training_scope"
     ] != "teacher_forced_related_top1_true":
         raise ValueError("TFPS必须使用教师强制相关pair。")
-    if schema == "gzsl-paper.edps.v1" and config[
+    if schema in EVIDENCE_DROPOUT_SCHEMAS and config[
         "pair_training_scope"
     ] != "suffix_or_semantic_top3_soft_gate":
         raise ValueError("EDPS必须使用稳定语义top3 soft gate。")
@@ -739,7 +743,7 @@ def load_config(path: Path):
         "semantic_neighbor_k"
     ]) != 3:
         raise ValueError("TFPS semantic_neighbor_k必须为3。")
-    if schema == "gzsl-paper.edps.v1" and int(config[
+    if schema in EVIDENCE_DROPOUT_SCHEMAS and int(config[
         "semantic_neighbor_k"
     ]) != 3:
         raise ValueError("EDPS semantic_neighbor_k必须为3。")
@@ -829,7 +833,7 @@ def load_config(path: Path):
         or float(config["error_weight_floor"]) != 0.25
     ):
         raise ValueError("TFPS教师强制配置错误。")
-    if schema == "gzsl-paper.edps.v1" and (
+    if schema in EVIDENCE_DROPOUT_SCHEMAS and (
         int(config["evidence_drop_count"]) != 1
         or config["evidence_drop_scope"] != "non_margin_11_features"
         or config["evidence_drop_schedule"] != "cyclic_seed_offset"
@@ -1610,7 +1614,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = SemanticNeighborPairSelector
         elif config["schema_version"] == "gzsl-paper.tfps.v1":
             model_class = SemanticNeighborPairSelector
-        elif config["schema_version"] == "gzsl-paper.edps.v1":
+        elif config["schema_version"] in EVIDENCE_DROPOUT_SCHEMAS:
             model_class = SemanticNeighborPairSelector
         else:
             model_class = GatedPairEvidenceSelector
@@ -1691,7 +1695,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             batch_pair_logits = pair_logits.index_select(0, batch).to(device)
             batch_pair_targets = pair_targets.index_select(0, batch).to(device)
             batch_features = pair_features.index_select(0, batch).to(device)
-            if config["schema_version"] == "gzsl-paper.edps.v1":
+            if config["schema_version"] in EVIDENCE_DROPOUT_SCHEMAS:
                 masked_feature = 1 + ((iteration + seed) % 11)
                 batch_features = mask_pair_evidence_feature(
                     batch_features, feature_mean.to(device), masked_feature
