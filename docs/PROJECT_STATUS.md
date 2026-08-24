@@ -512,6 +512,8 @@ CUPS seed5最高`U/S/H/ZS=76.916522/80.072731/78.462899/84.087873%`，比稳定S
 
 TFPS seed5构建4604个相关pair，比稳定SNPS多146个教师强制错误pair；最高`U/S/H/ZS=76.917076/80.062246/78.458154/84.055674%`，低于稳定top-3。扩大seen错误覆盖提高loss波动但未改善unseen泛化，IDEA-126拒绝且不追加seed7。当前累计219组。
 
+下一实验`V2-INNOVATION-093 / EDPS`保持稳定SNPS数据、loss与推理，训练每batch循环屏蔽11个非margin证据之一，推理恢复完整12维，检验多源证据dropout能否复现SDCR的鲁棒增益。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。

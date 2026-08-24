@@ -199,6 +199,17 @@ def true_class_balancing_weights(
     }
 
 
+def mask_pair_evidence_feature(
+    features: torch.Tensor, feature_mean: torch.Tensor, feature_index: int
+) -> torch.Tensor:
+    """用训练均值替换一个非margin维度，使标准化后的该维严格为0。"""
+    if features.ndim != 2 or not 1 <= int(feature_index) < features.shape[1]:
+        raise ValueError("EDPS只能屏蔽非margin证据维度。")
+    masked = features.clone()
+    masked[:, int(feature_index)] = feature_mean[int(feature_index)]
+    return masked
+
+
 def hard_margin_only_for_schema(schema: str) -> bool:
     return schema not in (
         "gzsl-paper.gwps.v1",
@@ -229,6 +240,7 @@ def hard_margin_only_for_schema(schema: str) -> bool:
         "gzsl-paper.aps.v1",
         "gzsl-paper.cups.v1",
         "gzsl-paper.tfps.v1",
+        "gzsl-paper.edps.v1",
     )
 
 
@@ -406,6 +418,17 @@ def load_config(path: Path):
             "pair_training_scope", "semantic_neighbor_k", "training_scope",
             "error_weight_floor",
         }
+    elif schema == "gzsl-paper.edps.v1":
+        expected_keys = (
+            CONFIG_KEYS
+            - {
+                "feature_provenance_complete", "patch_inputs", "patch_sha256",
+                "patch_top_k", "patch_chunk_size",
+            }
+        ) | {
+            "pair_training_scope", "semantic_neighbor_k", "evidence_drop_count",
+            "evidence_drop_scope", "evidence_drop_schedule",
+        }
     elif schema == "gzsl-paper.snps.v1":
         expected_keys = (
             CONFIG_KEYS
@@ -471,6 +494,7 @@ def load_config(path: Path):
         "gzsl-paper.aps.v1": ("V2-INNOVATION-090", "IDEA-124"),
         "gzsl-paper.cups.v1": ("V2-INNOVATION-091", "IDEA-125"),
         "gzsl-paper.tfps.v1": ("V2-INNOVATION-092", "IDEA-126"),
+        "gzsl-paper.edps.v1": ("V2-INNOVATION-093", "IDEA-127"),
     }.get(schema)
     if identity is None or (
         config["experiment_id"], config["idea_id"]
@@ -507,6 +531,7 @@ def load_config(path: Path):
             "gzsl-paper.aps.v1",
             "gzsl-paper.cups.v1",
             "gzsl-paper.tfps.v1",
+            "gzsl-paper.edps.v1",
         )
         and config["feature_provenance_complete"] is not False
     ) or config["text_cache_provenance_complete"] is not False:
@@ -536,6 +561,7 @@ def load_config(path: Path):
                 "gzsl-paper.aps.v1",
                 "gzsl-paper.cups.v1",
                 "gzsl-paper.tfps.v1",
+                "gzsl-paper.edps.v1",
             )
             and (
                 int(config["patch_top_k"]) != 2
@@ -565,6 +591,7 @@ def load_config(path: Path):
                 "gzsl-paper.aps.v1",
                 "gzsl-paper.cups.v1",
                 "gzsl-paper.tfps.v1",
+                "gzsl-paper.edps.v1",
             )
             else "train_wrong_same_group_margin"
         )
@@ -669,6 +696,10 @@ def load_config(path: Path):
         "pair_training_scope"
     ] != "teacher_forced_related_top1_true":
         raise ValueError("TFPS必须使用教师强制相关pair。")
+    if schema == "gzsl-paper.edps.v1" and config[
+        "pair_training_scope"
+    ] != "suffix_or_semantic_top3_soft_gate":
+        raise ValueError("EDPS必须使用稳定语义top3 soft gate。")
     if schema == "gzsl-paper.bgwps.v1" and config[
         "pair_class_balance"
     ] != "inverse_frequency":
@@ -765,6 +796,10 @@ def load_config(path: Path):
         "semantic_neighbor_k"
     ]) != 3:
         raise ValueError("TFPS semantic_neighbor_k必须为3。")
+    if schema == "gzsl-paper.edps.v1" and int(config[
+        "semantic_neighbor_k"
+    ]) != 3:
+        raise ValueError("EDPS semantic_neighbor_k必须为3。")
     if schema == "gzsl-paper.msnps.v1" and config[
         "semantic_neighbor_rule"
     ] != "mutual_top5":
@@ -851,6 +886,12 @@ def load_config(path: Path):
         or float(config["error_weight_floor"]) != 0.25
     ):
         raise ValueError("TFPS教师强制配置错误。")
+    if schema == "gzsl-paper.edps.v1" and (
+        int(config["evidence_drop_count"]) != 1
+        or config["evidence_drop_scope"] != "non_margin_11_features"
+        or config["evidence_drop_schedule"] != "cyclic_seed_offset"
+    ):
+        raise ValueError("EDPS证据dropout配置错误。")
     return config, sha256_file(path)
 
 
@@ -1251,6 +1292,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         "gzsl-paper.aps.v1",
         "gzsl-paper.cups.v1",
         "gzsl-paper.tfps.v1",
+        "gzsl-paper.edps.v1",
     )
     if not text_only:
         for split, path_text in config["patch_inputs"].items():
@@ -1355,6 +1397,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.aps.v1",
             "gzsl-paper.cups.v1",
             "gzsl-paper.tfps.v1",
+            "gzsl-paper.edps.v1",
         ):
             if config["schema_version"] == "gzsl-paper.rsnps.v1":
                 semantic_confidence = reciprocal_neighbor_confidence(
@@ -1676,6 +1719,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 else int(semantic_confidence.eq(0.5).sum().item() // 2)
             ),
             "pair_sampling_stats": pair_sampling_stats,
+            "evidence_dropout_counts": [0] * 11,
         }
         if config["schema_version"] == "gzsl-paper.nps.v1":
             model_class = NonlinearGatedPairSelector
@@ -1727,6 +1771,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model_class = SemanticNeighborPairSelector
         elif config["schema_version"] == "gzsl-paper.tfps.v1":
             model_class = SemanticNeighborPairSelector
+        elif config["schema_version"] == "gzsl-paper.edps.v1":
+            model_class = SemanticNeighborPairSelector
         else:
             model_class = GatedPairEvidenceSelector
         model_kwargs = {
@@ -1765,6 +1811,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.aps.v1",
             "gzsl-paper.cups.v1",
             "gzsl-paper.tfps.v1",
+            "gzsl-paper.edps.v1",
         ):
             model_kwargs["class_name_prototypes"] = names_n
         if config["schema_version"] in (
@@ -1789,6 +1836,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.aps.v1",
             "gzsl-paper.cups.v1",
             "gzsl-paper.tfps.v1",
+            "gzsl-paper.edps.v1",
         ):
             model_kwargs["role_sentence_prototypes"] = sentence8
         if config["schema_version"] in (
@@ -1810,6 +1858,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "gzsl-paper.aps.v1",
             "gzsl-paper.cups.v1",
             "gzsl-paper.tfps.v1",
+            "gzsl-paper.edps.v1",
         ):
             model_kwargs["semantic_adjacency"] = semantic_adjacency
         if config["schema_version"] == "gzsl-paper.rsnps.v1":
@@ -1869,6 +1918,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             batch_pair_logits = pair_logits.index_select(0, batch).to(device)
             batch_pair_targets = pair_targets.index_select(0, batch).to(device)
             batch_features = pair_features.index_select(0, batch).to(device)
+            if config["schema_version"] == "gzsl-paper.edps.v1":
+                masked_feature = 1 + ((iteration + seed) % 11)
+                batch_features = mask_pair_evidence_feature(
+                    batch_features, feature_mean.to(device), masked_feature
+                )
+                pair_dataset_stats["evidence_dropout_counts"][
+                    masked_feature - 1
+                ] += 1
             corrected = (
                 model.corrected_candidate_logits(batch_pair_logits, batch_features)
                 if triplet_mode

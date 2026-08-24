@@ -149,6 +149,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-124 / APS反对称成对选择器（严格等变损失有用非对称信息）
       ├─ rejected_branch：IDEA-125 / CUPS类别均匀成对选择器（稀有类权重极端）
       ├─ rejected_branch：IDEA-126 / TFPS教师强制错误成对选择器（错误覆盖不迁移）
+      ├─ testing_branch：IDEA-127 / EDPS证据Dropout成对选择器（planned，多源鲁棒训练）
       ├─ auxiliary_branch：IDEA-038 / JBEC联合双向校准（supported辅助训练细化，4seed小幅正增益）
       ├─ rejected_branch：IDEA-039 / ADMA属性对角度量（rejected，维度分化但降低H）
       ├─ rejected_branch：IDEA-040 / NGVF归一化几何融合（rejected，训练eta方向与假设相反）

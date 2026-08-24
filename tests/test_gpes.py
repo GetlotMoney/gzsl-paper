@@ -38,6 +38,7 @@ from model.innovations.train_gpes import (
     hard_margin_only_for_schema,
     load_config,
     matched_hard_pair_indices,
+    mask_pair_evidence_feature,
     true_class_balancing_weights,
     minimal_flip_delta_targets,
 )
@@ -897,6 +898,22 @@ class GPESTest(unittest.TestCase):
             "wrong_top1_vs_true_correct_top1_vs_top2",
         )
         self.assertEqual(config["error_weight_floor"], 0.25)
+
+    def test_mask_pair_evidence_replaces_only_selected_dimension(self):
+        features = torch.randn(4, 12)
+        means = torch.randn(12)
+        masked = mask_pair_evidence_feature(features, means, 5)
+        self.assertTrue(torch.equal(masked[:, 5], means[5].expand(4)))
+        self.assertTrue(torch.equal(masked[:, :5], features[:, :5]))
+        self.assertTrue(torch.equal(masked[:, 6:], features[:, 6:]))
+
+    def test_edps_config_binds_cyclic_evidence_dropout(self):
+        config, _ = load_config(
+            ROOT / "experiments/v2/innovation/INNOVATION-093_edps/configs/RUN-001.yaml"
+        )
+        self.assertEqual(config["schema_version"], "gzsl-paper.edps.v1")
+        self.assertEqual(config["evidence_drop_count"], 1)
+        self.assertEqual(config["evidence_drop_scope"], "non_margin_11_features")
 
 
 if __name__ == "__main__":
