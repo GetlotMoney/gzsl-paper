@@ -13,3 +13,4 @@ paper_core_innovation: false
 result: 两次启动均在训练前因schema特征分发错误失败，没有有效方法结果。
 decision: 按连续两次工程失败规则关闭当前实现；不把工程失败写成方法失败。
 reimplementation_experiment: V2-INNOVATION-094（集中化schema分发后的首次有效验证）
+interim_result: EDPS2 seed5 H=78.519956，相对稳定top-3 +0.053246；追加seed7。

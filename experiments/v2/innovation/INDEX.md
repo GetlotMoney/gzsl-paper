@@ -94,6 +94,6 @@
 | V2-INNOVATION-091 | IDEA-125 | CUPS类别均匀成对选择器 | rejected（类别权重最高33.27倍） | `INNOVATION-091_cups/` |
 | V2-INNOVATION-092 | IDEA-126 | TFPS教师强制错误成对选择器 | rejected（H低于top-3） | `INNOVATION-092_tfps/` |
 | V2-INNOVATION-093 | IDEA-127 | EDPS证据Dropout成对选择器 | failed_runtime closed（两次训练前接线错误，无方法结论） | `INNOVATION-093_edps/` |
-| V2-INNOVATION-094 | IDEA-127 | EDPS2集中化证据Dropout选择器 | planned（首次有效方法验证） | `INNOVATION-094_edps2/` |
+| V2-INNOVATION-094 | IDEA-127 | EDPS2集中化证据Dropout选择器 | testing（seed5 H=78.519956） | `INNOVATION-094_edps2/` |
 
 `INNOVATION-MODULE-1 / TG-VPR-H1`由owner直接提升为`FRAMEWORK-V2`，不占用本编号。旧H1证据只作为`experiments/v2/evidence/legacy_h1/`下的`legacy_ref`。
