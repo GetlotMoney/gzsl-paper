@@ -13,3 +13,5 @@ RUN-001在第一批训练前因共享原型接口仍限制support类只能为100
 RUN-001-RERUN完成50轮，最佳epoch=`3`，`U/S/H/ZS_val=70.510274/81.352049/75.544153/80.954689%`，相对旧外层baseline的H下降`0.928811`。随着训练继续，S升至约84而U降至约62，说明权重`1.0`的inner CE过强地推动seen判别，不能保留。
 
 RESCUE-1只把`inner_episode_weight`从`1.0`降为`0.1`，fold、外层数据、三模块结构和学习率均保持不变。模型SHA256：`6ee3f7d71f9e765290459db6a95712d3d94f26c7f84074cd53be8bf5e1b34e56`；最后checkpoint SHA256相同。
+
+RUN-002预注册为RESCUE-1：`inner_episode_weight=0.1`，其余配置逐项沿用RUN-001。

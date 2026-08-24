@@ -39,3 +39,9 @@ runs:
     config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-001-RERUN
     status: completed_below_outer_baseline
+  - run_id: RUN-002
+    code_commit: null
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-002
+    status: planned_rescue1_weight_0_1

@@ -71,6 +71,11 @@ class StandardValidationTrainingTest(unittest.TestCase):
         self.assertFalse(config["validation_images_used_for_gradient"])
         self.assertFalse(config["official_test_loaded"])
         self.assertFalse(config["test_used_for_selection"])
+        rescue, _ = load_config(
+            ROOT
+            / "experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-002.yaml"
+        )
+        self.assertEqual(rescue["inner_episode_weight"], 0.1)
 
     def test_nested_training_samples_inner_batches_only_from_fit_labels(self):
         source = (ROOT / "model/innovations/train_standard_validation.py").read_text(

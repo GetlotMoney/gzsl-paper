@@ -153,7 +153,7 @@ def load_config(path: Path) -> tuple[dict, str]:
         != "semantic_pca_round_robin_image_balance_v1"
         or int(config["inner_fold_count"]) != 3
         or len(config["inner_fold_sha256"]) != 64
-        or float(config["inner_episode_weight"]) != 1.0
+        or float(config["inner_episode_weight"]) not in (1.0, 0.1)
         or int(config["inner_batch_half"]) != 32
         or config["inner_pseudo_unseen_images_used_for_gradient"] is not True
     ):
