@@ -32,7 +32,7 @@ current_expert_validation_H: 77.556001
 current_expert_validation_delta_vs_no_expert_H: 1.083037
 historical_test_selected_no_expert_attribute_H: 77.612988
 historical_out_of_scope_expert_attribute_H: 80.817183
-completed_try_count: 216
+completed_try_count: 217
 minimum_required_try_count: 50
 ```
 
@@ -501,6 +501,8 @@ FBPS seed7达到`U/S/H/ZS=76.848710/79.939705/78.363739/83.953404%`，比稳定S
 BFPS seed5最高`U/S/H/ZS=76.814806/80.172402/78.457698/84.121209%`，比稳定SNPS top-3低H `0.009012`。固定零bias未改善H，说明bias差异不是主要不稳定来源；IDEA-123拒绝且不追加seed7。当前累计216组。
 
 下一实验`V2-INNOVATION-090 / APS`为每个训练pair加入swap-and-negate镜像，固定bias=0并用abs margin门控，强制交换top1/top2后的修正严格等变，从结构上消除输入方向不平衡。
+
+APS seed5把4458个pair镜像为8916个标签严格1:1样本，交换等变和零bias边界成立，但最高`U/S/H/ZS=76.815343/79.963911/78.358011/83.989006%`，低于稳定SNPS top-3。严格反对称删除了父排序中有用的非对称信息，IDEA-124拒绝且不追加seed7。当前累计217组。
 
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 

@@ -4,15 +4,15 @@ idea_id: IDEA-124
 framework_id: FRAMEWORK-V2
 title: Antisymmetric Pair Selector
 base_commit: 372b8ed729081703a556742433e8f807a176ce66
-code_commit: null
-status: planned
+code_commit: e2bec9ae6d2ba8b94d95333a9de607c0db4b62ab
+status: rejected_below_top3
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 framework_diagram: experiments/v2/innovation/INNOVATION-090_aps/framework_diagram.html
 runs:
   - run_id: RUN-001
-    code_commit: null
+    code_commit: e2bec9ae6d2ba8b94d95333a9de607c0db4b62ab
     config_ref: experiments/v2/innovation/INNOVATION-090_aps/configs/RUN-001.yaml
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-090_aps/RUN-001
-    status: planned
+    status: completed_below_top3
