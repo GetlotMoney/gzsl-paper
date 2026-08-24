@@ -570,6 +570,8 @@ V2-TUNE-002 RESCUE-3得到`U/S/H/ZS_val=75.776690/77.134383/76.449509/79.792541%
 
 V2-TUNE-003三折基准在统一epoch 17达到`mean U/S/H/ZS=74.925892/77.350948/76.113854/79.673799%`，fold H范围`75.703050–76.735867`、range=`1.032817`。该条件作为topology权重顺序搜索基线；official test未加载。当前累计有效实验236组。
 
+V2-TUNE-003 topology=`0.03`的mean H下降且range扩大；topology=`0.2`的mean H提高到`76.460115%`、range降至`0.753863`，但mean U/ZS低于基线。按预注册泛化约束固定topology=`0.1`，进入transport上限轴。当前累计有效实验238组。
+
 新的长期目标是稳定达到最高seed `H>=78.0%`、形成3个可解释且有消融支撑的创新，并累计完成至少50组真实实验。执行计划见[`docs/LONG_HORIZON_EXPERIMENT_PLAN.md`](LONG_HORIZON_EXPERIMENT_PLAN.md)。
 
 完整执行顺序和完成条件见[`docs/PROJECT_CHECKLIST.md`](PROJECT_CHECKLIST.md)。
