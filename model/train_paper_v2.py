@@ -22,6 +22,7 @@ from model.paper_v2 import (
     PaperV2ThreeModuleModel,
 )
 from model.tg_vpr_h1 import train as h1
+from model.visual_evidence import VISUAL_MODES, PaperV2VisualModel
 from tools.gzsl_data import evaluate_prototypes, per_class_accuracy
 from tools.reproducibility import configure_reproducibility
 from tools.run_contract import (
@@ -88,6 +89,20 @@ RGVE_CONFIG_KEYS = CONFIG_KEYS | {
     "rgve_calibration_weight",
     "rgve_role_margin",
 }
+VISUAL_CONFIG_KEYS = CONFIG_KEYS | {
+    "eval_batch_size",
+    "visual_mode",
+    "visual_hidden_dim",
+    "visual_max_beta",
+    "visual_part_weight",
+    "visual_diversity_weight",
+    "visual_anchor_weight",
+    "visual_hard_weight",
+    "visual_hard_margin",
+    "visual_lr_multiplier",
+    "confusion_topk",
+    "visual_scales",
+}
 ASSET_FILES = (
     "train_features.pt",
     "train_labels.pt",
@@ -111,12 +126,19 @@ def load_config(path: Path) -> tuple[dict, str]:
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    expected_keys = RGVE_CONFIG_KEYS if schema == "gzsl-paper.paper-v2-rgve-run.v1" else CONFIG_KEYS
+    expected_keys = {
+        "gzsl-paper.paper-v2-rgve-run.v1": RGVE_CONFIG_KEYS,
+        "gzsl-paper.paper-v2-visual-run.v1": VISUAL_CONFIG_KEYS,
+    }.get(schema, CONFIG_KEYS)
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"最终论文RUN配置字段错误；缺少={sorted(expected_keys-actual)}，多出={sorted(actual-expected_keys)}。"
         )
-    if schema not in ("gzsl-paper.paper-v2-run.v1", "gzsl-paper.paper-v2-rgve-run.v1"):
+    if schema not in (
+        "gzsl-paper.paper-v2-run.v1",
+        "gzsl-paper.paper-v2-rgve-run.v1",
+        "gzsl-paper.paper-v2-visual-run.v1",
+    ):
         raise ValueError("最终论文RUN schema错误。")
     if config["framework_id"] != "FRAMEWORK-V2" or config["dataset"] not in ("CUB", "AWA2", "SUN"):
         raise ValueError("最终论文RUN只接受FRAMEWORK-V2和CUB/AWA2/SUN。")
@@ -158,6 +180,26 @@ def load_config(path: Path) -> tuple[dict, str]:
         for key in ("rgve_role_weight", "rgve_balance_weight", "rgve_calibration_weight"):
             if float(config[key]) < 0:
                 raise ValueError(f"{key}不能为负数。")
+    if schema == "gzsl-paper.paper-v2-visual-run.v1":
+        if no_training or config["visual_mode"] not in VISUAL_MODES:
+            raise ValueError("视觉筛选只接受已注册模式和正式训练策略。")
+        if int(config["eval_batch_size"]) <= 0 or int(config["visual_hidden_dim"]) <= 0:
+            raise ValueError("视觉eval batch和hidden_dim必须为正数。")
+        if float(config["visual_max_beta"]) <= 0 or float(config["visual_lr_multiplier"]) <= 0:
+            raise ValueError("视觉beta与学习率倍率必须为正数。")
+        for key in (
+            "visual_part_weight",
+            "visual_diversity_weight",
+            "visual_anchor_weight",
+            "visual_hard_weight",
+            "visual_hard_margin",
+        ):
+            if float(config[key]) < 0:
+                raise ValueError(f"{key}不能为负数。")
+        if int(config["confusion_topk"]) != 5 or list(config["visual_scales"]) != [24, 12, 6]:
+            raise ValueError("视觉初筛固定topk=5及scales=[24,12,6]。")
+        if float(config["topology_weight"]) != 0.1:
+            raise ValueError("视觉初筛固定topology_weight=0.1。")
     return config, sha256_file(path)
 
 
@@ -171,7 +213,10 @@ def load_assets(config: dict) -> tuple[dict, dict, Path]:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest_schema = manifest.get("schema_version")
     allowed_schemas = {"gzsl-paper.clip-assets.v1"}
-    if config["schema_version"] == "gzsl-paper.paper-v2-rgve-run.v1":
+    if config["schema_version"] in (
+        "gzsl-paper.paper-v2-rgve-run.v1",
+        "gzsl-paper.paper-v2-visual-run.v1",
+    ):
         allowed_schemas = {"gzsl-paper.rgve-local-patch-assets.v1"}
     if manifest_schema not in allowed_schemas or manifest.get("dataset") != config["dataset"]:
         raise ValueError("资产manifest身份错误。")
@@ -268,17 +313,26 @@ def build_run_model(
     tensors: dict,
     manifest: dict,
     device: torch.device,
-) -> PaperV2ThreeModuleModel | PaperV2RGVEModel:
+) -> PaperV2ThreeModuleModel | PaperV2RGVEModel | PaperV2VisualModel:
     parent = build_three_module_model(config, tensors, manifest, device)
-    if config["schema_version"] != "gzsl-paper.paper-v2-rgve-run.v1":
-        return parent
-    return PaperV2RGVEModel(
-        parent,
-        rgve_mode=config["rgve_mode"],
-        hidden_dim=int(config["rgve_hidden_dim"]),
-        max_beta=float(config["rgve_max_beta"]),
-        initial_temperature=float(config["rgve_initial_temperature"]),
-    ).to(device)
+    if config["schema_version"] == "gzsl-paper.paper-v2-rgve-run.v1":
+        return PaperV2RGVEModel(
+            parent,
+            rgve_mode=config["rgve_mode"],
+            hidden_dim=int(config["rgve_hidden_dim"]),
+            max_beta=float(config["rgve_max_beta"]),
+            initial_temperature=float(config["rgve_initial_temperature"]),
+        ).to(device)
+    if config["schema_version"] == "gzsl-paper.paper-v2-visual-run.v1":
+        return PaperV2VisualModel(
+            parent,
+            visual_mode=config["visual_mode"],
+            hidden_dim=int(config["visual_hidden_dim"]),
+            max_beta=float(config["visual_max_beta"]),
+            confusion_topk=int(config["confusion_topk"]),
+            visual_scales=tuple(int(value) for value in config["visual_scales"]),
+        ).to(device)
+    return parent
 
 
 def stage_for_iteration(ntrain: int, iteration: int) -> tuple[str, float]:
@@ -292,7 +346,7 @@ def stage_for_iteration(ntrain: int, iteration: int) -> tuple[str, float]:
 
 
 def _active_groups(
-    model: PaperV2ThreeModuleModel | PaperV2RGVEModel,
+    model: PaperV2ThreeModuleModel | PaperV2RGVEModel | PaperV2VisualModel,
     strategy: str,
     stage: str,
 ) -> list[str]:
@@ -303,7 +357,7 @@ def _active_groups(
     if stage == "TG_ONLY":
         selected = {"tg_vpr"}
     elif stage == "TRANSFER_CCGR":
-        selected = {"transport", "ntr", "ccgr_class", "ccgr_shared", "rgve"}
+        selected = {"transport", "ntr", "ccgr_class", "ccgr_shared", "rgve", "visual"}
         if not (selected & nonempty):
             selected = {"tg_vpr"}
     elif stage == "JOINT_FINETUNE":
@@ -314,7 +368,7 @@ def _active_groups(
 
 
 def set_trainable(
-    model: PaperV2ThreeModuleModel | PaperV2RGVEModel,
+    model: PaperV2ThreeModuleModel | PaperV2RGVEModel | PaperV2VisualModel,
     group_names: list[str],
 ) -> list[torch.nn.Parameter]:
     model.zero_grad(set_to_none=True)
@@ -335,7 +389,7 @@ def set_trainable(
 
 
 def _gradient_norms(
-    model: PaperV2ThreeModuleModel | PaperV2RGVEModel,
+    model: PaperV2ThreeModuleModel | PaperV2RGVEModel | PaperV2VisualModel,
 ) -> dict[str, float]:
     result = {}
     for name, parameters in model.parameter_groups().items():
@@ -353,7 +407,7 @@ def _load_patch_batch(memmap, indices: torch.Tensor | np.ndarray, device: torch.
 
 @torch.no_grad()
 def _evaluate_rgve_model(
-    model: PaperV2RGVEModel,
+    model: PaperV2RGVEModel | PaperV2VisualModel,
     tensors: dict,
     manifest: dict,
     device: torch.device,
@@ -392,7 +446,7 @@ def _evaluate_rgve_model(
 
 
 def _evaluate_model(model, tensors, manifest, device, eval_batch_size: int = 64) -> dict[str, float]:
-    if isinstance(model, PaperV2RGVEModel):
+    if isinstance(model, (PaperV2RGVEModel, PaperV2VisualModel)):
         return _evaluate_rgve_model(model, tensors, manifest, device, eval_batch_size)
     if isinstance(model, PaperV2ThreeModuleModel):
         model.eval()
@@ -506,7 +560,31 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     current_stage = stage
                     names = _active_groups(model, config["training_strategy"], stage)
                     active = set_trainable(model, names)
-                    optimizer = torch.optim.Adam(active, lr=learning_rate, weight_decay=float(config["weight_decay"]))
+                    if isinstance(model, PaperV2VisualModel) and "visual" in names:
+                        visual_ids = {id(parameter) for parameter in model.parameter_groups()["visual"]}
+                        base_active = [parameter for parameter in active if id(parameter) not in visual_ids]
+                        visual_active = [parameter for parameter in active if id(parameter) in visual_ids]
+                        parameter_groups = []
+                        if base_active:
+                            parameter_groups.append({"params": base_active, "lr": learning_rate})
+                        if visual_active:
+                            parameter_groups.append(
+                                {
+                                    "params": visual_active,
+                                    "lr": learning_rate * float(config["visual_lr_multiplier"]),
+                                }
+                            )
+                        optimizer = torch.optim.Adam(
+                            parameter_groups,
+                            lr=learning_rate,
+                            weight_decay=float(config["weight_decay"]),
+                        )
+                    else:
+                        optimizer = torch.optim.Adam(
+                            active,
+                            lr=learning_rate,
+                            weight_decay=float(config["weight_decay"]),
+                        )
                     print(f"stage={stage} start={iteration} lr={learning_rate} groups={names}")
                 model.train()
                 indices = random_batch_indices(ntrain, int(config["batch_size"]), generator)
@@ -517,10 +595,38 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 loss_role = prototypes.new_zeros(())
                 loss_balance = prototypes.new_zeros(())
                 loss_calibration = prototypes.new_zeros(())
-                if isinstance(model, PaperV2RGVEModel):
+                loss_part = prototypes.new_zeros(())
+                loss_diversity = prototypes.new_zeros(())
+                loss_anchor = prototypes.new_zeros(())
+                loss_hard = prototypes.new_zeros(())
+                seen_device = seen_classes.to(device)
+                if isinstance(model, PaperV2VisualModel):
+                    patches = _load_patch_batch(tensors["train_patch_features"], indices, device)
+                    global_targets = seen_device.index_select(0, targets)
+                    components = model.score_components(
+                        images,
+                        patches,
+                        target_class_ids=global_targets,
+                    )
+                    final_scores = components["final_scores"]
+                    assert isinstance(final_scores, torch.Tensor)
+                    logits = final_scores.index_select(1, seen_device)
+                    ce = F.cross_entropy(logits, targets)
+                    if config["visual_mode"] != "off" and "visual" in names:
+                        visual_losses = model.visual_losses(
+                            components,
+                            seen_device,
+                            targets,
+                            global_targets,
+                            hard_margin=float(config["visual_hard_margin"]),
+                        )
+                        loss_part = visual_losses["part"]
+                        loss_diversity = visual_losses["diversity"]
+                        loss_anchor = visual_losses["anchor"]
+                        loss_hard = visual_losses["hard"]
+                elif isinstance(model, PaperV2RGVEModel):
                     patches = _load_patch_batch(tensors["train_patch_features"], indices, device)
                     components = model.score_components(images, patches)
-                    seen_device = seen_classes.to(device)
                     logits = components["final_scores"].index_select(1, seen_device)
                     ce = F.cross_entropy(logits, targets)
                     if config["rgve_mode"] != "off":
@@ -581,6 +687,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         + float(config["rgve_balance_weight"]) * loss_balance
                         + float(config["rgve_calibration_weight"]) * loss_calibration
                     )
+                if isinstance(model, PaperV2VisualModel) and config["visual_mode"] != "off":
+                    loss = (
+                        loss
+                        + float(config["visual_part_weight"]) * loss_part
+                        + float(config["visual_diversity_weight"]) * loss_diversity
+                        + float(config["visual_anchor_weight"]) * loss_anchor
+                        + float(config["visual_hard_weight"]) * loss_hard
+                    )
                 if not torch.isfinite(loss):
                     raise FloatingPointError("训练loss包含NaN/Inf。")
                 loss.backward()
@@ -611,6 +725,10 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "train_rgve_role": float(loss_role.detach()),
                         "train_rgve_balance": float(loss_balance.detach()),
                         "train_rgve_calibration": float(loss_calibration.detach()),
+                        "train_visual_part": float(loss_part.detach()),
+                        "train_visual_diversity": float(loss_diversity.detach()),
+                        "train_visual_anchor": float(loss_anchor.detach()),
+                        "train_visual_hard": float(loss_hard.detach()),
                         "official_metrics_percent": metrics,
                         "diagnostics": diagnostics,
                     }
