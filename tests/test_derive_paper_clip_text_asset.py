@@ -204,6 +204,7 @@ class DerivePaperClipTextAssetTest(unittest.TestCase):
             manifest_path = output / "asset_manifest.json"
             tensors, loaded_manifest, loaded_path = load_assets(
                 {
+                    "schema_version": "gzsl-paper.paper-v2-run.v1",
                     "dataset": "AWA2",
                     "asset_manifest": str(manifest_path),
                     "asset_manifest_sha256": sha256_file(manifest_path),

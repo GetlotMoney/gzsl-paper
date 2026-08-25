@@ -1,0 +1,8 @@
+schema_version: gzsl-paper.clip-class-name-asset-derivation.v1
+dataset: SUN
+parent_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/SUN/bfe12cda3c37abdb/asset_manifest.json
+parent_manifest_sha256: 177406ac028226aa4358d2ac2015e2aa43748107b7f98283e8a749eda3fea676
+role_texts: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/SUN/text-v2-ce7df66c0f6c5f9a/role_texts.json
+role_texts_sha256: ce7df66c0f6c5f9a457f4ab60017b378a1080097e239685cfc78fc133b65086f
+clip_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_checkpoints/ViT-L-14-336px.pt
+clip_checkpoint_sha256: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02
