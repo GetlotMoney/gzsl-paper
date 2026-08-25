@@ -274,6 +274,27 @@ class TextAssetDiagnosticRunnerTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "path必须是绝对路径"):
                 runner.validate_config(relative_variant)
 
+    def test_preregistered_text_v1_configs_cover_three_datasets(self):
+        root = Path(__file__).resolve().parents[1]
+        config_root = (
+            root
+            / "experiments"
+            / "v2"
+            / "tune"
+            / "TUNE-005_seen_only_text_assets"
+            / "configs"
+        )
+        paths = sorted(config_root.glob("*.yaml"))
+        self.assertEqual(len(paths), 3)
+        configs = [runner.load_config(path)[0] for path in paths]
+        self.assertEqual({config["dataset"] for config in configs}, {"CUB", "AWA2", "SUN"})
+        self.assertTrue(all(config["official_test_loaded"] is False for config in configs))
+        self.assertTrue(all(config["seen_images_only"] is True for config in configs))
+        self.assertTrue(all(config["diagnostic_no_model"] is True for config in configs))
+        cub = next(config for config in configs if config["dataset"] == "CUB")
+        self.assertEqual(len(cub["role_variants"]), 1)
+        self.assertEqual(cub["role_variants"][0]["name"], "old-eight-role-diagnostic")
+
 
 if __name__ == "__main__":
     unittest.main()

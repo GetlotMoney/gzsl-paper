@@ -1,0 +1,13 @@
+schema_version: gzsl-paper.text-diagnostic-run.v1
+experiment_id: V2-TUNE-005
+run_id: AWA2-TEXT-V1-DIAGNOSTIC
+dataset: AWA2
+asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/AWA2/openai_d05afc4_codex_roles_v1/asset_manifest.json
+asset_manifest_sha256: d391e4bc2014af79a9adbca3509b49f7883bac86a32b0e66e02df6a971b543dc
+base_role_name: text-v1
+role_variants: []
+official_test_loaded: false
+seen_images_only: true
+unseen_images_used: false
+diagnostic_no_model: true
+ 

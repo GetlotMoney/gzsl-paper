@@ -1,0 +1,13 @@
+schema_version: gzsl-paper.text-diagnostic-run.v1
+experiment_id: V2-TUNE-005
+run_id: SUN-TEXT-V1-DIAGNOSTIC
+dataset: SUN
+asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/SUN/openai_d05afc4_codex_roles_v1/asset_manifest.json
+asset_manifest_sha256: 3e507e1cfdb02211748f891722d2f11af1d700312aa4ffa4cc90d0a2a41fcef6
+base_role_name: text-v1
+role_variants: []
+official_test_loaded: false
+seen_images_only: true
+unseen_images_used: false
+diagnostic_no_model: true
+ 
