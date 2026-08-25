@@ -5,7 +5,7 @@ kind: tune
 framework_id: FRAMEWORK-V2
 code_semantics_commit: b7e25c2758da896411236c2ea60662439a01244b
 asset_derivation_commit: 4b660f5848c5d13584248a0de0b96ac6d54ec9a8
-status: topology_coarse_planned
+status: topology_coarse_partial_sun_0_2_running
 question: 冻结text-v2与Stagewise后，三数据集的Topology/Transport/CCGR/学习率顺序搜索应选择什么参数
 evaluation_protocol: chen_shiming_code_aligned_multidataset_test_selected_gzsl
 test_used_for_selection: true
@@ -44,3 +44,7 @@ selection_rules:
   - disclose test_used_for_hyperparameter_selection=true
 framework_diagram: experiments/v2/tune/TUNE-007_text_v2_chen_hparams/framework_diagram.html
 output_root: /data/lby/projects/cv_project/GZSL_Warehouse/tune/v2/TUNE-007_text_v2_chen_hparams
+dataset_progress:
+  CUB: topology 0 selected; transport coarse next
+  AWA2: topology axis closed with no valid full-module Stagewise checkpoint
+  SUN: topology 0 provisional best; topology 0.2 running
