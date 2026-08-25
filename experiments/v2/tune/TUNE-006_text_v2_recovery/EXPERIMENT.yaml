@@ -5,7 +5,7 @@ kind: tune
 framework_id: FRAMEWORK-V2
 code_semantics_commit: 4b660f5848c5d13584248a0de0b96ac6d54ec9a8
 parent_asset_registry: config/paper_v2/ASSETS.yaml
-status: phase1_sun_prerun_cub_awa2_completed
+status: phase1_completed_all_three_pass
 question: CLIP锚定的短句text-v2能否在不读取official test时恢复三数据集的seen类图文边界
 selection_protocol: seen_only_text_visual_alignment
 official_test_loaded: false
@@ -27,5 +27,7 @@ phase1_execution_commit: 7545624fa4fca57fc057855b8fc478e2912b212a
 phase1_completed_datasets:
   - CUB
   - AWA2
-phase1_decision: CUB and AWA2 pass the seen-only recovery gate; SUN content-addressed asset is pre-registered for the same diagnostic
+  - SUN
+phase1_decision: CUB, AWA2, and SUN all pass the seen-only recovery gate; proceed to B0/B1/M3 seed 7
 sun_asset_manifest_sha256: 177406ac028226aa4358d2ac2015e2aa43748107b7f98283e8a749eda3fea676
+sun_execution_commit: 6957dbb4448f0dca03500a4fd576f8b3564b662d
