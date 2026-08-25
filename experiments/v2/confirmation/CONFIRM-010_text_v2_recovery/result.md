@@ -1,5 +1,7 @@
 # V2-CONFIRM-010 结果
 
+> 公平基线更正：本实验的B0使用旧Xian类名清洗，和text-v2的自然类名不完全一致。B1/M3绝对成绩仍有效；相对公平Pure CLIP的最终增益请使用`V2-CONFIRM-012`，不要继续引用本页旧B0差值。
+
 状态：`completed_two_of_three_plus3`。
 
 全部RUN使用提交`e8238c91cf7d7ba9693072af67ca3f1f2877c83a`。B0/B1各只评估一次；M3各评估201次official test并选择整次RUN的整模型全局最大H。`unseen_images_used_for_gradient=false`，`strict_blind_claim=false`。
