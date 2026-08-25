@@ -86,6 +86,13 @@ class VisualEvidenceContractTest(unittest.TestCase):
         self.assertEqual(actual.dtype, torch.float32)
         self.assertTrue(torch.equal(actual, cached[[3, 1]].float()))
 
+    def test_multiscale_pool_is_exact_block_mean(self):
+        model = self.build("multiscale_part_tokens")
+        grid = torch.arange(24 * 24, dtype=torch.float32).reshape(1, 1, 24, 24)
+        pooled = model.visual._deterministic_grid_pool(grid, 12)
+        expected = grid.reshape(1, 1, 12, 2, 12, 2).mean(dim=(3, 5))
+        self.assertTrue(torch.equal(pooled, expected))
+
     def test_off_and_enabled_initialization_are_exact_parent(self):
         expected = self.parent.logits(self.images)
         off = self.build("off")

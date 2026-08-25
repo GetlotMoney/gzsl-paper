@@ -110,6 +110,19 @@ class VisualEvidenceHead(nn.Module):
         nn.init.zeros_(self.scale_gate.bias)
 
     @staticmethod
+    def _deterministic_grid_pool(grid: torch.Tensor, size: int) -> torch.Tensor:
+        if grid.ndim != 4 or tuple(grid.shape[-2:]) != (24, 24):
+            raise ValueError("多尺度视觉池化输入必须为[B,D,24,24]。")
+        if int(size) == 24:
+            return grid
+        if int(size) not in (12, 6):
+            raise ValueError("多尺度视觉池化只接受24/12/6。")
+        factor = 24 // int(size)
+        return grid.reshape(
+            grid.size(0), grid.size(1), int(size), factor, int(size), factor
+        ).mean(dim=(3, 5))
+
+    @staticmethod
     def _part_tokens(
         patches: torch.Tensor,
         group_queries: torch.Tensor,
@@ -207,7 +220,7 @@ class VisualEvidenceHead(nn.Module):
                 scale_parts = []
                 scale_attention = []
                 for size in self.visual_scales:
-                    pooled = F.adaptive_avg_pool2d(grid, (size, size))
+                    pooled = self._deterministic_grid_pool(grid, size)
                     tokens = F.normalize(pooled.flatten(2).transpose(1, 2), dim=-1)
                     parts_at_scale, attention_at_scale = self._part_tokens(tokens, mean_queries)
                     scale_parts.append(parts_at_scale)
