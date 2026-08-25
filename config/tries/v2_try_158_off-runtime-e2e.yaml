@@ -1,6 +1,6 @@
 schema_version: gzsl-paper.paper-v2-visual-run.v2
-experiment_id: V2-TRY-151
-condition_id: SPATIAL_RGVE_STAGEWISE
+experiment_id: V2-TRY-158
+condition_id: VISUAL_OFF_E2E_GPU_CACHE_RUNTIME
 framework_id: FRAMEWORK-V2
 dataset: CUB
 asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/rgve/CUB_openai_vitl14_336_patch_v1/asset_manifest.json
@@ -10,14 +10,14 @@ test_used_for_selection: true
 test_used_for_hyperparameter_selection: true
 unseen_images_used_for_gradient: false
 strict_blind_claim: false
-training_strategy: stagewise_50_100_50
+training_strategy: end_to_end_joint
 selection_scope: whole_run_whole_model_only
 nested_official_test_selection: false
 device: cuda:0
 random_seed: 7
 batch_size: 50
 eval_batch_size: 32
-patch_cache_mode: gpu_fp16
+patch_cache_mode: none
 nominal_epochs: 200
 optimizer: Adam
 weight_decay: 0.0001
@@ -38,7 +38,7 @@ generator_hidden_dim: 32
 max_transport_step: 1.5
 max_ntr_delta: 0.1
 max_generator_magnitude: 0.2
-visual_mode: spatial_rgve
+visual_mode: 'off'
 visual_hidden_dim: 128
 visual_max_beta: 0.3
 visual_part_weight: 0.5
@@ -52,3 +52,4 @@ visual_scales:
   - 24
   - 12
   - 6
+

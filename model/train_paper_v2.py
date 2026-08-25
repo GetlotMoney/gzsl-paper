@@ -103,6 +103,7 @@ VISUAL_CONFIG_KEYS = CONFIG_KEYS | {
     "confusion_topk",
     "visual_scales",
 }
+VISUAL_V2_CONFIG_KEYS = VISUAL_CONFIG_KEYS | {"patch_cache_mode"}
 ASSET_FILES = (
     "train_features.pt",
     "train_labels.pt",
@@ -129,6 +130,7 @@ def load_config(path: Path) -> tuple[dict, str]:
     expected_keys = {
         "gzsl-paper.paper-v2-rgve-run.v1": RGVE_CONFIG_KEYS,
         "gzsl-paper.paper-v2-visual-run.v1": VISUAL_CONFIG_KEYS,
+        "gzsl-paper.paper-v2-visual-run.v2": VISUAL_V2_CONFIG_KEYS,
     }.get(schema, CONFIG_KEYS)
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
@@ -138,6 +140,7 @@ def load_config(path: Path) -> tuple[dict, str]:
         "gzsl-paper.paper-v2-run.v1",
         "gzsl-paper.paper-v2-rgve-run.v1",
         "gzsl-paper.paper-v2-visual-run.v1",
+        "gzsl-paper.paper-v2-visual-run.v2",
     ):
         raise ValueError("最终论文RUN schema错误。")
     if config["framework_id"] != "FRAMEWORK-V2" or config["dataset"] not in ("CUB", "AWA2", "SUN"):
@@ -180,7 +183,10 @@ def load_config(path: Path) -> tuple[dict, str]:
         for key in ("rgve_role_weight", "rgve_balance_weight", "rgve_calibration_weight"):
             if float(config[key]) < 0:
                 raise ValueError(f"{key}不能为负数。")
-    if schema == "gzsl-paper.paper-v2-visual-run.v1":
+    if schema in (
+        "gzsl-paper.paper-v2-visual-run.v1",
+        "gzsl-paper.paper-v2-visual-run.v2",
+    ):
         if no_training or config["visual_mode"] not in VISUAL_MODES:
             raise ValueError("视觉筛选只接受已注册模式和正式训练策略。")
         if int(config["eval_batch_size"]) <= 0 or int(config["visual_hidden_dim"]) <= 0:
@@ -200,6 +206,13 @@ def load_config(path: Path) -> tuple[dict, str]:
             raise ValueError("视觉初筛固定topk=5及scales=[24,12,6]。")
         if float(config["topology_weight"]) != 0.1:
             raise ValueError("视觉初筛固定topology_weight=0.1。")
+        if schema == "gzsl-paper.paper-v2-visual-run.v2":
+            if config["patch_cache_mode"] not in ("none", "gpu_fp16"):
+                raise ValueError("patch_cache_mode只允许none或gpu_fp16。")
+            if config["visual_mode"] == "off" and config["patch_cache_mode"] != "none":
+                raise ValueError("视觉off禁止无用patch缓存。")
+            if config["visual_mode"] != "off" and config["patch_cache_mode"] != "gpu_fp16":
+                raise ValueError("视觉on固定使用gpu_fp16常驻缓存。")
     return config, sha256_file(path)
 
 
@@ -216,6 +229,7 @@ def load_assets(config: dict) -> tuple[dict, dict, Path]:
     if config["schema_version"] in (
         "gzsl-paper.paper-v2-rgve-run.v1",
         "gzsl-paper.paper-v2-visual-run.v1",
+        "gzsl-paper.paper-v2-visual-run.v2",
     ):
         allowed_schemas = {"gzsl-paper.rgve-local-patch-assets.v1"}
     if manifest_schema not in allowed_schemas or manifest.get("dataset") != config["dataset"]:
@@ -323,7 +337,10 @@ def build_run_model(
             max_beta=float(config["rgve_max_beta"]),
             initial_temperature=float(config["rgve_initial_temperature"]),
         ).to(device)
-    if config["schema_version"] == "gzsl-paper.paper-v2-visual-run.v1":
+    if config["schema_version"] in (
+        "gzsl-paper.paper-v2-visual-run.v1",
+        "gzsl-paper.paper-v2-visual-run.v2",
+    ):
         return PaperV2VisualModel(
             parent,
             visual_mode=config["visual_mode"],
@@ -399,10 +416,26 @@ def _gradient_norms(
 
 
 def _load_patch_batch(memmap, indices: torch.Tensor | np.ndarray, device: torch.device) -> torch.Tensor:
+    if isinstance(memmap, torch.Tensor):
+        if isinstance(indices, np.ndarray):
+            indices = torch.from_numpy(np.asarray(indices, dtype=np.int64))
+        return memmap.index_select(0, indices.to(memmap.device).long()).to(dtype=torch.float32)
     if isinstance(indices, torch.Tensor):
         indices = indices.detach().cpu().numpy()
     values = np.asarray(memmap[np.asarray(indices, dtype=np.int64)])
     return torch.from_numpy(values.copy()).to(device=device, dtype=torch.float32)
+
+
+def _cache_visual_patches(tensors: dict, config: dict, device: torch.device) -> None:
+    if config.get("patch_cache_mode") != "gpu_fp16":
+        return
+    for split in ("train", "test_seen", "test_unseen"):
+        key = f"{split}_patch_features"
+        source = tensors[key]
+        if isinstance(source, torch.Tensor):
+            raise ValueError("patch缓存不得重复物化。")
+        cpu_view = torch.from_numpy(np.asarray(source))
+        tensors[key] = cpu_view.to(device=device, dtype=torch.float16)
 
 
 @torch.no_grad()
@@ -446,6 +479,19 @@ def _evaluate_rgve_model(
 
 
 def _evaluate_model(model, tensors, manifest, device, eval_batch_size: int = 64) -> dict[str, float]:
+    if isinstance(model, PaperV2VisualModel) and model.visual_mode == "off":
+        model.eval()
+        return evaluate_prototypes(
+            model.prototypes(),
+            model.scale(),
+            tensors["test_seen_features"],
+            tensors["test_seen_labels"],
+            tensors["test_unseen_features"],
+            tensors["test_unseen_labels"],
+            torch.tensor(manifest["seen_classes"]),
+            torch.tensor(manifest["unseen_classes"]),
+            device=device,
+        )
     if isinstance(model, (PaperV2RGVEModel, PaperV2VisualModel)):
         return _evaluate_rgve_model(model, tensors, manifest, device, eval_batch_size)
     if isinstance(model, PaperV2ThreeModuleModel):
@@ -488,6 +534,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         device = torch.device(config["device"])
         if device.type != "cuda" or not torch.cuda.is_available():
             raise RuntimeError("正式论文RUN要求CUDA。")
+        if config["schema_version"] == "gzsl-paper.paper-v2-visual-run.v2":
+            _cache_visual_patches(tensors, config, device)
         seen_classes = torch.tensor(manifest["seen_classes"], dtype=torch.long)
         train_labels = tensors["train_labels"].long()
         if not torch.equal(torch.unique(train_labels, sorted=True), seen_classes):
@@ -601,17 +649,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 loss_hard = prototypes.new_zeros(())
                 seen_device = seen_classes.to(device)
                 if isinstance(model, PaperV2VisualModel):
-                    patches = _load_patch_batch(tensors["train_patch_features"], indices, device)
-                    global_targets = seen_device.index_select(0, targets)
-                    components = model.score_components(
-                        images,
-                        patches,
-                        target_class_ids=global_targets,
-                    )
-                    final_scores = components["final_scores"]
-                    assert isinstance(final_scores, torch.Tensor)
-                    logits = final_scores.index_select(1, seen_device)
-                    ce = F.cross_entropy(logits, targets)
+                    if config["visual_mode"] == "off":
+                        logits = model.parent.logits(images, seen_device)
+                        ce = F.cross_entropy(logits, targets)
+                    else:
+                        patches = _load_patch_batch(tensors["train_patch_features"], indices, device)
+                        global_targets = seen_device.index_select(0, targets)
+                        components = model.score_components(
+                            images,
+                            patches,
+                            target_class_ids=global_targets,
+                        )
+                        final_scores = components["final_scores"]
+                        assert isinstance(final_scores, torch.Tensor)
+                        logits = final_scores.index_select(1, seen_device)
+                        ce = F.cross_entropy(logits, targets)
                     if config["visual_mode"] != "off" and "visual" in names:
                         visual_losses = model.visual_losses(
                             components,

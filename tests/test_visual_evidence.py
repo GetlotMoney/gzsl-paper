@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 
 from model.paper_v2 import PaperV2ThreeModuleModel
-from model.train_paper_v2 import _active_groups, load_config
+from model.train_paper_v2 import _active_groups, _load_patch_batch, load_config
 from model.visual_evidence import PaperV2VisualModel, VISUAL_MODES
 
 
@@ -68,6 +68,23 @@ class VisualEvidenceContractTest(unittest.TestCase):
             value for value in configs if value["visual_mode"] == "confusion_local_refiner"
         ]
         self.assertEqual({value["visual_hard_weight"] for value in confusion}, {0.1})
+        enabled = [value for value in configs if value["visual_mode"] != "off"]
+        self.assertTrue(all(value["patch_cache_mode"] == "gpu_fp16" for value in enabled))
+
+    def test_runtime_off_configs_skip_patch_cache(self):
+        root = Path(__file__).resolve().parents[1] / "config/tries"
+        files = sorted(root.glob("v2_try_15[89]_off-runtime-*.yaml"))
+        self.assertEqual(len(files), 2)
+        configs = [load_config(path)[0] for path in files]
+        self.assertTrue(all(value["schema_version"].endswith("visual-run.v2") for value in configs))
+        self.assertTrue(all(value["visual_mode"] == "off" for value in configs))
+        self.assertTrue(all(value["patch_cache_mode"] == "none" for value in configs))
+
+    def test_cached_half_patch_batch_is_selected_and_promoted_to_float(self):
+        cached = torch.arange(4 * 3 * 2, dtype=torch.float16).reshape(4, 3, 2)
+        actual = _load_patch_batch(cached, torch.tensor([3, 1]), torch.device("cpu"))
+        self.assertEqual(actual.dtype, torch.float32)
+        self.assertTrue(torch.equal(actual, cached[[3, 1]].float()))
 
     def test_off_and_enabled_initialization_are_exact_parent(self):
         expected = self.parent.logits(self.images)

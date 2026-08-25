@@ -1,4 +1,4 @@
-schema_version: gzsl-paper.paper-v2-visual-run.v1
+schema_version: gzsl-paper.paper-v2-visual-run.v2
 experiment_id: V2-TRY-156
 condition_id: MULTISCALE_PART_TOKENS_E2E
 framework_id: FRAMEWORK-V2
@@ -17,6 +17,7 @@ device: cuda:0
 random_seed: 7
 batch_size: 50
 eval_batch_size: 32
+patch_cache_mode: gpu_fp16
 nominal_epochs: 200
 optimizer: Adam
 weight_decay: 0.0001
@@ -51,4 +52,3 @@ visual_scales:
   - 24
   - 12
   - 6
-
