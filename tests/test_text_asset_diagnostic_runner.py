@@ -274,6 +274,19 @@ class TextAssetDiagnosticRunnerTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "path必须是绝对路径"):
                 runner.validate_config(relative_variant)
 
+    def test_config_accepts_any_three_digit_v2_tune_id_only(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            manifest_path, variant_path = self._write_asset(root)
+            valid = self._config(manifest_path, variant_path, "RUN-TUNE-ID")
+            tune006 = {**valid, "experiment_id": "V2-TUNE-006"}
+            self.assertEqual(
+                runner.validate_config(tune006)["experiment_id"], "V2-TUNE-006"
+            )
+            for invalid in ("V2-TUNE-6", "V2-INNOVATION-006", "TUNE-006"):
+                with self.assertRaisesRegex(ValueError, "V2-TUNE-xxx"):
+                    runner.validate_config({**valid, "experiment_id": invalid})
+
     def test_preregistered_text_v1_configs_cover_three_datasets(self):
         root = Path(__file__).resolve().parents[1]
         config_root = (

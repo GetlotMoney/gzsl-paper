@@ -1,0 +1,12 @@
+schema_version: gzsl-paper.text-diagnostic-run.v1
+experiment_id: V2-TUNE-006
+run_id: AWA2-TEXT-V2-DIAGNOSTIC
+dataset: AWA2
+asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/AWA2/7f0e1989635ca98d/asset_manifest.json
+asset_manifest_sha256: 554dd677e8e3e344633d9c2aa84b3e5a9aeebd941e0716e71b0fb39ed7496594
+base_role_name: text-v2
+role_variants: []
+official_test_loaded: false
+seen_images_only: true
+unseen_images_used: false
+diagnostic_no_model: true

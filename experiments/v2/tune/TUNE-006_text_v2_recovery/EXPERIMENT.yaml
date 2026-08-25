@@ -1,0 +1,25 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-TUNE-006
+slug: text_v2_recovery
+kind: tune
+framework_id: FRAMEWORK-V2
+code_semantics_commit: 4b660f5848c5d13584248a0de0b96ac6d54ec9a8
+parent_asset_registry: config/paper_v2/ASSETS.yaml
+status: phase1_seen_only_planned
+question: CLIP锚定的短句text-v2能否在不读取official test时恢复三数据集的seen类图文边界
+selection_protocol: seen_only_text_visual_alignment
+official_test_loaded: false
+seen_images_only: true
+unseen_images_used: false
+diagnostic_no_model: true
+changed_input_semantics: role text v1 to CLIP-anchored role text v2
+unchanged_assets: image features, labels, class-name embeddings, Xian splits, CLIP checkpoint
+text_v2_assets:
+  CUB: 69c9c6d82a755fe8
+  AWA2: 7f0e1989635ca98d
+  SUN: pending_independent_text_review
+framework_diagram: experiments/v2/tune/TUNE-006_text_v2_recovery/framework_diagram.html
+output_root: /data/lby/projects/cv_project/GZSL_Warehouse/diagnostics/v2/TUNE-006_text_v2_recovery
+phase1_gate: compare text-v2 against the frozen class-name and text-v1 seen-only metrics without loading official test
+phase2_gate: only after text-v2 passes the seen-only gate, run B0/B1/M3 seed 7 under the disclosed Chen-style protocol
+text_v1_retention: keep TUNE-005 and all text-v1 assets without overwrite

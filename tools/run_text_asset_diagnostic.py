@@ -29,6 +29,7 @@ from tools.runtime import sha256_file
 CONFIG_SCHEMA = "gzsl-paper.text-diagnostic-run.v1"
 FINGERPRINT_SCHEMA = "gzsl-paper.text-diagnostic-fingerprints.v1"
 EXPERIMENT_ID = "V2-TUNE-005"
+EXPERIMENT_ID_PATTERN = r"V2-TUNE-[0-9]{3}"
 DATASETS = ("CUB", "AWA2", "SUN")
 EXPECTED_ARTIFACTS = {
     "config.snapshot.yaml",
@@ -94,8 +95,9 @@ def validate_config(config: object) -> dict:
         raise ValueError(f"诊断RUN配置缺少字段：{sorted(missing)}")
     if config["schema_version"] != CONFIG_SCHEMA:
         raise ValueError("诊断RUN配置schema错误。")
-    if config["experiment_id"] != EXPERIMENT_ID:
-        raise ValueError(f"experiment_id必须为{EXPERIMENT_ID}。")
+    experiment_id = _require_nonempty_string(config["experiment_id"], "experiment_id")
+    if not re.fullmatch(EXPERIMENT_ID_PATTERN, experiment_id):
+        raise ValueError("experiment_id必须匹配V2-TUNE-xxx。")
 
     run_id = _require_nonempty_string(config["run_id"], "run_id")
     if Path(run_id).name != run_id or run_id in (".", ".."):
