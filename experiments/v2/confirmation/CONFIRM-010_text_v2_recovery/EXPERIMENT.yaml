@@ -6,7 +6,7 @@ framework_id: FRAMEWORK-V2
 code_semantics_commit: b7e25c2758da896411236c2ea60662439a01244b
 asset_derivation_commit: 4b660f5848c5d13584248a0de0b96ac6d54ec9a8
 parent_text_diagnostic: experiments/v2/tune/TUNE-006_text_v2_recovery/result.md
-status: planned
+status: completed_two_of_three_plus3
 question: 冻结text-v2后Pure CLIP、Mean8与完整M3 seed 7能否在三数据集Chen-style协议下恢复并达到预注册增益
 evaluation_protocol: chen_shiming_code_aligned_multidataset_test_selected_gzsl
 test_used_for_selection:
@@ -35,3 +35,10 @@ success_conditions:
   M3: improve H by at least 3 percentage points over B0 with nonzero TST-NTR and CCGR outputs
 framework_diagram: experiments/v2/confirmation/CONFIRM-010_text_v2_recovery/framework_diagram.html
 output_root: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-010_text_v2_recovery
+execution_commit: e8238c91cf7d7ba9693072af67ca3f1f2877c83a
+completed_at: 2026-08-25
+outcomes:
+  B0: reproduced exactly on all three datasets
+  B1: passed text recovery on all three datasets
+  M3: CUB and SUN passed the +3 H gate; AWA2 improved but did not pass +3 H
+decision: keep all real results; proceed with the full matrix without changing success conditions
