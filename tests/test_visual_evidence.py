@@ -80,6 +80,14 @@ class VisualEvidenceContractTest(unittest.TestCase):
         self.assertTrue(all(value["visual_mode"] == "off" for value in configs))
         self.assertTrue(all(value["patch_cache_mode"] == "none" for value in configs))
 
+    def test_deterministic_multiscale_rerun_configs(self):
+        root = Path(__file__).resolve().parents[1] / "config/tries"
+        files = sorted(root.glob("v2_try_16[01]_multiscale-deterministic_*.yaml"))
+        self.assertEqual(len(files), 2)
+        configs = [load_config(path)[0] for path in files]
+        self.assertTrue(all(value["visual_mode"] == "multiscale_part_tokens" for value in configs))
+        self.assertTrue(all(value["patch_cache_mode"] == "gpu_fp16" for value in configs))
+
     def test_cached_half_patch_batch_is_selected_and_promoted_to_float(self):
         cached = torch.arange(4 * 3 * 2, dtype=torch.float16).reshape(4, 3, 2)
         actual = _load_patch_batch(cached, torch.tensor([3, 1]), torch.device("cpu"))
