@@ -5,7 +5,7 @@ kind: tune
 framework_id: FRAMEWORK-V2
 code_semantics_commit: 4b660f5848c5d13584248a0de0b96ac6d54ec9a8
 parent_asset_registry: config/paper_v2/ASSETS.yaml
-status: phase1_seen_only_planned
+status: phase1_cub_awa2_completed_sun_pending
 question: CLIP锚定的短句text-v2能否在不读取official test时恢复三数据集的seen类图文边界
 selection_protocol: seen_only_text_visual_alignment
 official_test_loaded: false
@@ -23,3 +23,8 @@ output_root: /data/lby/projects/cv_project/GZSL_Warehouse/diagnostics/v2/TUNE-00
 phase1_gate: compare text-v2 against the frozen class-name and text-v1 seen-only metrics without loading official test
 phase2_gate: only after text-v2 passes the seen-only gate, run B0/B1/M3 seed 7 under the disclosed Chen-style protocol
 text_v1_retention: keep TUNE-005 and all text-v1 assets without overwrite
+phase1_execution_commit: 7545624fa4fca57fc057855b8fc478e2912b212a
+phase1_completed_datasets:
+  - CUB
+  - AWA2
+phase1_decision: CUB and AWA2 pass the seen-only recovery gate; SUN remains pending independent text review
