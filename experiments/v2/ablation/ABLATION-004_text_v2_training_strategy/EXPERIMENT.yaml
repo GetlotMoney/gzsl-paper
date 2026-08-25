@@ -5,7 +5,7 @@ kind: ablation
 framework_id: FRAMEWORK-V2
 code_semantics_commit: b7e25c2758da896411236c2ea60662439a01244b
 asset_derivation_commit: 4b660f5848c5d13584248a0de0b96ac6d54ec9a8
-status: planned
+status: completed_mixed_seed7
 question: 冻结text-v2后50/100/50 Stagewise相对End-to-End在CUB/AWA2/SUN seed7上的真实差异
 evaluation_protocol: chen_shiming_code_aligned_multidataset_test_selected_gzsl
 test_used_for_selection: true
@@ -32,3 +32,10 @@ stage_boundaries:
 framework_diagram: experiments/v2/ablation/ABLATION-004_text_v2_training_strategy/framework_diagram.html
 output_root: /data/lby/projects/cv_project/GZSL_Warehouse/ablation/v2/ABLATION-004_text_v2_training_strategy
 decision_rule: seed7 is a screen only; final global strategy still requires the pre-registered three-seed comparison
+execution_commit: 04b3506b508902b0898c267b498ba8dcd0fda134
+completed_at: 2026-08-25
+outcomes:
+  CUB: Stagewise higher than End-to-End by 1.082010 H
+  AWA2: Stagewise lower by 0.649750 H; global best is TG_ONLY
+  SUN: Stagewise lower by 2.851307 H
+decision: mixed seed7 screen; do not select a global strategy before the pre-registered three-seed comparison
