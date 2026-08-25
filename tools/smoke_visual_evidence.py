@@ -11,6 +11,7 @@ import torch.nn.functional as F
 
 from model.train_paper_v2 import (
     _active_groups,
+    _cache_visual_patches,
     _gradient_norms,
     _load_patch_batch,
     build_run_model,
@@ -30,6 +31,7 @@ def run(config_paths: list[Path], device_name: str, batch_size: int) -> list[dic
     device = torch.device(device_name)
     if device.type != "cuda" or not torch.cuda.is_available():
         raise RuntimeError("真实视觉smoke要求CUDA。")
+    _cache_visual_patches(tensors, first, device)
     seen = torch.tensor(manifest["seen_classes"], dtype=torch.long, device=device)
     labels = tensors["train_labels"][: int(batch_size)].long().to(device)
     global_to_seen = torch.full(
@@ -117,4 +119,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
