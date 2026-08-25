@@ -1,6 +1,6 @@
 # V2-TUNE-007 结果
 
-状态：topology_coarse_partial_sun_0_2_running。
+状态：topology_coarse_completed_paused_by_owner。
 
 | 数据集 | topology | H | best stage | 模块非零 | 当前判定 |
 |---|---:|---:|---|---|---|
@@ -15,6 +15,6 @@
 | SUN | 0 | 70.040488 | JOINT_FINETUNE | 是 | 暂时领先 |
 | SUN | 0.03 | 69.316184 | JOINT_FINETUNE | 是 | 不选 |
 | SUN | 0.1 | 68.329691 | JOINT_FINETUNE | 是 | reference |
-| SUN | 0.2 | — | — | — | 正在GPU1运行 |
+| SUN | 0.2 | 67.377600 | TRANSFER_CCGR | 是 | 不选 |
 
-CUB topology轴选择0并进入Transport粗搜。AWA2四个条件的全局best均位于TG-only，按预注册非零模块门槛关闭Stagewise细搜。SUN等待0.2完成后冻结Topology。
+CUB topology轴选择0并进入Transport粗搜。AWA2四个条件的全局best均位于TG-only，按预注册非零模块门槛关闭Stagewise细搜。SUN选择topology=0。Owner要求当前粗搜完成后暂停；没有启动Transport或后续轴。
