@@ -1,6 +1,6 @@
 schema_version: gzsl-paper.paper-v2-run.v1
 experiment_id: V2-CONFIRM-012
-condition_id: B0_CANONICAL_CLASS_NAME
+condition_id: B0_PURE_CLIP
 framework_id: FRAMEWORK-V2
 dataset: SUN
 asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/SUN/5e9c8308ebc5b075/asset_manifest.json
@@ -36,4 +36,3 @@ generator_hidden_dim: 32
 max_transport_step: 1.5
 max_ntr_delta: 0.1
 max_generator_magnitude: 0.2
-

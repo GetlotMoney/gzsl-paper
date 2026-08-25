@@ -132,6 +132,8 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("未知训练策略。")
     no_training = config["training_strategy"] == "no_training"
     if no_training:
+        if config["condition_id"] not in ("B0_PURE_CLIP", "B1_MEAN8"):
+            raise ValueError("no_training只允许明确的B0_PURE_CLIP或B1_MEAN8原型来源。")
         if config["test_used_for_selection"] is not False:
             raise ValueError("no_training条件没有checkpoint选择。")
     elif config["test_used_for_selection"] is not True:

@@ -7,6 +7,7 @@ import numpy as np
 import scipy.io as sio
 import torch
 import torch.nn.functional as F
+import yaml
 
 from model.paper_v2 import PaperV2ThreeModuleModel
 from model.train_paper_v2 import load_config, random_batch_indices, stage_for_iteration
@@ -113,6 +114,23 @@ class PaperV2ModelTest(unittest.TestCase):
 
 
 class PaperV2DataTest(unittest.TestCase):
+    def test_no_training_rejects_ambiguous_prototype_source(self):
+        root = Path(__file__).resolve().parents[1]
+        source = (
+            root
+            / "experiments/v2/confirmation/CONFIRM-010_text_v2_recovery/configs/CUB-B0_PURE_CLIP.yaml"
+        )
+        payload = yaml.safe_load(source.read_text(encoding="utf-8"))
+        payload["condition_id"] = "B0_CANONICAL_CLASS_NAME"
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "ambiguous.yaml"
+            path.write_text(
+                yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "no_training只允许明确"):
+                load_config(path)
+
     def test_prerun_configs_cover_three_datasets_and_protocol_boundaries(self):
         root = Path(__file__).resolve().parents[1]
         patterns = (
