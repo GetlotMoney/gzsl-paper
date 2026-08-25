@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 import tempfile
 
@@ -74,7 +74,12 @@ def _require_nonempty_string(value: object, field: str) -> str:
 def _absolute_path(value: object, field: str) -> Path:
     text = _require_nonempty_string(value, field)
     path = Path(text)
-    if not path.is_absolute():
+    contract_is_absolute = (
+        path.is_absolute()
+        or PurePosixPath(text).is_absolute()
+        or PureWindowsPath(text).is_absolute()
+    )
+    if not contract_is_absolute:
         raise ValueError(f"{field}必须是绝对路径。")
     return path.resolve()
 
