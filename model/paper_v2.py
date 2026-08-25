@@ -14,6 +14,152 @@ from model.innovations.tst import tangent_transport
 TG_MODES = {"off", "grouped_no_value", "value_no_topology", "full"}
 TRANSPORT_MODES = {"off", "euclidean", "tangent", "tangent_ntr"}
 CCGR_MODES = {"off", "shared", "class_conditioned_value", "class_conditioned_four"}
+RGVE_MODES = {"off", "soft_attention_calibrated"}
+
+
+class RoleGuidedVisualEvidence(nn.Module):
+    """Image-dependent role evidence from frozen CLIP patch tokens."""
+
+    def __init__(
+        self,
+        *,
+        hidden_dim: int = 128,
+        max_beta: float = 0.3,
+        initial_temperature: float = 0.07,
+    ):
+        super().__init__()
+        if int(hidden_dim) <= 0 or float(max_beta) <= 0:
+            raise ValueError("RGVE hidden_dim和max_beta必须为正数。")
+        if not 0.01 < float(initial_temperature) < 0.20:
+            raise ValueError("RGVE初始温度必须位于(0.01,0.20)。")
+        self.down = nn.Linear(768, int(hidden_dim))
+        self.up = nn.Linear(int(hidden_dim), 768)
+        nn.init.zeros_(self.up.weight)
+        nn.init.zeros_(self.up.bias)
+        self.raw_beta = nn.Parameter(torch.zeros(()))
+        self.group_logits = nn.Parameter(torch.zeros(3))
+        normalized_temperature = torch.tensor(
+            (float(initial_temperature) - 0.01) / 0.19
+        )
+        self.raw_temperatures = nn.Parameter(
+            torch.full((3,), float(torch.logit(normalized_temperature)))
+        )
+        self.max_beta = float(max_beta)
+
+    def beta(self) -> torch.Tensor:
+        return self.max_beta * torch.tanh(self.raw_beta)
+
+    def temperatures(self) -> torch.Tensor:
+        return 0.01 + 0.19 * torch.sigmoid(self.raw_temperatures)
+
+    def local_evidence(
+        self,
+        patch_features: torch.Tensor,
+        group_queries: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        if patch_features.ndim != 3 or patch_features.size(-1) != 768:
+            raise ValueError("RGVE patch特征必须为[B,N,768]。")
+        if group_queries.ndim != 3 or tuple(group_queries.shape[1:]) != (3, 768):
+            raise ValueError("RGVE角色查询必须为[class_count,3,768]。")
+        residual = self.up(F.gelu(self.down(patch_features.float())))
+        adapted = F.normalize(patch_features.float() + residual, dim=-1)
+        queries = F.normalize(group_queries.float(), dim=-1)
+        similarities = torch.einsum("bnd,cgd->bncg", adapted, queries)
+        temperatures = self.temperatures().view(1, 1, 1, 3)
+        attention = F.softmax(similarities / temperatures, dim=1)
+        role_evidence = (attention * similarities).sum(dim=1)
+        weights = F.softmax(self.group_logits, dim=0)
+        local = (role_evidence * weights.view(1, 1, 3)).sum(dim=-1)
+        return local, role_evidence
+
+
+class PaperV2RGVEModel(nn.Module):
+    """Three-module V2 model with an optional RGVE visual residual."""
+
+    def __init__(
+        self,
+        parent: "PaperV2ThreeModuleModel",
+        *,
+        rgve_mode: str,
+        hidden_dim: int = 128,
+        max_beta: float = 0.3,
+        initial_temperature: float = 0.07,
+    ):
+        super().__init__()
+        if rgve_mode not in RGVE_MODES:
+            raise ValueError(f"未知RGVE模式：{rgve_mode}")
+        self.parent = parent
+        self.rgve_mode = str(rgve_mode)
+        self.rgve = RoleGuidedVisualEvidence(
+            hidden_dim=hidden_dim,
+            max_beta=max_beta,
+            initial_temperature=initial_temperature,
+        )
+
+    def prototypes(self) -> torch.Tensor:
+        return self.parent.prototypes()
+
+    def scale(self) -> torch.Tensor:
+        return self.parent.scale()
+
+    def topology_loss(self, adapted: torch.Tensor | None = None) -> torch.Tensor:
+        return self.parent.topology_loss(adapted)
+
+    def score_components(
+        self,
+        image_features: torch.Tensor,
+        patch_features: torch.Tensor,
+    ) -> dict[str, torch.Tensor]:
+        prototypes = self.prototypes()
+        global_scores = F.normalize(image_features.float(), dim=-1) @ prototypes.T
+        if self.rgve_mode == "off":
+            local_scores = global_scores.new_zeros(global_scores.shape)
+            role_scores = global_scores.new_zeros((*global_scores.shape, 3))
+            beta = global_scores.new_zeros(())
+        else:
+            groups = self.parent.tg_vpr.semantic_group_vectors()
+            local_scores, role_scores = self.rgve.local_evidence(patch_features, groups)
+            beta = self.rgve.beta()
+        final_scores = (global_scores + beta * local_scores) * self.scale()
+        return {
+            "global_scores": global_scores,
+            "local_scores": local_scores,
+            "role_scores": role_scores,
+            "final_scores": final_scores,
+            "beta": beta,
+        }
+
+    def logits(
+        self,
+        image_features: torch.Tensor,
+        patch_features: torch.Tensor,
+        class_ids: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        scores = self.score_components(image_features, patch_features)["final_scores"]
+        if class_ids is not None:
+            scores = scores.index_select(1, class_ids.to(scores.device).long())
+        return scores
+
+    def parameter_groups(self) -> dict[str, list[nn.Parameter]]:
+        groups = dict(self.parent.parameter_groups())
+        groups["rgve"] = list(self.rgve.parameters()) if self.rgve_mode != "off" else []
+        return groups
+
+    @torch.no_grad()
+    def diagnostics(self) -> dict[str, float]:
+        values = self.parent.diagnostics()
+        weights = F.softmax(self.rgve.group_logits, dim=0)
+        temperatures = self.rgve.temperatures()
+        values.update(
+            {
+                "rgve_beta": float(self.rgve.beta()) if self.rgve_mode != "off" else 0.0,
+                "rgve_group_weight_min": float(weights.min()),
+                "rgve_group_weight_max": float(weights.max()),
+                "rgve_temperature_min": float(temperatures.min()),
+                "rgve_temperature_max": float(temperatures.max()),
+            }
+        )
+        return values
 
 
 class PaperV2ThreeModuleModel(nn.Module):

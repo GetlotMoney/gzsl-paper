@@ -8,13 +8,21 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 import yaml
 
-from model.paper_v2 import CCGR_MODES, TG_MODES, TRANSPORT_MODES, PaperV2ThreeModuleModel
+from model.paper_v2 import (
+    CCGR_MODES,
+    RGVE_MODES,
+    TG_MODES,
+    TRANSPORT_MODES,
+    PaperV2RGVEModel,
+    PaperV2ThreeModuleModel,
+)
 from model.tg_vpr_h1 import train as h1
-from tools.gzsl_data import evaluate_prototypes
+from tools.gzsl_data import evaluate_prototypes, per_class_accuracy
 from tools.reproducibility import configure_reproducibility
 from tools.run_contract import (
     atomic_torch_save,
@@ -69,6 +77,17 @@ CONFIG_KEYS = {
     "max_ntr_delta",
     "max_generator_magnitude",
 }
+RGVE_CONFIG_KEYS = CONFIG_KEYS | {
+    "eval_batch_size",
+    "rgve_mode",
+    "rgve_hidden_dim",
+    "rgve_max_beta",
+    "rgve_initial_temperature",
+    "rgve_role_weight",
+    "rgve_balance_weight",
+    "rgve_calibration_weight",
+    "rgve_role_margin",
+}
 ASSET_FILES = (
     "train_features.pt",
     "train_labels.pt",
@@ -79,6 +98,11 @@ ASSET_FILES = (
     "class_name_embeds.pt",
     "role_sentence_embeds.pt",
 )
+PATCH_ASSET_FILES = (
+    "train_patch_features.npy",
+    "test_seen_patch_features.npy",
+    "test_unseen_patch_features.npy",
+)
 
 
 def load_config(path: Path) -> tuple[dict, str]:
@@ -86,11 +110,13 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise FileNotFoundError(f"最终论文RUN配置不存在：{path}")
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    expected_keys = RGVE_CONFIG_KEYS if schema == "gzsl-paper.paper-v2-rgve-run.v1" else CONFIG_KEYS
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"最终论文RUN配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。"
+            f"最终论文RUN配置字段错误；缺少={sorted(expected_keys-actual)}，多出={sorted(actual-expected_keys)}。"
         )
-    if config["schema_version"] != "gzsl-paper.paper-v2-run.v1":
+    if schema not in ("gzsl-paper.paper-v2-run.v1", "gzsl-paper.paper-v2-rgve-run.v1"):
         raise ValueError("最终论文RUN schema错误。")
     if config["framework_id"] != "FRAMEWORK-V2" or config["dataset"] not in ("CUB", "AWA2", "SUN"):
         raise ValueError("最终论文RUN只接受FRAMEWORK-V2和CUB/AWA2/SUN。")
@@ -120,6 +146,16 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("transport_mode错误。")
     if config["ccgr_mode"] not in CCGR_MODES:
         raise ValueError("ccgr_mode错误。")
+    if schema == "gzsl-paper.paper-v2-rgve-run.v1":
+        if config["dataset"] != "CUB" or config["rgve_mode"] not in RGVE_MODES:
+            raise ValueError("当前正式RGVE只接受CUB及已注册模式。")
+        if int(config["eval_batch_size"]) <= 0 or int(config["rgve_hidden_dim"]) <= 0:
+            raise ValueError("RGVE batch和hidden_dim必须为正数。")
+        if float(config["rgve_max_beta"]) <= 0:
+            raise ValueError("RGVE max_beta必须为正数。")
+        for key in ("rgve_role_weight", "rgve_balance_weight", "rgve_calibration_weight"):
+            if float(config[key]) < 0:
+                raise ValueError(f"{key}不能为负数。")
     return config, sha256_file(path)
 
 
@@ -131,18 +167,38 @@ def load_assets(config: dict) -> tuple[dict, dict, Path]:
     if manifest_sha != config["asset_manifest_sha256"]:
         raise ValueError("资产manifest SHA不匹配。")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("schema_version") != "gzsl-paper.clip-assets.v1" or manifest.get("dataset") != config["dataset"]:
+    manifest_schema = manifest.get("schema_version")
+    allowed_schemas = {"gzsl-paper.clip-assets.v1"}
+    if config["schema_version"] == "gzsl-paper.paper-v2-rgve-run.v1":
+        allowed_schemas = {"gzsl-paper.rgve-local-patch-assets.v1"}
+    if manifest_schema not in allowed_schemas or manifest.get("dataset") != config["dataset"]:
         raise ValueError("资产manifest身份错误。")
     expected_outputs = manifest.get("outputs_sha256", {})
-    if not set(ASSET_FILES).issubset(expected_outputs):
+    required_files = ASSET_FILES + (PATCH_ASSET_FILES if manifest_schema == "gzsl-paper.rgve-local-patch-assets.v1" else ())
+    if not set(required_files).issubset(expected_outputs):
         raise ValueError("资产manifest缺少训练或评估缓存。")
     tensors = {}
-    for filename in ASSET_FILES:
+    for filename in required_files:
         path = manifest_path.parent / filename
         if not path.is_file() or sha256_file(path) != expected_outputs[filename]:
             raise ValueError(f"资产文件缺失或SHA错误：{filename}")
-        tensors[filename.removesuffix(".pt")] = torch.load(path, map_location="cpu", weights_only=True)
-    class_count = int(manifest["class_count"])
+        key = filename.removesuffix(".pt").removesuffix(".npy")
+        tensors[key] = (
+            np.load(path, mmap_mode="r")
+            if filename.endswith(".npy")
+            else torch.load(path, map_location="cpu", weights_only=True)
+        )
+    manifest = dict(manifest)
+    class_count = int(manifest.get("class_count", tensors["role_sentence_embeds"].size(0)))
+    counts = manifest.get("counts", {})
+    manifest.setdefault("class_count", class_count)
+    manifest.setdefault("train_count", int(counts.get("train", tensors["train_labels"].numel())))
+    manifest.setdefault("test_seen_count", int(counts.get("test_seen", tensors["test_seen_labels"].numel())))
+    manifest.setdefault("test_unseen_count", int(counts.get("test_unseen", tensors["test_unseen_labels"].numel())))
+    seen_classes = torch.unique(tensors["train_labels"].long(), sorted=True).tolist()
+    manifest.setdefault("seen_classes", seen_classes)
+    manifest.setdefault("unseen_classes", [index for index in range(class_count) if index not in set(seen_classes)])
+    manifest.setdefault("asset_id", manifest_path.parent.name)
     expected_shapes = {
         "train_features": (int(manifest["train_count"]), 768),
         "train_labels": (int(manifest["train_count"]),),
@@ -156,6 +212,17 @@ def load_assets(config: dict) -> tuple[dict, dict, Path]:
     for name, shape in expected_shapes.items():
         if tuple(tensors[name].shape) != shape:
             raise ValueError(f"资产{name}形状错误：{tuple(tensors[name].shape)} != {shape}")
+    if manifest_schema == "gzsl-paper.rgve-local-patch-assets.v1":
+        patch_shape = tuple(int(value) for value in manifest["patch_shape"])
+        for split, count in (
+            ("train", manifest["train_count"]),
+            ("test_seen", manifest["test_seen_count"]),
+            ("test_unseen", manifest["test_unseen_count"]),
+        ):
+            actual_shape = tuple(tensors[f"{split}_patch_features"].shape)
+            expected_shape = (int(count), *patch_shape)
+            if actual_shape != expected_shape:
+                raise ValueError(f"资产{split}_patch_features形状错误：{actual_shape} != {expected_shape}")
     return tensors, manifest, manifest_path
 
 
@@ -194,6 +261,24 @@ def build_three_module_model(
     ).to(device)
 
 
+def build_run_model(
+    config: dict,
+    tensors: dict,
+    manifest: dict,
+    device: torch.device,
+) -> PaperV2ThreeModuleModel | PaperV2RGVEModel:
+    parent = build_three_module_model(config, tensors, manifest, device)
+    if config["schema_version"] != "gzsl-paper.paper-v2-rgve-run.v1":
+        return parent
+    return PaperV2RGVEModel(
+        parent,
+        rgve_mode=config["rgve_mode"],
+        hidden_dim=int(config["rgve_hidden_dim"]),
+        max_beta=float(config["rgve_max_beta"]),
+        initial_temperature=float(config["rgve_initial_temperature"]),
+    ).to(device)
+
+
 def stage_for_iteration(ntrain: int, iteration: int) -> tuple[str, float]:
     if 0 <= iteration < ntrain:
         return "TG_ONLY", 0.25
@@ -204,7 +289,11 @@ def stage_for_iteration(ntrain: int, iteration: int) -> tuple[str, float]:
     raise ValueError("iteration不属于50/100/50阶段。")
 
 
-def _active_groups(model: PaperV2ThreeModuleModel, strategy: str, stage: str) -> list[str]:
+def _active_groups(
+    model: PaperV2ThreeModuleModel | PaperV2RGVEModel,
+    strategy: str,
+    stage: str,
+) -> list[str]:
     groups = model.parameter_groups()
     nonempty = {name for name, parameters in groups.items() if parameters}
     if strategy == "end_to_end_joint":
@@ -212,7 +301,7 @@ def _active_groups(model: PaperV2ThreeModuleModel, strategy: str, stage: str) ->
     if stage == "TG_ONLY":
         selected = {"tg_vpr"}
     elif stage == "TRANSFER_CCGR":
-        selected = {"transport", "ntr", "ccgr_class", "ccgr_shared"}
+        selected = {"transport", "ntr", "ccgr_class", "ccgr_shared", "rgve"}
         if not (selected & nonempty):
             selected = {"tg_vpr"}
     elif stage == "JOINT_FINETUNE":
@@ -222,7 +311,10 @@ def _active_groups(model: PaperV2ThreeModuleModel, strategy: str, stage: str) ->
     return sorted(selected & nonempty)
 
 
-def set_trainable(model: PaperV2ThreeModuleModel, group_names: list[str]) -> list[torch.nn.Parameter]:
+def set_trainable(
+    model: PaperV2ThreeModuleModel | PaperV2RGVEModel,
+    group_names: list[str],
+) -> list[torch.nn.Parameter]:
     model.zero_grad(set_to_none=True)
     for parameter in model.parameters():
         parameter.requires_grad_(False)
@@ -240,7 +332,9 @@ def set_trainable(model: PaperV2ThreeModuleModel, group_names: list[str]) -> lis
     return active
 
 
-def _gradient_norms(model: PaperV2ThreeModuleModel) -> dict[str, float]:
+def _gradient_norms(
+    model: PaperV2ThreeModuleModel | PaperV2RGVEModel,
+) -> dict[str, float]:
     result = {}
     for name, parameters in model.parameter_groups().items():
         values = [parameter.grad.detach().norm() for parameter in parameters if parameter.grad is not None]
@@ -248,7 +342,56 @@ def _gradient_norms(model: PaperV2ThreeModuleModel) -> dict[str, float]:
     return result
 
 
-def _evaluate_model(model, tensors, manifest, device) -> dict[str, float]:
+def _load_patch_batch(memmap, indices: torch.Tensor | np.ndarray, device: torch.device) -> torch.Tensor:
+    if isinstance(indices, torch.Tensor):
+        indices = indices.detach().cpu().numpy()
+    values = np.asarray(memmap[np.asarray(indices, dtype=np.int64)])
+    return torch.from_numpy(values.copy()).to(device=device, dtype=torch.float32)
+
+
+@torch.no_grad()
+def _evaluate_rgve_model(
+    model: PaperV2RGVEModel,
+    tensors: dict,
+    manifest: dict,
+    device: torch.device,
+    batch_size: int,
+) -> dict[str, float]:
+    model.eval()
+    seen = torch.tensor(manifest["seen_classes"], dtype=torch.long)
+    unseen = torch.tensor(manifest["unseen_classes"], dtype=torch.long)
+
+    def predict(split: str) -> tuple[torch.Tensor, torch.Tensor]:
+        features = tensors[f"{split}_features"]
+        patches = tensors[f"{split}_patch_features"]
+        all_predictions = []
+        zsl_predictions = []
+        for start in range(0, len(features), int(batch_size)):
+            end = min(start + int(batch_size), len(features))
+            indices = np.arange(start, end)
+            logits = model.logits(
+                features[start:end].to(device).float(),
+                _load_patch_batch(patches, indices, device),
+            )
+            all_predictions.append(logits.argmax(dim=1).cpu())
+            unseen_logits = logits.index_select(1, unseen.to(device))
+            zsl_predictions.append(unseen[unseen_logits.argmax(dim=1).cpu()])
+        return torch.cat(all_predictions), torch.cat(zsl_predictions)
+
+    seen_all, _ = predict("test_seen")
+    unseen_all, unseen_zsl = predict("test_unseen")
+    seen_labels = tensors["test_seen_labels"].long()
+    unseen_labels = tensors["test_unseen_labels"].long()
+    s = per_class_accuracy(seen_labels, seen_all, seen)
+    u = per_class_accuracy(unseen_labels, unseen_all, unseen)
+    z = per_class_accuracy(unseen_labels, unseen_zsl, unseen)
+    h = 2 * s * u / (s + u) if s + u else 0.0
+    return {"U": 100 * u, "S": 100 * s, "H": 100 * h, "ZS": 100 * z}
+
+
+def _evaluate_model(model, tensors, manifest, device, eval_batch_size: int = 64) -> dict[str, float]:
+    if isinstance(model, PaperV2RGVEModel):
+        return _evaluate_rgve_model(model, tensors, manifest, device, eval_batch_size)
     if isinstance(model, PaperV2ThreeModuleModel):
         model.eval()
         prototypes = model.prototypes()
@@ -327,7 +470,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             selected = {"iteration": None, "epoch": None, "stage": "NO_TRAINING", "metrics": metrics, "diagnostics": {}}
             stage_gradient_norms = {}
         else:
-            model = build_three_module_model(config, tensors, manifest, device)
+            model = build_run_model(config, tensors, manifest, device)
             ntrain = int(train_labels.numel())
             niters = ntrain * int(config["nominal_epochs"]) // int(config["batch_size"])
             if niters != 4 * ntrain:
@@ -369,11 +512,73 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 targets = global_to_seen[train_labels.index_select(0, indices)].to(device)
                 optimizer.zero_grad(set_to_none=True)
                 prototypes = model.prototypes()
-                seen_prototypes = prototypes.index_select(0, seen_classes.to(device))
-                logits = F.normalize(images, dim=-1) @ seen_prototypes.T * model.scale()
-                ce = F.cross_entropy(logits, targets)
+                loss_role = prototypes.new_zeros(())
+                loss_balance = prototypes.new_zeros(())
+                loss_calibration = prototypes.new_zeros(())
+                if isinstance(model, PaperV2RGVEModel):
+                    patches = _load_patch_batch(tensors["train_patch_features"], indices, device)
+                    components = model.score_components(images, patches)
+                    seen_device = seen_classes.to(device)
+                    logits = components["final_scores"].index_select(1, seen_device)
+                    ce = F.cross_entropy(logits, targets)
+                    if config["rgve_mode"] != "off":
+                        role_seen = components["role_scores"].index_select(1, seen_device)
+                        positive = role_seen.gather(
+                            1, targets.view(-1, 1, 1).expand(-1, 1, 3)
+                        ).squeeze(1)
+                        negative = role_seen.clone()
+                        negative.scatter_(
+                            1,
+                            targets.view(-1, 1, 1).expand(-1, 1, 3),
+                            float("-inf"),
+                        )
+                        hardest = negative.max(dim=1).values
+                        loss_role = F.relu(
+                            float(config["rgve_role_margin"]) - positive + hardest
+                        ).mean()
+                        local_all = components["local_scores"]
+                        local_seen = local_all.index_select(1, seen_device)
+                        target_local = local_seen.gather(1, targets.unsqueeze(1)).squeeze(1)
+                        non_target_seen = (local_seen.sum(dim=1) - target_local) / (
+                            seen_device.numel() - 1
+                        )
+                        unseen_device = torch.tensor(
+                            manifest["unseen_classes"], dtype=torch.long, device=device
+                        )
+                        unseen_mean = local_all.index_select(1, unseen_device).mean(dim=1)
+                        loss_balance = (non_target_seen - unseen_mean).abs().mean()
+
+                        global_detached = components["global_scores"].detach()
+                        scale_detached = model.scale().detach()
+                        parent_seen = (global_detached.index_select(1, seen_device) * scale_detached).clone()
+                        parent_seen.scatter_(1, targets.unsqueeze(1), float("-inf"))
+                        parent_unseen = global_detached.index_select(1, unseen_device) * scale_detached
+                        final_calibration = (
+                            global_detached + components["beta"] * local_all
+                        ) * scale_detached
+                        final_seen = final_calibration.index_select(1, seen_device).clone()
+                        final_seen.scatter_(1, targets.unsqueeze(1), float("-inf"))
+                        final_unseen = final_calibration.index_select(1, unseen_device)
+                        parent_gap = torch.logsumexp(parent_seen, dim=1) - torch.logsumexp(
+                            parent_unseen, dim=1
+                        )
+                        final_gap = torch.logsumexp(final_seen, dim=1) - torch.logsumexp(
+                            final_unseen, dim=1
+                        )
+                        loss_calibration = F.relu(final_gap - parent_gap).square().mean()
+                else:
+                    seen_prototypes = prototypes.index_select(0, seen_classes.to(device))
+                    logits = F.normalize(images, dim=-1) @ seen_prototypes.T * model.scale()
+                    ce = F.cross_entropy(logits, targets)
                 topology = model.topology_loss(prototypes)
                 loss = ce + float(config["topology_weight"]) * topology
+                if isinstance(model, PaperV2RGVEModel) and config["rgve_mode"] != "off":
+                    loss = (
+                        loss
+                        + float(config["rgve_role_weight"]) * loss_role
+                        + float(config["rgve_balance_weight"]) * loss_balance
+                        + float(config["rgve_calibration_weight"]) * loss_calibration
+                    )
                 if not torch.isfinite(loss):
                     raise FloatingPointError("训练loss包含NaN/Inf。")
                 loss.backward()
@@ -385,7 +590,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     stage_gradient_norms[stage] = _gradient_norms(model)
                 optimizer.step()
                 if iteration % report_interval == 0:
-                    metrics = _evaluate_model(model, tensors, manifest, device)
+                    metrics = _evaluate_model(
+                        model,
+                        tensors,
+                        manifest,
+                        device,
+                        eval_batch_size=int(config.get("eval_batch_size", 64)),
+                    )
                     diagnostics = model.diagnostics()
                     epoch = iteration // report_interval
                     row = {
@@ -395,6 +606,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "train_loss": float(loss.detach()),
                         "train_ce": float(ce.detach()),
                         "train_topology": float(topology.detach()),
+                        "train_rgve_role": float(loss_role.detach()),
+                        "train_rgve_balance": float(loss_balance.detach()),
+                        "train_rgve_calibration": float(loss_calibration.detach()),
                         "official_metrics_percent": metrics,
                         "diagnostics": diagnostics,
                     }
