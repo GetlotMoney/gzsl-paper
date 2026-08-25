@@ -162,6 +162,7 @@ V2-H-PLUS-3PP
       ├─ auxiliary_branch：IDEA-041 / CNRA类名残差对齐（supported辅助，4seed稳定提高H）
       ├─ rejected_branch：IDEA-042 / CNEBC类名后偏置校准（rejected，仅1个seed有实质增益）
       ├─ rejected_branch：IDEA-043 / HGCS层级公共语义抑制（rejected，两种训练都学习相反正beta）
+      ├─ testing_branch：IDEA-133 / 角色引导局部视觉证据学习（四结构、端到端/分阶段CUB筛选）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：最终CCGR+ARA四训练seed H=79.265577至79.386082，稳定超过78

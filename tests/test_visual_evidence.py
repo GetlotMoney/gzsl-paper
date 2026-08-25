@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 import torch
 import torch.nn.functional as F
 
 from model.paper_v2 import PaperV2ThreeModuleModel
-from model.train_paper_v2 import _active_groups
+from model.train_paper_v2 import _active_groups, load_config
 from model.visual_evidence import PaperV2VisualModel, VISUAL_MODES
 
 
@@ -47,6 +48,26 @@ class VisualEvidenceContractTest(unittest.TestCase):
                 "multiscale_part_tokens",
             },
         )
+
+    def test_ten_prerun_configs_cover_five_modes_and_two_strategies(self):
+        root = Path(__file__).resolve().parents[1] / "config/tries"
+        files = sorted(
+            path
+            for path in root.glob("v2_try_1*.yaml")
+            if 148 <= int(path.name.split("_")[2]) <= 157
+        )
+        self.assertEqual(len(files), 10)
+        configs = [load_config(path)[0] for path in files]
+        self.assertEqual({value["visual_mode"] for value in configs}, VISUAL_MODES)
+        self.assertEqual(
+            {value["training_strategy"] for value in configs},
+            {"end_to_end_joint", "stagewise_50_100_50"},
+        )
+        self.assertTrue(all(value["topology_weight"] == 0.1 for value in configs))
+        confusion = [
+            value for value in configs if value["visual_mode"] == "confusion_local_refiner"
+        ]
+        self.assertEqual({value["visual_hard_weight"] for value in confusion}, {0.1})
 
     def test_off_and_enabled_initialization_are_exact_parent(self):
         expected = self.parent.logits(self.images)
