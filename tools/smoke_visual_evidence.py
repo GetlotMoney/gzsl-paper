@@ -20,6 +20,7 @@ from model.train_paper_v2 import (
     set_trainable,
 )
 from model.visual_evidence import PaperV2VisualModel
+from tools.reproducibility import configure_reproducibility
 from tools.run_contract import require_finite_gradients
 
 
@@ -27,6 +28,11 @@ def run(config_paths: list[Path], device_name: str, batch_size: int) -> list[dic
     if not config_paths or not 1 <= int(batch_size) <= 8:
         raise ValueError("smoke需要至少一个配置且batch_size位于[1,8]。")
     first, _ = load_config(config_paths[0])
+    configure_reproducibility(
+        int(first["random_seed"]),
+        strict_determinism=True,
+        deterministic_warn_only=False,
+    )
     tensors, manifest, manifest_path = load_assets(first)
     device = torch.device(device_name)
     if device.type != "cuda" or not torch.cuda.is_available():
