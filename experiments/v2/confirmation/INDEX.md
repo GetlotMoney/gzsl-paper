@@ -12,3 +12,4 @@
 | V2-CONFIRM-008 | 三折validation冻结后的完整150类最终评估 | completed; H 74.814246 | `CONFIRM-008_threefold_frozen_final/` |
 | V2-CONFIRM-009 | 三数据集可追溯Pure CLIP与Mean8基线 | planned | `CONFIRM-009_multidataset_traceable_baselines/` |
 | V2-CONFIRM-010 | 三数据集text-v2的B0/B1/M3 seed7恢复确认 | completed; M3 +3 on 2/3 datasets | `CONFIRM-010_text_v2_recovery/` |
+| V2-CONFIRM-011 | 同一新patch资产下RGVE端到端/三阶段正式2×2确认 | planned | `CONFIRM-011_rgve_formal/` |

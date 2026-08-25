@@ -1,0 +1,37 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-CONFIRM-011
+slug: rgve_formal
+kind: confirmation
+framework_id: FRAMEWORK-V2
+base_commit: aed0498ff5df5488f909050dfee9c300e7e713f9
+code_semantics_commit: 084d94aae4db17168a8ae4f0c0b8e7cb1ebe0deb
+status: planned
+question: 在同一新patch资产和Chen-style训练量下，校准RGVE是否稳定改善端到端或三阶段M3，并保持U/S平衡
+evaluation_protocol: chen_shiming_code_aligned_multidataset_test_selected_gzsl
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+selection_scope: whole_run_whole_model_only
+nested_official_test_selection: false
+dataset: CUB
+seed: 7
+asset_id: CUB_openai_vitl14_336_patch_v1
+conditions:
+  - E2E_RGVE_OFF
+  - E2E_RGVE_ON
+  - STAGEWISE_RGVE_OFF
+  - STAGEWISE_RGVE_ON
+training_contract:
+  batch_size: 50
+  nominal_epochs: 200
+  total_updates: 28228
+  official_evaluation_interval: 141
+  stagewise_boundaries: 50/100/50
+success_conditions:
+  balanced_gap_max_points: 5.0
+  auxiliary_keep: RGVE-on H must exceed the matched RGVE-off condition
+  core_gate_delta_H: 2.0
+framework_diagram: experiments/v2/confirmation/CONFIRM-011_rgve_formal/framework_diagram.html
+output_root: G:\GZSL_Warehouse\formal\v2\CONFIRM-011_rgve_formal
+
