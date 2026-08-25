@@ -92,6 +92,7 @@ class VisualEvidenceContractTest(unittest.TestCase):
             self.assertTrue(torch.isfinite(components["final_scores"]).all(), mode)
             self.assertTrue(torch.isfinite(components["diversity_loss"]), mode)
             self.assertTrue(torch.isfinite(components["anchor_loss"]), mode)
+            self.assertGreaterEqual(float(components["anchor_loss"].detach()), 0.0)
             self.assertIn(
                 "visual",
                 _active_groups(model, "stagewise_50_100_50", "TRANSFER_CCGR"),

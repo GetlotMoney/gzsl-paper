@@ -56,7 +56,7 @@ class SpatialPatchAdapter(nn.Module):
         residual = self.up(F.gelu(self.spatial(F.gelu(self.down(grid)))))
         residual = residual.flatten(2).transpose(1, 2)
         adapted = F.normalize(original + residual, dim=-1)
-        anchor = (1.0 - (adapted * original).sum(dim=-1)).mean()
+        anchor = (1.0 - (adapted * original).sum(dim=-1)).clamp_min(0.0).mean()
         return adapted, anchor
 
 
