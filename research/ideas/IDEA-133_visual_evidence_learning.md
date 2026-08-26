@@ -16,3 +16,5 @@ experiment_queue: V2-TRY-148至V2-TRY-157为初始双策略架构筛选。
 paper_core_innovation: false
 current_result: 四结构seed7初筛完成；Spatial-RGVE分阶段H=78.457262、相对配对off提高1.561426，当前领先但未达到+2；Part Tokens提高1.278456，Multi-Scale提高1.084734，Confusion Refiner淘汰。
 current_decision: 只对Spatial-RGVE分阶段执行顺序超参数搜索；不调其他结构。
+modulewise_result: 50/50/50/50独立训练中，TG阶段最高H=72.230851，TST-NTR阶段提高到77.211374；CCGR阶段最高仅73.217216；Spatial Visual阶段从CCGR末态约73.039提高到76.675680，但未超过TST-NTR阶段。因此当前模块式全局best不包含CCGR或Visual，不能据此晋级视觉核心模块。
+modulewise_decision: 暂停分数调参，先解决固定传递最后权重导致的TST过训练，并重新证明CCGR与Visual在冻结父链上的独立增益。
