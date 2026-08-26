@@ -121,6 +121,16 @@ class VisualEvidenceContractTest(unittest.TestCase):
         self.assertTrue(all(value["visual_mode"] == "multiscale_part_tokens" for value in configs))
         self.assertTrue(all(value["patch_cache_mode"] == "gpu_fp16" for value in configs))
 
+    def test_modulewise_visual_pair_configs(self):
+        root = Path(__file__).resolve().parents[1] / "config/tries"
+        files = sorted(root.glob("v2_try_16[89]_modulewise-*.yaml"))
+        self.assertEqual(len(files), 2)
+        configs = [load_config(path)[0] for path in files]
+        self.assertTrue(
+            all(value["training_strategy"] == "modulewise_50_50_50_50" for value in configs)
+        )
+        self.assertEqual({value["visual_mode"] for value in configs}, {"off", "spatial_rgve"})
+
     def test_cached_half_patch_batch_is_selected_and_promoted_to_float(self):
         cached = torch.arange(4 * 3 * 2, dtype=torch.float16).reshape(4, 3, 2)
         actual = _load_patch_batch(cached, torch.tensor([3, 1]), torch.device("cpu"))
