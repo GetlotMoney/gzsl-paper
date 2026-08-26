@@ -12,10 +12,14 @@ from model.paper_v2 import PaperV2ThreeModuleModel
 from model.train_paper_v2 import (
     _active_groups,
     _load_patch_batch,
+    best_handoff_stage_for_iteration,
+    full_model_eligible_stages,
     load_config,
     modulewise_stage_for_iteration,
+    restore_stage_best,
     sequential_stage_for_iteration,
     short_modulewise_stage_for_iteration,
+    state_dict_sha256,
 )
 from model.visual_evidence import PaperV2VisualModel, VISUAL_MODES
 
@@ -152,6 +156,39 @@ class VisualEvidenceContractTest(unittest.TestCase):
             ["ccgr_class", "ntr", "tg_vpr", "transport", "visual"],
         )
 
+    def test_best_handoff_boundaries_composite_groups_and_restore_are_exact(self):
+        ntrain = 100
+        epochs = {"tg_vpr": 50, "tst_ntr": 50, "ccgr": 25, "visual": 25, "joint": 50}
+        expected = {
+            0: "TG_ONLY",
+            99: "TG_ONLY",
+            100: "TST_NTR_ONLY",
+            199: "TST_NTR_ONLY",
+            200: "CCGR_ONLY",
+            249: "CCGR_ONLY",
+            250: "VISUAL_ONLY",
+            299: "VISUAL_ONLY",
+            300: "JOINT_FINETUNE",
+            399: "JOINT_FINETUNE",
+        }
+        self.assertEqual(
+            {iteration: best_handoff_stage_for_iteration(ntrain, iteration, epochs)[0] for iteration in expected},
+            expected,
+        )
+        model = self.build("spatial_rgve")
+        self.assertEqual(
+            _active_groups(model, "modulewise_best_handoff", "TST_NTR_ONLY"),
+            ["ntr", "transport"],
+        )
+        self.assertEqual(full_model_eligible_stages(model), ("VISUAL_ONLY", "JOINT_FINETUNE"))
+        state = {name: value.detach().clone() for name, value in model.state_dict().items()}
+        expected_sha = state_dict_sha256(state)
+        with torch.no_grad():
+            next(model.parameters()).add_(1.0)
+        self.assertNotEqual(state_dict_sha256(model.state_dict()), expected_sha)
+        self.assertEqual(restore_stage_best(model, state, expected_sha), expected_sha)
+        self.assertEqual(state_dict_sha256(model.state_dict()), expected_sha)
+
     def test_module_strategy_matrix_configs_are_no_annotation_and_paired(self):
         root = Path(__file__).resolve().parents[1] / "config/tries"
         files = sorted(
@@ -253,6 +290,41 @@ class VisualEvidenceContractTest(unittest.TestCase):
             },
             {0.0, 0.05},
         )
+
+    def test_hard1_four_module_matrix_configs_are_exact(self):
+        root = Path(__file__).resolve().parents[1] / "config/tries"
+        files = sorted(
+            path
+            for path in root.glob("v2_try_*.yaml")
+            if 193 <= int(path.name.split("_")[2]) <= 205
+        )
+        self.assertEqual(len(files), 13)
+        configs = {value["experiment_id"]: value for value in (load_config(path)[0] for path in files)}
+        self.assertTrue(all(value["random_seed"] == 7 for value in configs.values()))
+        self.assertTrue(all(value["nominal_epochs"] == 200 for value in configs.values()))
+        self.assertTrue(all(value["human_annotations_used"] is False for value in configs.values()))
+        staged = [value for value in configs.values() if value["training_strategy"] == "modulewise_best_handoff"]
+        self.assertEqual(len(staged), 5)
+        self.assertTrue(all(value["nested_official_test_selection"] is True for value in staged))
+        self.assertTrue(
+            all(value["selection_scope"] == "stage_best_handoff_full_model_only" for value in staged)
+        )
+        self.assertTrue(
+            all(
+                value["stage_epochs"]
+                == {"tg_vpr": 50, "tst_ntr": 50, "ccgr": 25, "visual": 25, "joint": 50}
+                for value in staged
+            )
+        )
+        self.assertEqual(configs["V2-TRY-194"]["transport_mode"], "tangent_ntr")
+        self.assertEqual(configs["V2-TRY-199"]["transport_mode"], "off")
+        self.assertEqual(configs["V2-TRY-203"]["transport_mode"], "off")
+        self.assertEqual(configs["V2-TRY-198"]["tg_vpr_mode"], "off")
+        self.assertEqual(configs["V2-TRY-202"]["tg_vpr_mode"], "off")
+        self.assertEqual(configs["V2-TRY-200"]["ccgr_mode"], "off")
+        self.assertEqual(configs["V2-TRY-204"]["ccgr_mode"], "off")
+        self.assertEqual(configs["V2-TRY-201"]["visual_mode"], "off")
+        self.assertEqual(configs["V2-TRY-205"]["visual_mode"], "off")
 
     def test_ten_prerun_configs_cover_five_modes_and_two_strategies(self):
         root = Path(__file__).resolve().parents[1] / "config/tries"

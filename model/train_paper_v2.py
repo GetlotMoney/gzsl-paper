@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -117,6 +118,14 @@ SEQUENTIAL_STAGE_NAMES = (
     "VISUAL_ONLY",
     "JOINT_FINETUNE",
 )
+BEST_HANDOFF_STAGE_KEYS = ("tg_vpr", "tst_ntr", "ccgr", "visual", "joint")
+BEST_HANDOFF_STAGE_NAMES = (
+    "TG_ONLY",
+    "TST_NTR_ONLY",
+    "CCGR_ONLY",
+    "VISUAL_ONLY",
+    "JOINT_FINETUNE",
+)
 ASSET_FILES = (
     "train_features.pt",
     "train_labels.pt",
@@ -164,11 +173,8 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("最终论文RUN评估协议身份错误。")
     if config["unseen_images_used_for_gradient"] is not False or config["strict_blind_claim"] is not False:
         raise ValueError("必须披露true-unseen无梯度且不作blind-test声明。")
-    if config["nested_official_test_selection"] is not False:
-        raise ValueError("分阶段RUN禁止嵌套official-test选模。")
-    if config["selection_scope"] != "whole_run_whole_model_only":
-        raise ValueError("只允许整次RUN的整模型全局H选模。")
-    if config["training_strategy"] not in (
+    strategy = config["training_strategy"]
+    if strategy not in (
         "no_training",
         "end_to_end_joint",
         "stagewise_50_100_50",
@@ -176,9 +182,20 @@ def load_config(path: Path) -> tuple[dict, str]:
         "modulewise_short_v5_joint150",
         "modulewise_short_v10_joint150",
         "modulewise_sequential_joint",
+        "modulewise_best_handoff",
     ):
         raise ValueError("未知训练策略。")
-    no_training = config["training_strategy"] == "no_training"
+    if strategy == "modulewise_best_handoff":
+        if config["nested_official_test_selection"] is not True:
+            raise ValueError("best-handoff固定披露nested_official_test_selection=true。")
+        if config["selection_scope"] != "stage_best_handoff_full_model_only":
+            raise ValueError("best-handoff只允许阶段best传递并限制完整模型选模。")
+    else:
+        if config["nested_official_test_selection"] is not False:
+            raise ValueError("非best-handoff RUN禁止嵌套official-test选模。")
+        if config["selection_scope"] != "whole_run_whole_model_only":
+            raise ValueError("只允许整次RUN的整模型全局H选模。")
+    no_training = strategy == "no_training"
     if no_training:
         if config["condition_id"] not in ("B0_PURE_CLIP", "B1_MEAN8", "M0_MEAN8"):
             raise ValueError("no_training只允许明确的B0_PURE_CLIP或B1_MEAN8原型来源。")
@@ -206,10 +223,10 @@ def load_config(path: Path) -> tuple[dict, str]:
         if no_training:
             if stage_epochs:
                 raise ValueError("no_training的stage_epochs必须为空。")
-        elif config["training_strategy"] == "end_to_end_joint":
+        elif strategy == "end_to_end_joint":
             if stage_epochs != {"joint": 200}:
                 raise ValueError("一段式训练固定stage_epochs={joint: 200}。")
-        elif config["training_strategy"] == "modulewise_sequential_joint":
+        elif strategy == "modulewise_sequential_joint":
             if tuple(stage_epochs) != SEQUENTIAL_STAGE_KEYS:
                 raise ValueError("六段式stage_epochs键或顺序错误。")
             values = [stage_epochs[key] for key in SEQUENTIAL_STAGE_KEYS]
@@ -217,8 +234,16 @@ def load_config(path: Path) -> tuple[dict, str]:
                 raise ValueError("六段式各阶段epoch必须为正整数。")
             if sum(values) != 200:
                 raise ValueError("六段式stage_epochs之和必须为200。")
+        elif strategy == "modulewise_best_handoff":
+            if tuple(stage_epochs) != BEST_HANDOFF_STAGE_KEYS:
+                raise ValueError("五段式best-handoff stage_epochs键或顺序错误。")
+            values = [stage_epochs[key] for key in BEST_HANDOFF_STAGE_KEYS]
+            if any(not isinstance(value, int) or isinstance(value, bool) or value <= 0 for value in values):
+                raise ValueError("五段式各阶段epoch必须为正整数。")
+            if sum(values) != 200:
+                raise ValueError("五段式best-handoff stage_epochs之和必须为200。")
         else:
-            raise ValueError("v3配置只允许no_training、一段式或显式六段式。")
+            raise ValueError("v3配置只允许no_training、一段式、显式六段式或best-handoff。")
     if config["tg_vpr_mode"] not in TG_MODES:
         raise ValueError("tg_vpr_mode错误。")
     if config["transport_mode"] not in TRANSPORT_MODES:
@@ -505,6 +530,70 @@ def sequential_stage_for_iteration(
     raise AssertionError("六段式边界计算未覆盖全部iteration。")
 
 
+def best_handoff_stage_for_iteration(
+    ntrain: int,
+    iteration: int,
+    stage_epochs: dict[str, int],
+) -> tuple[str, float]:
+    if tuple(stage_epochs) != BEST_HANDOFF_STAGE_KEYS:
+        raise ValueError("五段式best-handoff stage_epochs键或顺序错误。")
+    values = [int(stage_epochs[key]) for key in BEST_HANDOFF_STAGE_KEYS]
+    if any(value <= 0 for value in values) or sum(values) != 200:
+        raise ValueError("五段式best-handoff各阶段必须为正且总和为200。")
+    total_iterations = 4 * int(ntrain)
+    if not 0 <= int(iteration) < total_iterations:
+        raise ValueError("iteration不属于五段式best-handoff阶段。")
+    cumulative_epochs = 0
+    for stage, epochs in zip(BEST_HANDOFF_STAGE_NAMES, values):
+        cumulative_epochs += epochs
+        boundary = (
+            total_iterations
+            if cumulative_epochs == 200
+            else total_iterations * cumulative_epochs // 200
+        )
+        if int(iteration) < boundary:
+            return stage, epochs / 200
+    raise AssertionError("五段式best-handoff边界未覆盖全部iteration。")
+
+
+def state_dict_sha256(state_dict: dict[str, torch.Tensor]) -> str:
+    digest = hashlib.sha256()
+    for name in sorted(state_dict):
+        tensor = state_dict[name].detach().cpu().contiguous()
+        digest.update(name.encode("utf-8"))
+        digest.update(str(tensor.dtype).encode("ascii"))
+        digest.update(str(tuple(tensor.shape)).encode("ascii"))
+        digest.update(tensor.numpy().tobytes())
+    return digest.hexdigest()
+
+
+def restore_stage_best(
+    model: PaperV2ThreeModuleModel | PaperV2RGVEModel | PaperV2VisualModel,
+    state_dict: dict[str, torch.Tensor],
+    expected_sha256: str,
+) -> str:
+    model.load_state_dict(state_dict, strict=True)
+    actual = state_dict_sha256(model.state_dict())
+    if actual != expected_sha256:
+        raise RuntimeError("阶段best加载后的state SHA不一致。")
+    return actual
+
+
+def full_model_eligible_stages(
+    model: PaperV2ThreeModuleModel | PaperV2RGVEModel | PaperV2VisualModel,
+) -> tuple[str, ...]:
+    groups = model.parameter_groups()
+    if groups.get("visual") or groups.get("rgve"):
+        return ("VISUAL_ONLY", "JOINT_FINETUNE")
+    if groups.get("ccgr_class") or groups.get("ccgr_shared"):
+        return ("CCGR_ONLY", "JOINT_FINETUNE")
+    if groups.get("transport") or groups.get("ntr"):
+        return ("TST_NTR_ONLY", "JOINT_FINETUNE")
+    if groups.get("tg_vpr"):
+        return ("TG_ONLY", "JOINT_FINETUNE")
+    raise ValueError("训练条件没有可用于完整模型选模的模块。")
+
+
 def _active_groups(
     model: PaperV2ThreeModuleModel | PaperV2RGVEModel | PaperV2VisualModel,
     strategy: str,
@@ -729,6 +818,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             history = [{"iteration": None, "nominal_epoch": None, "stage": "NO_TRAINING", "official_metrics_percent": metrics}]
             selected = {"iteration": None, "epoch": None, "stage": "NO_TRAINING", "metrics": metrics, "diagnostics": {}}
             stage_gradient_norms = {}
+            stage_best_records = {}
+            handoff_records = []
+            eligible_final_stages = []
         else:
             model = build_run_model(config, tensors, manifest, device)
             ntrain = int(train_labels.numel())
@@ -754,6 +846,15 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             selected = None
             best_zs = float("-inf")
             stage_gradient_norms = {}
+            best_handoff = config["training_strategy"] == "modulewise_best_handoff"
+            eligible_final_stages = (
+                list(full_model_eligible_stages(model)) if best_handoff else ["END_TO_END"]
+            )
+            stage_best_h = float("-inf")
+            stage_best_state = None
+            stage_best_sha = None
+            stage_best_records = {}
+            handoff_records = []
             frozen_stage_anchor = None
             for iteration in range(niters):
                 if config["training_strategy"] == "end_to_end_joint":
@@ -788,6 +889,19 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "VISUAL_ONLY": float(config["stage2_learning_rate"]),
                         "JOINT_FINETUNE": float(config["stage3_learning_rate"]),
                     }[stage]
+                elif config["training_strategy"] == "modulewise_best_handoff":
+                    stage, _ = best_handoff_stage_for_iteration(
+                        ntrain,
+                        iteration,
+                        config["stage_epochs"],
+                    )
+                    learning_rate = {
+                        "TG_ONLY": float(config["stage1_learning_rate"]),
+                        "TST_NTR_ONLY": float(config["stage2_learning_rate"]),
+                        "CCGR_ONLY": float(config["stage2_learning_rate"]),
+                        "VISUAL_ONLY": float(config["stage2_learning_rate"]),
+                        "JOINT_FINETUNE": float(config["stage3_learning_rate"]),
+                    }[stage]
                 else:
                     visual_epochs = (
                         5
@@ -806,13 +920,33 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     }[stage]
                 stage_started = stage != current_stage
                 if stage_started:
+                    if best_handoff and current_stage is not None:
+                        if stage_best_state is None or stage_best_sha is None:
+                            raise RuntimeError(f"阶段{current_stage}没有可传递的best权重。")
+                        loaded_sha = restore_stage_best(model, stage_best_state, stage_best_sha)
+                        stage_best_records[current_stage]["handoff_to_stage"] = stage
+                        stage_best_records[current_stage]["handoff_loaded_state_sha256"] = loaded_sha
+                        handoff_records.append(
+                            {
+                                "from_stage": current_stage,
+                                "to_stage": stage,
+                                "selected_epoch": stage_best_records[current_stage]["epoch"],
+                                "state_sha256": loaded_sha,
+                            }
+                        )
                     current_stage = stage
+                    stage_best_h = float("-inf")
+                    stage_best_state = None
+                    stage_best_sha = None
                     names = _active_groups(model, config["training_strategy"], stage)
                     frozen_stage_anchor = None
                     stage_is_noop = False
                     if names:
                         active = set_trainable(model, names)
-                    elif config["training_strategy"] == "modulewise_sequential_joint":
+                    elif config["training_strategy"] in (
+                        "modulewise_sequential_joint",
+                        "modulewise_best_handoff",
+                    ):
                         model.zero_grad(set_to_none=True)
                         for parameter in model.parameters():
                             parameter.requires_grad_(False)
@@ -1016,7 +1150,37 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     }
                     history.append(row)
                     best_zs = max(best_zs, metrics["ZS"])
-                    if metrics["H"] > best_h:
+                    if best_handoff and metrics["H"] > stage_best_h:
+                        stage_best_h = metrics["H"]
+                        stage_best_state = copy.deepcopy(model.state_dict())
+                        stage_best_sha = state_dict_sha256(stage_best_state)
+                        stage_checkpoint_path = output_dir / f"stage_best_{stage}.pth"
+                        stage_record = {
+                            "iteration": iteration,
+                            "epoch": epoch,
+                            "stage": stage,
+                            "metrics": metrics,
+                            "diagnostics": diagnostics,
+                            "trainable_groups": list(names),
+                            "state_sha256": stage_best_sha,
+                            "eligible_for_final_selection": stage in eligible_final_stages,
+                        }
+                        atomic_torch_save(
+                            stage_checkpoint_path,
+                            {
+                                "experiment_id": config["experiment_id"],
+                                "condition_id": config["condition_id"],
+                                "run_id": run_id,
+                                "code_commit": code_commit,
+                                "config_sha256": config_sha,
+                                "selected": stage_record,
+                                "model_state_dict": stage_best_state,
+                            },
+                        )
+                        stage_record["checkpoint_sha256"] = sha256_file(stage_checkpoint_path)
+                        stage_best_records[stage] = stage_record
+                    eligible_for_final = not best_handoff or stage in eligible_final_stages
+                    if eligible_for_final and metrics["H"] > best_h:
                         best_h = metrics["H"]
                         best_state = copy.deepcopy(model.state_dict())
                         selected = {
@@ -1042,8 +1206,15 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         )
                     print(
                         f"iter={iteration} epoch={epoch} stage={stage} "
-                        f"U={metrics['U']:.6f} S={metrics['S']:.6f} H={metrics['H']:.6f} best_H={best_h:.6f}"
+                        f"U={metrics['U']:.6f} S={metrics['S']:.6f} H={metrics['H']:.6f} "
+                        f"stage_best_H={stage_best_h:.6f} final_best_H={best_h:.6f}"
                     )
+            if best_handoff:
+                if stage_best_state is None or stage_best_sha is None:
+                    raise RuntimeError(f"最终阶段{current_stage}没有best权重。")
+                loaded_sha = restore_stage_best(model, stage_best_state, stage_best_sha)
+                stage_best_records[current_stage]["handoff_to_stage"] = None
+                stage_best_records[current_stage]["handoff_loaded_state_sha256"] = loaded_sha
             require_finite_model(model)
             atomic_torch_save(
                 output_dir / "checkpoint_last.pth",
@@ -1061,6 +1232,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     "selected": selected,
                     "history": history,
                     "stage_gradient_norms": stage_gradient_norms,
+                    "stage_best_records": stage_best_records,
+                    "handoff_records": handoff_records,
+                    "eligible_final_stages": eligible_final_stages,
                     "reproducibility": reproducibility,
                 },
             )
@@ -1085,7 +1259,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "evaluation_protocol": EVALUATION_PROTOCOL,
             "training_strategy": config["training_strategy"],
             "selection_scope": config["selection_scope"],
-            "nested_official_test_selection": False,
+            "nested_official_test_selection": bool(config["nested_official_test_selection"]),
             "test_used_for_selection": bool(config["test_used_for_selection"]),
             "test_used_for_hyperparameter_selection": bool(config["test_used_for_hyperparameter_selection"]),
             "unseen_images_used_for_gradient": False,
@@ -1102,6 +1276,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "best_metrics_percent": selected["metrics"],
             "selected_diagnostics": selected["diagnostics"],
             "stage_gradient_norms": stage_gradient_norms,
+            "stage_best_records": stage_best_records,
+            "handoff_records": handoff_records,
+            "eligible_final_stages": eligible_final_stages,
             "model_sha256": sha256_file(output_dir / "model_best.pth"),
             "checkpoint_last_sha256": sha256_file(output_dir / "checkpoint_last.pth"),
             "evaluation_history_sha256": sha256_file(output_dir / "evaluation_history.json"),
