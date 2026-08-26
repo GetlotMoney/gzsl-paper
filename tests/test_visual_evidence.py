@@ -156,6 +156,17 @@ class VisualEvidenceContractTest(unittest.TestCase):
         )
         self.assertEqual({value["visual_mode"] for value in configs}, {"off", "spatial_rgve"})
 
+    def test_short_modulewise_joint150_pair_configs(self):
+        root = Path(__file__).resolve().parents[1] / "config/tries"
+        files = sorted(root.glob("v2_try_17[01]_short-modulewise-*.yaml"))
+        self.assertEqual(len(files), 2)
+        configs = [load_config(path)[0] for path in files]
+        self.assertEqual(
+            {value["training_strategy"] for value in configs},
+            {"modulewise_short_v5_joint150", "modulewise_short_v10_joint150"},
+        )
+        self.assertTrue(all(value["nominal_epochs"] == 150 for value in configs))
+
     def test_cached_half_patch_batch_is_selected_and_promoted_to_float(self):
         cached = torch.arange(4 * 3 * 2, dtype=torch.float16).reshape(4, 3, 2)
         actual = _load_patch_batch(cached, torch.tensor([3, 1]), torch.device("cpu"))
