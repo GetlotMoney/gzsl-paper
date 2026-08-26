@@ -1,5 +1,25 @@
 # 实验与多 RUN 规范
 
+新模块必须先完成[`MODULE_WORKFLOW_CHECKLIST.md`](MODULE_WORKFLOW_CHECKLIST.md)；该清单是模块准备、硬门槛消融、止损和结果回填的唯一操作入口。
+
+## 版本、分支与账本继承
+
+```text
+公共工作流规范、已接纳代码和轻量账本 → main
+正式版本代码身份                         → framework/vX + Tag vX
+版本探索账本                             → experiments/vX/
+具体候选代码                             → exp/vX/<kind>/<module>
+```
+
+- Git分支是整个仓库的快照，不是只显示当前版本目录的过滤器。
+- V2分支保留`experiments/v1/`，V3分支保留`experiments/v1/`和`experiments/v2/`；这些旧目录在后续分支中只读。
+- 新版本不继承旧版本的TRY编号、状态或成绩，只继承Git历史可见性。
+- 当前版本的实验只写当前`experiments/vX/EXPERIMENT_QUEUE.csv`；旧结果作为证据时引用原路径、原RUN、原commit、原配置和原协议。
+- 不删除旧版本账本来制造“分支纯净”；代码版本由commit/branch/Tag隔离，账本版本由`experiments/vX/`路径隔离。
+- 候选失败只更新当前版本账本和Idea状态，不改写旧版本结论。
+- 候选失败后冻结该候选分支，不从它继续开发下一模块。下一候选必须先由owner确认准确父commit，再从该commit创建新的`exp/vX/<kind>/<module>`分支；旧失败分支只供复现和追溯。
+- 候选被owner接纳后，先进入`main`的已接纳状态，再固定新的`framework/vY`与Tag `vY`；正式引用一经创建不移动。
+
 ## 核心对象
 
 ```text
