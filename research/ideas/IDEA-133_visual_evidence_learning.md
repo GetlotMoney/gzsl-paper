@@ -20,3 +20,5 @@ modulewise_result: 50/50/50/50独立训练中，TG阶段最高H=72.230851，TST-
 modulewise_decision: 暂停分数调参，先解决固定传递最后权重导致的TST过训练，并重新证明CCGR与Visual在冻结父链上的独立增益。
 short_modulewise_result: owner指定的两个150轮RUN均完整结束且各保存151次official评估。共同的TST-NTR阶段最高H=77.211374；CCGR阶段最高H=77.052485，未超过TST-NTR。Visual5阶段最高H=77.389847，随后联合微调最高H=77.461866；Visual10阶段最高H=77.689593，随后联合微调最高H=77.843587。后者证明Visual与联合微调均有非零贡献，但相对TST-NTR阶段仅提高0.632213，未达到+2目标。
 short_modulewise_decision: V2-TRY-172标记drop，V2-TRY-173标记keep但暂停；两个RUN均为Chen-style test-selected观察，true-unseen图像不进入梯度，且没有阶段内独立选择或拼接checkpoint。
+module_strategy_matrix_result: V2-TRY-174至184在同一提交、CUB patch资产和seed7上完成无人工标注的一段式与均衡六段式累计模块矩阵。J条件H依次为Mean8 68.750566、TG 76.657659、TST 76.935667、NTR 77.012635、CCGR 76.590293、Visual 77.148551，对应增量为+7.907093/+0.278008/+0.076968/-0.422342/+0.558258。S条件TG为73.144710，TST提高到77.233743；NTR、CCGR、Visual三个独立RUN的全局best均仍为同一epoch55 TST_ONLY checkpoint，正式独立增量均为0。
+module_strategy_matrix_decision: 当前只有TST在两种策略均为正；NTR仅在J下弱增益，CCGR在J回退且在S为0，Visual只在J下提高0.558258且未达到+2。均衡六段式完整M5的best尚未训练NTR/CCGR/Visual，不具备完整链主策略资格；按预注册计划进入有限弱模块调参与M5多seed策略确认，不promote正式实验目录。
