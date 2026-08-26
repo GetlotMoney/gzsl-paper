@@ -153,7 +153,12 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("分阶段RUN禁止嵌套official-test选模。")
     if config["selection_scope"] != "whole_run_whole_model_only":
         raise ValueError("只允许整次RUN的整模型全局H选模。")
-    if config["training_strategy"] not in ("no_training", "end_to_end_joint", "stagewise_50_100_50"):
+    if config["training_strategy"] not in (
+        "no_training",
+        "end_to_end_joint",
+        "stagewise_50_100_50",
+        "modulewise_50_50_50_50",
+    ):
         raise ValueError("未知训练策略。")
     no_training = config["training_strategy"] == "no_training"
     if no_training:
@@ -362,6 +367,18 @@ def stage_for_iteration(ntrain: int, iteration: int) -> tuple[str, float]:
     raise ValueError("iteration不属于50/100/50阶段。")
 
 
+def modulewise_stage_for_iteration(ntrain: int, iteration: int) -> tuple[str, float]:
+    if 0 <= iteration < ntrain:
+        return "TG_ONLY", 0.25
+    if ntrain <= iteration < 2 * ntrain:
+        return "TST_NTR_ONLY", 0.25
+    if 2 * ntrain <= iteration < 3 * ntrain:
+        return "CCGR_ONLY", 0.25
+    if 3 * ntrain <= iteration < 4 * ntrain:
+        return "VISUAL_ONLY", 0.25
+    raise ValueError("iteration不属于50/50/50/50模块式阶段。")
+
+
 def _active_groups(
     model: PaperV2ThreeModuleModel | PaperV2RGVEModel | PaperV2VisualModel,
     strategy: str,
@@ -379,6 +396,12 @@ def _active_groups(
             selected = {"tg_vpr"}
     elif stage == "JOINT_FINETUNE":
         selected = nonempty
+    elif stage == "TST_NTR_ONLY":
+        selected = {"transport", "ntr"}
+    elif stage == "CCGR_ONLY":
+        selected = {"ccgr_class", "ccgr_shared"}
+    elif stage == "VISUAL_ONLY":
+        selected = {"visual"}
     else:
         raise ValueError(f"未知阶段：{stage}")
     return sorted(selected & nonempty)
@@ -593,21 +616,47 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             selected = None
             best_zs = float("-inf")
             stage_gradient_norms = {}
+            frozen_stage_anchor = None
             for iteration in range(niters):
                 if config["training_strategy"] == "end_to_end_joint":
                     stage = "END_TO_END"
                     learning_rate = float(config["end_to_end_learning_rate"])
-                else:
+                elif config["training_strategy"] == "stagewise_50_100_50":
                     stage, _ = stage_for_iteration(ntrain, iteration)
                     learning_rate = {
                         "TG_ONLY": float(config["stage1_learning_rate"]),
                         "TRANSFER_CCGR": float(config["stage2_learning_rate"]),
                         "JOINT_FINETUNE": float(config["stage3_learning_rate"]),
                     }[stage]
+                else:
+                    stage, _ = modulewise_stage_for_iteration(ntrain, iteration)
+                    learning_rate = {
+                        "TG_ONLY": float(config["stage1_learning_rate"]),
+                        "TST_NTR_ONLY": float(config["stage2_learning_rate"]),
+                        "CCGR_ONLY": float(config["stage2_learning_rate"]),
+                        "VISUAL_ONLY": float(config["stage2_learning_rate"]),
+                    }[stage]
                 if stage != current_stage:
                     current_stage = stage
                     names = _active_groups(model, config["training_strategy"], stage)
-                    active = set_trainable(model, names)
+                    frozen_stage_anchor = None
+                    if names:
+                        active = set_trainable(model, names)
+                    elif (
+                        isinstance(model, PaperV2VisualModel)
+                        and config["training_strategy"] == "modulewise_50_50_50_50"
+                        and stage == "VISUAL_ONLY"
+                        and model.visual_mode == "off"
+                    ):
+                        model.zero_grad(set_to_none=True)
+                        for parameter in model.parameters():
+                            parameter.requires_grad_(False)
+                        frozen_stage_anchor = torch.nn.Parameter(
+                            torch.zeros((), device=device)
+                        )
+                        active = [frozen_stage_anchor]
+                    else:
+                        raise ValueError("当前模块式阶段没有合法可训练参数。")
                     if isinstance(model, PaperV2VisualModel) and "visual" in names:
                         visual_ids = {id(parameter) for parameter in model.parameter_groups()["visual"]}
                         base_active = [parameter for parameter in active if id(parameter) not in visual_ids]
@@ -747,6 +796,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         + float(config["visual_anchor_weight"]) * loss_anchor
                         + float(config["visual_hard_weight"]) * loss_hard
                     )
+                if frozen_stage_anchor is not None:
+                    loss = loss + 0.0 * frozen_stage_anchor
                 if not torch.isfinite(loss):
                     raise FloatingPointError("训练loss包含NaN/Inf。")
                 loss.backward()
@@ -754,6 +805,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 if iteration == 0 or (
                     config["training_strategy"] == "stagewise_50_100_50"
                     and iteration in (ntrain, 3 * ntrain)
+                ) or (
+                    config["training_strategy"] == "modulewise_50_50_50_50"
+                    and iteration in (ntrain, 2 * ntrain, 3 * ntrain)
                 ):
                     stage_gradient_norms[stage] = _gradient_norms(model)
                 optimizer.step()

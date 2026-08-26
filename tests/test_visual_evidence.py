@@ -7,7 +7,12 @@ import torch
 import torch.nn.functional as F
 
 from model.paper_v2 import PaperV2ThreeModuleModel
-from model.train_paper_v2 import _active_groups, _load_patch_batch, load_config
+from model.train_paper_v2 import (
+    _active_groups,
+    _load_patch_batch,
+    load_config,
+    modulewise_stage_for_iteration,
+)
 from model.visual_evidence import PaperV2VisualModel, VISUAL_MODES
 
 
@@ -47,6 +52,34 @@ class VisualEvidenceContractTest(unittest.TestCase):
                 "confusion_local_refiner",
                 "multiscale_part_tokens",
             },
+        )
+
+    def test_modulewise_boundaries_and_groups_are_isolated(self):
+        model = self.build("spatial_rgve")
+        ntrain = 100
+        self.assertEqual(modulewise_stage_for_iteration(ntrain, 0)[0], "TG_ONLY")
+        self.assertEqual(modulewise_stage_for_iteration(ntrain, 100)[0], "TST_NTR_ONLY")
+        self.assertEqual(modulewise_stage_for_iteration(ntrain, 200)[0], "CCGR_ONLY")
+        self.assertEqual(modulewise_stage_for_iteration(ntrain, 300)[0], "VISUAL_ONLY")
+        self.assertEqual(
+            _active_groups(model, "modulewise_50_50_50_50", "TG_ONLY"),
+            ["tg_vpr"],
+        )
+        self.assertEqual(
+            _active_groups(model, "modulewise_50_50_50_50", "TST_NTR_ONLY"),
+            ["ntr", "transport"],
+        )
+        self.assertEqual(
+            _active_groups(model, "modulewise_50_50_50_50", "CCGR_ONLY"),
+            ["ccgr_class"],
+        )
+        self.assertEqual(
+            _active_groups(model, "modulewise_50_50_50_50", "VISUAL_ONLY"),
+            ["visual"],
+        )
+        off = self.build("off")
+        self.assertEqual(
+            _active_groups(off, "modulewise_50_50_50_50", "VISUAL_ONLY"), []
         )
 
     def test_ten_prerun_configs_cover_five_modes_and_two_strategies(self):
