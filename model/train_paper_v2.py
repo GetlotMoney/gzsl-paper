@@ -158,8 +158,8 @@ def load_config(path: Path) -> tuple[dict, str]:
         "end_to_end_joint",
         "stagewise_50_100_50",
         "modulewise_50_50_50_50",
-        "modulewise_short_v5_joint",
-        "modulewise_short_v10_joint",
+        "modulewise_short_v5_joint150",
+        "modulewise_short_v10_joint150",
     ):
         raise ValueError("未知训练策略。")
     no_training = config["training_strategy"] == "no_training"
@@ -170,8 +170,15 @@ def load_config(path: Path) -> tuple[dict, str]:
             raise ValueError("no_training条件没有checkpoint选择。")
     elif config["test_used_for_selection"] is not True:
         raise ValueError("训练RUN固定使用official test H选checkpoint。")
-    if int(config["batch_size"]) != 50 or int(config["nominal_epochs"]) != 200:
-        raise ValueError("Chen-style固定batch=50、200名义epoch。")
+    if int(config["batch_size"]) != 50:
+        raise ValueError("Chen-style固定batch=50。")
+    short_joint = config["training_strategy"] in (
+        "modulewise_short_v5_joint150",
+        "modulewise_short_v10_joint150",
+    )
+    expected_epochs = 150 if short_joint else 200
+    if int(config["nominal_epochs"]) != expected_epochs:
+        raise ValueError(f"当前训练策略固定{expected_epochs}名义epoch。")
     if config["optimizer"] != "Adam" or float(config["weight_decay"]) != 1e-4:
         raise ValueError("最终论文RUN固定Adam和weight_decay=1e-4。")
     if config["tg_vpr_mode"] not in TG_MODES:
@@ -388,7 +395,7 @@ def short_modulewise_stage_for_iteration(
 ) -> tuple[str, float]:
     if int(visual_nominal_epochs) not in (5, 10):
         raise ValueError("短模块式Visual阶段只允许5或10名义epoch。")
-    report_interval = (4 * int(ntrain)) // 200
+    report_interval = (3 * int(ntrain)) // 150
     short = int(visual_nominal_epochs) * report_interval
     tg_end = int(ntrain)
     tst_end = tg_end + 5 * report_interval
@@ -402,8 +409,8 @@ def short_modulewise_stage_for_iteration(
         return "CCGR_ONLY", 5 / 200
     if ccgr_end <= iteration < visual_end:
         return "VISUAL_ONLY", int(visual_nominal_epochs) / 200
-    if visual_end <= iteration < 4 * int(ntrain):
-        return "JOINT_FINETUNE", (4 * int(ntrain) - visual_end) / (4 * int(ntrain))
+    if visual_end <= iteration < 3 * int(ntrain):
+        return "JOINT_FINETUNE", (3 * int(ntrain) - visual_end) / (3 * int(ntrain))
     raise ValueError("iteration不属于短模块式+Joint阶段。")
 
 
@@ -628,8 +635,13 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             model = build_run_model(config, tensors, manifest, device)
             ntrain = int(train_labels.numel())
             niters = ntrain * int(config["nominal_epochs"]) // int(config["batch_size"])
-            if niters != 4 * ntrain:
-                raise ValueError("200名义epoch/batch50应严格得到4*ntrain次更新。")
+            short_joint = config["training_strategy"] in (
+                "modulewise_short_v5_joint150",
+                "modulewise_short_v10_joint150",
+            )
+            expected_iterations = (3 if short_joint else 4) * ntrain
+            if niters != expected_iterations:
+                raise ValueError("名义epoch与batch50没有得到预注册的总更新数。")
             report_interval = niters // 200
             if report_interval <= 0:
                 raise ValueError("report_interval必须为正数。")
@@ -667,7 +679,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                 else:
                     visual_epochs = (
                         5
-                        if config["training_strategy"] == "modulewise_short_v5_joint"
+                        if config["training_strategy"] == "modulewise_short_v5_joint150"
                         else 10
                     )
                     stage, _ = short_modulewise_stage_for_iteration(
