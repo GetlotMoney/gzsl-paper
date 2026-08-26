@@ -158,8 +158,8 @@ class VisualEvidenceContractTest(unittest.TestCase):
 
     def test_short_modulewise_joint150_pair_configs(self):
         root = Path(__file__).resolve().parents[1] / "config/tries"
-        files = sorted(root.glob("v2_try_17[01]_short-modulewise-*.yaml"))
-        self.assertEqual(len(files), 2)
+        files = sorted(root.glob("v2_try_17[0-3]_short-modulewise-*.yaml"))
+        self.assertEqual(len(files), 4)
         configs = [load_config(path)[0] for path in files]
         self.assertEqual(
             {value["training_strategy"] for value in configs},
