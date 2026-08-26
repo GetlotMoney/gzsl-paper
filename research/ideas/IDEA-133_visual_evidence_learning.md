@@ -14,4 +14,5 @@ success_condition: CUB seed7最佳策略相对配对视觉off的Delta H至少+2.
 failure_condition: 四候选、顺序调参和最多三次方法级补救后仍无策略达到+2 H，或2/3正式seed出现8点以上U/S退化。
 experiment_queue: V2-TRY-148至V2-TRY-157为初始双策略架构筛选。
 paper_core_innovation: false
-
+current_result: 四结构seed7初筛完成；Spatial-RGVE分阶段H=78.457262、相对配对off提高1.561426，当前领先但未达到+2；Part Tokens提高1.278456，Multi-Scale提高1.084734，Confusion Refiner淘汰。
+current_decision: 只对Spatial-RGVE分阶段执行顺序超参数搜索；不调其他结构。
