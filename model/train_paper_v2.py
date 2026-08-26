@@ -104,6 +104,19 @@ VISUAL_CONFIG_KEYS = CONFIG_KEYS | {
     "visual_scales",
 }
 VISUAL_V2_CONFIG_KEYS = VISUAL_CONFIG_KEYS | {"patch_cache_mode"}
+VISUAL_V3_CONFIG_KEYS = VISUAL_V2_CONFIG_KEYS | {
+    "human_annotations_used",
+    "stage_epochs",
+}
+SEQUENTIAL_STAGE_KEYS = ("tg_vpr", "tst", "ntr", "ccgr", "visual", "joint")
+SEQUENTIAL_STAGE_NAMES = (
+    "TG_ONLY",
+    "TST_ONLY",
+    "NTR_ONLY",
+    "CCGR_ONLY",
+    "VISUAL_ONLY",
+    "JOINT_FINETUNE",
+)
 ASSET_FILES = (
     "train_features.pt",
     "train_labels.pt",
@@ -131,6 +144,7 @@ def load_config(path: Path) -> tuple[dict, str]:
         "gzsl-paper.paper-v2-rgve-run.v1": RGVE_CONFIG_KEYS,
         "gzsl-paper.paper-v2-visual-run.v1": VISUAL_CONFIG_KEYS,
         "gzsl-paper.paper-v2-visual-run.v2": VISUAL_V2_CONFIG_KEYS,
+        "gzsl-paper.paper-v2-visual-run.v3": VISUAL_V3_CONFIG_KEYS,
     }.get(schema, CONFIG_KEYS)
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
@@ -141,6 +155,7 @@ def load_config(path: Path) -> tuple[dict, str]:
         "gzsl-paper.paper-v2-rgve-run.v1",
         "gzsl-paper.paper-v2-visual-run.v1",
         "gzsl-paper.paper-v2-visual-run.v2",
+        "gzsl-paper.paper-v2-visual-run.v3",
     ):
         raise ValueError("最终论文RUN schema错误。")
     if config["framework_id"] != "FRAMEWORK-V2" or config["dataset"] not in ("CUB", "AWA2", "SUN"):
@@ -160,11 +175,12 @@ def load_config(path: Path) -> tuple[dict, str]:
         "modulewise_50_50_50_50",
         "modulewise_short_v5_joint150",
         "modulewise_short_v10_joint150",
+        "modulewise_sequential_joint",
     ):
         raise ValueError("未知训练策略。")
     no_training = config["training_strategy"] == "no_training"
     if no_training:
-        if config["condition_id"] not in ("B0_PURE_CLIP", "B1_MEAN8"):
+        if config["condition_id"] not in ("B0_PURE_CLIP", "B1_MEAN8", "M0_MEAN8"):
             raise ValueError("no_training只允许明确的B0_PURE_CLIP或B1_MEAN8原型来源。")
         if config["test_used_for_selection"] is not False:
             raise ValueError("no_training条件没有checkpoint选择。")
@@ -181,6 +197,28 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError(f"当前训练策略固定{expected_epochs}名义epoch。")
     if config["optimizer"] != "Adam" or float(config["weight_decay"]) != 1e-4:
         raise ValueError("最终论文RUN固定Adam和weight_decay=1e-4。")
+    if schema == "gzsl-paper.paper-v2-visual-run.v3":
+        if config["human_annotations_used"] is not False:
+            raise ValueError("无人工标注矩阵禁止人工属性、部位、框或专家残差。")
+        stage_epochs = config["stage_epochs"]
+        if not isinstance(stage_epochs, dict):
+            raise ValueError("stage_epochs必须为映射。")
+        if no_training:
+            if stage_epochs:
+                raise ValueError("no_training的stage_epochs必须为空。")
+        elif config["training_strategy"] == "end_to_end_joint":
+            if stage_epochs != {"joint": 200}:
+                raise ValueError("一段式训练固定stage_epochs={joint: 200}。")
+        elif config["training_strategy"] == "modulewise_sequential_joint":
+            if tuple(stage_epochs) != SEQUENTIAL_STAGE_KEYS:
+                raise ValueError("六段式stage_epochs键或顺序错误。")
+            values = [stage_epochs[key] for key in SEQUENTIAL_STAGE_KEYS]
+            if any(not isinstance(value, int) or isinstance(value, bool) or value <= 0 for value in values):
+                raise ValueError("六段式各阶段epoch必须为正整数。")
+            if sum(values) != 200:
+                raise ValueError("六段式stage_epochs之和必须为200。")
+        else:
+            raise ValueError("v3配置只允许no_training、一段式或显式六段式。")
     if config["tg_vpr_mode"] not in TG_MODES:
         raise ValueError("tg_vpr_mode错误。")
     if config["transport_mode"] not in TRANSPORT_MODES:
@@ -200,8 +238,9 @@ def load_config(path: Path) -> tuple[dict, str]:
     if schema in (
         "gzsl-paper.paper-v2-visual-run.v1",
         "gzsl-paper.paper-v2-visual-run.v2",
+        "gzsl-paper.paper-v2-visual-run.v3",
     ):
-        if no_training or config["visual_mode"] not in VISUAL_MODES:
+        if (no_training and schema != "gzsl-paper.paper-v2-visual-run.v3") or config["visual_mode"] not in VISUAL_MODES:
             raise ValueError("视觉筛选只接受已注册模式和正式训练策略。")
         if int(config["eval_batch_size"]) <= 0 or int(config["visual_hidden_dim"]) <= 0:
             raise ValueError("视觉eval batch和hidden_dim必须为正数。")
@@ -220,7 +259,10 @@ def load_config(path: Path) -> tuple[dict, str]:
             raise ValueError("视觉初筛固定topk=5及scales=[24,12,6]。")
         if float(config["topology_weight"]) != 0.1:
             raise ValueError("视觉初筛固定topology_weight=0.1。")
-        if schema == "gzsl-paper.paper-v2-visual-run.v2":
+        if schema in (
+            "gzsl-paper.paper-v2-visual-run.v2",
+            "gzsl-paper.paper-v2-visual-run.v3",
+        ):
             if config["patch_cache_mode"] not in ("none", "gpu_fp16"):
                 raise ValueError("patch_cache_mode只允许none或gpu_fp16。")
             if config["visual_mode"] == "off" and config["patch_cache_mode"] != "none":
@@ -244,11 +286,21 @@ def load_assets(config: dict) -> tuple[dict, dict, Path]:
         "gzsl-paper.paper-v2-rgve-run.v1",
         "gzsl-paper.paper-v2-visual-run.v1",
         "gzsl-paper.paper-v2-visual-run.v2",
+        "gzsl-paper.paper-v2-visual-run.v3",
     ):
         allowed_schemas = {"gzsl-paper.rgve-local-patch-assets.v1"}
     if manifest_schema not in allowed_schemas or manifest.get("dataset") != config["dataset"]:
         raise ValueError("资产manifest身份错误。")
     expected_outputs = manifest.get("outputs_sha256", {})
+    if config.get("human_annotations_used") is False:
+        forbidden_fragments = ("attribute", "part_label", "part_annotation", "bbox", "bounding_box", "expert")
+        forbidden_outputs = sorted(
+            filename
+            for filename in expected_outputs
+            if any(fragment in filename.lower() for fragment in forbidden_fragments)
+        )
+        if forbidden_outputs:
+            raise ValueError(f"无人工标注资产包含禁用输出：{forbidden_outputs}")
     required_files = ASSET_FILES + (PATCH_ASSET_FILES if manifest_schema == "gzsl-paper.rgve-local-patch-assets.v1" else ())
     if not set(required_files).issubset(expected_outputs):
         raise ValueError("资产manifest缺少训练或评估缓存。")
@@ -363,6 +415,7 @@ def build_run_model(
     if config["schema_version"] in (
         "gzsl-paper.paper-v2-visual-run.v1",
         "gzsl-paper.paper-v2-visual-run.v2",
+        "gzsl-paper.paper-v2-visual-run.v3",
     ):
         return PaperV2VisualModel(
             parent,
@@ -423,6 +476,35 @@ def short_modulewise_stage_for_iteration(
     raise ValueError("iteration不属于短模块式+Joint阶段。")
 
 
+def sequential_stage_for_iteration(
+    ntrain: int,
+    iteration: int,
+    stage_epochs: dict[str, int],
+) -> tuple[str, float]:
+    if tuple(stage_epochs) != SEQUENTIAL_STAGE_KEYS:
+        raise ValueError("六段式stage_epochs键或顺序错误。")
+    values = [int(stage_epochs[key]) for key in SEQUENTIAL_STAGE_KEYS]
+    if any(value <= 0 for value in values) or sum(values) != 200:
+        raise ValueError("六段式各阶段必须为正且总和为200。")
+    total_iterations = 4 * int(ntrain)
+    if not 0 <= int(iteration) < total_iterations:
+        raise ValueError("iteration不属于显式六段式阶段。")
+    cumulative_epochs = 0
+    for stage, epochs in zip(
+        SEQUENTIAL_STAGE_NAMES,
+        values,
+    ):
+        cumulative_epochs += epochs
+        boundary = (
+            total_iterations
+            if cumulative_epochs == 200
+            else total_iterations * cumulative_epochs // 200
+        )
+        if int(iteration) < boundary:
+            return stage, epochs / 200
+    raise AssertionError("六段式边界计算未覆盖全部iteration。")
+
+
 def _active_groups(
     model: PaperV2ThreeModuleModel | PaperV2RGVEModel | PaperV2VisualModel,
     strategy: str,
@@ -442,6 +524,10 @@ def _active_groups(
         selected = nonempty
     elif stage == "TST_NTR_ONLY":
         selected = {"transport", "ntr"}
+    elif stage == "TST_ONLY":
+        selected = {"transport"}
+    elif stage == "NTR_ONLY":
+        selected = {"ntr"}
     elif stage == "CCGR_ONLY":
         selected = {"ccgr_class", "ccgr_shared"}
     elif stage == "VISUAL_ONLY":
@@ -601,7 +687,10 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
         device = torch.device(config["device"])
         if device.type != "cuda" or not torch.cuda.is_available():
             raise RuntimeError("正式论文RUN要求CUDA。")
-        if config["schema_version"] == "gzsl-paper.paper-v2-visual-run.v2":
+        if config["schema_version"] in (
+            "gzsl-paper.paper-v2-visual-run.v2",
+            "gzsl-paper.paper-v2-visual-run.v3",
+        ):
             _cache_visual_patches(tensors, config, device)
         seen_classes = torch.tensor(manifest["seen_classes"], dtype=torch.long)
         train_labels = tensors["train_labels"].long()
@@ -612,7 +701,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             if config["condition_id"] == "B0_PURE_CLIP":
                 prototypes = tensors["class_name_embeds"].to(device)
                 scale = torch.tensor(1.0 / float(config["temperature"]), device=device)
-            elif config["condition_id"] == "B1_MEAN8":
+            elif config["condition_id"] in ("B1_MEAN8", "M0_MEAN8"):
                 prototypes = F.normalize(tensors["role_sentence_embeds"].mean(dim=1), dim=-1).to(device)
                 scale = torch.tensor(1.0 / float(config["temperature"]), device=device)
             else:
@@ -685,6 +774,20 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "CCGR_ONLY": float(config["stage2_learning_rate"]),
                         "VISUAL_ONLY": float(config["stage2_learning_rate"]),
                     }[stage]
+                elif config["training_strategy"] == "modulewise_sequential_joint":
+                    stage, _ = sequential_stage_for_iteration(
+                        ntrain,
+                        iteration,
+                        config["stage_epochs"],
+                    )
+                    learning_rate = {
+                        "TG_ONLY": float(config["stage1_learning_rate"]),
+                        "TST_ONLY": float(config["stage2_learning_rate"]),
+                        "NTR_ONLY": float(config["stage2_learning_rate"]),
+                        "CCGR_ONLY": float(config["stage2_learning_rate"]),
+                        "VISUAL_ONLY": float(config["stage2_learning_rate"]),
+                        "JOINT_FINETUNE": float(config["stage3_learning_rate"]),
+                    }[stage]
                 else:
                     visual_epochs = (
                         5
@@ -706,8 +809,18 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     current_stage = stage
                     names = _active_groups(model, config["training_strategy"], stage)
                     frozen_stage_anchor = None
+                    stage_is_noop = False
                     if names:
                         active = set_trainable(model, names)
+                    elif config["training_strategy"] == "modulewise_sequential_joint":
+                        model.zero_grad(set_to_none=True)
+                        for parameter in model.parameters():
+                            parameter.requires_grad_(False)
+                        frozen_stage_anchor = torch.nn.Parameter(
+                            torch.zeros((), device=device)
+                        )
+                        active = [frozen_stage_anchor]
+                        stage_is_noop = True
                     elif (
                         isinstance(model, PaperV2VisualModel)
                         and config["training_strategy"] == "modulewise_50_50_50_50"
@@ -748,7 +861,10 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                             lr=learning_rate,
                             weight_decay=float(config["weight_decay"]),
                         )
-                    print(f"stage={stage} start={iteration} lr={learning_rate} groups={names}")
+                    print(
+                        f"stage={stage} start={iteration} lr={learning_rate} "
+                        f"groups={names} noop={str(stage_is_noop).lower()}"
+                    )
                 model.train()
                 indices = random_batch_indices(ntrain, int(config["batch_size"]), generator)
                 images = tensors["train_features"].index_select(0, indices).to(device).float()
@@ -990,6 +1106,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             "checkpoint_last_sha256": sha256_file(output_dir / "checkpoint_last.pth"),
             "evaluation_history_sha256": sha256_file(output_dir / "evaluation_history.json"),
         }
+        if config["schema_version"] == "gzsl-paper.paper-v2-visual-run.v3":
+            metrics_payload["human_annotations_used"] = False
+            metrics_payload["stage_epochs"] = config["stage_epochs"]
         if "best_zs_observation_percent" in selected:
             metrics_payload["best_zs_observation_percent"] = selected["best_zs_observation_percent"]
         atomic_write_json(output_dir / "metrics.json", metrics_payload)

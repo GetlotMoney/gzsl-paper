@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
 from pathlib import Path
 
 import torch
 import torch.nn.functional as F
+import yaml
 
 from model.paper_v2 import PaperV2ThreeModuleModel
 from model.train_paper_v2 import (
@@ -12,6 +14,7 @@ from model.train_paper_v2 import (
     _load_patch_batch,
     load_config,
     modulewise_stage_for_iteration,
+    sequential_stage_for_iteration,
     short_modulewise_stage_for_iteration,
 )
 from model.visual_evidence import PaperV2VisualModel, VISUAL_MODES
@@ -106,6 +109,118 @@ class VisualEvidenceContractTest(unittest.TestCase):
         self.assertEqual(
             short_modulewise_stage_for_iteration(ntrain, 140, 10)[0], "JOINT_FINETUNE"
         )
+
+    def test_balanced_sequential_boundaries_and_groups_are_exact(self):
+        ntrain = 100
+        epochs = {
+            "tg_vpr": 50,
+            "tst": 25,
+            "ntr": 25,
+            "ccgr": 25,
+            "visual": 25,
+            "joint": 50,
+        }
+        expected = {
+            0: "TG_ONLY",
+            99: "TG_ONLY",
+            100: "TST_ONLY",
+            149: "TST_ONLY",
+            150: "NTR_ONLY",
+            199: "NTR_ONLY",
+            200: "CCGR_ONLY",
+            249: "CCGR_ONLY",
+            250: "VISUAL_ONLY",
+            299: "VISUAL_ONLY",
+            300: "JOINT_FINETUNE",
+            399: "JOINT_FINETUNE",
+        }
+        self.assertEqual(
+            {iteration: sequential_stage_for_iteration(ntrain, iteration, epochs)[0] for iteration in expected},
+            expected,
+        )
+        model = self.build("spatial_rgve")
+        self.assertEqual(
+            _active_groups(model, "modulewise_sequential_joint", "TST_ONLY"),
+            ["transport"],
+        )
+        self.assertEqual(
+            _active_groups(model, "modulewise_sequential_joint", "NTR_ONLY"),
+            ["ntr"],
+        )
+        self.assertEqual(
+            _active_groups(model, "modulewise_sequential_joint", "JOINT_FINETUNE"),
+            ["ccgr_class", "ntr", "tg_vpr", "transport", "visual"],
+        )
+
+    def test_module_strategy_matrix_configs_are_no_annotation_and_paired(self):
+        root = Path(__file__).resolve().parents[1] / "config/tries"
+        files = sorted(
+            path
+            for path in root.glob("v2_try_1*.yaml")
+            if 174 <= int(path.name.split("_")[2]) <= 184
+        )
+        self.assertEqual(len(files), 11)
+        configs = [load_config(path)[0] for path in files]
+        self.assertTrue(all(value["human_annotations_used"] is False for value in configs))
+        baseline = [value for value in configs if value["training_strategy"] == "no_training"]
+        self.assertEqual(len(baseline), 1)
+        self.assertEqual(baseline[0]["condition_id"], "M0_MEAN8")
+        trained = [value for value in configs if value["training_strategy"] != "no_training"]
+        self.assertEqual(len(trained), 10)
+        self.assertEqual(
+            {value["training_strategy"] for value in trained},
+            {"end_to_end_joint", "modulewise_sequential_joint"},
+        )
+        for condition in ("M1_TG_VPR", "M2_TST", "M3_NTR", "M4_CCGR", "M5_VISUAL"):
+            pair = [value for value in trained if value["condition_id"] == condition]
+            self.assertEqual(len(pair), 2)
+        expected_modes = {
+            "M1_TG_VPR": ("off", "off", "off"),
+            "M2_TST": ("tangent", "off", "off"),
+            "M3_NTR": ("tangent_ntr", "off", "off"),
+            "M4_CCGR": ("tangent_ntr", "class_conditioned_four", "off"),
+            "M5_VISUAL": (
+                "tangent_ntr",
+                "class_conditioned_four",
+                "spatial_rgve",
+            ),
+        }
+        for value in trained:
+            self.assertEqual(
+                (
+                    value["transport_mode"],
+                    value["ccgr_mode"],
+                    value["visual_mode"],
+                ),
+                expected_modes[value["condition_id"]],
+            )
+        sequential = [
+            value for value in trained if value["training_strategy"] == "modulewise_sequential_joint"
+        ]
+        self.assertTrue(all(sum(value["stage_epochs"].values()) == 200 for value in sequential))
+        self.assertTrue(all(value["nominal_epochs"] == 200 for value in trained))
+
+    def test_v3_config_rejects_human_annotations_and_bad_stage_total(self):
+        root = Path(__file__).resolve().parents[1] / "config/tries"
+        source = root / "v2_try_184_module-matrix_m5-visual-stagewise.yaml"
+        payload = yaml.safe_load(source.read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "invalid.yaml"
+            payload["human_annotations_used"] = True
+            path.write_text(
+                yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "禁止人工属性"):
+                load_config(path)
+            payload["human_annotations_used"] = False
+            payload["stage_epochs"]["joint"] = 49
+            path.write_text(
+                yaml.safe_dump(payload, allow_unicode=True, sort_keys=False),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "之和必须为200"):
+                load_config(path)
 
     def test_ten_prerun_configs_cover_five_modes_and_two_strategies(self):
         root = Path(__file__).resolve().parents[1] / "config/tries"
