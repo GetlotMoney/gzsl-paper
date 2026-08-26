@@ -10,7 +10,12 @@ import torch.nn.functional as F
 import yaml
 
 from model.paper_v2 import PaperV2ThreeModuleModel
-from model.train_paper_v2 import load_config, random_batch_indices, stage_for_iteration
+from model.train_paper_v2 import (
+    load_config,
+    random_batch_indices,
+    report_interval_for_run,
+    stage_for_iteration,
+)
 from tools.create_clip_asset_source_config import build_config as build_asset_source_config
 from tools.gzsl_data import (
     clean_class_name,
@@ -111,6 +116,10 @@ class PaperV2ModelTest(unittest.TestCase):
         second = random_batch_indices(1234, 50, generator)
         self.assertEqual(first.unique().numel(), 50)
         self.assertFalse(torch.equal(first, second))
+
+    def test_report_interval_tracks_registered_nominal_epochs(self):
+        self.assertEqual(report_interval_for_run(4 * 7057, 200), 141)
+        self.assertEqual(report_interval_for_run(3 * 7057, 150), 141)
 
 
 class PaperV2DataTest(unittest.TestCase):

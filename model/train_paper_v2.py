@@ -305,6 +305,15 @@ def random_batch_indices(count: int, batch_size: int, generator: torch.Generator
     return torch.randperm(int(count), generator=generator)[: int(batch_size)]
 
 
+def report_interval_for_run(niters: int, nominal_epochs: int) -> int:
+    if int(niters) <= 0 or int(nominal_epochs) <= 0:
+        raise ValueError("niters和nominal_epochs必须为正数。")
+    interval = int(niters) // int(nominal_epochs)
+    if interval <= 0:
+        raise ValueError("report_interval必须为正数。")
+    return interval
+
+
 def build_three_module_model(
     config: dict,
     tensors: dict,
@@ -642,9 +651,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
             expected_iterations = (3 if short_joint else 4) * ntrain
             if niters != expected_iterations:
                 raise ValueError("名义epoch与batch50没有得到预注册的总更新数。")
-            report_interval = niters // 200
-            if report_interval <= 0:
-                raise ValueError("report_interval必须为正数。")
+            report_interval = report_interval_for_run(
+                niters, int(config["nominal_epochs"])
+            )
             global_to_seen = torch.full((int(manifest["class_count"]),), -1, dtype=torch.long)
             global_to_seen[seen_classes] = torch.arange(seen_classes.numel())
             generator = torch.Generator(device="cpu").manual_seed(seed)
