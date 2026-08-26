@@ -222,6 +222,38 @@ class VisualEvidenceContractTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "之和必须为200"):
                 load_config(path)
 
+    def test_strategy_seed_and_bounded_tune_configs_are_exact(self):
+        root = Path(__file__).resolve().parents[1] / "config/tries"
+        files = sorted(
+            path
+            for path in root.glob("v2_try_1*.yaml")
+            if 185 <= int(path.name.split("_")[2]) <= 192
+        )
+        self.assertEqual(len(files), 8)
+        configs = {value["experiment_id"]: value for value in (load_config(path)[0] for path in files)}
+        self.assertTrue(all(value["human_annotations_used"] is False for value in configs.values()))
+        self.assertEqual(
+            {
+                (configs[attempt]["random_seed"], configs[attempt]["training_strategy"])
+                for attempt in ("V2-TRY-185", "V2-TRY-186", "V2-TRY-187", "V2-TRY-188")
+            },
+            {
+                (5, "end_to_end_joint"),
+                (5, "modulewise_sequential_joint"),
+                (8, "end_to_end_joint"),
+                (8, "modulewise_sequential_joint"),
+            },
+        )
+        self.assertEqual(configs["V2-TRY-189"]["max_ntr_delta"], 0.05)
+        self.assertEqual(configs["V2-TRY-190"]["max_generator_magnitude"], 0.1)
+        self.assertEqual(
+            {
+                configs["V2-TRY-191"]["visual_diversity_weight"],
+                configs["V2-TRY-192"]["visual_diversity_weight"],
+            },
+            {0.0, 0.05},
+        )
+
     def test_ten_prerun_configs_cover_five_modes_and_two_strategies(self):
         root = Path(__file__).resolve().parents[1] / "config/tries"
         files = sorted(
