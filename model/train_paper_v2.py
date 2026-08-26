@@ -158,6 +158,8 @@ def load_config(path: Path) -> tuple[dict, str]:
         "end_to_end_joint",
         "stagewise_50_100_50",
         "modulewise_50_50_50_50",
+        "modulewise_short_v5_joint",
+        "modulewise_short_v10_joint",
     ):
         raise ValueError("未知训练策略。")
     no_training = config["training_strategy"] == "no_training"
@@ -377,6 +379,32 @@ def modulewise_stage_for_iteration(ntrain: int, iteration: int) -> tuple[str, fl
     if 3 * ntrain <= iteration < 4 * ntrain:
         return "VISUAL_ONLY", 0.25
     raise ValueError("iteration不属于50/50/50/50模块式阶段。")
+
+
+def short_modulewise_stage_for_iteration(
+    ntrain: int,
+    iteration: int,
+    visual_nominal_epochs: int,
+) -> tuple[str, float]:
+    if int(visual_nominal_epochs) not in (5, 10):
+        raise ValueError("短模块式Visual阶段只允许5或10名义epoch。")
+    report_interval = (4 * int(ntrain)) // 200
+    short = int(visual_nominal_epochs) * report_interval
+    tg_end = int(ntrain)
+    tst_end = tg_end + 5 * report_interval
+    ccgr_end = tst_end + 5 * report_interval
+    visual_end = ccgr_end + short
+    if 0 <= iteration < tg_end:
+        return "TG_ONLY", 0.25
+    if tg_end <= iteration < tst_end:
+        return "TST_NTR_ONLY", 5 / 200
+    if tst_end <= iteration < ccgr_end:
+        return "CCGR_ONLY", 5 / 200
+    if ccgr_end <= iteration < visual_end:
+        return "VISUAL_ONLY", int(visual_nominal_epochs) / 200
+    if visual_end <= iteration < 4 * int(ntrain):
+        return "JOINT_FINETUNE", (4 * int(ntrain) - visual_end) / (4 * int(ntrain))
+    raise ValueError("iteration不属于短模块式+Joint阶段。")
 
 
 def _active_groups(
@@ -628,7 +656,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "TRANSFER_CCGR": float(config["stage2_learning_rate"]),
                         "JOINT_FINETUNE": float(config["stage3_learning_rate"]),
                     }[stage]
-                else:
+                elif config["training_strategy"] == "modulewise_50_50_50_50":
                     stage, _ = modulewise_stage_for_iteration(ntrain, iteration)
                     learning_rate = {
                         "TG_ONLY": float(config["stage1_learning_rate"]),
@@ -636,7 +664,24 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                         "CCGR_ONLY": float(config["stage2_learning_rate"]),
                         "VISUAL_ONLY": float(config["stage2_learning_rate"]),
                     }[stage]
-                if stage != current_stage:
+                else:
+                    visual_epochs = (
+                        5
+                        if config["training_strategy"] == "modulewise_short_v5_joint"
+                        else 10
+                    )
+                    stage, _ = short_modulewise_stage_for_iteration(
+                        ntrain, iteration, visual_epochs
+                    )
+                    learning_rate = {
+                        "TG_ONLY": float(config["stage1_learning_rate"]),
+                        "TST_NTR_ONLY": float(config["stage2_learning_rate"]),
+                        "CCGR_ONLY": float(config["stage2_learning_rate"]),
+                        "VISUAL_ONLY": float(config["stage2_learning_rate"]),
+                        "JOINT_FINETUNE": float(config["stage3_learning_rate"]),
+                    }[stage]
+                stage_started = stage != current_stage
+                if stage_started:
                     current_stage = stage
                     names = _active_groups(model, config["training_strategy"], stage)
                     frozen_stage_anchor = None
@@ -802,13 +847,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, run_id: str):
                     raise FloatingPointError("训练loss包含NaN/Inf。")
                 loss.backward()
                 require_finite_gradients(model)
-                if iteration == 0 or (
-                    config["training_strategy"] == "stagewise_50_100_50"
-                    and iteration in (ntrain, 3 * ntrain)
-                ) or (
-                    config["training_strategy"] == "modulewise_50_50_50_50"
-                    and iteration in (ntrain, 2 * ntrain, 3 * ntrain)
-                ):
+                if stage_started:
                     stage_gradient_norms[stage] = _gradient_norms(model)
                 optimizer.step()
                 if iteration % report_interval == 0:

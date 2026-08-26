@@ -12,6 +12,7 @@ from model.train_paper_v2 import (
     _load_patch_batch,
     load_config,
     modulewise_stage_for_iteration,
+    short_modulewise_stage_for_iteration,
 )
 from model.visual_evidence import PaperV2VisualModel, VISUAL_MODES
 
@@ -80,6 +81,30 @@ class VisualEvidenceContractTest(unittest.TestCase):
         off = self.build("off")
         self.assertEqual(
             _active_groups(off, "modulewise_50_50_50_50", "VISUAL_ONLY"), []
+        )
+
+    def test_short_modulewise_boundaries_add_joint_only_after_visual(self):
+        ntrain = 100
+        self.assertEqual(
+            short_modulewise_stage_for_iteration(ntrain, 0, 5)[0], "TG_ONLY"
+        )
+        self.assertEqual(
+            short_modulewise_stage_for_iteration(ntrain, 100, 5)[0], "TST_NTR_ONLY"
+        )
+        self.assertEqual(
+            short_modulewise_stage_for_iteration(ntrain, 110, 5)[0], "CCGR_ONLY"
+        )
+        self.assertEqual(
+            short_modulewise_stage_for_iteration(ntrain, 120, 5)[0], "VISUAL_ONLY"
+        )
+        self.assertEqual(
+            short_modulewise_stage_for_iteration(ntrain, 130, 5)[0], "JOINT_FINETUNE"
+        )
+        self.assertEqual(
+            short_modulewise_stage_for_iteration(ntrain, 139, 10)[0], "VISUAL_ONLY"
+        )
+        self.assertEqual(
+            short_modulewise_stage_for_iteration(ntrain, 140, 10)[0], "JOINT_FINETUNE"
         )
 
     def test_ten_prerun_configs_cover_five_modes_and_two_strategies(self):
