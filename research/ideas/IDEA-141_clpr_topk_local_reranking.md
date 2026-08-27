@@ -1,0 +1,26 @@
+# IDEA-141：CLPR候选集局部细粒度重排
+
+- 状态：`rejected`
+- 父条件：`V3-TRY-002 / TG-only / U/S/H/ZS=78.407878/74.983871/76.657659/86.146760`
+- 问题：TG的seen/unseen 200类top-3召回分别为87.135792与96.458644，但top-1仅为74.983871与78.407878；错误主要位于候选集内部排序。
+- 第一性原理证据：TG完全不改变unseen原型，ZS恒定；下一模块需要独立局部视觉证据，而非继续重写全局原型。
+- 唯一改动：保留TG全局候选，仅用36个粗patch与候选类别八角色描述计算局部分数，并在候选集合内部中心化后重排；非候选分数不变。
+- 首轮诊断：固定比较`K=2/3/4`、top-2 patch均值、`alpha=0/0.05/0.1/0.2/0.5/1.0`；无训练、无人工标注。
+- 严格关闭：`alpha=0`逐元素返回TG候选排序。
+- 成立：同一参数条件模拟`ΔH>=1.000`且U/S差小于8，才允许创建训练式CLPR模块。
+- 失败：最佳诊断`ΔH<1.000`则直接拒绝，不启动150轮训练。
+- 三创新角色：在TG语义候选召回之后提供低复杂度局部视觉精排。
+- 初始实现语义commit：`13cbcdf5bf80bb1f26cfd072fe8ee3aaf11daf3b`
+- TRY-009冻结运行commit：`b2293c68ad7dd62830357a57741fab53902b1073`
+- evidence_refs：TG checkpoint top-k实测；owner假设；冻结CLIP coarse-patch资产。
+- 结果：最佳总体条件退回`alpha=0`；最佳非零条件为`K=3, alpha=0.05`，U/S/H/ZS=`78.260636/74.836200/76.510120/85.931742`，相对TG `ΔH=-0.147539`。
+- 诊断：K=3、alpha=0.05时seen修正6个但破坏9个，unseen修正28个但破坏32个；原始局部描述匹配没有可靠的净纠错方向。
+- 决策：`drop_before_training`，不实现训练式CLPR，不创建正式Innovation目录。
+- 第一轮Agent对抗发现：TRY-009实际执行`per_sample_zscore`，而预注册文字只写候选内中心化；该不一致不推翻失败结论，但TRY-009不得冒充严格公式。
+- 补充控制：V3-TRY-010使用独立RUN严格执行`center_only`，不覆盖TRY-009；结果仍须按1 H门槛单独判定。
+- TRY-010结果：最佳非零条件`K=2, alpha=0.05`，U/S/H/ZS=`78.375107/74.983871/76.641994/86.147326`，`ΔH=-0.015665`；seen无翻转，unseen修正1个但破坏2个，严格公式仍拒绝训练。
+- TRY-010冻结运行commit：`d8cbfd7b59301437e3efdaf1e50284b6478c5f06`。
+- patch资产P1处理：最终严格生成器已冻结于`56b9444948f9362cc138ee06db00b8f3c21fa9ed`，全量审计见`experiments/v3/PATCH_ASSET_REBUILD_AUDIT.md`。旧TRY继续绑定旧资产；后续视觉实验只允许绑定内容寻址v3 manifest `d47c06ac...`，不跨资产身份比较模块增益。
+- 分支基线证据：本分支由`git switch -c exp/v3/innovation/innovation-002-clpr cd30797...`创建；随后仅cherry-pick历史账本与公共规范以满足账本继承。CLPR实现前head `0b707b1`相对`cd30797`在`model/`与`tools/`无差异，未继承SLE或dynamic失败代码。
+- 最终资产控制V3-TRY-011：全局TG仍绑定原checkpoint/文本/split；视觉分支独立绑定正式Linux父CLS manifest `6e54351f...`→最终576 manifest `d096087c...`→最终36 manifest `1d60f9a1...`，loader硬校验完整链后严格复用TRY-010公式。
+- TRY-011结果：alpha=0精确复现父U/S/H/ZS；最佳非零仍为`K=2, alpha=0.05`，U/S/H/ZS=`78.375107/74.983871/76.641994/86.147326`，`ΔH=-0.015665`，unseen修正1个但破坏2个。最终审计资产未改变失败结论，继续`drop_before_training`。

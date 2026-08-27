@@ -162,7 +162,18 @@ V2-H-PLUS-3PP
       ├─ auxiliary_branch：IDEA-041 / CNRA类名残差对齐（supported辅助，4seed稳定提高H）
       ├─ rejected_branch：IDEA-042 / CNEBC类名后偏置校准（rejected，仅1个seed有实质增益）
       ├─ rejected_branch：IDEA-043 / HGCS层级公共语义抑制（rejected，两种训练都学习相反正beta）
-      ├─ testing_branch：IDEA-133 / 角色引导局部视觉证据学习（四结构、端到端/分阶段CUB筛选）
+      ├─ rejected_branch：IDEA-133 / 角色引导局部视觉证据学习（硬门槛下累计与单移除均不足1 H）
+      ├─ rejected_branch：IDEA-134 / 稀疏局部证据SLE（运行优化成立，但seen偏置导致H下降5.590136）
+      ├─ rejected_branch：IDEA-135 / HGE分层全局证据（ΔH=-0.070290，未过1点门槛）
+      ├─ rejected_branch：IDEA-136 / LAC层间一致性（ΔH=-1.293334）
+      ├─ rejected_branch：IDEA-137 / VSE视图稳定证据（ΔH=-0.176489）
+      ├─ rejected_branch：IDEA-138 / SMC语义Mixup一致性（ΔH=-0.681795）
+      ├─ rejected_branch：IDEA-139 / NTP非目标父分布保持（训练塌缩，best停在epoch0）
+      ├─ rejected_branch：IDEA-140 / ALE类无关自适应局部证据（训练塌缩，best停在epoch0）
+      ├─ rejected_branch：IDEA-141 / CLPR候选集局部细粒度重排（top-3最佳非零ΔH=-0.147539，训练前拒绝）
+      ├─ rejected_branch：IDEA-142 / 频域稳定前景聚合（最佳非零ΔH=-0.065613，seen破坏抵消unseen修正）
+      ├─ rejected_branch：IDEA-143 / 多尺度候选差异证据重排（最佳非零ΔH=-0.177396，seen/unseen/ZS均净破坏）
+      ├─ testing_branch：IDEA-144 / FMC-SR频域引导多尺度候选安全纠错（共享pair判别+最小干预训练）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：最终CCGR+ARA四训练seed H=79.265577至79.386082，稳定超过78

@@ -1,0 +1,20 @@
+schema_version: gzsl-paper.v3-clpr-diagnostic.v1
+experiment_id: V3-TRY-009
+framework_id: FRAMEWORK-V3-EXPLORATION
+dataset: CUB
+asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v3/CUB_openai_vitl14_336_dynamic_v3_v1/asset_manifest.json
+asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+tg_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/dynamic-screen-001/V3-TRY-002-TG-BASE/model_best.pth
+tg_checkpoint_sha256: 78fb96777a2b79587c07f47b30f11cae7482f81a13d51934058b56e444e85409
+parent_h: 76.65765903827264
+required_delta_h: 1.0
+device: cuda:0
+batch_size: 64
+k_values: [2, 3, 4]
+alpha_values: [0.0, 0.05, 0.1, 0.2, 0.5, 1.0]
+top_patch_count: 2
+human_annotations_used: false
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false

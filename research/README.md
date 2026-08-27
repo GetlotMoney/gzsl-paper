@@ -14,6 +14,8 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。当前研究目标是在相�
 真实问题或证据 → 一张Idea卡 → 实验清单快速尝试 → 成功后正式Experiment
 ```
 
+新模块从准备到判定必须逐项执行[`docs/MODULE_WORKFLOW_CHECKLIST.md`](../docs/MODULE_WORKFLOW_CHECKLIST.md)。准备研究的模块登记在`IDEA_TREE.md`和对应Idea卡；具备代码与配置、准备真实运行时再写入当前框架的`EXPERIMENT_QUEUE.csv`。
+
 本仓库从空白研究知识层开始。旧 GTPJ 的论文笔记、idea tree、研究结论和编号不迁移、不引用，也不能通过聊天记忆隐式恢复。需要使用同一篇论文时，必须重新核对原文并在本仓库重新登记。
 
 例外：owner于2026-08-22明确授权直接迁移H1相关旧实验的轻量证据。该授权只覆盖`INNOVATION-024`、`ABLATION-014`、`TUNE-005`和`TUNE-006`，不自动扩大到其他旧实验、Idea或论文笔记。

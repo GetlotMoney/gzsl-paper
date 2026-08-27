@@ -1,0 +1,28 @@
+schema_version: gzsl-paper.v3-frequency-foreground-diagnostic.v1
+experiment_id: V3-TRY-012
+framework_id: FRAMEWORK-V3-EXPLORATION
+dataset: CUB
+base_asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v3/CUB_openai_vitl14_336_dynamic_v3_v1/asset_manifest.json
+base_asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+frequency_asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/rgve/CUB_openai_vitl14_336_frequency_foreground_v1/asset_manifest.json
+frequency_asset_manifest_sha256: 8bbb71e11354af1c65134dac4ff623451c4cd56ba6179df9844066415fa2a462
+frequency_asset_id: cub-clip-frequency-18f087134a402a4e
+parent_cls_manifest_sha256: 6e54351f1249d1bea1f559d1237ece21450ef0e5d9314df0e863da740df24ec5
+tg_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/dynamic-screen-001/V3-TRY-002-TG-BASE/model_best.pth
+tg_checkpoint_sha256: 78fb96777a2b79587c07f47b30f11cae7482f81a13d51934058b56e444e85409
+parent_metrics_percent:
+  U: 78.40787768363953
+  S: 74.98387098312378
+  H: 76.65765903827264
+  ZS: 86.14675998687744
+required_delta_h: 1.0
+device: cuda:0
+batch_size: 64
+candidate_k: 3
+beta_values: [0.0, 0.05, 0.1, 0.2, 0.5, 1.0]
+local_normalization: center_only
+human_annotations_used: false
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false

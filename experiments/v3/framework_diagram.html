@@ -1,0 +1,15 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FRAMEWORK-V3 · FMC-SR</title><style>body{margin:0;background:#f4f1ea;color:#17221f;font:15px/1.55 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1220px;margin:28px auto;padding:0 20px}.meta{font-family:ui-monospace,monospace;color:#59645f}.flow{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:22px 0}.box{background:#fff;border:1px solid #cbd5cf;border-radius:13px;padding:12px}.core{border:2px solid #176b4d}.new{border:2px solid #b9652e;background:#fff9f2}.box strong{display:block;color:#176b4d}.new strong{color:#a64b20}@media(max-width:900px){.flow{grid-template-columns:1fr}}</style></head><body><main>
+<h1>FRAMEWORK-V3探索 · FMC-SR</h1>
+<div class="meta">TG base cd30797a5eab3aa6ed28bd04df0b17f413730063 · method 9f38d4d87e2ec98e047d8cad0364cf0dd61cf5f6 · IDEA-144 · TRY-018/019</div>
+<section class="flow">
+<div class="box"><strong>输入</strong>CLS、576 patch<br>repo/K1 frequency votes</div>
+<div class="box core"><strong>TG</strong>200类全局logits<br>Top-3候选</div>
+<div class="box new"><strong>稳定区域</strong>frequency prior<br>24/12/6</div>
+<div class="box new"><strong>候选差异</strong>3 pairs×6角色<br>反对称局部证据</div>
+<div class="box new"><strong>共享判别器</strong>22→16→1<br>候选交换等变</div>
+<div class="box new"><strong>安全门控</strong>margin/entropy<br>agreement/strength</div>
+<div class="box"><strong>输出</strong>Top-3零和修正<br>最终U/S/H/ZS</div>
+</section>
+<p><b>TRY-018：</b>ordinary CE。<b>TRY-019：</b>minimal-intervention correction，将样本分为保持、可纠正和拒绝三类。两者均完整训练150名义epoch（21,171 updates）：前5轮TG保持初始LR、视觉linear warmup，随后TG与视觉分别cosine decay；每141步及最终update评估，不提前停止。CLIP缓存冻结，无人工属性、框或部位标签。</p>
+</main></body></html>

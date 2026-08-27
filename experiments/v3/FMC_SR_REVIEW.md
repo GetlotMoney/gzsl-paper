@@ -1,0 +1,23 @@
+# V3 FMC-SR两轮代码审核
+
+- 准确TG父commit：`cd30797a5eab3aa6ed28bd04df0b17f413730063`
+- 初始代码语义commit：`f7a16887e5bee00a00e81480a6c57f1adabe6248`
+- Round 1修复代码commit：`d79b199f330a4e773a298d14130cbf64e13f9fa0`
+- Round 1边界修复代码commit：`09e120196b5c885eb59f3d5c4a79869ddbc639d8`
+- 固定150训练代码commit：`1e7514a459c6580e84ee2d861578210052a58c53`
+- 固定150集中修复代码commit：`9f38d4d87e2ec98e047d8cad0364cf0dd61cf5f6`
+- 分支：`exp/v3/innovation/innovation-005-fmc-sr`
+- Round 1：`failed_on_f7a1688_and_d79b199; post_fix_recheck_pending`
+- Round 1 findings：TRY-015错误地按相对TG `+1 H`自行晋级，但训练创新必须相对匹配TRY-014 `+1 H`。修复为TRY-015只输出`pending_matched_try014_comparison`，两RUN结束后匹配回填；TRY-014仍按TG硬门槛。同步增加MIC不可达目标比例/实际饱和率日志，并区分视觉残差相对联合TG与完整模型相对冻结TG的transition口径。
+- Round 1 boundary finding：若全部训练状态H不超过初始TG，best停在update0；初始记录原先缺`full_model_transitions_vs_frozen_tg`。修复为取得冻结父预测后显式写seen/unseen/zs三组全零transition，并增加JSON安全回归测试。
+- Round 2：`initial_parallel_preread_invalidated_by_round1_finding`
+- 共享证据：修复前本地专项7/full531、服务器专项7；第一次修复本地专项8/full532；边界修复本地专项9/full533。真实资产contract和服务器post-fix micro-batch待第二轮复核。
+- 首次最终审核：代码`09e1201`、RUN `b660b85`、登记`2d16fa0`，Round1与独立Round2均无P0/P1并通过；真实双objective/GPU/资产/checkpoint闭环通过。
+- TRY-014/015结果：均在第50点评估停止，best严格为update0父TG，结构与MIC均未过1 H。结果保留，不覆盖；owner要求完整150轮。
+- 编号边界：并行分支`exp/v3/innovation/innovation-006-faithful-tst-e2e`已占用V3-TRY-016；017为其潜在补救预留。FMC-SR固定150改号为TRY-018/019，禁止覆盖侧边实验。
+- 固定150首轮完整清单：代码`1e7514a`共发现3个P1——MIC错误匹配旧TRY-014、TG在文档warmup期内实际已cosine下降、遗漏update21,150评估点；P2包括固定RUN仍使用dynamic命名、最小LR字段未驱动公式。三Agent均审完分工后统一进入一次集中修复。
+- 固定150集中修复：代码`9f38d4d`；TRY-019匹配TRY-018；TG前705 updates保持`1e-5`，视觉严格从首步`1e-5`升至第705步`1e-4`，随后分组cosine；评估点覆盖0、141×1..150、21,171；最小LR由config比值驱动；固定失败名为`drop_fixed_150`。修复后待多Agent并行复核，签字前禁止启动。
+- 固定150最终审核：代码`9f38d4d`、RUN `48890db`、登记`a679e71`；Round1 `P0=0/P1=0`，独立Round2明确“无P0/P1，第2轮通过”，协议Agent `P0=0/P1=0/P2=0`。旧结构/资产/full preload/双objective梯度证据按tree hash复用，新调度与评估合同真实GPU复核通过。
+- TRY-018结果：best update0，`U/S/H/ZS=78.407878/74.983871/76.657659/86.146760`，decision=`drop_fixed_150`。config/metrics/history/model SHA分别为`2afe0e6d.../8f48bd3a.../ac04bc2e.../478e2f83...`。
+- TRY-019结果：best update564，`U/S/H/ZS=77.173418/76.225722/76.696642/86.146760`，相对匹配TRY-018 `ΔH=+0.038983`，未过0.8门槛。config/metrics/history/model SHA分别为`d0211d4e.../50f850ca.../1091f06d.../0af4af0e...`。
+- 运行许可：第二轮完整结束并明确“无P0/P1，第2轮通过”前禁止服务器smoke、训练和正式RUN；纯配置、队列和结果按确定性contract处理。
