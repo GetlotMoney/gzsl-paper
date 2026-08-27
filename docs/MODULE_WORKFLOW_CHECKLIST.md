@@ -32,6 +32,9 @@
 - [ ] 在当前框架`experiments/vX/EXPERIMENT_QUEUE.csv`新增一行`planned` TRY。
 - [ ] TRY绑定准确config、唯一改动、seed、code commit和仓库外output URI。
 - [ ] 本地相关测试和服务器相关测试通过，工作树clean后才能启动。
+- [ ] 第一轮独立Agent已完成对抗审查；P0/P1已全部修复并有直接测试。
+- [ ] 第二轮由另一独立Agent审查准确post-fix commit并明确“无P0/P1，第2轮通过”；此后代码未再变化。
+- [ ] 当前Experiment记录两轮reviewed commit、发现、修复和最终结论；不能用机器测试替代Agent审查。
 - [ ] 不自动push GitHub，不移动正式framework分支或Tag。
 
 ## 四、硬门槛实验

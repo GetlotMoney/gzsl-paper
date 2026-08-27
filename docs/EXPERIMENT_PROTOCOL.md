@@ -20,6 +20,13 @@
 - 候选失败后冻结该候选分支，不从它继续开发下一模块。下一候选必须先由owner确认准确父commit，再从该commit创建新的`exp/vX/<kind>/<module>`分支；旧失败分支只供复现和追溯。
 - 候选被owner接纳后，先进入`main`的已接纳状态，再固定新的`framework/vY`与Tag `vY`；正式引用一经创建不移动。
 
+## 代码两轮Agent对抗门槛
+
+- 修改module、forward、loss、数据/资产生成、训练器或评估语义的Experiment，pre-run冻结前必须完成两轮不同Agent的独立只读对抗审查。
+- 第一轮发现的P0/P1必须全部修复并通过直接相关测试；第二轮绑定准确post-fix commit、clean工作树和真实服务器资产重新审查。
+- 只有第二轮明确“无P0/P1，第2轮通过”才允许服务器smoke或训练。第二轮后任何代码提交都会使签字失效；若第二轮发现P0/P1，修复后必须换新的独立Agent重新审查新commit。
+- 审查记录至少绑定review round、reviewed commit、发现、修复commit、测试和结论；机器测试、同一Agent自审或聊天口头确认不能替代两轮审查。
+
 ## 核心对象
 
 ```text

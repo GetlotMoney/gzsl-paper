@@ -29,6 +29,14 @@
 - pre-run commit 只保存代码、配置和计划；post-run commit 只保存已经发生的结果。
 - GitHub 不保存数据、cache、checkpoint、原始大日志或密钥。
 
+## 代码两轮对抗审查
+
+- 凡新增或修改module、forward、loss、数据流、资产生成、训练器或评估语义，服务器smoke、训练和正式运行前必须完成两轮独立Agent对抗审查；普通机器测试不能替代。
+- 第一轮Agent只读审查预冻结代码，主动尝试证伪公式、父条件、数据边界、指标、关闭路径和可复现性；所有P0/P1必须修复并以测试证明关闭。
+- 第二轮必须由另一名独立Agent审查准确post-fix commit、本地与服务器clean状态及真实资产/结果；只有明确报告无P0/P1并写出“第2轮通过”，代码才能冻结和启动。
+- 第二轮若发现P0/P1，修复后原签字失效，必须由新的独立Agent对新的准确commit重新执行第二轮；不得沿用旧commit结论。
+- 当前Experiment必须记录两轮审查对象commit、发现、修复commit、最终结论和证据URI；分支切换或代码继续提交后审查自动失效。
+
 ## 训练与测试
 
 - 协议固定为 `test_selected_inductive_gzsl`。
