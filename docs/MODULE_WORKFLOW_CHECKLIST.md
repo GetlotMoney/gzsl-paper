@@ -49,7 +49,7 @@
 - [ ] 第二轮由另一独立Agent审查准确post-fix commit并明确“无P0/P1，第2轮通过”；此后代码未再变化。
 - [ ] 当前Experiment记录两轮reviewed commit、发现、修复和最终结论；不能用机器测试替代Agent审查。
 - [ ] 审核前共享证据已准备：准确diff、相关测试、本地完整测试、资产/config校验、服务器临时micro-batch；Agent不重复整仓测试或全量SHA。
-- [ ] 无缺陷时Round 1在2分钟内、Round 2在3分钟内返回；超时明确标记`证据不足`并停止等待。
+- [ ] 共享证据齐全且无缺陷时力争Round 1约2分钟、Round 2约3分钟；时长不凌驾于完整性，超过5分钟汇报剩余项并继续审完，禁止为了速度降低标准。
 - [ ] 纯配置/资产/队列/结果/文档只做确定性contract校验，未改变相关代码树时不重复两轮Agent。
 - [ ] 不自动push GitHub，不移动正式framework分支或Tag。
 
