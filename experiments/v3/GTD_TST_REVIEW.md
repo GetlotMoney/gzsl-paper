@@ -15,3 +15,5 @@
 - 审查矩阵：Mean8/Value球面公式、退化与反极边界、CE+theta² oracle、Gate SmoothL1梯度归属、theta0父TG关闭路径、global/local类别轴、seen teacher与true-unseen数据边界、21,171 updates/152评估点、学习率、best/checkpoint/JSON和服务器真实micro-batch。
 - 共享证据：准确diff、config SHA、代码tree hash与本地测试已生成；服务器资产contract、每条objective真实GPU micro-batch、CUDA RNG resume和checkpoint/JSON闭环待两轮审核阶段补齐。
 - 运行许可：两轮独立Agent完整结束、所有P0/P1关闭且第二轮明确写出“无P0/P1，第2轮通过”前，禁止服务器smoke、训练和正式RUN。
+- 正式结果：best update846，`U/S/H/ZS=80.559021/75.587094/77.993901/86.611593`，静态`ΔH=+1.336242`，decision=`pending_matched_try020_comparison`。
+- 结果SHA：config=`71e556ff...`，metrics=`4a47de85...`，history=`0bdf2f79...`，teacher-history=`b542489c...`，model=`c45cddfe...`。

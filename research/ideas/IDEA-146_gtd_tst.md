@@ -1,6 +1,6 @@
 # IDEA-146：测地目标蒸馏切空间迁移（GTD-TST）
 
-- 状态：`testing`
+- 状态：`candidate_pending_try020`
 - source_type：`code_analysis + experiment_result + first_principles + owner_hypothesis`
 - 父条件：`V3-TRY-002 / TG-only / U/S/H/ZS=78.407878/74.983871/76.657659/86.146760`
 - 准确base commit：`cd30797a5eab3aa6ed28bd04df0b17f413730063`
@@ -10,6 +10,8 @@
 - 训练：CUB、seed7、batch50、fixed150（精确21,171 updates）；从V3-TRY-002 checkpoint开始，TG与Gate从update1一段式联合更新。只用7057张trainval在update `1+141k,k=0..149`刷新150次seen teacher；每次绑定model/package SHA、fold ID、target/mask/gain。每141步、21,150和最终21,171评估，共152点，不早停；checkpoint保存teacher与CPU/CUDA/batch RNG并支持同RUN显式resume。
 - 筛选与成立采用固定三态：`ΔH<0.8`或`|U-S|>=8`直接drop，此时不绑定匹配条件；`0.8<=ΔH<1`且gap合格时输出`trigger_try020_static_below1`，触发TRY-020但`static_support_passed=false`，不得晋级；`ΔH>=1`且gap合格时也只输出`pending_matched_try020_comparison`并置`static_support_passed=true`。后二者均要求TRY-020，只有`H(TRY-022)-H(TRY-020)>=1.000`且共同满足gap门槛，才能说明GTD具有独立增益并进入fixed200与完整模型`-GTD`验证。TRY-020当前只是条件触发项；真实执行前必须另行冻结其准确config、RUN commit和queue行，不能看到TRY-022结果后再定义训练语义。
 - 失败：仅当固定150轮`ΔH<0.8`或U/S差达到8时直接drop；`0.8<=ΔH<1`不是支持成立，但必须进入预注册TRY-020匹配控制。oracle目标大面积为0、Gate拟合失败和seen→unseen迁移失败只用于区分失败原因，不在同一Experiment临时改网格、惩罚或dead-zone。
+- 结果：TRY-022完整150轮best位于update846/eval6，`U/S/H/ZS=80.559021/75.587094/77.993901/86.611593`，相对静态TG `ΔU/ΔS/ΔH/ΔZS=+2.151144/+0.603223/+1.336242/+0.464833`，U/S gap=`4.971927`。已过静态1H与gap门槛，按预注册等待TRY-020匹配控制，未宣称最终支持。
+- 风险诊断：best时true-unseen move rate=`1.0`、平均theta=`15.84°`，seen Gate target correlation=`-0.228`；虽H显著提升，但Gate解释性和全移动倾向存在风险，必须结合TRY-020及后续`-GTD`消融判断。
 - 三创新接口：TG负责seen监督下的角色原型建立；GTD-TST只学习从seen视觉几何推断unseen原型该沿语义切向移动多少，形成“表示建立→迁移决策”的连续链。
 - 代码语义commit：`fee829bd56b6ac9b366da82e1438b9d7bee872a8`
 - evidence_refs：V3-TRY-002 TG父指标；V2 signed/all-class TST不足1H的本仓库结果；IDEA-145 Faithful-TST代码边界观察；owner确认的GTD-TST假设。
