@@ -338,11 +338,22 @@ def evaluation_updates() -> tuple[int, ...]:
 
 
 def gtd_screen_decision(delta_h: float, gap: float) -> str:
-    return (
-        "pending_matched_try020_comparison"
-        if float(delta_h) >= 0.8 and float(gap) < 8.0
-        else "drop_fixed_150"
-    )
+    if float(gap) >= 8.0 or float(delta_h) < 0.8:
+        return "drop_fixed_150"
+    if float(delta_h) < 1.0:
+        return "trigger_try020_static_below1"
+    return "pending_matched_try020_comparison"
+
+
+def gtd_screen_outcome(delta_h: float, gap: float) -> dict[str, str | bool]:
+    decision = gtd_screen_decision(delta_h, gap)
+    return {
+        "decision": decision,
+        "matched_control_triggered": decision
+        in {"trigger_try020_static_below1", "pending_matched_try020_comparison"},
+        "static_support_passed": decision == "pending_matched_try020_comparison",
+        "matched_comparison_required": MATCHED_CONTROL_ID,
+    }
 
 
 def tensor_mapping_sha256(mapping: dict[str, torch.Tensor]) -> str:
@@ -863,8 +874,8 @@ def run(
         )
         delta_h = float(best_metrics["H"]) - float(parent_metrics["H"])
         gap = abs(float(best_metrics["U"]) - float(best_metrics["S"]))
-        matched_required = MATCHED_CONTROL_ID
-        decision = gtd_screen_decision(delta_h, gap)
+        screen = gtd_screen_outcome(delta_h, gap)
+        decision = str(screen["decision"])
         atomic_write_json(output_dir / "evaluation_history.json", {"rows": history})
         atomic_write_json(
             output_dir / "teacher_refresh_history.json",
@@ -883,8 +894,9 @@ def run(
             "best_update": best_update,
             "best_delta_H": delta_h,
             "best_gap_U_S": gap,
-            "matched_comparison_required": matched_required,
-            "matched_control_triggered": decision == "pending_matched_try020_comparison",
+            "matched_comparison_required": screen["matched_comparison_required"],
+            "matched_control_triggered": screen["matched_control_triggered"],
+            "static_support_passed": screen["static_support_passed"],
             "old_tg_screen_threshold_H": 0.8,
             "independent_support_threshold_H": float(config["required_delta_h"]),
             "best_zs_observation": best_zs,
@@ -898,6 +910,7 @@ def run(
             "strict_blind_claim": False,
             "human_annotations_used": False,
             "model_sha256": sha256_file(output_dir / "model_best.pth"),
+            "asset_id": config["asset_id"],
             "asset_manifest_sha256": config["asset_manifest_sha256"],
             "tg_checkpoint_sha256": config["tg_checkpoint_sha256"],
             "checkpoint_last_sha256": checkpoint_last_sha,

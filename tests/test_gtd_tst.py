@@ -20,6 +20,7 @@ from model.innovations.train_gtd_tst import (
     _predict,
     evaluation_updates,
     gtd_screen_decision,
+    gtd_screen_outcome,
     load_config,
     refresh_oracle_targets,
     teacher_packages_sha256,
@@ -235,8 +236,20 @@ def test_fixed150_schedule_evaluations_and_config_contract():
     assert config["unseen_images_used_for_gradient"] is False
     assert config["early_stopping_enabled"] is False
     assert gtd_screen_decision(0.799999, 1.0) == "drop_fixed_150"
-    assert gtd_screen_decision(0.8, 1.0) == "pending_matched_try020_comparison"
+    assert gtd_screen_decision(0.8, 1.0) == "trigger_try020_static_below1"
+    assert gtd_screen_decision(0.999999, 1.0) == "trigger_try020_static_below1"
     assert gtd_screen_decision(1.0, 1.0) == "pending_matched_try020_comparison"
+    assert gtd_screen_decision(2.0, 8.0) == "drop_fixed_150"
+    middle = gtd_screen_outcome(0.9, 1.0)
+    assert middle == {
+        "decision": "trigger_try020_static_below1",
+        "matched_control_triggered": True,
+        "static_support_passed": False,
+        "matched_comparison_required": "V3-TRY-020",
+    }
+    passing = gtd_screen_outcome(1.0, 1.0)
+    assert passing["matched_control_triggered"] is True
+    assert passing["static_support_passed"] is True
 
 
 def test_teacher_refresh_record_binds_model_package_folds_and_targets():
