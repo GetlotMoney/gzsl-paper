@@ -1,16 +1,16 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FRAMEWORK-V3 · GTD-TST</title><style>body{margin:0;background:#f4f1ea;color:#17221f;font:15px/1.55 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1220px;margin:28px auto;padding:0 20px}.meta{font-family:ui-monospace,monospace;color:#59645f}.flow{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:22px 0}.box{background:#fff;border:1px solid #cbd5cf;border-radius:13px;padding:12px}.core{border:2px solid #176b4d}.new{border:2px solid #a75335;background:#fff8f1}.box strong{display:block;color:#176b4d}.new strong{color:#a0482c}@media(max-width:900px){.flow{grid-template-columns:1fr}}</style></head><body><main>
 <h1>FRAMEWORK-V3探索 · GTD-TST</h1>
-<div class="meta">TG base cd30797a5eab3aa6ed28bd04df0b17f413730063 · method 550a36a9483a2c8dec67fc8a8240f259d215b83b · IDEA-146 · TRY-022</div>
+<div class="meta">TG base cd30797a5eab3aa6ed28bd04df0b17f413730063 · method 4ccf06d25e7d25df02fd96d9d7a1f087f86f573a · IDEA-146 · TRY-022</div>
 <section class="flow">
 <div class="box"><strong>缓存输入</strong>CLIP CLS<br>八角色自动文本</div>
 <div class="box core"><strong>TG主路径</strong>seen主CE+topology<br>seen原型保持TG</div>
-<div class="box new"><strong>Mean8→Value</strong>精确球面切向<br>33个候选角度</div>
+<div class="box new"><strong>Mean8→Value</strong>精确球面切向<br>33点 · cap=atan(1.5)</div>
 <div class="box new"><strong>seen视觉Teacher</strong>训练中心<br>CE+0.1θ²最小角</div>
 <div class="box new"><strong>目标蒸馏Gate</strong>6→16→1<br>SmoothL1与严格零移动</div>
 <div class="box new"><strong>true-unseen迁移</strong>只用文本与seen support<br>无unseen图像梯度</div>
 <div class="box"><strong>整模型出口</strong>200类U/S/H<br>50类ZS与global best-H</div>
 </section>
-<p>一段式固定150名义epoch：TG与Gate从update1同时训练；21,171次更新，update0、141×1..150及21,171共152次official评估；不分阶段、不早停、不跨checkpoint拼接指标。</p>
+<p>一段式fixed150：TG与Gate从update1同时训练；21,171次更新，update0、141×1..150及21,171共152次official评估。150次teacher均绑定模型/目标SHA，checkpoint保存teacher与RNG并支持同RUN resume；不分阶段、不早停、不跨checkpoint拼接指标。</p>
 <p class="meta">人工属性/部位/框/专家残差：禁用 · test_used_for_selection=true · unseen_images_used_for_gradient=false · strict_blind_claim=false</p>
 </main></body></html>
