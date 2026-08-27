@@ -40,7 +40,7 @@
 - [ ] 当前分支保留此前全部版本实验账本；旧`experiments/v*/`目录只读，不删除、不移动、不重编号。
 - [ ] 新TRY只登记到当前版本`experiments/vX/EXPERIMENT_QUEUE.csv`，跨版本父证据引用原RUN而不复制。
 - [ ] 当前只使用一段式端到端联合训练，不再启动三段式、五段式或stage-best handoff候选。
-- [ ] 首次筛选固定CUB、seed7、batch50、200名义epoch、每141步official评估。
+- [ ] V3探索筛选固定CUB、seed7、batch50、每141步official评估，最多150名义epoch并按预注册里程碑动态停止；胜出累计条件和最终单模块移除才固定200名义epoch。
 - [ ] 固定披露：`test_used_for_selection=true`、`unseen_images_used_for_gradient=false`、`strict_blind_claim=false`。
 - [ ] 在当前框架`experiments/vX/EXPERIMENT_QUEUE.csv`新增一行`planned` TRY。
 - [ ] TRY绑定准确config、唯一改动、seed、code commit和仓库外output URI。
@@ -49,8 +49,13 @@
 - [ ] 第二轮由另一独立Agent审查准确post-fix commit并明确“无P0/P1，第2轮通过”；此后代码未再变化。
 - [ ] 当前Experiment记录两轮reviewed commit、发现、修复和最终结论；不能用机器测试替代Agent审查。
 - [ ] 审核前共享证据已准备：准确diff、相关测试、本地完整测试、资产/config校验、服务器临时micro-batch；Agent不重复整仓测试或全量SHA。
-- [ ] 共享证据齐全且无缺陷时力争Round 1约2分钟、Round 2约3分钟；时长不凌驾于完整性，超过5分钟汇报剩余项并继续审完，禁止为了速度降低标准。
-- [ ] 纯配置/资产/队列/结果/文档只做确定性contract校验，未改变相关代码树时不重复两轮Agent。
+- [ ] 共享证据齐全且无缺陷时两轮力争10分钟完成；时长不凌驾于完整性，超过10分钟汇报剩余项并继续审完。
+- [ ] 冻结一个commit并建立审查矩阵；多个只读Agent并行覆盖公式/训练/评估/资产/GPU/checkpoint，发现首个问题后仍完成各自分工。
+- [ ] 等全部Agent汇合后一次性去重P0/P1/P2，只做一个集中修复补丁；禁止边审边改和逐bug重复全流程。
+- [ ] 修复后多Agent并行复核同一最终diff；签字绑定最终RUN commit、审查路径tree hash、config SHA、资产manifest SHA和环境/GPU fingerprint，未变化证据直接复用。
+- [ ] 每个不同objective/forward/loss路径至少一次真实GPU micro-batch；相同路径不跨GPU重复，第二GPU只验证设备及特有差异；共享闭环覆盖梯度、ZS、动态停止、best和checkpoint。
+- [ ] 纯配置免两轮仅限已审schema内且不启用新计算/评估路径；纯队列、结果和文档在签字身份不变时只走contract。
+- [ ] 生成后资产在生成代码、config和父身份不变时只做manifest/SHA/shape/dtype/count contract；身份变化则重新审核受影响范围。
 - [ ] 不自动push GitHub，不移动正式framework分支或Tag。
 
 ## 四、硬门槛实验
