@@ -174,6 +174,7 @@ V2-H-PLUS-3PP
       ├─ rejected_branch：IDEA-142 / 频域稳定前景聚合（最佳非零ΔH=-0.065613，seen破坏抵消unseen修正）
       ├─ rejected_branch：IDEA-143 / 多尺度候选差异证据重排（最佳非零ΔH=-0.177396，seen/unseen/ZS均净破坏）
       ├─ testing_branch：IDEA-144 / FMC-SR频域引导多尺度候选安全纠错（共享pair判别+最小干预训练）
+      ├─ testing_branch：IDEA-146 / GTD-TST测地目标蒸馏（seen视觉角度teacher→文本Gate→true-unseen迁移）
       ├─ integration_gate：三者必须形成连续或互补逻辑
       ├─ naming_gate：一个总方法名 + 三个统一风格子名称
       └─ metric_target：最终CCGR+ARA四训练seed H=79.265577至79.386082，稳定超过78
