@@ -157,6 +157,33 @@ def closed_form_alignment_angle(
     return candidates.gather(1, scores.argmax(dim=1, keepdim=True)).squeeze(1)
 
 
+def select_oracle_targets(
+    theta_grid: torch.Tensor,
+    objective: torch.Tensor,
+    valid: torch.Tensor,
+    *,
+    gain_epsilon: float = 1e-6,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Select the first minimum; all ties therefore resolve to exact theta zero."""
+    if (
+        theta_grid.ndim != 2
+        or objective.shape != theta_grid.shape
+        or valid.shape != theta_grid.shape[:1]
+        or theta_grid.size(1) != 33
+        or not torch.isfinite(theta_grid).all()
+        or not torch.isfinite(objective).all()
+        or float(gain_epsilon) <= 0.0
+    ):
+        raise ValueError("GTD oracle grid/objective/valid边界错误。")
+    best_index = objective.argmin(dim=1)
+    rows = torch.arange(theta_grid.size(0), device=theta_grid.device)
+    selected = theta_grid[rows, best_index]
+    gain = objective[:, 0] - objective[rows, best_index]
+    useful = valid.bool() & (gain > float(gain_epsilon))
+    selected = torch.where(useful, selected, torch.zeros_like(selected))
+    return selected, gain, useful
+
+
 class GeodesicTargetGate(nn.Module):
     """Shared zero-initialized angle-ratio regressor."""
 
@@ -365,13 +392,11 @@ class GTDTSTModel(nn.Module):
         true_logits = torch.einsum("cd,ckd->ck", target_centroids, candidates) * scale
         ce = torch.logaddexp(true_logits, other_logsumexp[:, None]) - true_logits
         objective = ce + float(theta_penalty) * theta_grid.square()
-        best_index = objective.argmin(dim=1)
-        row = torch.arange(count, device=device)
-        best_theta = theta_grid[row, best_index]
-        best_objective = objective[row, best_index]
-        gain = objective[:, 0] - best_objective
-        useful = gain > 1e-6
-        best_theta = torch.where(useful & geometry.valid, best_theta, torch.zeros_like(best_theta))
+        best_theta, gain, useful = select_oracle_targets(
+            theta_grid,
+            objective,
+            geometry.valid,
+        )
         target_ratio = torch.where(
             geometry.angle_limit > GEOMETRY_EPS,
             best_theta / geometry.angle_limit.clamp_min(GEOMETRY_EPS),
@@ -390,6 +415,7 @@ class GTDTSTModel(nn.Module):
             "target_theta": best_theta.detach(),
             "oracle_gain": gain.detach(),
             "valid": geometry.valid.detach(),
+            "move_mask": useful.detach(),
             "angle_limit": geometry.angle_limit.detach(),
             "closed_form_theta": closed_form.detach(),
         }

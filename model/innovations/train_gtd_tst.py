@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -36,6 +37,8 @@ NOMINAL_EPOCHS = 150
 BATCH_SIZE = 50
 EVAL_INTERVAL = 141
 TOTAL_UPDATES = TRAIN_COUNT * NOMINAL_EPOCHS // BATCH_SIZE
+TEACHER_REFRESH_UPDATES = tuple(1 + EVAL_INTERVAL * index for index in range(NOMINAL_EPOCHS))
+MATCHED_CONTROL_ID = "V3-TRY-020"
 CONFIG_KEYS = {
     "schema_version",
     "experiment_id",
@@ -308,6 +311,22 @@ class GroupwiseSchedule:
             "last_update": self.last_update,
         }
 
+    def load_state_dict(self, state: dict) -> None:
+        expected = {
+            "base_lrs": list(self.base_lrs),
+            "total_updates": self.total_updates,
+            "warmup_updates": self.warmup_updates,
+            "tg_min_multiplier": self.tg_min_multiplier,
+            "gate_min_multiplier": self.gate_min_multiplier,
+        }
+        if not isinstance(state, dict) or any(state.get(key) != value for key, value in expected.items()):
+            raise ValueError("GTD scheduler checkpoint身份错误。")
+        last_update = int(state.get("last_update", -1))
+        if last_update == 0:
+            self.last_update = 0
+            return
+        self.set_for_update(last_update)
+
 
 def evaluation_updates() -> tuple[int, ...]:
     values = sorted(
@@ -316,6 +335,90 @@ def evaluation_updates() -> tuple[int, ...]:
     if len(values) != 151 or values[-2:] != [21150, 21171]:
         raise RuntimeError("GTD评估点必须是141×1..150加21171。")
     return tuple(values)
+
+
+def gtd_screen_decision(delta_h: float, gap: float) -> str:
+    return (
+        "pending_matched_try020_comparison"
+        if float(delta_h) >= 0.8 and float(gap) < 8.0
+        else "drop_fixed_150"
+    )
+
+
+def tensor_mapping_sha256(mapping: dict[str, torch.Tensor]) -> str:
+    digest = hashlib.sha256()
+    for name in sorted(mapping):
+        tensor = mapping[name].detach().cpu().contiguous()
+        digest.update(name.encode("utf-8"))
+        digest.update(str(tensor.dtype).encode("ascii"))
+        digest.update(str(tuple(tensor.shape)).encode("ascii"))
+        digest.update(tensor.numpy().tobytes())
+    return digest.hexdigest()
+
+
+def teacher_packages_sha256(packages: list[dict[str, torch.Tensor]]) -> str:
+    if len(packages) != 3:
+        raise ValueError("GTD teacher package SHA固定要求三个fold。")
+    flattened = {
+        f"fold{fold}.{name}": tensor
+        for fold, package in enumerate(packages)
+        for name, tensor in package.items()
+    }
+    return tensor_mapping_sha256(flattened)
+
+
+def teacher_packages_to_cpu(
+    packages: list[dict[str, torch.Tensor]],
+) -> list[dict[str, torch.Tensor]]:
+    return [
+        {name: tensor.detach().cpu().clone() for name, tensor in package.items()}
+        for package in packages
+    ]
+
+
+def teacher_packages_to_device(
+    packages: list[dict[str, torch.Tensor]], device: torch.device
+) -> list[dict[str, torch.Tensor]]:
+    if len(packages) != 3:
+        raise ValueError("GTD checkpoint teacher package固定要求三个fold。")
+    return [
+        {name: tensor.to(device) for name, tensor in package.items()}
+        for package in packages
+    ]
+
+
+def teacher_refresh_record(
+    *,
+    update: int,
+    model: GTDTSTModel,
+    packages: list[dict[str, torch.Tensor]],
+    folds: list[tuple[torch.Tensor, torch.Tensor]],
+) -> dict:
+    if int(update) not in TEACHER_REFRESH_UPDATES or len(packages) != 3 or len(folds) != 3:
+        raise ValueError("GTD teacher refresh update/fold边界错误。")
+    class_ids = torch.cat([package["class_ids"].detach().cpu() for package in packages])
+    order = class_ids.argsort(stable=True)
+    target_ratio = torch.cat([package["target_ratio"].detach().cpu() for package in packages])[order]
+    target_theta = torch.cat([package["target_theta"].detach().cpu() for package in packages])[order]
+    move_mask = torch.cat([package["move_mask"].detach().cpu() for package in packages])[order]
+    valid = torch.cat([package["valid"].detach().cpu() for package in packages])[order]
+    gain = torch.cat([package["oracle_gain"].detach().cpu() for package in packages])[order]
+    class_ids = class_ids[order]
+    return {
+        "update": int(update),
+        "model_state_sha256": tensor_mapping_sha256(dict(model.state_dict())),
+        "package_sha256": teacher_packages_sha256(packages),
+        "fold_pseudo_unseen_class_ids": [
+            [int(value) for value in pseudo_unseen.detach().cpu().sort().values]
+            for _, pseudo_unseen in folds
+        ],
+        "class_ids": [int(value) for value in class_ids],
+        "target_ratio": [float(value) for value in target_ratio],
+        "target_theta_radians": [float(value) for value in target_theta],
+        "move_mask": [bool(value) for value in move_mask],
+        "valid_direction_mask": [bool(value) for value in valid],
+        "oracle_gain": [float(value) for value in gain],
+    }
 
 
 def refresh_oracle_targets(
@@ -442,7 +545,47 @@ def evaluate(
     return result
 
 
-def run(config_path: Path, output_dir: Path, expected_commit: str) -> dict:
+def prepare_run_directory(
+    output_dir: Path,
+    resume_from: Path | None,
+    config: dict,
+) -> tuple[Path, str]:
+    if resume_from is None:
+        return prepare_output_dir(output_dir), "x"
+    if not output_dir.is_absolute() or not resume_from.is_absolute():
+        raise ValueError("GTD resume的output-dir和checkpoint必须是绝对路径。")
+    resolved_output = output_dir.resolve()
+    resolved_resume = resume_from.resolve()
+    repo_root = Path(__file__).resolve().parents[2]
+    if repo_root == resolved_output or repo_root in resolved_output.parents:
+        raise ValueError("GTD output-dir必须位于Git仓库外。")
+    if not resolved_output.is_dir() or resolved_resume != resolved_output / "checkpoint_last.pth":
+        raise ValueError("GTD只允许从同一RUN目录的checkpoint_last.pth续训。")
+    snapshot = resolved_output / "config.snapshot.yaml"
+    if not snapshot.is_file() or yaml.safe_load(snapshot.read_text(encoding="utf-8")) != config:
+        raise ValueError("GTD resume config snapshot与当前配置不一致。")
+    return resolved_output, "a"
+
+
+def next_teacher_refresh_after(update: int) -> int | None:
+    return next((value for value in TEACHER_REFRESH_UPDATES if value > int(update)), None)
+
+
+def restore_rng_states(checkpoint: dict, generator: torch.Generator) -> None:
+    generator.set_state(checkpoint["batch_generator_state"])
+    torch.set_rng_state(checkpoint["cpu_rng_state"])
+    cuda_states = checkpoint["cuda_rng_state_all"]
+    if len(cuda_states) != torch.cuda.device_count():
+        raise ValueError("GTD resume CUDA RNG设备数量不一致。")
+    torch.cuda.set_rng_state_all(cuda_states)
+
+
+def run(
+    config_path: Path,
+    output_dir: Path,
+    expected_commit: str,
+    resume_from: Path | None = None,
+) -> dict:
     require_clean_code_tree()
     code_commit = current_code_commit()
     if code_commit != expected_commit:
@@ -456,11 +599,12 @@ def run(config_path: Path, output_dir: Path, expected_commit: str) -> dict:
     seen = torch.unique(labels, sorted=True)
     if labels.numel() != TRAIN_COUNT or seen.numel() != SEEN_COUNT:
         raise ValueError("GTD固定CUB 7057张trainval和150个seen类。")
-    output_dir = prepare_output_dir(output_dir)
-    (output_dir / "config.snapshot.yaml").write_text(
-        yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8"
-    )
-    log_handle = (output_dir / "training.log").open("x", encoding="utf-8", buffering=1)
+    output_dir, log_mode = prepare_run_directory(output_dir, resume_from, config)
+    if resume_from is None:
+        (output_dir / "config.snapshot.yaml").write_text(
+            yaml.safe_dump(config, allow_unicode=True, sort_keys=False), encoding="utf-8"
+        )
+    log_handle = (output_dir / "training.log").open(log_mode, encoding="utf-8", buffering=1)
     original_stdout = sys.stdout
     sys.stdout = TeeStream(sys.stdout, log_handle)
     try:
@@ -501,50 +645,104 @@ def run(config_path: Path, output_dir: Path, expected_commit: str) -> dict:
             / float(config["gate_learning_rate"]),
         )
         batch_generator = torch.Generator(device="cpu").manual_seed(int(config["random_seed"]))
-        packages = refresh_oracle_targets(
-            model, visual_centroids, folds, float(config["theta_penalty"])
-        )
-        target_refresh_count = 1
-        initial = evaluate(model, tensors, packages, device, return_predictions=True)
-        frozen_baseline = initial.pop("_predictions")
-        zero_transitions = {
-            split: _transitions(prediction, prediction, label)
-            for split, prediction, label in (
-                ("seen", frozen_baseline["seen"], tensors["test_seen_labels"]),
-                ("unseen", frozen_baseline["unseen"], tensors["test_unseen_labels"]),
-                ("zs", frozen_baseline["zs"], tensors["test_unseen_labels"]),
-            )
-        }
-        initial["full_model_transitions_vs_frozen_tg"] = zero_transitions
         parent_metrics = config["parent_metrics_percent"]
-        for metric in ("U", "S", "H", "ZS"):
-            if abs(float(initial[metric]) - float(parent_metrics[metric])) > 1e-6:
-                raise ValueError(f"GTD theta0未复现父TG {metric}。")
-        initial.update(
-            {
-                "evaluation_index": 0,
-                "update": 0,
-                "delta_U": 0.0,
-                "delta_S": 0.0,
-                "delta_H": 0.0,
-                "delta_ZS": 0.0,
+        if resume_from is None:
+            packages = refresh_oracle_targets(
+                model, visual_centroids, folds, float(config["theta_penalty"])
+            )
+            teacher_history = [
+                teacher_refresh_record(
+                    update=TEACHER_REFRESH_UPDATES[0],
+                    model=model,
+                    packages=packages,
+                    folds=folds,
+                )
+            ]
+            next_teacher_refresh = TEACHER_REFRESH_UPDATES[1]
+            initial = evaluate(model, tensors, packages, device, return_predictions=True)
+            frozen_baseline = initial.pop("_predictions")
+            zero_transitions = {
+                split: _transitions(prediction, prediction, label)
+                for split, prediction, label in (
+                    ("seen", frozen_baseline["seen"], tensors["test_seen_labels"]),
+                    ("unseen", frozen_baseline["unseen"], tensors["test_unseen_labels"]),
+                    ("zs", frozen_baseline["zs"], tensors["test_unseen_labels"]),
+                )
             }
-        )
-        history = [initial]
-        best_metrics = copy.deepcopy(initial)
-        best_state = copy.deepcopy(model.state_dict())
-        best_update = 0
-        best_zs = {"ZS": float(initial["ZS"]), "update": 0, "metrics": copy.deepcopy(initial)}
+            initial["full_model_transitions_vs_frozen_tg"] = zero_transitions
+            for metric in ("U", "S", "H", "ZS"):
+                if abs(float(initial[metric]) - float(parent_metrics[metric])) > 1e-6:
+                    raise ValueError(f"GTD theta0未复现父TG {metric}。")
+            initial.update(
+                {
+                    "evaluation_index": 0,
+                    "update": 0,
+                    "delta_U": 0.0,
+                    "delta_S": 0.0,
+                    "delta_H": 0.0,
+                    "delta_ZS": 0.0,
+                }
+            )
+            history = [initial]
+            best_metrics = copy.deepcopy(initial)
+            best_state = copy.deepcopy(model.state_dict())
+            best_update = 0
+            best_zs = {
+                "ZS": float(initial["ZS"]),
+                "update": 0,
+                "metrics": copy.deepcopy(initial),
+            }
+            start_update = 1
+        else:
+            checkpoint = torch.load(resume_from, map_location="cpu", weights_only=True)
+            if (
+                checkpoint.get("experiment_id") != config["experiment_id"]
+                or checkpoint.get("code_commit") != code_commit
+                or checkpoint.get("config_sha256") != config_sha
+                or not 0 < int(checkpoint.get("update", 0)) < TOTAL_UPDATES
+            ):
+                raise ValueError("GTD resume checkpoint RUN身份或update错误。")
+            model.load_state_dict(checkpoint["model_state_dict"], strict=True)
+            optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+            scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+            packages = teacher_packages_to_device(checkpoint["teacher_packages"], device)
+            teacher_history = checkpoint["teacher_refresh_history"]
+            next_teacher_refresh = checkpoint["next_teacher_refresh_update"]
+            history = checkpoint["history"]
+            frozen_baseline = checkpoint["frozen_baseline_predictions"]
+            best_metrics = checkpoint["best_metrics"]
+            best_state = checkpoint["best_model_state_dict"]
+            best_update = int(checkpoint["best_update"])
+            best_zs = checkpoint["best_zs_observation"]
+            expected_next = next_teacher_refresh_after(int(checkpoint["update"]))
+            if (
+                next_teacher_refresh != expected_next
+                or len(teacher_history)
+                != sum(value <= int(checkpoint["update"]) for value in TEACHER_REFRESH_UPDATES)
+                or teacher_packages_sha256(packages) != teacher_history[-1]["package_sha256"]
+            ):
+                raise ValueError("GTD resume teacher package/history/next refresh不一致。")
+            start_update = int(checkpoint["update"]) + 1
+            reproducibility = checkpoint["reproducibility"]
+            restore_rng_states(checkpoint, batch_generator)
+            print(f"GTD resume_from={resume_from} next_update={start_update}")
         eval_set = set(evaluation_updates())
         interval_sums: dict[str, float] = {}
         interval_steps = 0
-        for update in range(1, TOTAL_UPDATES + 1):
-            # Refresh exactly 150 times: update 1 and starts of the next 149 report intervals.
-            if update > 1 and (update - 1) % EVAL_INTERVAL == 0 and (update - 1) // EVAL_INTERVAL < 150:
+        for update in range(start_update, TOTAL_UPDATES + 1):
+            if next_teacher_refresh is not None and update == int(next_teacher_refresh):
                 packages = refresh_oracle_targets(
                     model, visual_centroids, folds, float(config["theta_penalty"])
                 )
-                target_refresh_count += 1
+                teacher_history.append(
+                    teacher_refresh_record(
+                        update=update,
+                        model=model,
+                        packages=packages,
+                        folds=folds,
+                    )
+                )
+                next_teacher_refresh = next_teacher_refresh_after(update)
             model.train()
             scheduler.set_for_update(update)
             indices_cpu = torch.randperm(TRAIN_COUNT, generator=batch_generator)[:BATCH_SIZE]
@@ -633,13 +831,25 @@ def run(config_path: Path, output_dir: Path, expected_commit: str) -> dict:
                 "best_metrics": best_metrics,
                 "best_model_state_dict": {k: v.detach().cpu() for k, v in best_state.items()},
                 "best_zs_observation": best_zs,
-                "target_refresh_count": target_refresh_count,
+                "teacher_packages": teacher_packages_to_cpu(packages),
+                "teacher_refresh_history": teacher_history,
+                "next_teacher_refresh_update": next_teacher_refresh,
+                "frozen_baseline_predictions": frozen_baseline,
+                "batch_generator_state": batch_generator.get_state(),
+                "cpu_rng_state": torch.get_rng_state(),
+                "cuda_rng_state_all": torch.cuda.get_rng_state_all(),
                 "history": history,
                 "reproducibility": reproducibility,
             }
             atomic_torch_save(output_dir / "checkpoint_last.pth", checkpoint)
         if len(history) != 152 or history[-1]["update"] != TOTAL_UPDATES:
             raise RuntimeError("GTD完整150轮必须保存152个评估点并结束于21171。")
+        if (
+            len(teacher_history) != NOMINAL_EPOCHS
+            or [row["update"] for row in teacher_history] != list(TEACHER_REFRESH_UPDATES)
+            or next_teacher_refresh is not None
+        ):
+            raise RuntimeError("GTD完整150轮必须保存150次确定性teacher refresh。")
         atomic_torch_save(
             output_dir / "model_best.pth",
             {
@@ -653,11 +863,16 @@ def run(config_path: Path, output_dir: Path, expected_commit: str) -> dict:
         )
         delta_h = float(best_metrics["H"]) - float(parent_metrics["H"])
         gap = abs(float(best_metrics["U"]) - float(best_metrics["S"]))
-        decision = (
-            "promote_to_fixed_200_and_matched_ablation"
-            if delta_h >= float(config["required_delta_h"]) and gap < float(config["max_us_gap"])
-            else "drop_fixed_150"
+        matched_required = MATCHED_CONTROL_ID
+        decision = gtd_screen_decision(delta_h, gap)
+        atomic_write_json(output_dir / "evaluation_history.json", {"rows": history})
+        atomic_write_json(
+            output_dir / "teacher_refresh_history.json",
+            {"count": len(teacher_history), "rows": teacher_history},
         )
+        evaluation_history_sha = sha256_file(output_dir / "evaluation_history.json")
+        teacher_history_sha = sha256_file(output_dir / "teacher_refresh_history.json")
+        checkpoint_last_sha = sha256_file(output_dir / "checkpoint_last.pth")
         result = {
             "experiment_id": config["experiment_id"],
             "condition_id": config["condition_id"],
@@ -668,20 +883,30 @@ def run(config_path: Path, output_dir: Path, expected_commit: str) -> dict:
             "best_update": best_update,
             "best_delta_H": delta_h,
             "best_gap_U_S": gap,
+            "matched_comparison_required": matched_required,
+            "matched_control_triggered": decision == "pending_matched_try020_comparison",
+            "old_tg_screen_threshold_H": 0.8,
+            "independent_support_threshold_H": float(config["required_delta_h"]),
             "best_zs_observation": best_zs,
             "stop_reason": "completed_fixed_150",
             "decision": decision,
             "history_length": len(history),
-            "target_refresh_count": target_refresh_count,
+            "target_refresh_count": len(teacher_history),
             "test_used_for_selection": True,
             "test_used_for_hyperparameter_selection": True,
             "unseen_images_used_for_gradient": False,
             "strict_blind_claim": False,
             "human_annotations_used": False,
             "model_sha256": sha256_file(output_dir / "model_best.pth"),
+            "asset_manifest_sha256": config["asset_manifest_sha256"],
+            "tg_checkpoint_sha256": config["tg_checkpoint_sha256"],
+            "checkpoint_last_sha256": checkpoint_last_sha,
+            "evaluation_history_sha256": evaluation_history_sha,
+            "teacher_refresh_history_sha256": teacher_history_sha,
+            "final_teacher_package_sha256": teacher_history[-1]["package_sha256"],
+            "final_teacher_model_state_sha256": teacher_history[-1]["model_state_sha256"],
         }
         atomic_write_json(output_dir / "metrics.json", result)
-        atomic_write_json(output_dir / "evaluation_history.json", {"rows": history})
         print(json.dumps(result, ensure_ascii=False))
         return result
     finally:
@@ -695,8 +920,9 @@ def main():
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--expected-commit", required=True)
+    parser.add_argument("--resume-from", type=Path)
     args = parser.parse_args()
-    run(args.config, args.output_dir, args.expected_commit)
+    run(args.config, args.output_dir, args.expected_commit, args.resume_from)
 
 
 if __name__ == "__main__":
