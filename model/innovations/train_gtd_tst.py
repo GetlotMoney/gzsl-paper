@@ -345,14 +345,14 @@ def gtd_screen_decision(delta_h: float, gap: float) -> str:
     return "pending_matched_try020_comparison"
 
 
-def gtd_screen_outcome(delta_h: float, gap: float) -> dict[str, str | bool]:
+def gtd_screen_outcome(delta_h: float, gap: float) -> dict[str, str | bool | None]:
     decision = gtd_screen_decision(delta_h, gap)
+    triggered = decision != "drop_fixed_150"
     return {
         "decision": decision,
-        "matched_control_triggered": decision
-        in {"trigger_try020_static_below1", "pending_matched_try020_comparison"},
+        "matched_control_triggered": triggered,
         "static_support_passed": decision == "pending_matched_try020_comparison",
-        "matched_comparison_required": MATCHED_CONTROL_ID,
+        "matched_comparison_required": MATCHED_CONTROL_ID if triggered else None,
     }
 
 

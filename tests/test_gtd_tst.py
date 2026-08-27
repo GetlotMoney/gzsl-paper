@@ -240,6 +240,15 @@ def test_fixed150_schedule_evaluations_and_config_contract():
     assert gtd_screen_decision(0.999999, 1.0) == "trigger_try020_static_below1"
     assert gtd_screen_decision(1.0, 1.0) == "pending_matched_try020_comparison"
     assert gtd_screen_decision(2.0, 8.0) == "drop_fixed_150"
+    dropped = gtd_screen_outcome(0.79, 1.0)
+    assert dropped == {
+        "decision": "drop_fixed_150",
+        "matched_control_triggered": False,
+        "static_support_passed": False,
+        "matched_comparison_required": None,
+    }
+    gap_drop = gtd_screen_outcome(2.0, 8.0)
+    assert gap_drop == dropped
     middle = gtd_screen_outcome(0.9, 1.0)
     assert middle == {
         "decision": "trigger_try020_static_below1",
