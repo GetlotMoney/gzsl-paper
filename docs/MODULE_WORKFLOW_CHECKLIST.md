@@ -78,6 +78,7 @@ U/S/H/ZS和1点门槛已预注册？
 batch50真实smoke和显存已验证？
 config、commit、资产SHA、output URI齐全？
 测试通过且本地/服务器clean？
+两轮独立Agent已审查同一最终代码身份，且第二轮明确无P0/P1？
 ```
 
 任一项为“否”，不得启动训练。
