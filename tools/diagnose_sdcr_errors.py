@@ -10,11 +10,11 @@ import scipy.io as sio
 import torch
 import torch.nn.functional as F
 
-from model.innovations.ebc import EpisodicBiasCalibration
-from model.innovations.sdcr import SentenceDropoutConservativeRouting
-from model.innovations.train_chen_style import OFFICIAL_KEYS, resolve_paths
-from model.innovations.train_sebc import _load_main
-from model.tg_vpr_h1 import train as h1
+from model.candidates.v2.modules.ebc import EpisodicBiasCalibration
+from model.candidates.v2.modules.sdcr import SentenceDropoutConservativeRouting
+from model.candidates.v2.trainers.train_chen_style import OFFICIAL_KEYS, resolve_paths
+from model.candidates.v2.trainers.train_sebc import _load_main
+from model.frameworks.v2 import train as h1
 from tools.cub_data import load_cub_split
 from tools.run_contract import atomic_write_json
 from tools.runtime import sha256_file
@@ -122,7 +122,7 @@ def run(
 ) -> dict[str, object]:
     config_path = h1.repo_path(config_path)
     config = __import__(
-        "model.innovations.train_sdcr", fromlist=["load_config"]
+        "model.candidates.v2.trainers.train_sdcr", fromlist=["load_config"]
     ).load_config(config_path)[0]
     paths = resolve_paths(config)
     device = torch.device(device_text)

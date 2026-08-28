@@ -57,8 +57,8 @@ H mean=`73.853094`，min=`73.709453`，max=`74.023182`，range=`0.313729`。固�
 
 ## 代码与配置
 
-- 模块：`model/tg_vpr_h1/module.py`
-- 独立训练入口：`python -m model.tg_vpr_h1.train`
+- 模块：`model/frameworks/v2/model.py`
+- 独立训练入口：`python -m model.frameworks.v2.train`
 - 冻结配置：`config/tg_vpr_h1.yaml`
 - 来源：`docs/TG_VPR_H1_SOURCE.yaml`
 - 测试：`tests/test_tg_vpr_h1.py`

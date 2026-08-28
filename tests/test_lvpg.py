@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.lvpg import ridge_predict_local_visual
-from model.innovations.train_ccpe import load_config
+from model.candidates.v2.modules.lvpg import ridge_predict_local_visual
+from model.candidates.v2.trainers.train_ccpe import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

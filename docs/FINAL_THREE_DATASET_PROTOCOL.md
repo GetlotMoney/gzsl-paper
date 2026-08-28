@@ -45,8 +45,8 @@ Stagewise主策略固定为50/100/50名义epoch：先训练TG-VPR，再冻结TG�
 - 数据与split：`tools/gzsl_data.py`
 - 八角色请求：`tools/create_role_text_request.py`
 - CLIP缓存：`tools/prepare_paper_clip_assets.py`
-- 三模块模型：`model/paper_v2.py`
-- 正式训练：`python -m model.train_paper_v2`
+- 三模块模型：`model/frameworks/v4/model.py`
+- 正式训练：`python -m model.candidates.v2.trainers.paper_v2`
 - module-off：`tools/evaluate_paper_module_off.py`
 
 每个正式RUN至少生成`training.log / metrics.json / model_best.pth / checkpoint_last.pth / data_fingerprints.json / config.snapshot.yaml / evaluation_history.json`。

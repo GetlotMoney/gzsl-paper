@@ -4,13 +4,13 @@ from pathlib import Path
 
 import torch
 
-from model.innovations.dpt import (
+from model.candidates.v2.modules.dpt import (
     AdaptiveDistributionalPrototypeClassifier,
     DistributionalPrototypeClassifier,
     text_resultant_lengths,
     text_uncertainty_features,
 )
-from model.innovations.train_dpt import load_config
+from model.candidates.v2.trainers.train_dpt import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,7 +50,7 @@ def test_dpt_config_and_training_boundary():
     config, _ = load_config(ROOT / "config/tries/v2_try_041_dpt_seed7.yaml")
     assert config["idea_id"] == "IDEA-012"
     assert config["max_gamma"] == 2.0
-    source = (ROOT / "model/innovations/train_dpt.py").read_text(encoding="utf-8")
+    source = (ROOT / "model/candidates/v2/trainers/train_dpt.py").read_text(encoding="utf-8")
     assert source.index("for epoch in range") < source.index("# official test严格在DPT训练结束后加载。")
 
 

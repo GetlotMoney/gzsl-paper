@@ -4,8 +4,8 @@ import unittest
 import torch
 import torch.nn.functional as F
 
-from model.innovations.train_unified_seen import full_epoch_batches, load_config
-from model.innovations.unified_seen import UnifiedSeenPrototypeModel
+from model.candidates.v2.trainers.train_unified_seen import full_epoch_batches, load_config
+from model.candidates.v2.modules.unified_seen import UnifiedSeenPrototypeModel
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -141,7 +141,7 @@ class UnifiedSeenTrainingTest(unittest.TestCase):
         self.assertEqual(config["epochs"], 50)
         self.assertFalse(config["test_used_for_selection"])
         self.assertEqual(config["official_test_load_epoch"], "after_epoch_50")
-        source = (ROOT / "model/innovations/train_unified_seen.py").read_text(encoding="utf-8")
+        source = (ROOT / "model/candidates/v2/trainers/train_unified_seen.py").read_text(encoding="utf-8")
         self.assertNotIn("fixed_class_folds", source)
         self.assertLess(source.index("for epoch in range"), source.index("official test只在全部50轮"))
 

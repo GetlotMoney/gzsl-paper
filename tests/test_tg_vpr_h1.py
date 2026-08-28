@@ -6,8 +6,8 @@ import unittest
 import torch
 import yaml
 
-from model.tg_vpr_h1 import TGVPRH1FixedEqual
-from model.tg_vpr_h1 import train as h1_train
+from model.frameworks.v2 import TGVPRH1FixedEqual
+from model.frameworks.v2 import train as h1_train
 from tools.runtime import sha256_file
 
 

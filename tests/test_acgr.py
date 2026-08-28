@@ -4,8 +4,8 @@ from pathlib import Path
 
 import torch
 
-from model.innovations.acgr import AllClassCenteredGroupRouter
-from model.innovations.train_icgr import load_config
+from model.candidates.v2.modules.acgr import AllClassCenteredGroupRouter
+from model.candidates.v2.trainers.train_icgr import load_config
 from tests.test_tg_vpr_h1 import make_model
 
 

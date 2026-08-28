@@ -1,7 +1,7 @@
 from pathlib import Path
 import unittest
 
-from model.innovations.train_clre import load_config
+from model.candidates.v2.trainers.train_clre import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,7 +18,7 @@ class CLRETest(unittest.TestCase):
         )
         self.assertFalse(config["unseen_images_used_for_gradient"])
         self.assertFalse(config["text_cache_provenance_complete"])
-        source = (ROOT / "model/innovations/train_clre.py").read_text(encoding="utf-8")
+        source = (ROOT / "model/candidates/v2/trainers/train_clre.py").read_text(encoding="utf-8")
         self.assertNotIn('["att"]', source)
 
 

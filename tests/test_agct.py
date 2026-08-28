@@ -3,11 +3,11 @@ import unittest
 
 import torch
 
-from model.innovations.agct import (
+from model.candidates.v2.modules.agct import (
     AmbiguityGatedCrossLLMTieBreaker,
     MultiSourceAmbiguityGatedTieBreaker,
 )
-from model.innovations.train_agct import load_config, select_margin_threshold
+from model.candidates.v2.trainers.train_agct import load_config, select_margin_threshold
 
 
 ROOT = Path(__file__).resolve().parents[1]

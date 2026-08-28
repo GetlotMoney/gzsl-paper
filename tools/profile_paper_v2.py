@@ -13,7 +13,7 @@ import torch.nn.functional as F
 from PIL import Image
 from torch.profiler import ProfilerActivity, profile
 
-from model.train_paper_v2 import build_three_module_model, load_assets, load_config
+from model.candidates.v2.trainers.paper_v2 import build_three_module_model, load_assets, load_config
 from tools.runtime import sha256_file
 
 

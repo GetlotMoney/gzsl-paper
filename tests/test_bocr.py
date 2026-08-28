@@ -4,8 +4,8 @@ import unittest
 import torch
 import torch.nn.functional as F
 
-from model.innovations.semantic_orthogonal import classwise_bi_orthogonal_residual
-from model.innovations.train_clre import load_config
+from model.candidates.v2.modules.semantic_orthogonal import classwise_bi_orthogonal_residual
+from model.candidates.v2.trainers.train_clre import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

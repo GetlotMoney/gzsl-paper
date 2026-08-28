@@ -3,7 +3,7 @@ import unittest
 
 import torch
 
-from model.innovations.train_chen_style import load_config, random_batch_indices
+from model.candidates.v2.trainers.train_chen_style import load_config, random_batch_indices
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,7 +43,7 @@ class ChenStyleTrainingTest(unittest.TestCase):
         self.assertEqual(points[-1], 28200)
 
     def test_source_selects_only_whole_model_h(self):
-        source = (ROOT / "model/innovations/train_chen_style.py").read_text(encoding="utf-8")
+        source = (ROOT / "model/candidates/v2/trainers/train_chen_style.py").read_text(encoding="utf-8")
         self.assertIn('if metrics["H"] > best_h:', source)
         self.assertNotIn("best_tg_vpr", source)
         self.assertNotIn("best_ccgr", source)

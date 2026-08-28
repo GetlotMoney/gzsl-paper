@@ -3,8 +3,8 @@ import unittest
 import torch
 import torch.nn.functional as F
 
-from model.innovations.unified_expert import ExpertAttributeUnifiedModel
-from model.innovations.unified_seen import UnifiedSeenPrototypeModel
+from model.candidates.v2.modules.unified_expert import ExpertAttributeUnifiedModel
+from model.candidates.v2.modules.unified_seen import UnifiedSeenPrototypeModel
 
 
 class UnifiedExpertTest(unittest.TestCase):

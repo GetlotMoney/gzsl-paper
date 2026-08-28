@@ -3,7 +3,7 @@ import unittest
 
 import torch
 
-from model.innovations.train_standard_validation import (
+from model.candidates.v2.trainers.train_standard_validation import (
     evaluate_validation,
     load_config,
     pseudo_unseen_fold_batch,
@@ -100,7 +100,7 @@ class StandardValidationTrainingTest(unittest.TestCase):
         self.assertTrue(labels.index_select(0, indices).eq(2).all())
 
     def test_nested_training_samples_inner_batches_only_from_fit_labels(self):
-        source = (ROOT / "model/innovations/train_standard_validation.py").read_text(
+        source = (ROOT / "model/candidates/v2/trainers/train_standard_validation.py").read_text(
             encoding="utf-8"
         )
         self.assertIn("balanced_fold_batch(", source)
@@ -110,7 +110,7 @@ class StandardValidationTrainingTest(unittest.TestCase):
         self.assertNotIn("val_unseen_positions].to(device)", source)
 
     def test_training_source_has_no_official_cache_names(self):
-        source = (ROOT / "model/innovations/train_standard_validation.py").read_text(
+        source = (ROOT / "model/candidates/v2/trainers/train_standard_validation.py").read_text(
             encoding="utf-8"
         )
         self.assertNotIn("CUB_test_seen", source)

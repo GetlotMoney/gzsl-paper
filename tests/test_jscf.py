@@ -4,7 +4,7 @@ import unittest
 import torch
 import torch.nn as nn
 
-from model.innovations.train_jscf import enable_joint_parameters, load_config
+from model.candidates.v2.trainers.train_jscf import enable_joint_parameters, load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

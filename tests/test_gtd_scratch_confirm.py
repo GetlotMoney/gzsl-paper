@@ -6,7 +6,7 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-from model.innovations.train_gtd_tst import (
+from model.frameworks.v4.train import (
     build_model,
     load_assets,
     load_config,

@@ -9,8 +9,8 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-from model.paper_v2 import PaperV2ThreeModuleModel
-from model.train_paper_v2 import (
+from model.frameworks.v4.model import PaperV2ThreeModuleModel
+from model.candidates.v2.trainers.paper_v2 import (
     load_config,
     random_batch_indices,
     report_interval_for_run,

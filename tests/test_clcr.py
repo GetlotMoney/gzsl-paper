@@ -4,8 +4,8 @@ import unittest
 import torch
 import torch.nn.functional as F
 
-from model.innovations.clcr import CrossLLMComplementaryResidual
-from model.innovations.train_clcr import load_config
+from model.candidates.v2.modules.clcr import CrossLLMComplementaryResidual
+from model.candidates.v2.trainers.train_clcr import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

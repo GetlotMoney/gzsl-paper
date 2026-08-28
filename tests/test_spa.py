@@ -4,8 +4,8 @@ from pathlib import Path
 
 import torch
 
-from model.innovations.spa import SeenPrototypeAnchor
-from model.innovations.train_spa import load_config
+from model.candidates.v2.modules.spa import SeenPrototypeAnchor
+from model.candidates.v2.trainers.train_spa import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,5 +43,5 @@ def test_spa_config_and_training_boundary():
     config, _ = load_config(ROOT / "config/tries/v2_try_025_spa_seed7.yaml")
     assert config["idea_id"] == "IDEA-008"
     assert config["max_strength"] == 0.1
-    source = (ROOT / "model/innovations/train_spa.py").read_text(encoding="utf-8")
+    source = (ROOT / "model/candidates/v2/trainers/train_spa.py").read_text(encoding="utf-8")
     assert source.index("for epoch in range") < source.index("# official test严格在SPA训练结束后加载。")

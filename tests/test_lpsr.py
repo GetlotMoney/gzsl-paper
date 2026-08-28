@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.lpsr import LocalPatchSemanticResidual, pool_fgvd_local_features
-from model.innovations.train_lpsr import load_config
+from model.candidates.v2.modules.lpsr import LocalPatchSemanticResidual, pool_fgvd_local_features
+from model.candidates.v2.trainers.train_lpsr import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,7 +36,7 @@ class LPSRTest(unittest.TestCase):
         self.assertEqual(config["pool_top_k"], 64)
         self.assertFalse(config["unseen_images_used_for_gradient"])
         self.assertFalse(config["feature_provenance_complete"])
-        source = (ROOT / "model/innovations/train_lpsr.py").read_text(encoding="utf-8")
+        source = (ROOT / "model/candidates/v2/trainers/train_lpsr.py").read_text(encoding="utf-8")
         self.assertNotIn('["att"]', source)
 
 

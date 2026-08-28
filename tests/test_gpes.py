@@ -3,7 +3,7 @@ import unittest
 
 import torch
 
-from model.innovations.gpes import (
+from model.candidates.v2.modules.gpes import (
     AntisymmetricPairSelector,
     BiasFreeSemanticNeighborSelector,
     CenteredRoleGatedPairSelector,
@@ -31,7 +31,7 @@ from model.innovations.gpes import (
     pair_role_distance_weights,
     top_discriminative_role_difference,
 )
-from model.innovations.train_gpes import (
+from model.candidates.v2.trainers.train_gpes import (
     ADJACENCY_MODEL_SCHEMAS,
     EVIDENCE_DROPOUT_SCHEMAS,
     MODEL_CLASS_NAME_SCHEMAS,

@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.clec import CrossLLMLocalEvidenceComposition
-from model.innovations.train_clec import load_config
+from model.candidates.v2.modules.clec import CrossLLMLocalEvidenceComposition
+from model.candidates.v2.trainers.train_clec import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

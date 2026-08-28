@@ -5,7 +5,7 @@ import unittest
 
 import torch
 
-from model.innovations.elpt import (
+from model.frameworks.v4.tg import (
     ELPTGate,
     VariableClassTGVPR,
     blend_prototypes,
@@ -14,8 +14,8 @@ from model.innovations.elpt import (
     class_fold_sha256,
     gate_features,
 )
-from model.innovations.train_elpt import load_config
-from model.tg_vpr_h1 import TGVPRH1FixedEqual
+from model.candidates.v2.trainers.train_elpt import load_config
+from model.frameworks.v2 import TGVPRH1FixedEqual
 
 
 ROOT = Path(__file__).resolve().parents[1]

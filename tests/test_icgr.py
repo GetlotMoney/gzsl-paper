@@ -4,8 +4,8 @@ from pathlib import Path
 
 import torch
 
-from model.innovations.icgr import ICGRClassifier, ICGRRouter
-from model.innovations.train_icgr import load_config, uniform_kl
+from model.candidates.v2.modules.icgr import ICGRClassifier, ICGRRouter
+from model.candidates.v2.trainers.train_icgr import load_config, uniform_kl
 from tests.test_tg_vpr_h1 import make_model
 
 
@@ -64,7 +64,7 @@ def test_config_and_training_boundary_contract():
     assert config["idea_id"] == "IDEA-003"
     assert config["epochs"] == 10
     assert config["hidden_dim"] == 64
-    source = (ROOT / "model/innovations/train_icgr.py").read_text(encoding="utf-8")
+    source = (ROOT / "model/candidates/v2/trainers/train_icgr.py").read_text(encoding="utf-8")
     assert source.index("for epoch in range") < source.index("# official test严格在路由训练结束后加载。")
     assert 'for name in ("sentence_embeds", "train_features", "train_labels")' in source
 

@@ -3,7 +3,7 @@ import unittest
 
 import torch
 
-from model.innovations.train_threefold_validation import (
+from model.candidates.v2.trainers.train_threefold_validation import (
     aggregate_fold_histories,
     build_fold_splits,
     load_config,
@@ -93,7 +93,7 @@ class ThreefoldValidationTest(unittest.TestCase):
 
     def test_source_does_not_reference_official_test_cache(self):
         source = (
-            ROOT / "model/innovations/train_threefold_validation.py"
+            ROOT / "model/candidates/v2/trainers/train_threefold_validation.py"
         ).read_text(encoding="utf-8")
         self.assertNotIn("CUB_test_seen", source)
         self.assertNotIn("CUB_test_unseen", source)

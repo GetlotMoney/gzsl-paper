@@ -4,13 +4,13 @@ import unittest
 import torch
 import torch.nn.functional as F
 
-from model.innovations.tigr import (
+from model.candidates.v2.modules.tigr import (
     TaxonomicIntraGroupResidual,
     TaxonomicPairwiseLogitDeconvolution,
     TaxonomicWithinGroupLogitSharpening,
     taxonomic_suffix_group_ids,
 )
-from model.innovations.train_tigr import load_config
+from model.candidates.v2.trainers.train_tigr import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

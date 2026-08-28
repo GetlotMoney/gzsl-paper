@@ -3,7 +3,7 @@ import unittest
 
 import torch
 
-from model.innovations.train_pgsd import (
+from model.candidates.v2.trainers.train_pgsd import (
     centered_patch_reliability_weights,
     load_config,
     patch_reliability_weights,

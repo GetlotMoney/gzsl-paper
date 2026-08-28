@@ -4,8 +4,8 @@ from pathlib import Path
 
 import torch
 
-from model.innovations.train_elpt import _pseudo_unseen_risk, load_config
-from model.innovations.tst import (
+from model.candidates.v2.trainers.train_elpt import _pseudo_unseen_risk, load_config
+from model.frameworks.v4.tst import (
     TangentStepGate,
     NeighborhoodResidualGate,
     bidirectional_centroid_contrastive_loss,

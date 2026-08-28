@@ -51,9 +51,9 @@ conda run -n dvsr_gpu python train.py `
 ## FRAMEWORK-V2 入口
 
 - 方法说明：[docs/TG_VPR_H1.md](docs/TG_VPR_H1.md)
-- 模块代码：`model/tg_vpr_h1/module.py`
-- 独立训练入口：`python -m model.tg_vpr_h1.train`
+- 模块代码：`model/frameworks/v2/model.py`
+- 独立训练入口：`python -m model.frameworks.v2.train`
 - 冻结配置：`config/tg_vpr_h1.yaml`
 - 来源身份：`INNOVATION-MODULE-1`
-- 三数据集统一模型：`model/paper_v2.py`
-- 三数据集正式训练：`python -m model.train_paper_v2`
+- 三数据集统一模型：`model/frameworks/v4/model.py`
+- 三数据集正式训练：`python -m model.candidates.v2.trainers.paper_v2`

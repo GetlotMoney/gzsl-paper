@@ -9,7 +9,7 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-from model.train_paper_v2 import (
+from model.candidates.v2.trainers.paper_v2 import (
     _active_groups,
     _cache_visual_patches,
     _gradient_norms,
@@ -19,7 +19,7 @@ from model.train_paper_v2 import (
     load_config,
     set_trainable,
 )
-from model.visual_evidence import PaperV2VisualModel
+from model.candidates.v3.idea_133_visual_evidence.module import PaperV2VisualModel
 from tools.reproducibility import configure_reproducibility
 from tools.run_contract import require_finite_gradients
 

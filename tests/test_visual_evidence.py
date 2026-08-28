@@ -8,8 +8,8 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-from model.paper_v2 import PaperV2ThreeModuleModel
-from model.train_paper_v2 import (
+from model.frameworks.v4.model import PaperV2ThreeModuleModel
+from model.candidates.v2.trainers.paper_v2 import (
     _active_groups,
     _load_patch_batch,
     best_handoff_stage_for_iteration,
@@ -21,7 +21,7 @@ from model.train_paper_v2 import (
     short_modulewise_stage_for_iteration,
     state_dict_sha256,
 )
-from model.visual_evidence import PaperV2VisualModel, VISUAL_MODES
+from model.candidates.v3.idea_133_visual_evidence.module import PaperV2VisualModel, VISUAL_MODES
 
 
 class VisualEvidenceContractTest(unittest.TestCase):

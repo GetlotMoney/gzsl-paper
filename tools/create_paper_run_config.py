@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from model.paper_v2 import CCGR_MODES, TG_MODES, TRANSPORT_MODES
+from model.frameworks.v4.model import CCGR_MODES, TG_MODES, TRANSPORT_MODES
 from tools.runtime import sha256_file
 
 

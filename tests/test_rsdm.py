@@ -4,11 +4,11 @@ import unittest
 import torch
 import torch.nn.functional as F
 
-from model.innovations.rsdm import (
+from model.candidates.v2.modules.rsdm import (
     FullSemanticSymmetricDiagonalMetric,
     ResidualSymmetricDiagonalMetric,
 )
-from model.innovations.train_rsdm import load_config
+from model.candidates.v2.trainers.train_rsdm import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

@@ -1,7 +1,7 @@
 from pathlib import Path
 import unittest
 
-from model.innovations.train_sebc import load_config
+from model.candidates.v2.trainers.train_sebc import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,7 +14,7 @@ class SEBCTest(unittest.TestCase):
         )
         self.assertEqual(set(config["fold_model_sha256"]), {"0", "1", "2"})
         self.assertFalse(config["unseen_images_used_for_gradient"])
-        source = (ROOT / "model/innovations/train_sebc.py").read_text(encoding="utf-8")
+        source = (ROOT / "model/candidates/v2/trainers/train_sebc.py").read_text(encoding="utf-8")
         self.assertNotIn('["att"]', source)
         self.assertIn("balanced_fold_batch", source)
 

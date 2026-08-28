@@ -2,7 +2,7 @@ import unittest
 
 import torch
 
-from model.innovations.sccc import (
+from model.candidates.v2.modules.sccc import (
     SampleConditionedCompetitionCalibration,
     competition_confidence_features,
 )

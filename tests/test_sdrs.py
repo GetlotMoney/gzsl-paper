@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.sdrs import SemanticDisagreementResidualScaling
-from model.innovations.train_sdrs import load_config
+from model.candidates.v2.modules.sdrs import SemanticDisagreementResidualScaling
+from model.candidates.v2.trainers.train_sdrs import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,7 +31,7 @@ class SDRSTest(unittest.TestCase):
             ROOT / "experiments/v2/innovation/INNOVATION-012_sdrs/configs/RUN-001.yaml"
         )
         self.assertFalse(config["unseen_images_used_for_gradient"])
-        source = (ROOT / "model/innovations/train_sdrs.py").read_text(encoding="utf-8")
+        source = (ROOT / "model/candidates/v2/trainers/train_sdrs.py").read_text(encoding="utf-8")
         self.assertNotIn('["att"]', source)
 
     def test_conservative_rescue_config_is_accepted(self):

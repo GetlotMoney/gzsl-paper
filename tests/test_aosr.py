@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.aosr import AdaptiveOrthogonalSentenceResidual
-from model.innovations.train_aosr import load_config
+from model.candidates.v2.modules.aosr import AdaptiveOrthogonalSentenceResidual
+from model.candidates.v2.trainers.train_aosr import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

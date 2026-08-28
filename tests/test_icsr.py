@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.icsr import ImageConditionedSentenceRouting
-from model.innovations.train_icsr import load_config
+from model.candidates.v2.modules.icsr import ImageConditionedSentenceRouting
+from model.candidates.v2.trainers.train_icsr import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

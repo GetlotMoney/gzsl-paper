@@ -4,8 +4,8 @@ import unittest
 import torch
 import torch.nn.functional as F
 
-from model.innovations.pbor import PartialBiOrthogonalResidual
-from model.innovations.train_pbor import load_config
+from model.candidates.v2.modules.pbor import PartialBiOrthogonalResidual
+from model.candidates.v2.trainers.train_pbor import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

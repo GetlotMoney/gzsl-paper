@@ -3,11 +3,11 @@ import unittest
 
 import torch
 
-from model.innovations.ccpe import (
+from model.candidates.v2.modules.ccpe import (
     PatchConsensusMarginEvidence,
     class_conditioned_patch_mean_gap_scores,
 )
-from model.innovations.train_ccpe import load_config
+from model.candidates.v2.trainers.train_ccpe import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

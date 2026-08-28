@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.mgsr import MultiGeometrySentenceRouting
-from model.innovations.train_mgsr import load_config
+from model.candidates.v2.modules.mgsr import MultiGeometrySentenceRouting
+from model.candidates.v2.trainers.train_mgsr import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

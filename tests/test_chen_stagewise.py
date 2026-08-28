@@ -4,12 +4,12 @@ import unittest
 import torch
 import torch.nn.functional as F
 
-from model.innovations.train_chen_stagewise import (
+from model.candidates.v2.trainers.train_chen_stagewise import (
     load_config,
     set_trainable_stage,
     stage_for_iteration,
 )
-from model.innovations.unified_seen import UnifiedSeenPrototypeModel
+from model.candidates.v2.modules.unified_seen import UnifiedSeenPrototypeModel
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,7 +71,7 @@ class ChenStagewiseTest(unittest.TestCase):
         self.assertTrue(all(p.requires_grad for p in self.model.parameters()))
 
     def test_source_has_one_global_best_not_per_stage(self):
-        source = (ROOT / "model/innovations/train_chen_stagewise.py").read_text(encoding="utf-8")
+        source = (ROOT / "model/candidates/v2/trainers/train_chen_stagewise.py").read_text(encoding="utf-8")
         self.assertIn('if metrics["H"] > best_h:', source)
         self.assertNotIn("best_h_by_stage", source)
         self.assertIn('"nested_official_test_selection": False', source)

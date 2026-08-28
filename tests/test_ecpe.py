@@ -1,7 +1,7 @@
 from pathlib import Path
 import unittest
 
-from model.innovations.train_ecpe import load_config
+from model.candidates.v2.trainers.train_ecpe import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,7 +16,7 @@ class ECPETest(unittest.TestCase):
         self.assertEqual(config["patch_top_k"], 2)
         self.assertEqual(config["epochs"], 20)
         self.assertFalse(config["unseen_images_used_for_gradient"])
-        source = (ROOT / "model/innovations/train_ecpe.py").read_text(encoding="utf-8")
+        source = (ROOT / "model/candidates/v2/trainers/train_ecpe.py").read_text(encoding="utf-8")
         self.assertIn("balanced_fold_batch", source)
         self.assertNotIn('["att"]', source)
 

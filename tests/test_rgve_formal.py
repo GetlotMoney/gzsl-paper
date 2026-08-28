@@ -4,8 +4,8 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-from model.paper_v2 import PaperV2RGVEModel, PaperV2ThreeModuleModel
-from model.train_paper_v2 import _active_groups, load_config, stage_for_iteration
+from model.frameworks.v4.model import PaperV2RGVEModel, PaperV2ThreeModuleModel
+from model.candidates.v2.trainers.paper_v2 import _active_groups, load_config, stage_for_iteration
 
 
 ROOT = Path(__file__).resolve().parents[1]

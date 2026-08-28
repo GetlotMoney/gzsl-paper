@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.ccpe import ClassConditionedPatchEvidence
-from model.innovations.train_spcr import compose_logits, load_config
+from model.candidates.v2.modules.ccpe import ClassConditionedPatchEvidence
+from model.candidates.v2.trainers.train_spcr import compose_logits, load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

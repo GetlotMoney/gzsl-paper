@@ -1,7 +1,7 @@
 from pathlib import Path
 import unittest
 
-from model.innovations.train_clre import load_config
+from model.candidates.v2.trainers.train_clre import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

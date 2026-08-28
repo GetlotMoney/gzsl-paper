@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.ncsr import NeighborhoodContrastiveSemanticResidual
-from model.innovations.train_ncsr import load_config
+from model.candidates.v2.modules.ncsr import NeighborhoodContrastiveSemanticResidual
+from model.candidates.v2.trainers.train_ncsr import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

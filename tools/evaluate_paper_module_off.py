@@ -8,7 +8,7 @@ from pathlib import Path
 
 import torch
 
-from model.train_paper_v2 import (
+from model.candidates.v2.trainers.paper_v2 import (
     _evaluate_model,
     build_three_module_model,
     load_assets,

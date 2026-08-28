@@ -13,7 +13,7 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-from model.train_paper_v2 import load_assets
+from model.candidates.v2.trainers.paper_v2 import load_assets
 from tools.derive_paper_clip_text_asset import (
     CLIP_SOURCE_FILES,
     ENCODER_IDENTITY_SCHEMA,

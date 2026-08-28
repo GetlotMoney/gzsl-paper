@@ -7,15 +7,15 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from model.innovations.elpt import fixed_class_folds
-from model.innovations.gtd_tst import (
+from model.frameworks.v4.tg import fixed_class_folds
+from model.frameworks.v4.gtd import (
     GTDTSTModel,
     closed_form_alignment_angle,
     geodesic_geometry,
     geodesic_points,
     select_oracle_targets,
 )
-from model.innovations.train_gtd_tst import (
+from model.frameworks.v4.train import (
     GroupwiseSchedule,
     TEACHER_REFRESH_UPDATES,
     _predict,
@@ -30,7 +30,7 @@ from model.innovations.train_gtd_tst import (
     teacher_packages_sha256,
     teacher_refresh_record,
 )
-from model.paper_v2 import PaperV2ThreeModuleModel
+from model.frameworks.v4.model import PaperV2ThreeModuleModel
 
 
 def _basis(index: int) -> torch.Tensor:

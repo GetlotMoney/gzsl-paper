@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.elpt import fixed_class_folds
-from model.innovations.train_chen_class_exclusive import (
+from model.frameworks.v4.tg import fixed_class_folds
+from model.candidates.v2.trainers.train_chen_class_exclusive import (
     balanced_fold_batch,
     load_config,
 )
@@ -47,7 +47,7 @@ class ChenClassExclusiveTest(unittest.TestCase):
         self.assertTrue(torch.isin(labels[indices[25:]], pseudo_unseen).all())
 
     def test_fold_training_source_never_evaluates_fold_on_official_test(self):
-        source = (ROOT / "model/innovations/train_chen_class_exclusive.py").read_text(encoding="utf-8")
+        source = (ROOT / "model/candidates/v2/trainers/train_chen_class_exclusive.py").read_text(encoding="utf-8")
         fold_start = source.index("for fold_id")
         fold_end = source.index("def evaluate_and_track")
         fold_section = source[fold_start:fold_end]

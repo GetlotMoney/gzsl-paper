@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.aclm import ClassAdaptiveCrossLLMMixture
-from model.innovations.train_aclm import load_config
+from model.candidates.v2.modules.aclm import ClassAdaptiveCrossLLMMixture
+from model.candidates.v2.trainers.train_aclm import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

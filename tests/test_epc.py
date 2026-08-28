@@ -4,8 +4,8 @@ from pathlib import Path
 
 import torch
 
-from model.innovations.epc import EpisodicPriorCalibration
-from model.innovations.train_epc import episodic_soft_harmonic_loss, load_config
+from model.candidates.v2.modules.epc import EpisodicPriorCalibration
+from model.candidates.v2.trainers.train_epc import episodic_soft_harmonic_loss, load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -38,7 +38,7 @@ def test_epc_config_and_training_boundary():
     config, _ = load_config(ROOT / "config/tries/v2_try_019_epc_seed7.yaml")
     assert config["idea_id"] == "IDEA-006"
     assert config["max_margin"] == 0.5
-    source = (ROOT / "model/innovations/train_epc.py").read_text(encoding="utf-8")
+    source = (ROOT / "model/candidates/v2/trainers/train_epc.py").read_text(encoding="utf-8")
     assert source.index("for epoch in range") < source.index("# official test严格在EPC训练结束后加载。")
 
 

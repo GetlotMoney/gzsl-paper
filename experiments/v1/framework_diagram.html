@@ -299,7 +299,7 @@
       <table>
         <thead><tr><th>代码位置</th><th>职责</th><th>关键出口</th></tr></thead>
         <tbody>
-          <tr><td><code>model/MyModel.py</code></td><td>PSE、ICSA、FGVD、BVSA、SGMP、融合与 loss</td><td><code>GTPJ.forward()</code> / <code>compute_loss()</code></td></tr>
+          <tr><td><code>model/frameworks/v1/model.py</code></td><td>PSE、ICSA、FGVD、BVSA、SGMP、融合与 loss</td><td><code>GTPJ.forward()</code> / <code>compute_loss()</code></td></tr>
           <tr><td><code>train.py</code></td><td>加载冻结缓存、训练 50 epoch、按 H 保存最佳模型</td><td><code>metrics.json</code> / checkpoints</td></tr>
           <tr><td><code>tools/cub_data.py</code></td><td>验证 CUB 标准 split、类别覆盖和 seen/unseen 边界</td><td>150 seen / 50 unseen</td></tr>
           <tr><td><code>tools/evaluation.py</code></td><td>计算 U/S/H 与 ZS</td><td>200 类 GZSL / 50 类 ZS</td></tr>

@@ -5,14 +5,14 @@ from pathlib import Path
 import torch
 from torch.func import functional_call
 
-from model.innovations.train_elpt import (
+from model.candidates.v2.trainers.train_elpt import (
     _first_order_adapted_parameters,
     _pcgrad_merge,
     _symmetric_pcgrad_merge,
     load_config,
 )
-from model.innovations.elpt import semantic_pca_folds
-from model.innovations.tst import SummaryResidualGate, TangentStepGate
+from model.frameworks.v4.tg import semantic_pca_folds
+from model.frameworks.v4.tst import SummaryResidualGate, TangentStepGate
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,7 +35,7 @@ def test_bmr_config_and_official_test_boundary():
     assert config["idea_id"] == "IDEA-011"
     assert config["gate_training_mode"] == "bilevel_first_order"
     assert config["inner_lr"] == 0.01
-    source = (ROOT / "model/innovations/train_elpt.py").read_text(encoding="utf-8")
+    source = (ROOT / "model/candidates/v2/trainers/train_elpt.py").read_text(encoding="utf-8")
     assert source.index("gate = _train_gate") < source.index("# official test只在所有训练完成后加载。")
 
 

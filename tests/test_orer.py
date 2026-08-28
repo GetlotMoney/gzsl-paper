@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.orer import GammaResidualCalibration
-from model.innovations.train_orer import load_config
+from model.candidates.v2.modules.orer import GammaResidualCalibration
+from model.candidates.v2.trainers.train_orer import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]

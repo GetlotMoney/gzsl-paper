@@ -10,7 +10,7 @@ import unittest
 import torch
 import yaml
 
-from model.MyModel import GTPJ
+from model.frameworks.v1.model import GTPJ
 from tools.cub_data import validate_standard_class_counts, validate_standard_split_sizes
 from tools.evaluation import evaluate_cached, test_cache_paths
 from tools.run_contract import (
@@ -185,7 +185,7 @@ def test_config_and_protocol_identity():
     raw = yaml.safe_load((ROOT / "config" / "v1.yaml").read_text(encoding="utf-8"))
     assert raw["dataset"]["value"] == "CUB"
     assert raw["num_class"]["value"] == 200
-    source = (ROOT / "train.py").read_text(encoding="utf-8")
+    source = (ROOT / "model" / "frameworks" / "v1" / "train.py").read_text(encoding="utf-8")
     assert 'FRAMEWORK_ID = "FRAMEWORK-V1"' in source
     assert 'EVALUATION_PROTOCOL = "test_selected_inductive_gzsl"' in source
     assert re.search(r'"--output-dir"[\s\S]+required=True', source)

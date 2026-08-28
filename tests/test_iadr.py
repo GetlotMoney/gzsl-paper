@@ -3,7 +3,7 @@ import unittest
 
 import torch
 
-from model.innovations.train_sdcr import load_config, sample_importance_mask
+from model.candidates.v2.trainers.train_sdcr import load_config, sample_importance_mask
 
 
 ROOT = Path(__file__).resolve().parents[1]

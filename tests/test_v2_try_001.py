@@ -3,8 +3,8 @@ from __future__ import annotations
 import torch
 import unittest
 
-from model.tg_vpr_h1 import TGVPRH1FixedEqual
-from model.tries.v2_try_001 import TGVPRH1UnseenValueTransfer
+from model.frameworks.v2 import TGVPRH1FixedEqual
+from model.candidates.v2.early_tries.v2_try_001 import TGVPRH1UnseenValueTransfer
 
 
 def _models():

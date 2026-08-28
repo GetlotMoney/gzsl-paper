@@ -12,7 +12,7 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-from model.tg_vpr_h1 import TGVPRH1FixedEqual
+from model.frameworks.v2 import TGVPRH1FixedEqual
 from tools.cub_data import load_cub_split
 from tools.reproducibility import configure_reproducibility
 from tools.run_contract import (

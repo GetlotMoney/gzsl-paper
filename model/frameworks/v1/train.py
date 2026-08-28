@@ -15,7 +15,7 @@ import torch
 import torch.optim as optim
 import yaml
 
-from model.MyModel import GTPJ
+from model.frameworks.v1.model import GTPJ
 from tools.reproducibility import configure_reproducibility
 from tools.run_contract import (
     atomic_write_json,

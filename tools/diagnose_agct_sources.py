@@ -7,17 +7,17 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-from model.innovations.agpt import AmbiguityGatedPatchTieBreaker
-from model.innovations.ebc import EpisodicBiasCalibration
-from model.innovations.lpsr import orthogonal_local_text_residuals
-from model.innovations.sdcr import SentenceDropoutConservativeRouting
-from model.innovations.tigr import taxonomic_suffix_group_ids
-from model.innovations.train_agct import derive_train_threshold
-from model.innovations.train_agpt import load_config
-from model.innovations.train_ccpe import _precompute_scores
-from model.innovations.train_chen_style import OFFICIAL_KEYS, resolve_paths
-from model.innovations.train_sebc import _load_main
-from model.tg_vpr_h1 import train as h1
+from model.candidates.v2.modules.agpt import AmbiguityGatedPatchTieBreaker
+from model.candidates.v2.modules.ebc import EpisodicBiasCalibration
+from model.candidates.v2.modules.lpsr import orthogonal_local_text_residuals
+from model.candidates.v2.modules.sdcr import SentenceDropoutConservativeRouting
+from model.candidates.v2.modules.tigr import taxonomic_suffix_group_ids
+from model.candidates.v2.trainers.train_agct import derive_train_threshold
+from model.candidates.v2.trainers.train_agpt import load_config
+from model.candidates.v2.trainers.train_ccpe import _precompute_scores
+from model.candidates.v2.trainers.train_chen_style import OFFICIAL_KEYS, resolve_paths
+from model.candidates.v2.trainers.train_sebc import _load_main
+from model.frameworks.v2 import train as h1
 from tools.cub_data import load_cub_split
 from tools.diagnose_sdcr_errors import load_class_names
 from tools.run_contract import atomic_write_json

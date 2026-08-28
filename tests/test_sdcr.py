@@ -3,8 +3,8 @@ import unittest
 
 import torch
 
-from model.innovations.sdcr import SentenceDropoutConservativeRouting
-from model.innovations.train_sdcr import load_config
+from model.candidates.v2.modules.sdcr import SentenceDropoutConservativeRouting
+from model.candidates.v2.trainers.train_sdcr import load_config
 
 
 ROOT = Path(__file__).resolve().parents[1]
