@@ -15,7 +15,7 @@ patch_files:
 patch_sha256:
   test_seen: ae7f20f3637837243bc42b1abdc65b3b76fabb20d239786c2fbb39b31a115d82
   test_unseen: ad72af42339197085d26d24871d5506dda761d04f72f1d0f854e1af8a32b6121
-device: cuda:0
+device: cpu
 top_candidates: 5
 visible_roles: 3
 role_temperature: 0.07
