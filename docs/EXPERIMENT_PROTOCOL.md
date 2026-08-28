@@ -30,6 +30,14 @@
 - 证据齐全时两轮目标5–10分钟。命令或自造入口连续失败两次必须停止并改走现有入口。
 - 审核只写现有Experiment的`REVIEW.md`，不新增receipt、逐RUN证据页、状态机或额外目录。只有第二轮明确“无P0/P1，第2轮通过”才允许正式RUN。
 
+## 正式RUN轻量运行闭环
+
+- 启动后1分钟内核对真实训练子进程、预期GPU、服务器HEAD、config SHA、checkpoint和`update>0`；launcher返回PID不等于训练已启动。
+- 结束时核对进程退出、`metrics.json`、完整评估历史、`stop_reason=completed_fixed_150`、`total_updates=21171`和`history_length=152`，否则不得标记完成。
+- 双卡分批运行时，任一GPU完成前一RUN后必须立即检查并启动该卡下一RUN，再重复启动确认，禁止出现空卡漏接。
+- 结果只接受`loaded_training_checkpoints=[]`且commit/config/资产身份一致的RUN；U/S/H/ZS和Full/Off必须来自同一best-H checkpoint。
+- 这些检查复用现有日志、checkpoint和结果文件，不新增Agent、测试、审核轮次、守护进程或状态机。
+
 ## 核心对象
 
 ```text

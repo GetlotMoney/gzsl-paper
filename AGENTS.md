@@ -67,6 +67,14 @@
 - 审核记录只写现有Experiment的`REVIEW.md`：准确commit、config SHA、证据URI、P0/P1结论和“第2轮通过”。不新增receipt、证据页、状态机或额外目录。
 - 只有两轮均无P0/P1才能启动正式RUN；修复后语义commit变化才使签字失效。Git提交不得在自身文件中预写自身SHA，纯账本提交不得冒充代码变化。
 
+## 正式RUN运行闭环
+
+- 正式RUN启动后1分钟内必须确认：真实Python子进程存在、占用预期GPU、服务器HEAD与RUN commit一致、config SHA一致、checkpoint已出现且`update>0`；任一项失败立即按真实错误处理，不能把launcher PID当训练已启动。
+- RUN结束时必须确认：进程已退出、`metrics.json`与完整评估历史存在、`stop_reason=completed_fixed_150`、`total_updates=21171`、`history_length=152`；缺任一项均不得报“完成”。
+- 双卡队列必须逐卡接力：前一RUN完成后立即检查该卡的下一RUN；若下一RUN输出目录不存在且GPU空闲，直接启动并再次执行启动后1分钟确认。不得只看前一组结果而漏启动后一组。
+- 正式结果必须确认`loaded_training_checkpoints=[]`，并验证RUN commit、config SHA、资产身份以及同一best-H checkpoint的U/S/H/ZS和Full/Off指标一致；不得跨checkpoint或跨commit拼接结果。
+- 上述运行闭环属于轻量确定性检查，不新增Agent、测试、审核轮次、守护进程、状态机或文档层级；只在现有RUN日志、checkpoint和结果文件上核对。
+
 ## 训练与测试
 
 - 协议固定为 `test_selected_inductive_gzsl`。

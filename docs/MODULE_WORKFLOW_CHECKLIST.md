@@ -102,3 +102,11 @@ config、commit、资产SHA、output URI齐全？
 ```
 
 任一项为“否”，不得启动训练。
+
+## 八、正式RUN运行闭环
+
+- [ ] 启动后1分钟内确认真实Python子进程、预期GPU、准确HEAD、config SHA、checkpoint存在且`update>0`；不能只记录launcher PID。
+- [ ] 结束时确认进程退出，且`metrics.json`、完整评估历史、`stop_reason=completed_fixed_150`、`total_updates=21171`、`history_length=152`全部成立。
+- [ ] 双卡队列中，前一RUN完成后立即检查同卡下一RUN；输出目录不存在且GPU空闲时直接启动，并重复启动确认。
+- [ ] 确认`loaded_training_checkpoints=[]`，RUN commit/config SHA/资产身份准确，U/S/H/ZS与Full/Off来自同一best-H checkpoint。
+- [ ] 运行闭环只读取现有RUN证据，不新增Agent、测试、审核轮次、守护进程、状态机或文档层级。
