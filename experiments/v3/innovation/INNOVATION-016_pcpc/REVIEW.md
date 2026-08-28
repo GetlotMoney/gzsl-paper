@@ -9,4 +9,5 @@
 - GPU micro-batch：4090一次通过；main=`3.070835`、GTD=`0.077842`、PCPC=`0.608111`，模块梯度all-present/any-nonzero，Off逐元素精确
 - checkpoint resume：本地正常`save → weights_only load → next batch/LR一致`通过；服务器物理CUDA待复用
 - Round 1：两名独立审核者最终均为`P0=0, P1=0, P2=0`，第1轮通过
-- Round 2：pending
+- reviewed pre-run commit：`699ca66390de5be2f40dd8aa759e22e15c89a634`
+- Round 2：两名独立审核者均为`P0=0, P1=0`，服务器HEAD/config/asset/GPU/resume身份准确，第2轮通过

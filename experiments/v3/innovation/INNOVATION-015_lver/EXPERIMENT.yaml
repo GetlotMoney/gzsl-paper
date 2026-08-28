@@ -11,7 +11,7 @@ evidence_refs:
   - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fresh-effective/V3-TRY-043/metrics.json
   - /data/lby/projects/cv_project/GZSL_Warehouse/assets/v3/CUB_openai_vitl14_336_lver_4view_v2/asset_manifest.json
 research_question: 四个重新编码的局部CLIP视图能否在不移动TG+GTD原型的前提下纠正低margin近邻类别，并通过匹配父条件与同checkpoint关闭的双1H门槛？
-status: approved_round1_pending_round2
+status: approved_round2_pending_run
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 test_used_for_hyperparameter_selection: true

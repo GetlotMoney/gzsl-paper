@@ -11,7 +11,7 @@ evidence_refs:
   - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fresh-effective/V3-TRY-043/metrics.json
   - experiments/v3/PATCH_ASSET_REBUILD_AUDIT.md
 research_question: 同一patch上的候选A-B可学习差异能否在不移动TG+GTD原型的前提下纠正Top-2近邻，并通过匹配父条件与同checkpoint关闭的双1H门槛？
-status: approved_round1_pending_round2
+status: approved_round2_pending_run
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 test_used_for_hyperparameter_selection: true
