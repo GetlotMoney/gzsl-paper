@@ -1,0 +1,30 @@
+schema_version: gzsl-paper.v4-rgt-diagnostic.v1
+experiment_id: V4-TRY-002
+framework_id: FRAMEWORK-V4
+dataset: CUB
+parent_framework_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
+parent_run: V3-TRY-041
+parent_model: D:/backup/Documents/ChatGPT/GZSL_Warehouse/tries/v3/gtd-scratch/V3-TRY-041/model_best.pth
+parent_model_sha256: e023a2db27c7568aad1a0b412448679c8e1b3d61e08e3930458c6cec721db30c
+base_config: config/tries/v3_try_041_gtd_scratch_fixed150.yaml
+patch_manifest: D:/backup/Documents/ChatGPT/GZSL_Warehouse/assets/rgve/CUB_openai_vitl14_336_patch_v1/asset_manifest.json
+patch_manifest_sha256: e0232e99cafd1c6ec516cbb6e602fd29577e5af7958d518b64cad83b18be0b55
+patch_files:
+  test_seen: D:/backup/Documents/ChatGPT/GZSL_Warehouse/assets/rgve/CUB_openai_vitl14_336_patch_v1/test_seen_patch_features.npy
+  test_unseen: D:/backup/Documents/ChatGPT/GZSL_Warehouse/assets/rgve/CUB_openai_vitl14_336_patch_v1/test_unseen_patch_features.npy
+patch_sha256:
+  test_seen: ae7f20f3637837243bc42b1abdc65b3b76fabb20d239786c2fbb39b31a115d82
+  test_unseen: ad72af42339197085d26d24871d5506dda761d04f72f1d0f854e1af8a32b6121
+device: cpu
+top_candidates: 5
+visible_roles: 3
+role_temperature: 0.07
+attenuation_strength_grid: [0.0, 0.25, 0.5, 0.75, 1.0]
+patch_batch_size: 16
+minimum_delta_h: 0.5
+minimum_net_corrections: 20
+human_annotations_used: false
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
