@@ -26,6 +26,7 @@ from model.innovations.train_fresh_effective import (
 from model.innovations.train_gtd_tst import tensor_mapping_sha256
 from model.innovations.train_gtd_tst import refresh_oracle_targets
 from model.tg_vpr_h1 import train as h1
+from tools.reproducibility import configure_reproducibility
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -54,6 +55,18 @@ def test_teacher_refresh_schedule_includes_final_partial_interval():
     assert len(updates) == 151
     assert updates[:2] == (1, 142)
     assert updates[-2:] == (21010, 21151)
+
+
+def test_real_reproducibility_payload_is_weights_only_safe(tmp_path: Path):
+    payload = configure_reproducibility(
+        7, strict_determinism=True, deterministic_warn_only=False
+    )
+    assert type(payload["torch_version"]) is str
+    assert type(payload["cuda_version"]) is str
+    path = tmp_path / "reproducibility.pth"
+    torch.save({"reproducibility": payload}, path)
+    restored = torch.load(path, map_location="cpu", weights_only=True)
+    assert restored == {"reproducibility": payload}
 
 
 def test_completed_teacher_checkpoint_validates_and_restores_for_finalization():
