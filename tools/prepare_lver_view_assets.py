@@ -188,6 +188,8 @@ def build_manifest(
     counts: dict[str, int],
     class_order_sha: str,
     raw_image_order_sha: str,
+    parent_raw_image_order_sha: str,
+    parent_raw_image_order_matches: bool,
     inputs_sha256: dict[str, str],
     outputs_sha256: dict[str, str],
     output_stats: dict[str, dict[str, object]],
@@ -242,6 +244,11 @@ def build_manifest(
         "counts": counts,
         "class_order_sha256": class_order_sha,
         "raw_image_order_and_size_sha256": raw_image_order_sha,
+        "source_alignment": {
+            "parent_raw_image_order_and_size_sha256": parent_raw_image_order_sha,
+            "raw_image_order_fingerprint_matches_parent": parent_raw_image_order_matches,
+            "alignment_contract": "same_xlsa_res101_att_splits_class_order_and_all_split_labels_plus_full_view_parity",
+        },
         "inputs_sha256": inputs_sha256,
         "outputs_sha256": outputs_sha256,
         "output_tensors": output_stats,
@@ -285,6 +292,20 @@ def _load_parent(
         if tuple(value.shape) != (expected_counts[split_name], 768):
             raise ValueError(f"父资产{filename}形状错误。")
         tensors[split_name] = value.float()
+    label_indices = {
+        "train": split.train_indices,
+        "test_seen": split.test_seen_indices,
+        "test_unseen": split.test_unseen_indices,
+    }
+    for split_name, indices in label_indices.items():
+        filename = f"{split_name}_labels.pt"
+        path = manifest_path.parent / filename
+        if outputs.get(filename) != sha256_file(path):
+            raise ValueError(f"父资产{filename} SHA不一致。")
+        labels = torch.load(path, map_location="cpu", weights_only=True).long()
+        expected = split.labels.index_select(0, indices).long()
+        if not torch.equal(labels, expected):
+            raise ValueError(f"父资产{split_name}标签行序与xlsa17不一致。")
     return manifest, manifest_sha, tensors
 
 
@@ -332,8 +353,8 @@ def run(
     parent, parent_sha, parent_tensors = _load_parent(
         parent_manifest_path, config, config_sha, split
     )
-    if parent.get("raw_image_order_and_size_sha256") != image_order_sha:
-        raise ValueError("父资产原图顺序/大小与当前解析结果不一致。")
+    parent_raw_image_order_sha = str(parent.get("raw_image_order_and_size_sha256", ""))
+    parent_raw_image_order_matches = parent_raw_image_order_sha == image_order_sha
 
     import clip
 
@@ -400,6 +421,8 @@ def run(
         counts={name: int(indices.numel()) for name, indices in split_indices.items()},
         class_order_sha=class_order_sha256(split.class_names),
         raw_image_order_sha=image_order_sha,
+        parent_raw_image_order_sha=parent_raw_image_order_sha,
+        parent_raw_image_order_matches=parent_raw_image_order_matches,
         inputs_sha256=input_sha,
         outputs_sha256=output_sha,
         output_stats={name: _tensor_stats(tensor) for name, tensor in output_tensors.items()},

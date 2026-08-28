@@ -79,6 +79,8 @@ class LVERViewAssetTests(unittest.TestCase):
             counts={"train": 2, "test_seen": 1, "test_unseen": 1},
             class_order_sha="1" * 64,
             raw_image_order_sha="2" * 64,
+            parent_raw_image_order_sha="9" * 64,
+            parent_raw_image_order_matches=False,
             inputs_sha256={"res101": "3" * 64},
             outputs_sha256={"train_local_view_features.pt": "4" * 64},
             output_stats={
@@ -102,6 +104,14 @@ class LVERViewAssetTests(unittest.TestCase):
         )
         self.assertTrue(manifest["crop_semantics"]["crop_before_clip_preprocess"])
         self.assertFalse(manifest["crop_semantics"]["human_annotations_used"])
+        self.assertEqual(
+            manifest["source_alignment"],
+            {
+                "parent_raw_image_order_and_size_sha256": "9" * 64,
+                "raw_image_order_fingerprint_matches_parent": False,
+                "alignment_contract": "same_xlsa_res101_att_splits_class_order_and_all_split_labels_plus_full_view_parity",
+            },
+        )
         self.assertFalse(manifest["unseen_images_used_for_gradient"])
         self.assertIn("python_source_sha256", manifest["clip"])
         self.assertEqual(
