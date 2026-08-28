@@ -8,7 +8,7 @@
 - `FRAMEWORK-V2`：TG-VPR-H1独立框架，冻结分支`framework/v2`、Tag`v2`，[HTML框架图](experiments/v2/framework_diagram.html)，首个正式单seed基线H=`74.023182%`。
 - `FRAMEWORK-V4`：owner晋级的TG+GTD三数据集框架，冻结分支`framework/v4`、Tag`v4`，[HTML框架图](experiments/v4/framework_diagram.html)；CUB/SUN显示GTD正增益，AWA2保留精确no-op边界。
 - V1与V2是两套独立训练路径；V2不接入或静默修改V1。
-- 两套框架都只迁入必要代码与来源信息，不继承旧Git历史、旧实验账本或旧研究知识。
+- 三套正式框架代码都只迁入必要实现与来源信息，不继承旧Git历史、旧实验账本或旧研究知识。
 - owner已选择`FRAMEWORK-V4 / TG+GTD`作为当前论文主框架；下一创新必须与TG原型学习和GTD unseen几何迁移形成自然衔接。
 - V4已索引CUB、AWA2和SUN原始RUN作为晋级证据；跨版本证据保留原路径、原commit和原输出，不复制结果。
 

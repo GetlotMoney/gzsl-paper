@@ -9,7 +9,7 @@
 - 分支：`exp/v3/innovation/innovation-008-gtd-tst`
 - RUN配置：`config/tries/v3_try_022_gtd_tst_fixed150.yaml`
 - 当前审核周期集中修复：drop结果固定`matched_comparison_required=null / trigger=false / static=false`；仅0.8H以上且gap合格的后二态触发并绑定TRY-020。IDEA失败条件同步为只有低于0.8H或gap失败才直接drop。TRY-020仍是条件触发项，执行前必须单独冻结准确config/RUN/queue，禁止事后定义。
-- 本地证据：`tests/test_gtd_tst.py` 7项通过；完整测试`531 passed, 2 warnings, 3 subtests passed`。warnings来自既有SCCC/V1测试，与GTD无关。
+- 本地证据：`tests/frameworks/v4/test_gtd_tst.py` 7项通过；完整测试`531 passed, 2 warnings, 3 subtests passed`。warnings来自既有SCCC/V1测试，与GTD无关。
 - Round 1：`pending_on_fee829b`
 - Round 2：`pending`
 - 审查矩阵：Mean8/Value球面公式、退化与反极边界、CE+theta² oracle、Gate SmoothL1梯度归属、theta0父TG关闭路径、global/local类别轴、seen teacher与true-unseen数据边界、21,171 updates/152评估点、学习率、best/checkpoint/JSON和服务器真实micro-batch。
