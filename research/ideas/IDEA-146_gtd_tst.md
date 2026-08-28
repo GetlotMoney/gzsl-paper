@@ -15,3 +15,7 @@
 - 三创新接口：TG负责seen监督下的角色原型建立；GTD-TST只学习从seen视觉几何推断unseen原型该沿语义切向移动多少，形成“表示建立→迁移决策”的连续链。
 - 代码语义commit：`fee829bd56b6ac9b366da82e1438b9d7bee872a8`
 - evidence_refs：V3-TRY-002 TG父指标；V2 signed/all-class TST不足1H的本仓库结果；IDEA-145 Faithful-TST代码边界观察；owner确认的GTD-TST假设。
+
+## 严格从头训练诊断
+
+本地V3-TRY-040/041使用同一seed7随机TG初始化、同一批次序列和固定150轮，不加载历史TG checkpoint。TG-only与TG+GTD均在epoch80达到global best；GTD使H从`76.649020`提高到`78.119641`，匹配RUN及同checkpoint移除增益均为`+1.470620 H`。两条件的TG父轨迹在全部152个评估点逐项一致，说明增益来自GTD而非父模型随机漂移。该诊断尚待项目两轮独立审核后才能晋级正式证据。
