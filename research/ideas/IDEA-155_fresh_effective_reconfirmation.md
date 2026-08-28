@@ -1,6 +1,6 @@
 # IDEA-155：Fresh一段式有效模块复验
 
-- 状态：`control_planned_pending_review`
+- 状态：`revised`（控制复验已完成；GTD、MMT成立，BD失败）
 - source_type：`owner_protocol_correction + prior_experiment_diagnostic`
 - 性质：控制性复验，不是新的论文创新点。
 - 问题：既有GTD、MMT、BD成绩加载了训练好的TG checkpoint，不能回答“所有启用模块是否从update1开始在唯一一段训练中同步学习”。
@@ -12,5 +12,6 @@
 - 披露：`test_used_for_selection=true / unseen_images_used_for_gradient=false / strict_blind_claim=false`。
 - 失败：任一独立增益不足0.8或`|U-S|>=8`即drop；不以总体H替代模块独立效果。
 - Experiment：`experiments/v3/confirmation/CONFIRM-014_fresh_effective_modules/`。
-- 代码commit：`4e2195e2504314c8d2c83f1a96c73a9e7969cbd3`。
-- 证据状态：本地专项与全量测试通过；服务器micro、两轮独立Agent审查和正式RUN尚未执行。
+- 代码commit：`13bd1ccb513710ce798fbaa7147af447d43b0b36`。
+- 结果：TRY042 TG `H=76.649020`；TRY043 GTD `H=78.155408`，相对TG `+1.506388`、同checkpoint关闭 `+1.506388`，保留为第一创新候选；TRY044 MMT `H=77.746215`，相对TG `+1.097195`、同checkpoint关闭 `+1.379207`，但与GTD同属unseen原型迁移，只保留为替代设计；TRY045 BD `H=74.786137`，相对TG `-1.862884`，淘汰。
+- 证据状态：四条正式RUN均完成；`loaded_training_checkpoints=[]`、`stop_reason=completed_fixed_150`、`total_updates=21171`、`history_length=152`，且U/S/H/ZS与Full/Off均来自各自同一个best-H checkpoint。当前仅seed7，不能声称跨seed稳定性。

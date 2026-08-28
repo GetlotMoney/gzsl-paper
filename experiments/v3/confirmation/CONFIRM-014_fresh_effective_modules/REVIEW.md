@@ -12,6 +12,7 @@
 - 旧正式RUN：`V3-TRY-043`完成21171 updates后因teacher refresh错误断言未发布；`V3-TRY-044`随即停止。两者保留为`invalid-teacher-count-contract`。
 - Round 1：`13bd1cc / P0=0, P1=0, P2=0 / 第1轮通过`
 - Round 2：`13bd1cc / 服务器HEAD准确且clean / P0=0, P1=0 / 无P0/P1，第2轮通过`
-- 最终结论：`approved; V3-TRY-042–045必须全部绑定13bd1cc重新运行`
+- 审核结论：`approved; V3-TRY-042–045必须全部绑定13bd1cc重新运行`
+- 正式RUN闭环：四条RUN均已绑定`13bd1cc`完成；`loaded_training_checkpoints=[]`、`stop_reason=completed_fixed_150`、`total_updates=21171`、`history_length=152`，结果见`result.md`。
 
 最终修复令teacher刷新严格覆盖`1,142,...,21010,21151`共151个区间起点，并允许`update=21171`的完成态checkpoint只恢复最终产物；缺失任一刷新项会被拒绝。初始化、forward、loss、梯度、配置、资产和summarizer均未改变。
