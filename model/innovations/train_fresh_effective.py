@@ -1,4 +1,4 @@
-"""Fresh one-stage matched confirmation for TG and GTD."""
+"""Fresh one-stage TG+GTD parent with LVER and PCPC visual candidates."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -19,6 +20,8 @@ import yaml
 
 from model.innovations.elpt import fixed_class_folds
 from model.innovations.gtd_tst import GTDTSTModel
+from model.innovations.lver import LocalViewEvidenceRouter
+from model.innovations.pcpc import PairContrastPatchComparator, pairwise_hard_negative_loss
 from model.innovations.train_gtd_tst import (
     load_assets,
     refresh_oracle_targets,
@@ -28,7 +31,7 @@ from model.innovations.train_gtd_tst import (
 )
 from model.paper_v2 import PaperV2ThreeModuleModel
 from model.tg_vpr_h1 import train as h1
-from tools.gzsl_data import evaluate_prototypes
+from tools.gzsl_data import evaluate_prototypes, per_class_accuracy
 from tools.reproducibility import configure_reproducibility
 from tools.run_contract import (
     atomic_torch_save,
@@ -42,7 +45,8 @@ from tools.run_contract import (
 from tools.runtime import sha256_file
 
 
-SCHEMA = "gzsl-paper.v3-fresh-effective-confirm.v1"
+SCHEMA = "gzsl-paper.v3-fine-grained-evidence.v1"
+LEGACY_SCHEMA = "gzsl-paper.v3-fresh-effective-confirm.v1"
 TRAIN_COUNT = 7057
 SEEN_COUNT = 150
 CLASS_COUNT = 200
@@ -52,8 +56,11 @@ TOTAL_UPDATES = 21171
 EVAL_INTERVAL = 141
 WARMUP_UPDATES = 705
 CONDITIONS = {
-    "V3-TRY-042": ("TG_FRESH_FIXED150", "tg"),
-    "V3-TRY-043": ("TG_PLUS_GTD_FRESH_FIXED150", "gtd"),
+    "V3-TRY-042": ("TG_FRESH_FIXED150", "tg", "IDEA-155"),
+    "V3-TRY-043": ("TG_PLUS_GTD_FRESH_FIXED150", "gtd", "IDEA-155"),
+    "V3-TRY-046": ("TG_PLUS_GTD_FRESH_CONTROL", "gtd", "IDEA-155"),
+    "V3-TRY-047": ("TG_PLUS_GTD_PLUS_LVER_FRESH", "lver", "IDEA-156"),
+    "V3-TRY-048": ("TG_PLUS_GTD_PLUS_PCPC_FRESH", "pcpc", "IDEA-157"),
 }
 FORBIDDEN_NON_NULL = (
     "tg_checkpoint",
@@ -63,6 +70,8 @@ FORBIDDEN_NON_NULL = (
 CONFIG_KEYS = {
     "schema_version", "experiment_id", "idea_id", "framework_id", "dataset",
     "condition_id", "module", "asset_manifest", "asset_manifest_sha256", "asset_id",
+    "lver_asset_manifest", "lver_asset_manifest_sha256", "lver_asset_id",
+    "pcpc_asset_manifest", "pcpc_asset_manifest_sha256", "pcpc_asset_id",
     "initialization_strategy", "training_strategy", "stagewise_training",
     "checkpoint_handoff", "module_pretraining", "tg_checkpoint",
     "tg_checkpoint_sha256", "pretrained_module_checkpoint", "parent_metrics_percent",
@@ -73,10 +82,23 @@ CONFIG_KEYS = {
     "weight_decay", "topology_weight", "required_delta_h", "weak_delta_h",
     "max_us_gap", "gtd_gate_loss_weight", "gtd_hidden_dim", "gtd_grid_points",
     "gtd_theta_penalty", "gtd_max_transport_step",
+    "visual_loss_weight", "lver_hidden_dim", "lver_margin_threshold",
+    "lver_margin_temperature", "lver_local_temperature", "lver_max_strength",
+    "pcpc_rank", "pcpc_patch_temperature", "pcpc_max_logit_correction",
+    "pcpc_pair_margin",
     "early_stopping_enabled", "human_annotations_used", "test_used_for_selection",
     "test_used_for_hyperparameter_selection", "unseen_images_used_for_gradient",
     "strict_blind_claim",
 }
+VISUAL_CONFIG_KEYS = {
+    "lver_asset_manifest", "lver_asset_manifest_sha256", "lver_asset_id",
+    "pcpc_asset_manifest", "pcpc_asset_manifest_sha256", "pcpc_asset_id",
+    "visual_loss_weight", "lver_hidden_dim", "lver_margin_threshold",
+    "lver_margin_temperature", "lver_local_temperature", "lver_max_strength",
+    "pcpc_rank", "pcpc_patch_temperature", "pcpc_max_logit_correction",
+    "pcpc_pair_margin",
+}
+LEGACY_CONFIG_KEYS = CONFIG_KEYS - VISUAL_CONFIG_KEYS
 
 
 @dataclass
@@ -84,11 +106,18 @@ class ModelBundle:
     model: nn.Module
     parent: PaperV2ThreeModuleModel
     module_name: str
+    visual: nn.Module | None = None
 
     def module_parameters(self) -> list[nn.Parameter]:
-        if self.module_name == "gtd":
-            return list(self.model.gate.parameters())
-        return []
+        if self.module_name == "tg":
+            return []
+        parameters = list(self.model.gate.parameters())
+        if self.visual is not None:
+            parameters.extend(self.visual.parameters())
+        return parameters
+
+    def uses_gtd(self) -> bool:
+        return self.module_name in {"gtd", "lver", "pcpc"}
 
 
 class FreshSchedule:
@@ -139,17 +168,32 @@ class FreshSchedule:
 def load_config(path: Path) -> tuple[dict, str]:
     config = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
-    if not isinstance(config, dict) or actual != CONFIG_KEYS:
+    schema = config.get("schema_version") if isinstance(config, dict) else None
+    expected_keys = CONFIG_KEYS if schema == SCHEMA else LEGACY_CONFIG_KEYS
+    if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
-            f"fresh配置字段错误；缺少={sorted(CONFIG_KEYS-actual)}，多出={sorted(actual-CONFIG_KEYS)}。"
+            f"fresh配置字段错误；缺少={sorted(expected_keys-actual)}，多出={sorted(actual-expected_keys)}。"
         )
     identity = CONDITIONS.get(config["experiment_id"])
+    module_name = str(config.get("module"))
+    is_visual_screen = schema == SCHEMA
+    lver_identity = (
+        config.get("lver_asset_manifest"),
+        config.get("lver_asset_manifest_sha256"),
+        config.get("lver_asset_id"),
+    )
+    pcpc_identity = (
+        config.get("pcpc_asset_manifest"),
+        config.get("pcpc_asset_manifest_sha256"),
+        config.get("pcpc_asset_id"),
+    )
     checks = (
-        config["schema_version"] == SCHEMA,
+        schema in {SCHEMA, LEGACY_SCHEMA},
+        is_visual_screen == (config["experiment_id"] in {"V3-TRY-046", "V3-TRY-047", "V3-TRY-048"}),
         identity is not None,
         config["condition_id"] == (identity[0] if identity else None),
         config["module"] == (identity[1] if identity else None),
-        config["idea_id"] == "IDEA-155",
+        config["idea_id"] == (identity[2] if identity else None),
         config["framework_id"] == "FRAMEWORK-V3-EXPLORATION",
         config["dataset"] == "CUB",
         config["initialization_strategy"] == "fresh_seeded_tg",
@@ -180,6 +224,24 @@ def load_config(path: Path) -> tuple[dict, str]:
         int(config["gtd_grid_points"]) == 33,
         float(config["gtd_theta_penalty"]) == 0.1,
         float(config["gtd_max_transport_step"]) == 1.5,
+        (not is_visual_screen or float(config["visual_loss_weight"]) == 1.0),
+        (not is_visual_screen or int(config["lver_hidden_dim"]) == 16),
+        (not is_visual_screen or float(config["lver_margin_threshold"]) == 0.25),
+        (not is_visual_screen or float(config["lver_margin_temperature"]) == 0.1),
+        (not is_visual_screen or float(config["lver_local_temperature"]) == 0.07),
+        (not is_visual_screen or float(config["lver_max_strength"]) == 5.0),
+        (not is_visual_screen or int(config["pcpc_rank"]) == 32),
+        (not is_visual_screen or float(config["pcpc_patch_temperature"]) == 0.07),
+        (not is_visual_screen or float(config["pcpc_max_logit_correction"]) == 1.0),
+        (not is_visual_screen or float(config["pcpc_pair_margin"]) == 0.02),
+        (not is_visual_screen or (module_name == "lver") == all(value is not None for value in lver_identity)),
+        (not is_visual_screen or (module_name != "lver") == all(value is None for value in lver_identity)),
+        (not is_visual_screen or (module_name == "pcpc") == all(value is not None for value in pcpc_identity)),
+        (not is_visual_screen or (module_name != "pcpc") == all(value is None for value in pcpc_identity)),
+        (not is_visual_screen or all(
+            value is None or (isinstance(value, str) and len(value) > 0)
+            for value in (*lver_identity, *pcpc_identity)
+        )),
         config["early_stopping_enabled"] is False,
         config["human_annotations_used"] is False,
         config["test_used_for_selection"] is True,
@@ -209,24 +271,38 @@ def build_model(config: dict, tensors: dict[str, torch.Tensor], device: torch.de
     parent = build_parent(tensors)
     seen = parent.seen_classes.cpu()
     module_name = str(config["module"])
+    visual: nn.Module | None = None
     if module_name == "tg":
         model: nn.Module = parent
     else:
         with torch.random.fork_rng(devices=[]):
-            torch.random.default_generator.manual_seed(
-                int(config["module_initialization_seed"])
+            torch.random.default_generator.manual_seed(int(config["module_initialization_seed"]))
+            model = GTDTSTModel(
+                parent, seen, hidden_dim=int(config["gtd_hidden_dim"]),
+                max_transport_step=float(config["gtd_max_transport_step"]),
+                grid_points=int(config["gtd_grid_points"]),
             )
-            if module_name == "gtd":
-                model = GTDTSTModel(
-                    parent, seen, hidden_dim=int(config["gtd_hidden_dim"]),
-                    max_transport_step=float(config["gtd_max_transport_step"]),
-                    grid_points=int(config["gtd_grid_points"]),
+            if module_name == "lver":
+                visual = LocalViewEvidenceRouter(
+                    hidden_dim=int(config["lver_hidden_dim"]),
+                    margin_threshold=float(config["lver_margin_threshold"]),
+                    margin_temperature=float(config["lver_margin_temperature"]),
+                    local_temperature=float(config["lver_local_temperature"]),
+                    max_strength=float(config["lver_max_strength"]),
                 )
-            else:
+            elif module_name == "pcpc":
+                visual = PairContrastPatchComparator(
+                    rank=int(config["pcpc_rank"]),
+                    patch_temperature=float(config["pcpc_patch_temperature"]),
+                    max_logit_correction=float(config["pcpc_max_logit_correction"]),
+                )
+            elif module_name != "gtd":
                 raise AssertionError(module_name)
+            if visual is not None:
+                model.add_module("visual_candidate", visual)
     model = model.to(device)
     parent = parent.to(device)
-    return ModelBundle(model=model, parent=parent, module_name=module_name)
+    return ModelBundle(model=model, parent=parent, module_name=module_name, visual=visual)
 
 
 def evaluation_updates() -> tuple[int, ...]:
@@ -281,30 +357,197 @@ def primary_batch_prefix_sha256(generator_state: torch.Tensor, count: int = 142)
     return canonical_sha256(batches)
 
 
+def load_visual_assets(config: dict, tensors: dict[str, Any]) -> dict[str, Any]:
+    """Load only the visual asset selected by the registered candidate."""
+    module_name = str(config["module"])
+    if module_name == "gtd":
+        return tensors
+    if module_name == "lver":
+        manifest_path = Path(config["lver_asset_manifest"])
+        if (
+            not manifest_path.is_file()
+            or sha256_file(manifest_path) != config["lver_asset_manifest_sha256"]
+        ):
+            raise ValueError("LVER资产manifest SHA错误。")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if (
+            manifest.get("schema_version") != "gzsl-paper.lver-local-view-assets.v1"
+            or manifest.get("asset_id") != config["lver_asset_id"]
+            or manifest.get("dataset") != "CUB"
+            or manifest.get("counts")
+            != {"train": 7057, "test_seen": 1764, "test_unseen": 2967}
+            or manifest.get("crop_semantics", {}).get("human_annotations_used") is not False
+            or manifest.get("crop_semantics", {}).get("bounding_boxes_used") is not False
+            or manifest.get("crop_semantics", {}).get("part_annotations_used") is not False
+        ):
+            raise ValueError("LVER资产身份、数量或无标注边界错误。")
+        parent = manifest.get("parent", {})
+        if (
+            parent.get("manifest_sha256") != config["asset_manifest_sha256"]
+            or parent.get("asset_id") != config["asset_id"]
+        ):
+            raise ValueError("LVER父全局资产身份不匹配。")
+        filenames = {
+            "train_local_views": "train_local_view_features.pt",
+            "test_seen_local_views": "test_seen_local_view_features.pt",
+            "test_unseen_local_views": "test_unseen_local_view_features.pt",
+        }
+        counts = {"train_local_views": 7057, "test_seen_local_views": 1764, "test_unseen_local_views": 2967}
+        outputs = manifest.get("outputs_sha256", {})
+        for name, filename in filenames.items():
+            path = manifest_path.parent / filename
+            if outputs.get(filename) != sha256_file(path):
+                raise ValueError(f"LVER资产{filename} SHA错误。")
+            value = torch.load(path, map_location="cpu", weights_only=True)
+            if tuple(value.shape) != (counts[name], 4, 768) or not torch.isfinite(value).all():
+                raise ValueError(f"LVER资产{filename} shape/有限性错误。")
+            tensors[name] = value.float()
+        return tensors
+    if module_name != "pcpc":
+        raise AssertionError(module_name)
+    manifest_path = Path(config["pcpc_asset_manifest"])
+    if (
+        not manifest_path.is_file()
+        or sha256_file(manifest_path) != config["pcpc_asset_manifest_sha256"]
+    ):
+        raise ValueError("PCPC资产manifest SHA错误。")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    expected_patch_sha = {
+        "train_patch_features.npy": "937a906d18cc7acc556e75fe8b9822e47be8cc6b3d21c89e181a80a257940537",
+        "test_seen_patch_features.npy": "3e89ec3cd7dbeee1959fea2a9f37b647dfa720a6493a1c50de7481b5a86db53f",
+        "test_unseen_patch_features.npy": "0c4310fa3ddbb226ff8c3d517a6f7844c9375a2978b6154aed47397f3a163771",
+    }
+    if (
+        manifest.get("schema_version") != "gzsl-paper.projected-patch-assets.v1"
+        or manifest.get("asset_id") != config["pcpc_asset_id"]
+        or manifest.get("dataset") != "CUB"
+        or manifest.get("patch_shape") != [576, 768]
+        or manifest.get("patch_dtype") != "float16_l2_normalized"
+        or manifest.get("patch_extraction", {}).get("formula")
+        != "last_resblock_all_tokens->ln_post->visual.proj->l2_normalize"
+        or manifest.get("patch_extraction", {}).get("human_annotations_used") is not False
+        or any(manifest.get("outputs_sha256", {}).get(key) != value for key, value in expected_patch_sha.items())
+    ):
+        raise ValueError("PCPC最终576-patch资产身份或公式错误。")
+    split_names = {"train": "train", "test_seen": "test_seen", "test_unseen": "test_unseen"}
+    counts = {"train": 7057, "test_seen": 1764, "test_unseen": 2967}
+    for split, tensor_prefix in split_names.items():
+        label_file = f"{split}_labels.pt"
+        feature_file = f"{split}_features.pt"
+        outputs = manifest["outputs_sha256"]
+        for filename in (label_file, feature_file):
+            if outputs.get(filename) != sha256_file(manifest_path.parent / filename):
+                raise ValueError(f"PCPC资产{filename} SHA错误。")
+        labels = torch.load(manifest_path.parent / label_file, map_location="cpu", weights_only=True).long()
+        if not torch.equal(labels, tensors[f"{tensor_prefix}_labels"].long()):
+            raise ValueError(f"PCPC资产{split}标签行序不匹配。")
+        linux_global = torch.load(
+            manifest_path.parent / feature_file, map_location="cpu", weights_only=True
+        ).float()
+        parent_global = tensors[f"{tensor_prefix}_features"].float()
+        cosine = F.cosine_similarity(linux_global, parent_global, dim=-1)
+        if float(cosine.min()) < 0.9998 or float((linux_global - parent_global).abs().max()) > 0.003:
+            raise ValueError(f"PCPC资产{split}与父全局CLS行序不匹配。")
+        filename = f"{split}_patch_features.npy"
+        array = np.load(manifest_path.parent / filename, mmap_mode="r")
+        if tuple(array.shape) != (counts[split], 576, 768) or array.dtype != np.float16:
+            raise ValueError(f"PCPC资产{filename} shape/dtype错误。")
+        tensors[f"{tensor_prefix}_patches"] = array
+    return tensors
+
+
+def _visual_batch(value: Any, indices: torch.Tensor, device: torch.device) -> torch.Tensor:
+    cpu_indices = indices.detach().cpu().long()
+    if isinstance(value, torch.Tensor):
+        return value.index_select(0, cpu_indices).to(device).float()
+    array = np.asarray(value[cpu_indices.numpy()]).copy()
+    return torch.from_numpy(array).to(device).float()
+
+
 def full_and_off_prototypes(bundle: ModelBundle) -> tuple[torch.Tensor, torch.Tensor]:
     off = bundle.parent.prototypes()
     if bundle.module_name == "tg":
         return off, off
-    if bundle.module_name == "gtd":
+    if bundle.uses_gtd():
         return bundle.model.prototype_bundle()["final"], off
     raise AssertionError(bundle.module_name)
 
 
+def candidate_logits(
+    bundle: ModelBundle,
+    image_features: torch.Tensor,
+    visual_features: torch.Tensor | None,
+    *,
+    class_ids: torch.Tensor | None = None,
+    enabled: bool = True,
+) -> torch.Tensor:
+    prototypes = bundle.model.prototype_bundle()["final"]
+    role_text = bundle.parent.tg_vpr.sentence_embeds
+    if class_ids is not None:
+        ids = class_ids.to(prototypes.device).long()
+        prototypes = prototypes.index_select(0, ids)
+        role_text = role_text.index_select(0, ids)
+    images = F.normalize(image_features.float(), dim=-1)
+    logits = images @ F.normalize(prototypes.float(), dim=-1).T * bundle.parent.scale()
+    if bundle.module_name in {"tg", "gtd"}:
+        return logits
+    if visual_features is None or bundle.visual is None:
+        raise ValueError("视觉候选缺少对应图像资产或模块。")
+    if bundle.module_name == "lver":
+        return bundle.visual(
+            logits, visual_features, prototypes, image_features, enabled=enabled
+        )
+    if bundle.module_name == "pcpc":
+        return bundle.visual(logits, visual_features, role_text, enabled=enabled)
+    raise AssertionError(bundle.module_name)
+
+
 @torch.no_grad()
-def evaluate(bundle: ModelBundle, tensors: dict, device: torch.device) -> dict:
+def evaluate(bundle: ModelBundle, tensors: dict[str, Any], device: torch.device) -> dict:
     bundle.model.eval()
     full, off = full_and_off_prototypes(bundle)
     seen = bundle.parent.seen_classes.cpu()
     all_classes = torch.arange(CLASS_COUNT)
     unseen = all_classes[~torch.isin(all_classes, seen)]
-    kwargs = dict(
-        scale=bundle.parent.scale(),
-        seen_features=tensors["test_seen_features"], seen_labels=tensors["test_seen_labels"],
-        unseen_features=tensors["test_unseen_features"], unseen_labels=tensors["test_unseen_labels"],
-        seen_classes=seen, unseen_classes=unseen, device=device,
-    )
-    full_metrics = evaluate_prototypes(full, **kwargs)
-    off_metrics = evaluate_prototypes(off, **kwargs)
+    if bundle.module_name == "gtd":
+        kwargs = dict(
+            scale=bundle.parent.scale(),
+            seen_features=tensors["test_seen_features"], seen_labels=tensors["test_seen_labels"],
+            unseen_features=tensors["test_unseen_features"], unseen_labels=tensors["test_unseen_labels"],
+            seen_classes=seen, unseen_classes=unseen, device=device,
+        )
+        full_metrics = evaluate_prototypes(full, **kwargs)
+        off_metrics = evaluate_prototypes(off, **kwargs)
+    else:
+        visual_suffix = "local_views" if bundle.module_name == "lver" else "patches"
+
+        def predict(split: str, class_ids: torch.Tensor | None, enabled: bool) -> torch.Tensor:
+            features = tensors[f"{split}_features"]
+            visual = tensors[f"{split}_{visual_suffix}"]
+            candidate_ids = torch.arange(CLASS_COUNT) if class_ids is None else class_ids.cpu().long()
+            rows = []
+            for start in range(0, int(features.size(0)), 128):
+                indices = torch.arange(start, min(start + 128, int(features.size(0))))
+                images = features.index_select(0, indices).to(device).float()
+                visual_batch = _visual_batch(visual, indices, device)
+                logits = candidate_logits(
+                    bundle, images, visual_batch, class_ids=class_ids, enabled=enabled
+                )
+                rows.append(candidate_ids.index_select(0, logits.argmax(dim=1).cpu()))
+            return torch.cat(rows)
+
+        def metrics(enabled: bool) -> dict[str, float]:
+            seen_prediction = predict("test_seen", None, enabled)
+            unseen_prediction = predict("test_unseen", None, enabled)
+            zsl_prediction = predict("test_unseen", unseen, enabled)
+            s = per_class_accuracy(tensors["test_seen_labels"], seen_prediction, seen)
+            u = per_class_accuracy(tensors["test_unseen_labels"], unseen_prediction, unseen)
+            zs = per_class_accuracy(tensors["test_unseen_labels"], zsl_prediction, unseen)
+            h = 2.0 * s * u / (s + u) if s + u else 0.0
+            return {"U": u * 100.0, "S": s * 100.0, "H": h * 100.0, "ZS": zs * 100.0}
+
+        full_metrics = metrics(True)
+        off_metrics = metrics(False)
     return {
         **full_metrics,
         "module_off_metrics": off_metrics,
@@ -417,7 +660,7 @@ def validate_teacher_state(
     teacher_history: list[dict], teacher_state: Any,
 ) -> None:
     expected_updates = list(teacher_refresh_updates(current_update))
-    if module_name != "gtd":
+    if module_name not in {"gtd", "lver", "pcpc"}:
         if teacher_history != [] or teacher_state is not None:
             raise ValueError("fresh非teacher模块包含teacher状态。")
         return
@@ -587,7 +830,7 @@ def run(
     device = torch.device(config["device"])
     if device.type != "cuda" or not torch.cuda.is_available():
         raise RuntimeError("fresh正式训练要求CUDA。")
-    tensors = load_assets(config)
+    tensors: dict[str, Any] = load_visual_assets(config, load_assets(config))
     labels_cpu = tensors["train_labels"].long()
     if labels_cpu.numel() != TRAIN_COUNT or torch.unique(labels_cpu).numel() != SEEN_COUNT:
         raise ValueError("fresh资产不是CUB trainval 7057/150。")
@@ -622,7 +865,12 @@ def run(
             "primary_batches_updates_1_142_sha256": primary_batch_prefix_sha256(initial_primary_state),
             "post_build_cuda_rng_sha256": post_build_cuda_rng_sha256,
             "loaded_training_checkpoints": [],
-            "allowed_initialization_sources": ["frozen_clip_features", "frozen_text_embeddings"],
+            "allowed_initialization_sources": [
+                "frozen_clip_features",
+                "frozen_text_embeddings",
+                *(["frozen_lver_local_view_features"] if bundle.module_name == "lver" else []),
+                *(["frozen_audited_576_patch_features"] if bundle.module_name == "pcpc" else []),
+            ],
         }
         train_features = tensors["train_features"].to(device).float()
         train_labels = labels_cpu.to(device)
@@ -686,7 +934,7 @@ def run(
             teacher_history = checkpoint["teacher_history"]
             first_update_gradients = checkpoint["first_update_gradients"]
             teacher_state = checkpoint["teacher_state"]
-            if bundle.module_name == "gtd" and teacher_state is not None:
+            if bundle.uses_gtd() and teacher_state is not None:
                 teacher = teacher_packages_to_device(teacher_state, device)
             reproducibility = checkpoint["reproducibility"]
             start_update = int(checkpoint["update"]) + 1
@@ -694,7 +942,7 @@ def run(
         interval: dict[str, float] = {}
         interval_steps = 0
         for update in range(start_update, TOTAL_UPDATES + 1):
-            if bundle.module_name == "gtd" and (
+            if bundle.uses_gtd() and (
                 update == 1 or (update - 1) % EVAL_INTERVAL == 0
             ):
                 teacher = refresh_oracle_targets(
@@ -719,19 +967,60 @@ def run(
             tg_optimizer.zero_grad(set_to_none=True)
             if gate_optimizer is not None:
                 gate_optimizer.zero_grad(set_to_none=True)
-            logits = bundle.parent.logits(images, seen)
+            # Compute the TG seen prototypes exactly once so visual candidates do
+            # not advance the parent's dropout RNG relative to the matched control.
+            parent_seen_prototypes = bundle.parent.prototypes().index_select(0, seen)
+            logits = (
+                F.normalize(images.float(), dim=-1)
+                @ F.normalize(parent_seen_prototypes.float(), dim=-1).T
+                * bundle.parent.scale()
+            )
             ce = F.cross_entropy(logits, targets)
             topology = bundle.parent.topology_loss()
             main_loss = ce + float(config["topology_weight"]) * topology
             module_loss = main_loss.new_zeros(())
             module_parts: dict[str, torch.Tensor] = {}
-            if bundle.module_name == "gtd":
+            if bundle.uses_gtd():
                 package = teacher[(update - 1) % 3]
                 raw = bundle.model.gate.raw_ratio(package["features"])
                 module_loss = float(config["gtd_gate_loss_weight"]) * F.smooth_l1_loss(
                     raw, package["target_ratio"]
                 )
                 module_parts = {"gtd_gate": module_loss}
+            if bundle.module_name in {"lver", "pcpc"}:
+                visual_key = (
+                    "train_local_views" if bundle.module_name == "lver" else "train_patches"
+                )
+                visual_batch = _visual_batch(
+                    tensors[visual_key], primary_indices_cpu, device
+                )
+                detached_logits = logits.detach()
+                if bundle.module_name == "lver":
+                    corrected = bundle.visual(
+                        detached_logits,
+                        visual_batch,
+                        parent_seen_prototypes.detach(),
+                        images.detach(),
+                    )
+                    visual_loss = F.cross_entropy(corrected, targets)
+                else:
+                    seen_role_text = bundle.parent.tg_vpr.sentence_embeds.index_select(
+                        0, seen
+                    ).detach()
+                    corrected = bundle.visual(
+                        detached_logits, visual_batch, seen_role_text
+                    )
+                    visual_loss = pairwise_hard_negative_loss(
+                        corrected,
+                        targets,
+                        torch.arange(SEEN_COUNT, device=device),
+                        margin=float(config["pcpc_pair_margin"]),
+                    )
+                weighted_visual = float(config["visual_loss_weight"]) * visual_loss
+                module_loss = module_loss + weighted_visual
+                module_parts.update(
+                    {f"{bundle.module_name}_visual": weighted_visual}
+                )
             total = main_loss + module_loss
             if not torch.isfinite(total):
                 raise FloatingPointError("fresh loss包含NaN/Inf。")
@@ -788,7 +1077,7 @@ def run(
             }
             rng_state = _rng_state(primary_generator)
             teacher_state = (
-                teacher_packages_to_cpu(teacher) if bundle.module_name == "gtd" and teacher is not None
+                teacher_packages_to_cpu(teacher) if bundle.uses_gtd() and teacher is not None
                 else None
             )
             checkpoint = {
@@ -810,7 +1099,7 @@ def run(
             atomic_torch_save(output_dir / "checkpoint_last.pth", checkpoint)
         if len(history) != 152 or history[-1]["update"] != TOTAL_UPDATES:
             raise RuntimeError("fresh完整RUN必须有152个评估点并结束于21171。")
-        if bundle.module_name == "gtd":
+        if bundle.uses_gtd():
             expected_refreshes = teacher_refresh_updates(TOTAL_UPDATES)
             if [row["update"] for row in teacher_history] != list(expected_refreshes):
                 raise RuntimeError(
@@ -838,8 +1127,8 @@ def run(
             "update1_pre_main_cuda_rng_sha256": first_update_gradients[
                 "update1_pre_main_cuda_rng_sha256"
             ],
-            "cross_run_add_delta_vs_try042": None,
-            "gate_decision_pending_matched_try042": bundle.module_name != "tg",
+            "cross_run_add_delta_vs_try046": None,
+            "candidate_decision_pending_matched_try046": bundle.module_name != "gtd",
             "stop_reason": "completed_fixed_150", "history_length": len(history),
             "test_used_for_selection": True, "test_used_for_hyperparameter_selection": True,
             "unseen_images_used_for_gradient": False, "strict_blind_claim": False,
