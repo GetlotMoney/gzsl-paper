@@ -2,14 +2,14 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><title>V3-TRY-040/041 GTD Scratch Confirmation</title>
 <style>body{font-family:Arial,"Microsoft YaHei",sans-serif;max-width:1050px;margin:32px auto;color:#172033}section{border:1px solid #ccd5e0;border-radius:12px;padding:18px;margin:14px 0}.flow{font-family:Consolas,monospace;white-space:pre-wrap;background:#f5f7fa;padding:16px;border-radius:8px}.meta{color:#526070}b{color:#174ea6}</style></head>
 <body><h1>V3-TRY-040/041：GTD严格从头训练确认</h1>
-<p class="meta">base b548bfc08acfcf029eaf0b3017b1e5b722aec661 · RUN code bb7d1610a13970347b7e4cfb05fa1db765386d7e · IDEA-146</p>
+<p class="meta">base b548bfc08acfcf029eaf0b3017b1e5b722aec661 · RUN code 4d46ba1ef8d1c53c0e7fd5c5623f3c56af6dc1b2 · IDEA-146</p>
 <section><h2>共享输入与初始化</h2><div class="flow">冻结CLIP CLS [image,768] + 八角色文本 [200,8,768]
 → seed7随机初始化同一个TG头
 → 零初始化GTD Gate
 → 不加载任何TG checkpoint</div></section>
 <section><h2>匹配条件</h2><div class="flow">TRY-040：seen150 CE + 0.1 TG topology；GTD loss权重0；评估TG父原型
 TRY-041：seen150 CE + 0.1 TG topology + GTD SmoothL1；评估GTD迁移原型
-共同：同seed、同batch generator、同TG初始化、同LR、同21,171 updates</div></section>
+共同：同seed、同batch generator、同TG初始化、TG固定lr=1e-4、同21,171 updates</div></section>
 <section><h2>GTD数据流</h2><div class="flow">Mean8 p + TG Value候选 v
 → 切向方向 u = normalize(v - &lt;v,p&gt;p)
 → seen视觉中心在33点测地线上产生target angle
