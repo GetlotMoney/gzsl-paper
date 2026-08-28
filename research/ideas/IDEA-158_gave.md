@@ -2,7 +2,7 @@
 
 idea_id: IDEA-158
 source_type: first_principles + code_analysis + nearest_work_boundary
-status: proposed
+status: testing_weak_positive_diagnostic
 base_framework: FRAMEWORK-V4
 base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
 problem: V4的TG与GTD只依据全局CLS、角色文本和seen视觉中心学习类别原型；真正测试图像的局部patch没有验证某个候选类别的Mean8→Value语义移动方向是否在该实例中可见。直接patch-text Top-K、局部视图路由和Top-2角色差比较均不能回答“当前视觉证据是否支持V4的语义迁移方向”。
@@ -23,3 +23,4 @@ evidence_refs:
   - https://arxiv.org/abs/2603.08347
 success_condition: 首轮真实CUB错误诊断中，至少一个非零残差强度使H高于V4父结果，wrong-to-right多于right-to-wrong，且纠正样本的正证据至少覆盖三个local+unique角色；随后训练候选才允许进入双1H正式门槛。
 failure_condition: 所有非零强度均不提高H，或最佳条件的right-to-wrong不少于wrong-to-right，或证据退化为单角色/全局背景响应，则训练前drop并停止该方向。
+diagnostic_result: V4-TRY-001 @ 9d89b4789876fafdc08a659e5cffe4d083db8d0b；α=0.5，U/S/H/ZS=79.591095/76.754338/78.146981/85.794950，较父H仅+0.027340；seen纠正2破坏0、unseen纠正0破坏1，净纠正+1；result SHA=addeff949e4313999c98a816faedddc5443903e29d232580f157b8ec5024b171。
