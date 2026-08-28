@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>V3-CONFIRM-014 Fresh Effective Modules</title>
+<style>
+body{font-family:Arial,"Microsoft YaHei",sans-serif;background:#f6f8fb;color:#172033;margin:0;padding:28px}
+h1{margin:0 0 8px}.meta{color:#53627a;margin-bottom:22px}.row{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:12px;align-items:center;margin:18px 0}
+.box{background:white;border:1px solid #ccd5e2;border-radius:12px;padding:16px;box-shadow:0 2px 8px #1b2a4112}.shared{border-color:#4776d0}.candidate{border-color:#8b5cf6}.metric{border-color:#0f9d76}.arrow{font-size:24px;color:#65748b}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.small{font-size:13px;color:#53627a}code{background:#eef2f7;padding:2px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<h1>Fresh 一段式有效模块复验</h1>
+<div class="meta">Experiment V3-CONFIRM-014 · RUN commit <code>b7396dfe6f5be5acd98fa077c77387f1134efec7</code> · CUB Chen-style test-selected</div>
+<div class="row">
+  <div class="box shared"><b>冻结输入资产</b><br>CLIP ViT-L/14@336图像特征<br>200×8×768文本角色嵌入<br><span class="small">不含任何CUB训练checkpoint</span></div>
+  <div class="arrow">→</div>
+  <div class="box shared"><b>统一fresh TG父模型</b><br>CPU seed7初始化PaperV2 TG<br>主batch：每步randperm(7057)[:50]<br>TG LR恒定1e-4</div>
+  <div class="arrow">→</div>
+  <div class="box metric"><b>共同主目标</b><br>Seen CE + 0.1 topology<br>update 1..21171同步训练</div>
+</div>
+<div class="grid">
+  <div class="box candidate"><b>TRY043 · GTD</b><br>33点测地oracle teacher<br>Smooth-L1 Gate<br>true-unseen测地迁移</div>
+  <div class="box candidate"><b>TRY044 · MMT</b><br>minimum-margin teacher<br>move/theta/margin/zero/leak loss<br>true-unseen最小角迁移</div>
+  <div class="box candidate"><b>TRY045 · BD</b><br>独立aux RNG<br>25 pseudo-seen + 25 pseudo-unseen<br>Gate梯度与TG主路隔离</div>
+</div>
+<div class="row">
+  <div class="box shared"><b>共同时间线</b><br>Gate LR 1e-5→1e-4 warmup，再cosine→1e-5<br>每141步official评估，末尾21171补评估<br>update0+151训练点评估=152点</div>
+  <div class="arrow">→</div>
+  <div class="box metric"><b>同checkpoint双出口</b><br>Full原型 → U/S/H/ZS<br>Module-Off父TG原型 → U/S/H/ZS<br>global best只按Full H</div>
+  <div class="arrow">→</div>
+  <div class="box metric"><b>双门</b><br>add ΔH = candidate best − TRY042 best<br>module ΔH = candidate Full − same-checkpoint Off<br>strong≥1；weak≥0.8；|U-S|&lt;8</div>
+</div>
+<p class="small">训练边界：trainval 7057张参与梯度；official test用于整模型best-H选择；unseen图像不参与梯度；非blind claim。Checkpoint保存model/optimizer/RNG canonical digest与weights-only safe resume状态。</p>
+</body>
+</html>
