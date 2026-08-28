@@ -4,14 +4,14 @@ slug: pcpc
 kind: innovation
 framework_id: FRAMEWORK-V3-EXPLORATION
 base_commit: bb7d900910ef317142e956537d2d84a2b074f9d8
-semantic_code_commit: 674eb004344101ab3b70b73c1b2b18942ab71b54
+semantic_code_commit: a2b4b2f6720821eed94909393d7c1991e951d203
 framework_diagram: experiments/v3/innovation/INNOVATION-016_pcpc/framework_diagram.html
 idea_id: IDEA-157
 evidence_refs:
   - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fresh-effective/V3-TRY-043/metrics.json
   - experiments/v3/PATCH_ASSET_REBUILD_AUDIT.md
 research_question: 同一patch上的候选A-B可学习差异能否在不移动TG+GTD原型的前提下纠正Top-2近邻，并通过匹配父条件与同checkpoint关闭的双1H门槛？
-status: planned_pending_two_round_review
+status: approved_round1_pending_round2
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 test_used_for_hyperparameter_selection: true
@@ -24,7 +24,7 @@ runs:
   - run_id: V3-TRY-046
     condition: TG_PLUS_GTD_FRESH_CONTROL
     config_ref: config/tries/v3_try_046_fine_grained_evidence.yaml
-    config_sha256: 582bdd14b3a3b97b6c6f64824baf706ee91d9822c4684e8bb893bc54327daaae
+    config_sha256: aeaef5d91b8f2cf7d42dd0991348b42421eb3183a6660c23051dcff9c2fb0aa5
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fine-grained-evidence/V3-TRY-046
     status: planned
   - run_id: V3-TRY-048
@@ -33,4 +33,3 @@ runs:
     config_sha256: 9f654e6bf4eeeb17d5a0f24191773837631821e4c63ea70a96c2081ea7bae6e9
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fine-grained-evidence/V3-TRY-048
     status: planned
-
