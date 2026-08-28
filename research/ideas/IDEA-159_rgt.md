@@ -2,7 +2,7 @@
 
 idea_id: IDEA-159
 source_type: experiment_result + first_principles + nearest_work_boundary
-status: proposed
+status: rejected_before_training
 base_framework: FRAMEWORK-V4
 base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
 problem: GTD使用文本几何和seen teacher为每个true-unseen类别确定固定迁移角θ，但没有实例级视觉否决机制；直接使用patch重排logits的CLPR系列为负，GAVE方向验证仅带来+0.027340H与净纠正+1，说明局部视觉不适合取代全局CLS做正向分类。
@@ -21,3 +21,4 @@ evidence_refs:
   - https://openaccess.thecvf.com/content/CVPR2021/html/Yue_Counterfactual_Zero-Shot_and_Open-Set_Visual_Recognition_CVPR_2021_paper.html
 success_condition: 参数无训练CUB诊断的理论best相对V4父H至少+0.5、seen+unseen净纠正至少20、ZS不下降；三项全部满足才允许进入训练候选。
 failure_condition: H潜力低于+0.5，或净纠正低于20，或ZS下降，则训练前drop并关闭当前反驳衰减公式。
+diagnostic_result: V4-TRY-002 @ 5b10d7ca6385c9fa0192d74d0f48c0a5c83e3449；所有非零strength的H均低于V4父模型。最佳非零strength=0.5，U/S/H/ZS=81.345779/74.847704/77.961573/86.699975，较父ΔU=+1.721358、ΔS=-1.822978、ΔH=-0.158068、ΔZS=+0.905025；seen净-31、unseen净+52，总净+21，但H门槛失败。result SHA=a70af1da517a96f1674c70142394a90382879d50670f6dd81294b6905b1f9285。
