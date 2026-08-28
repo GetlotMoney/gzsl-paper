@@ -219,13 +219,16 @@ class GTDTSTModel(nn.Module):
         grid_points: int = 33,
     ):
         super().__init__()
-        if int(class_count) != 200 or int(grid_points) != 33:
-            raise ValueError("GTD首轮固定200类和33点角度网格。")
+        if int(class_count) <= 1 or int(grid_points) != 33:
+            raise ValueError("GTD要求至少2类和固定33点角度网格。")
+        parent_class_count = int(parent.tg_vpr.sentence_embeds.size(0))
+        if parent_class_count != int(class_count):
+            raise ValueError("GTD class_count必须与TG父模型类别轴一致。")
         seen = _validated_classes(
             seen_classes, class_count=int(class_count), name="seen_classes"
         )
-        if seen.numel() != 150:
-            raise ValueError("GTD CUB固定150个seen类。")
+        if seen.numel() < 6 or seen.numel() >= int(class_count):
+            raise ValueError("GTD要求至少6个seen类且必须保留true-unseen类。")
         unseen = torch.arange(int(class_count))[~torch.isin(torch.arange(int(class_count)), seen)]
         self.parent = parent
         self.gate = GeodesicTargetGate(hidden_dim)
@@ -358,9 +361,12 @@ class GTDTSTModel(nn.Module):
             raise ValueError("GTD pseudo_seen/pseudo_unseen必须互斥。")
         joined = torch.cat((pseudo_seen_cpu, pseudo_unseen_cpu)).sort().values
         if not torch.equal(joined, self.seen_classes.cpu()):
-            raise ValueError("GTD三折必须完整覆盖150个seen类。")
-        if tuple(visual_centroids.shape) != (150, 768):
-            raise ValueError("GTD seen视觉中心必须是[150,768]。")
+            raise ValueError("GTD三折必须完整覆盖全部seen类。")
+        expected_centroid_shape = (self.seen_classes.numel(), 768)
+        if tuple(visual_centroids.shape) != expected_centroid_shape:
+            raise ValueError(
+                f"GTD seen视觉中心必须是{expected_centroid_shape}。"
+            )
         pseudo_seen_ids = pseudo_seen_cpu.to(device)
         target_ids = pseudo_unseen_cpu.to(device)
         geometry = self._geometry(target_ids, pseudo_seen_ids)

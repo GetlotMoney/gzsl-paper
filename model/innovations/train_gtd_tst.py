@@ -1,4 +1,4 @@
-"""Fixed-150 GTD-TST training from either a TG checkpoint or matched scratch init."""
+"""Fixed-150 TG+GTD training for CUB, AWA2, and SUN."""
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-from model.innovations.elpt import fixed_class_folds
 from model.innovations.gtd_tst import GTDTSTModel
 from model.paper_v2 import PaperV2ThreeModuleModel
 from model.tg_vpr_h1 import train as h1
@@ -31,12 +30,36 @@ from tools.runtime import sha256_file
 
 SCHEMA = "gzsl-paper.v3-gtd-tst-train.v1"
 SCRATCH_SCHEMA = "gzsl-paper.v3-gtd-scratch-confirm.v1"
-TRAIN_COUNT = 7057
-SEEN_COUNT = 150
-CLASS_COUNT = 200
+MULTIDATASET_SCHEMA = "gzsl-paper.v3-gtd-multidataset.v1"
+DATASET_SPECS = {
+    "CUB": {
+        "train_count": 7057,
+        "test_seen_count": 1764,
+        "test_unseen_count": 2967,
+        "seen_count": 150,
+        "class_count": 200,
+    },
+    "AWA2": {
+        "train_count": 23527,
+        "test_seen_count": 5882,
+        "test_unseen_count": 7913,
+        "seen_count": 40,
+        "class_count": 50,
+    },
+    "SUN": {
+        "train_count": 10320,
+        "test_seen_count": 2580,
+        "test_unseen_count": 1440,
+        "seen_count": 645,
+        "class_count": 717,
+    },
+}
+TRAIN_COUNT = DATASET_SPECS["CUB"]["train_count"]
+SEEN_COUNT = DATASET_SPECS["CUB"]["seen_count"]
+CLASS_COUNT = DATASET_SPECS["CUB"]["class_count"]
 NOMINAL_EPOCHS = 150
 BATCH_SIZE = 50
-EVAL_INTERVAL = 141
+EVAL_INTERVAL = TRAIN_COUNT // BATCH_SIZE
 TOTAL_UPDATES = TRAIN_COUNT * NOMINAL_EPOCHS // BATCH_SIZE
 TEACHER_REFRESH_UPDATES = tuple(1 + EVAL_INTERVAL * index for index in range(NOMINAL_EPOCHS))
 MATCHED_CONTROL_ID = "V3-TRY-020"
@@ -109,14 +132,23 @@ def load_config(path: Path) -> tuple[dict, str]:
         "H": 76.65765903827264,
         "ZS": 86.14675998687744,
     }
+    spec = DATASET_SPECS.get(config["dataset"])
+    expected_interval = (
+        int(spec["train_count"]) // BATCH_SIZE if spec is not None else -1
+    )
+    expected_updates = (
+        int(spec["train_count"]) * NOMINAL_EPOCHS // BATCH_SIZE
+        if spec is not None
+        else -1
+    )
     shared_invalid = (
         config["framework_id"] != "FRAMEWORK-V3-EXPLORATION"
-        or config["dataset"] != "CUB"
+        or spec is None
         or int(config["random_seed"]) != 7
         or int(config["batch_size"]) != BATCH_SIZE
         or int(config["nominal_epochs"]) != NOMINAL_EPOCHS
-        or int(config["total_updates"]) != TOTAL_UPDATES
-        or int(config["eval_interval_steps"]) != EVAL_INTERVAL
+        or int(config["total_updates"]) != expected_updates
+        or int(config["eval_interval_steps"]) != expected_interval
         or int(config["gate_warmup_epochs"]) != 5
         or float(config["weight_decay"]) != 1e-4
         or float(config["topology_weight"]) != 0.1
@@ -137,7 +169,8 @@ def load_config(path: Path) -> tuple[dict, str]:
         raise ValueError("GTD共享训练参数、预算或披露边界错误。")
     if config["schema_version"] == SCHEMA:
         invalid = (
-            config["experiment_id"] != "V3-TRY-022"
+            config["dataset"] != "CUB"
+            or config["experiment_id"] != "V3-TRY-022"
             or config["condition_id"] != "TG_PLUS_GTD_TST_FIXED150"
             or config["parent_metrics_percent"] != parent
             or float(config["gate_loss_weight"]) != 1.0
@@ -155,12 +188,30 @@ def load_config(path: Path) -> tuple[dict, str]:
         }
         identity = expected.get(config["experiment_id"])
         invalid = (
-            identity is None
+            config["dataset"] != "CUB"
+            or identity is None
             or config["condition_id"] != (identity[0] if identity else None)
             or float(config["gate_loss_weight"]) != (identity[1] if identity else -1.0)
             or config["tg_checkpoint"] is not None
             or config["tg_checkpoint_sha256"] is not None
             or config["parent_metrics_percent"] is not None
+            or float(config["tg_learning_rate"]) != 1e-4
+            or float(config["gate_learning_rate"]) != 1e-4
+            or float(config["tg_min_learning_rate"]) != 1e-4
+            or float(config["gate_min_learning_rate"]) != 1e-5
+        )
+    elif config["schema_version"] == MULTIDATASET_SCHEMA:
+        expected = {
+            "V3-TRY-046": "AWA2",
+            "V3-TRY-047": "SUN",
+        }
+        invalid = (
+            expected.get(config["experiment_id"]) != config["dataset"]
+            or config["condition_id"] != "TG_PLUS_GTD_SCRATCH_FIXED150"
+            or config["tg_checkpoint"] is not None
+            or config["tg_checkpoint_sha256"] is not None
+            or config["parent_metrics_percent"] is not None
+            or float(config["gate_loss_weight"]) != 1.0
             or float(config["tg_learning_rate"]) != 1e-4
             or float(config["gate_learning_rate"]) != 1e-4
             or float(config["tg_min_learning_rate"]) != 1e-4
@@ -188,12 +239,21 @@ def load_assets(config: dict) -> dict[str, torch.Tensor]:
     ):
         raise ValueError("GTD资产manifest SHA错误。")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    spec = DATASET_SPECS[config["dataset"]]
+    manifest_counts = manifest.get("counts")
     if (
         manifest.get("schema_version") != "gzsl-paper.clip-assets.v1"
         or manifest.get("asset_id") != config["asset_id"]
-        or manifest.get("dataset") != "CUB"
-        or manifest.get("counts")
-        != {"train": 7057, "test_seen": 1764, "test_unseen": 2967}
+        or manifest.get("dataset") != config["dataset"]
+        or (
+            manifest_counts is not None
+            and manifest_counts
+            != {
+                "train": spec["train_count"],
+                "test_seen": spec["test_seen_count"],
+                "test_unseen": spec["test_unseen_count"],
+            }
+        )
     ):
         raise ValueError("GTD资产身份、数据集或数量错误。")
     forbidden = {
@@ -218,17 +278,29 @@ def load_assets(config: dict) -> dict[str, torch.Tensor]:
     )
     tensors = {name.removesuffix(".pt"): _verified_tensor(manifest_path, manifest, name) for name in names}
     expected_shapes = {
-        "train_features": (7057, 768),
-        "train_labels": (7057,),
-        "test_seen_features": (1764, 768),
-        "test_seen_labels": (1764,),
-        "test_unseen_features": (2967, 768),
-        "test_unseen_labels": (2967,),
-        "role_sentence_embeds": (200, 8, 768),
+        "train_features": (spec["train_count"], 768),
+        "train_labels": (spec["train_count"],),
+        "test_seen_features": (spec["test_seen_count"], 768),
+        "test_seen_labels": (spec["test_seen_count"],),
+        "test_unseen_features": (spec["test_unseen_count"], 768),
+        "test_unseen_labels": (spec["test_unseen_count"],),
+        "role_sentence_embeds": (spec["class_count"], 8, 768),
     }
     for name, expected in expected_shapes.items():
         if tuple(tensors[name].shape) != expected:
             raise ValueError(f"GTD资产{name} shape错误：{tuple(tensors[name].shape)}")
+    train_classes = torch.unique(tensors["train_labels"].long(), sorted=True)
+    test_seen_classes = torch.unique(tensors["test_seen_labels"].long(), sorted=True)
+    test_unseen_classes = torch.unique(tensors["test_unseen_labels"].long(), sorted=True)
+    all_classes = torch.cat((train_classes, test_unseen_classes)).sort().values
+    if (
+        train_classes.numel() != spec["seen_count"]
+        or not torch.equal(test_seen_classes, train_classes)
+        or test_unseen_classes.numel() != spec["class_count"] - spec["seen_count"]
+        or torch.isin(train_classes, test_unseen_classes).any()
+        or not torch.equal(all_classes, torch.arange(spec["class_count"]))
+    ):
+        raise ValueError("GTD资产seen/unseen类别轴或split身份错误。")
     return tensors
 
 
@@ -267,6 +339,7 @@ def build_model(config: dict, tensors: dict[str, torch.Tensor], device: torch.de
     return GTDTSTModel(
         parent,
         seen,
+        class_count=int(tensors["role_sentence_embeds"].size(0)),
         hidden_dim=int(config["hidden_dim"]),
         max_transport_step=float(config["max_transport_step"]),
         grid_points=int(config["grid_points"]),
@@ -357,12 +430,50 @@ class GroupwiseSchedule:
         self.set_for_update(last_update)
 
 
-def evaluation_updates() -> tuple[int, ...]:
+def rank_modulo_class_folds(
+    seenclasses: torch.Tensor,
+) -> list[tuple[torch.Tensor, torch.Tensor]]:
+    """Deterministic three-fold split for any supported dataset class axis."""
+    classes = torch.as_tensor(seenclasses).detach().cpu().long().sort().values
+    if classes.numel() < 6 or classes.unique().numel() != classes.numel():
+        raise ValueError("GTD三折要求至少6个唯一seen类。")
+    ranks = torch.arange(classes.numel())
+    folds = []
+    for fold_id in range(3):
+        pseudo_unseen = classes[ranks.remainder(3) == fold_id]
+        pseudo_seen = classes[ranks.remainder(3) != fold_id]
+        folds.append((pseudo_seen, pseudo_unseen))
+    return folds
+
+
+def teacher_refresh_updates(
+    *,
+    train_count: int = TRAIN_COUNT,
+    nominal_epochs: int = NOMINAL_EPOCHS,
+    batch_size: int = BATCH_SIZE,
+) -> tuple[int, ...]:
+    interval = int(train_count) // int(batch_size)
+    if interval <= 0 or int(nominal_epochs) <= 0:
+        raise ValueError("GTD teacher refresh预算必须为正数。")
+    return tuple(1 + interval * index for index in range(int(nominal_epochs)))
+
+
+def evaluation_updates(
+    *,
+    train_count: int = TRAIN_COUNT,
+    nominal_epochs: int = NOMINAL_EPOCHS,
+    batch_size: int = BATCH_SIZE,
+) -> tuple[int, ...]:
+    interval = int(train_count) // int(batch_size)
+    total = int(train_count) * int(nominal_epochs) // int(batch_size)
     values = sorted(
-        set([EVAL_INTERVAL * index for index in range(1, NOMINAL_EPOCHS + 1)] + [TOTAL_UPDATES])
+        set(
+            [interval * index for index in range(1, int(nominal_epochs) + 1)]
+            + [total]
+        )
     )
-    if len(values) != 151 or values[-2:] != [21150, 21171]:
-        raise RuntimeError("GTD评估点必须是141×1..150加21171。")
+    if len(values) != int(nominal_epochs) + 1 or values[-1] != total:
+        raise RuntimeError("GTD评估点必须是每名义epoch加最终尾点。")
     return tuple(values)
 
 
@@ -433,8 +544,9 @@ def teacher_refresh_record(
     model: GTDTSTModel,
     packages: list[dict[str, torch.Tensor]],
     folds: list[tuple[torch.Tensor, torch.Tensor]],
+    valid_updates: tuple[int, ...] = TEACHER_REFRESH_UPDATES,
 ) -> dict:
-    if int(update) not in TEACHER_REFRESH_UPDATES or len(packages) != 3 or len(folds) != 3:
+    if int(update) not in valid_updates or len(packages) != 3 or len(folds) != 3:
         raise ValueError("GTD teacher refresh update/fold边界错误。")
     class_ids = torch.cat([package["class_ids"].detach().cpu() for package in packages])
     order = class_ids.argsort(stable=True)
@@ -482,7 +594,7 @@ def refresh_oracle_targets(
     model.train(was_training)
     coverage = torch.cat([item["class_ids"].cpu() for item in packages]).sort().values
     if not torch.equal(coverage, model.seen_classes.cpu()):
-        raise RuntimeError("GTD oracle target没有完整覆盖150个seen类。")
+        raise RuntimeError("GTD oracle target没有完整覆盖全部seen类。")
     return packages
 
 
@@ -496,7 +608,7 @@ def _predict(
     batch_size: int = 256,
 ) -> torch.Tensor:
     axis = (
-        torch.arange(CLASS_COUNT, device=device)
+        torch.arange(prototypes.size(0), device=device)
         if class_ids is None
         else class_ids.to(device).long()
     )
@@ -628,8 +740,11 @@ def prepare_run_directory(
     return resolved_output, "a"
 
 
-def next_teacher_refresh_after(update: int) -> int | None:
-    return next((value for value in TEACHER_REFRESH_UPDATES if value > int(update)), None)
+def next_teacher_refresh_after(
+    update: int,
+    refresh_updates: tuple[int, ...] = TEACHER_REFRESH_UPDATES,
+) -> int | None:
+    return next((value for value in refresh_updates if value > int(update)), None)
 
 
 def restore_rng_states(checkpoint: dict, generator: torch.Generator) -> None:
@@ -652,14 +767,24 @@ def run(
     if code_commit != expected_commit:
         raise ValueError("GTD expected-commit与当前干净HEAD不一致。")
     config, config_sha = load_config(config_path)
+    spec = DATASET_SPECS[config["dataset"]]
+    train_count = int(spec["train_count"])
+    seen_count = int(spec["seen_count"])
+    class_count = int(spec["class_count"])
+    total_updates = int(config["total_updates"])
+    refresh_updates = teacher_refresh_updates(
+        train_count=train_count,
+        nominal_epochs=int(config["nominal_epochs"]),
+        batch_size=int(config["batch_size"]),
+    )
     device = torch.device(config["device"])
     if device.type != "cuda" or not torch.cuda.is_available():
         raise RuntimeError("GTD正式训练要求CUDA。")
     tensors = load_assets(config)
     labels = tensors["train_labels"].long()
     seen = torch.unique(labels, sorted=True)
-    if labels.numel() != TRAIN_COUNT or seen.numel() != SEEN_COUNT:
-        raise ValueError("GTD固定CUB 7057张trainval和150个seen类。")
+    if labels.numel() != train_count or seen.numel() != seen_count:
+        raise ValueError("GTD trainval样本或seen类别数量不符合数据集身份。")
     output_dir, log_mode = prepare_run_directory(output_dir, resume_from, config)
     if resume_from is None:
         (output_dir / "config.snapshot.yaml").write_text(
@@ -680,12 +805,12 @@ def run(
         train_features = tensors["train_features"].to(device).float()
         train_labels = labels.to(device)
         seen_device = seen.to(device)
-        global_to_seen = torch.full((CLASS_COUNT,), -1, dtype=torch.long, device=device)
-        global_to_seen[seen_device] = torch.arange(SEEN_COUNT, device=device)
+        global_to_seen = torch.full((class_count,), -1, dtype=torch.long, device=device)
+        global_to_seen[seen_device] = torch.arange(seen_count, device=device)
         visual_centroids = h1.visual_centroids(
             tensors["train_features"], labels, seen
         ).to(device)
-        folds = fixed_class_folds(seen)
+        folds = rank_modulo_class_folds(seen)
 
         parent_parameters = list(model.parent.parameters())
         gate_parameters = list(model.gate.parameters())
@@ -698,10 +823,14 @@ def run(
             ],
             weight_decay=float(config["weight_decay"]),
         )
-        warmup_updates = TRAIN_COUNT * int(config["gate_warmup_epochs"]) // BATCH_SIZE
+        warmup_updates = (
+            train_count
+            * int(config["gate_warmup_epochs"])
+            // int(config["batch_size"])
+        )
         scheduler = GroupwiseSchedule(
             optimizer,
-            total_updates=TOTAL_UPDATES,
+            total_updates=total_updates,
             warmup_updates=warmup_updates,
             tg_min_multiplier=float(config["tg_min_learning_rate"])
             / float(config["tg_learning_rate"]),
@@ -716,13 +845,14 @@ def run(
             )
             teacher_history = [
                 teacher_refresh_record(
-                    update=TEACHER_REFRESH_UPDATES[0],
+                    update=refresh_updates[0],
                     model=model,
                     packages=packages,
                     folds=folds,
+                    valid_updates=refresh_updates,
                 )
             ]
-            next_teacher_refresh = TEACHER_REFRESH_UPDATES[1]
+            next_teacher_refresh = refresh_updates[1]
             initial = evaluate(
                 model,
                 tensors,
@@ -776,7 +906,7 @@ def run(
                 or checkpoint.get("code_commit") != code_commit
                 or checkpoint.get("config_sha256") != config_sha
                 or checkpoint.get("initial_tg_state_sha256") != initial_tg_state_sha256
-                or not 0 < int(checkpoint.get("update", 0)) < TOTAL_UPDATES
+                or not 0 < int(checkpoint.get("update", 0)) < total_updates
             ):
                 raise ValueError("GTD resume checkpoint RUN身份或update错误。")
             model.load_state_dict(checkpoint["model_state_dict"], strict=True)
@@ -791,11 +921,13 @@ def run(
             best_state = checkpoint["best_model_state_dict"]
             best_update = int(checkpoint["best_update"])
             best_zs = checkpoint["best_zs_observation"]
-            expected_next = next_teacher_refresh_after(int(checkpoint["update"]))
+            expected_next = next_teacher_refresh_after(
+                int(checkpoint["update"]), refresh_updates
+            )
             if (
                 next_teacher_refresh != expected_next
                 or len(teacher_history)
-                != sum(value <= int(checkpoint["update"]) for value in TEACHER_REFRESH_UPDATES)
+                != sum(value <= int(checkpoint["update"]) for value in refresh_updates)
                 or teacher_packages_sha256(packages) != teacher_history[-1]["package_sha256"]
             ):
                 raise ValueError("GTD resume teacher package/history/next refresh不一致。")
@@ -803,10 +935,16 @@ def run(
             reproducibility = checkpoint["reproducibility"]
             restore_rng_states(checkpoint, batch_generator)
             print(f"GTD resume_from={resume_from} next_update={start_update}")
-        eval_set = set(evaluation_updates())
+        eval_set = set(
+            evaluation_updates(
+                train_count=train_count,
+                nominal_epochs=int(config["nominal_epochs"]),
+                batch_size=int(config["batch_size"]),
+            )
+        )
         interval_sums: dict[str, float] = {}
         interval_steps = 0
-        for update in range(start_update, TOTAL_UPDATES + 1):
+        for update in range(start_update, total_updates + 1):
             if next_teacher_refresh is not None and update == int(next_teacher_refresh):
                 packages = refresh_oracle_targets(
                     model, visual_centroids, folds, float(config["theta_penalty"])
@@ -817,12 +955,17 @@ def run(
                         model=model,
                         packages=packages,
                         folds=folds,
+                        valid_updates=refresh_updates,
                     )
                 )
-                next_teacher_refresh = next_teacher_refresh_after(update)
+                next_teacher_refresh = next_teacher_refresh_after(
+                    update, refresh_updates
+                )
             model.train()
             scheduler.set_for_update(update)
-            indices_cpu = torch.randperm(TRAIN_COUNT, generator=batch_generator)[:BATCH_SIZE]
+            indices_cpu = torch.randperm(train_count, generator=batch_generator)[
+                : int(config["batch_size"])
+            ]
             indices = indices_cpu.to(device)
             images = train_features.index_select(0, indices)
             targets = global_to_seen.index_select(0, train_labels.index_select(0, indices))
@@ -921,14 +1064,15 @@ def run(
                 "reproducibility": reproducibility,
             }
             atomic_torch_save(output_dir / "checkpoint_last.pth", checkpoint)
-        if len(history) != 152 or history[-1]["update"] != TOTAL_UPDATES:
-            raise RuntimeError("GTD完整150轮必须保存152个评估点并结束于21171。")
+        expected_history_length = int(config["nominal_epochs"]) + 2
+        if len(history) != expected_history_length or history[-1]["update"] != total_updates:
+            raise RuntimeError("GTD完整训练必须保存初始点、逐epoch点和最终尾点。")
         if (
-            len(teacher_history) != NOMINAL_EPOCHS
-            or [row["update"] for row in teacher_history] != list(TEACHER_REFRESH_UPDATES)
+            len(teacher_history) != int(config["nominal_epochs"])
+            or [row["update"] for row in teacher_history] != list(refresh_updates)
             or next_teacher_refresh is not None
         ):
-            raise RuntimeError("GTD完整150轮必须保存150次确定性teacher refresh。")
+            raise RuntimeError("GTD完整训练必须逐名义epoch保存确定性teacher refresh。")
         atomic_torch_save(
             output_dir / "model_best.pth",
             {
@@ -967,6 +1111,7 @@ def run(
         result = {
             "experiment_id": config["experiment_id"],
             "condition_id": config["condition_id"],
+            "dataset": config["dataset"],
             "code_commit": code_commit,
             "config_sha256": config_sha,
             "parent_metrics_percent": parent_metrics,
@@ -991,6 +1136,11 @@ def run(
             "decision": decision,
             "history_length": len(history),
             "target_refresh_count": len(teacher_history),
+            "train_count": train_count,
+            "seen_count": seen_count,
+            "class_count": class_count,
+            "total_updates": total_updates,
+            "eval_interval_steps": int(config["eval_interval_steps"]),
             "test_used_for_selection": True,
             "test_used_for_hyperparameter_selection": True,
             "unseen_images_used_for_gradient": False,

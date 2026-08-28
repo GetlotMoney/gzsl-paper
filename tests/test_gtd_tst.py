@@ -22,7 +22,9 @@ from model.innovations.train_gtd_tst import (
     gtd_screen_decision,
     gtd_screen_outcome,
     load_config,
+    rank_modulo_class_folds,
     refresh_oracle_targets,
+    teacher_refresh_updates,
     teacher_packages_sha256,
     teacher_refresh_record,
 )
@@ -35,11 +37,18 @@ def _basis(index: int) -> torch.Tensor:
     return value
 
 
-def _parent(seen: torch.Tensor | None = None) -> PaperV2ThreeModuleModel:
+def _parent(
+    seen: torch.Tensor | None = None,
+    class_count: int = 200,
+) -> PaperV2ThreeModuleModel:
     generator = torch.Generator().manual_seed(22022)
-    roles = F.normalize(torch.randn(200, 8, 768, generator=generator), dim=-1)
+    roles = F.normalize(
+        torch.randn(int(class_count), 8, 768, generator=generator), dim=-1
+    )
     seen = torch.arange(150) if seen is None else torch.as_tensor(seen).long()
-    centroids = F.normalize(torch.randn(150, 768, generator=generator), dim=-1)
+    centroids = F.normalize(
+        torch.randn(seen.numel(), 768, generator=generator), dim=-1
+    )
     return PaperV2ThreeModuleModel(
         roles,
         seen,
@@ -184,6 +193,36 @@ def test_noncontiguous_global_seen_and_zs_ids_are_preserved():
         batch_size=3,
     )
     assert torch.equal(predictions, chosen)
+
+
+def test_awa2_and_sun_dynamic_class_axes_and_budgets():
+    cases = (
+        ("config/tries/v3_try_046_gtd_awa2_scratch_fixed150.yaml", 50, 40, 23527, 70581, 470),
+        ("config/tries/v3_try_047_gtd_sun_scratch_fixed150.yaml", 717, 645, 10320, 30960, 206),
+    )
+    for config_path, class_count, seen_count, train_count, total, interval in cases:
+        config, _ = load_config(Path(config_path))
+        assert config["total_updates"] == total
+        assert config["eval_interval_steps"] == interval
+        seen = torch.arange(seen_count)
+        folds = rank_modulo_class_folds(seen)
+        assert len(folds) == 3
+        coverage = torch.cat([pseudo_unseen for _, pseudo_unseen in folds]).sort().values
+        assert torch.equal(coverage, seen)
+        model = GTDTSTModel(
+            _parent(seen, class_count),
+            seen,
+            class_count=class_count,
+        ).eval()
+        bundle = model.prototype_bundle()
+        assert tuple(bundle["final"].shape) == (class_count, 768)
+        assert torch.equal(bundle["final"], bundle["parent"])
+        points = evaluation_updates(train_count=train_count)
+        assert len(points) == 151
+        assert points[-2:] == (interval * 150, total)
+        refresh = teacher_refresh_updates(train_count=train_count)
+        assert len(refresh) == 150
+        assert refresh[:2] == (1, 1 + interval)
 
 
 def test_fixed150_schedule_evaluations_and_config_contract():
