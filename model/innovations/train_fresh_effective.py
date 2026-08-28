@@ -153,7 +153,7 @@ class FreshSchedule:
         ):
             raise ValueError("fresh scheduler checkpoint身份错误。")
         update = int(state["last_update"])
-        if not 1 <= update < TOTAL_UPDATES:
+        if not 1 <= update <= TOTAL_UPDATES:
             raise ValueError("fresh resume scheduler update错误。")
         self.set_for_update(update)
 
@@ -591,7 +591,7 @@ def validate_checkpoint(
         checkpoint.get("code_commit") == code_commit,
         checkpoint.get("config_sha256") == config_sha,
         checkpoint.get("initial_identity") == initial_identity,
-        0 < current_update < TOTAL_UPDATES,
+        0 < current_update <= TOTAL_UPDATES,
     )):
         raise ValueError("fresh resume RUN身份错误。")
     digests = checkpoint.get("canonical_digests", {})

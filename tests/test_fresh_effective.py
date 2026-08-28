@@ -67,6 +67,81 @@ def test_teacher_refresh_schedule_includes_final_partial_interval():
     assert updates[-2:] == (21010, 21151)
 
 
+def test_completed_teacher_checkpoint_validates_and_restores_for_finalization():
+    checkpoint, initial_identity = _valid_tg_checkpoint()
+    state = checkpoint["model_state_dict"]
+    updates = (0, *evaluation_updates())
+    history = [
+        _checkpoint_row(update=update, index=index, h=70.0, zs=80.0, state=state)
+        for index, update in enumerate(updates)
+    ]
+    teacher_state = {"payload": torch.zeros(1)}
+    teacher_sha = canonical_sha256(teacher_state)
+    optimizer_model = torch.nn.Linear(3, 2)
+    optimizer_model.load_state_dict(state)
+    completed_tg_optimizer = torch.optim.Adam(optimizer_model.parameters(), lr=1e-4)
+    completed_gate_optimizer = torch.optim.Adam(optimizer_model.parameters(), lr=1e-4)
+    completed_schedule = FreshSchedule(completed_tg_optimizer, completed_gate_optimizer)
+    completed_schedule.set_for_update(21171)
+    checkpoint.update({
+        "experiment_id": "V3-TRY-043",
+        "update": 21171,
+        "scheduler_state_dict": completed_schedule.state_dict(),
+        "tg_optimizer_state_dict": completed_tg_optimizer.state_dict(),
+        "gate_optimizer_state_dict": completed_gate_optimizer.state_dict(),
+        "history": history,
+        "best_update": 0,
+        "best_metrics": copy.deepcopy(history[0]),
+        "best_model_state_dict": copy.deepcopy(state),
+        "best_zs_observation": {
+            "ZS": 80.0, "update": 0, "metrics": copy.deepcopy(history[0])
+        },
+        "best_zs_model_state_dict": copy.deepcopy(state),
+        "teacher_state": teacher_state,
+        "teacher_history": [
+            {"update": update, "sha256": teacher_sha}
+            for update in teacher_refresh_updates(21171)
+        ],
+        "first_update_gradients": {
+            **checkpoint["first_update_gradients"],
+            "module": {"any_nonzero_gradient": True},
+        },
+    })
+    seal_checkpoint(checkpoint)
+    validate_checkpoint(
+        checkpoint, module_name="gtd", experiment_id="V3-TRY-043",
+        code_commit=EXPECTED_COMMIT, config_sha="c" * 64,
+        initial_identity=initial_identity,
+    )
+
+    model = torch.nn.Linear(3, 2)
+    tg_optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    gate_optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    schedule = FreshSchedule(tg_optimizer, gate_optimizer)
+    saved_cpu_rng = torch.get_rng_state()
+    saved_cuda_rng = torch.cuda.get_rng_state_all()
+    try:
+        restore_checkpoint_objects(
+            checkpoint, model=model, tg_optimizer=tg_optimizer,
+            gate_optimizer=gate_optimizer, scheduler=schedule,
+            primary_generator=torch.Generator(), auxiliary_generator=torch.Generator(),
+        )
+    finally:
+        torch.set_rng_state(saved_cpu_rng)
+        torch.cuda.set_rng_state_all(saved_cuda_rng)
+    assert schedule.last_update == 21171
+
+    missing_refresh = copy.deepcopy(checkpoint)
+    missing_refresh["teacher_history"].pop()
+    seal_checkpoint(missing_refresh)
+    with pytest.raises(ValueError, match="teacher update/schema"):
+        validate_checkpoint(
+            missing_refresh, module_name="gtd", experiment_id="V3-TRY-043",
+            code_commit=EXPECTED_COMMIT, config_sha="c" * 64,
+            initial_identity=initial_identity,
+        )
+
+
 def test_configs_define_only_fresh_one_stage_matched_conditions():
     loaded = [load_config(path)[0] for path in CONFIGS]
     assert [row["experiment_id"] for row in loaded] == [
