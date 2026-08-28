@@ -24,11 +24,18 @@ from model.innovations.train_fresh_effective import (
     evaluation_updates,
     gradient_report,
     load_config,
+    make_mmt_teacher,
     primary_batch_prefix_sha256,
+    restore_checkpoint_objects,
+    seal_checkpoint,
+    validate_checkpoint,
 )
 from model.innovations.train_gtd_tst import tensor_mapping_sha256
+from model.innovations.train_gtd_tst import refresh_oracle_targets
 from model.paper_v2 import PaperV2ThreeModuleModel
+from model.tg_vpr_h1 import train as h1
 from tools.summarize_fresh_effective import summarize
+from tools.runtime import sha256_file
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -92,7 +99,7 @@ def test_four_conditions_have_identical_fresh_parent_rng_and_primary_batches():
     identities = []
     for path in CONFIGS:
         config, _ = load_config(path)
-        torch.manual_seed(7)
+        torch.random.default_generator.manual_seed(7)
         bundle = build_model(config, tensors, torch.device("cpu"))
         primary = torch.Generator(device="cpu").manual_seed(config["random_seed"])
         identities.append({
@@ -112,7 +119,7 @@ def test_all_conditions_share_parent_forward_and_candidate_gate_gets_first_step_
     reference_logits = None
     for path in CONFIGS:
         config, _ = load_config(path)
-        torch.manual_seed(7)
+        torch.random.default_generator.manual_seed(7)
         bundle = build_model(config, tensors, torch.device("cpu"))
         bundle.model.train()
         if shared_rng is None:
@@ -147,6 +154,69 @@ def test_all_conditions_share_parent_forward_and_candidate_gate_gets_first_step_
             assert report["all_gradients_present"] and report["any_nonzero_gradient"]
 
 
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="server CUDA RNG专项")
+def test_cuda_four_conditions_preserve_rng_teacher_and_first_parent_step():
+    tensors = synthetic_assets()
+    device = torch.device("cuda:0")
+    evidence = []
+    for path in CONFIGS:
+        config, _ = load_config(path)
+        torch.random.default_generator.manual_seed(7)
+        torch.cuda.manual_seed_all(7)
+        bundle = build_model(config, tensors, device)
+        post_build = canonical_sha256(torch.cuda.get_rng_state(device))
+        labels = tensors["train_labels"].long()
+        seen_cpu = bundle.parent.seen_classes.cpu()
+        centroids = h1.visual_centroids(tensors["train_features"], labels, seen_cpu).to(device)
+        folds = fixed_class_folds(seen_cpu)
+        if bundle.module_name == "gtd":
+            refresh_oracle_targets(bundle.model, centroids, folds, 0.1)
+        elif bundle.module_name == "mmt":
+            make_mmt_teacher(bundle.model, centroids, config, device)
+        pre_main = canonical_sha256(torch.cuda.get_rng_state(device))
+        primary = torch.Generator(device="cpu").manual_seed(7)
+        indices = torch.randperm(7057, generator=primary)[:50].to(device)
+        images = tensors["train_features"].to(device).index_select(0, indices)
+        labels_device = labels.to(device)
+        seen = seen_cpu.to(device)
+        global_to_seen = torch.full((200,), -1, dtype=torch.long, device=device)
+        global_to_seen[seen] = torch.arange(150, device=device)
+        targets = global_to_seen.index_select(0, labels_device.index_select(0, indices))
+        bundle.model.train()
+        bundle.model.zero_grad(set_to_none=True)
+        logits = bundle.parent.logits(images, seen)
+        topology = bundle.parent.topology_loss()
+        ce = F.cross_entropy(logits, targets)
+        (ce + 0.1 * topology).backward()
+        gradients = {
+            name: None if parameter.grad is None else parameter.grad.detach().cpu().clone()
+            for name, parameter in bundle.parent.tg_vpr.named_parameters()
+        }
+        evidence.append({
+            "post_build": post_build,
+            "pre_main": pre_main,
+            "logits": logits.detach().cpu(),
+            "topology": topology.detach().cpu(),
+            "ce": ce.detach().cpu(),
+            "gradients": gradients,
+        })
+        del bundle, images, logits, topology, ce
+        torch.cuda.empty_cache()
+    reference = evidence[0]
+    for row in evidence[1:]:
+        assert row["post_build"] == reference["post_build"]
+        assert row["pre_main"] == reference["pre_main"]
+        assert torch.equal(row["logits"], reference["logits"])
+        assert torch.equal(row["topology"], reference["topology"])
+        assert torch.equal(row["ce"], reference["ce"])
+        assert row["gradients"].keys() == reference["gradients"].keys()
+        for name, gradient in row["gradients"].items():
+            expected = reference["gradients"][name]
+            assert (gradient is None) == (expected is None)
+            if gradient is not None:
+                assert torch.equal(gradient, expected)
+
+
 def test_schedule_and_evaluation_contract_are_exact():
     tg = torch.nn.Parameter(torch.zeros(()))
     gate = torch.nn.Parameter(torch.zeros(()))
@@ -160,36 +230,107 @@ def test_schedule_and_evaluation_contract_are_exact():
     assert evaluation_updates()[-2:] == (21150, 21171)
 
 
-def _fake_result(experiment_id: str, module: str, h: float, module_delta: float) -> dict:
+EXPECTED_COMMIT = "f" * 40
+
+
+def _fake_history(
+    *, final_h: float, module_off_history: list[dict] | None = None,
+    gap: float = 2.0,
+) -> list[dict]:
+    updates = [0] + [141 * index for index in range(1, 151)] + [21171]
+    rows = []
+    for index, update in enumerate(updates):
+        h = final_h - 0.001 * (151 - index)
+        u = h + gap / 2.0
+        s = h - gap / 2.0
+        full = {"U": u, "S": s, "H": h, "ZS": 85.0 + index * 0.001}
+        off = full if module_off_history is None else {
+            metric: float(module_off_history[index][metric]) for metric in ("U", "S", "H", "ZS")
+        }
+        row = {
+            **full,
+            "update": update,
+            "evaluation_index": index,
+            "model_state_sha256": f"{index:064x}",
+            "module_off_metrics": off,
+            "full_minus_off_delta": {
+                metric: float(full[metric]) - float(off[metric])
+                for metric in ("U", "S", "H", "ZS")
+            },
+        }
+        rows.append(row)
+    return rows
+
+
+def _fake_result(
+    experiment_id: str, module: str, history: list[dict],
+) -> dict:
+    best = history[-1]
+    config_path = ROOT / f"config/tries/v3_try_{experiment_id[-3:]}_fresh_effective.yaml"
     return {
         "experiment_id": experiment_id,
         "module": module,
+        "code_commit": EXPECTED_COMMIT,
+        "config_sha256": sha256_file(config_path),
         "initialization_strategy": "fresh_seeded_tg",
         "loaded_training_checkpoints": [],
+        "asset_id": "CUB_openai_vitl14_336_dynamic_v3_v1",
+        "asset_manifest_sha256": "3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6",
         "initial_tg_state_sha256": "a" * 64,
         "initial_parent_state_sha256": "b" * 64,
         "primary_batch_generator_initial_sha256": "c" * 64,
         "primary_batches_updates_1_142_sha256": "d" * 64,
-        "best_metrics": {"U": 79.0, "S": 77.0, "H": h, "ZS": 86.0},
-        "best_full_minus_off_delta": {"U": 0.0, "S": 0.0, "H": module_delta, "ZS": 0.0},
+        "post_build_cuda_rng_sha256": "e" * 64,
+        "update1_pre_main_cuda_rng_sha256": "f" * 64,
+        "random_seed": 7,
+        "batch_size": 50,
+        "total_updates": 21171,
+        "eval_interval_steps": 141,
+        "tg_learning_rate": 1e-4,
+        "history_length": 152,
+        "best_metrics": best,
+        "best_update": 21171,
+        "best_zs_observation": {"ZS": best["ZS"], "update": 21171, "metrics": best},
+        "best_full_minus_off_delta": best["full_minus_off_delta"],
     }
 
 
 def test_summary_enforces_cross_run_and_same_checkpoint_double_gate():
+    control_history = _fake_history(final_h=76.5)
+    gtd_history = _fake_history(final_h=77.6, module_off_history=control_history)
+    mmt_history = _fake_history(final_h=77.35, module_off_history=control_history)
+    bd_history = _fake_history(final_h=77.6, module_off_history=control_history, gap=9.0)
     payloads = [
-        _fake_result("V3-TRY-042", "tg", 76.5, 0.0),
-        _fake_result("V3-TRY-043", "gtd", 77.6, 1.05),
-        _fake_result("V3-TRY-044", "mmt", 77.35, 0.85),
-        _fake_result("V3-TRY-045", "bd", 77.6, 0.7),
+        _fake_result("V3-TRY-042", "tg", control_history),
+        _fake_result("V3-TRY-043", "gtd", gtd_history),
+        _fake_result("V3-TRY-044", "mmt", mmt_history),
+        _fake_result("V3-TRY-045", "bd", bd_history),
     ]
-    result = summarize(payloads)
+    histories = {
+        row["experiment_id"]: history
+        for row, history in zip(payloads, (control_history, gtd_history, mmt_history, bd_history))
+    }
+    result = summarize(
+        payloads, histories, expected_code_commit=EXPECTED_COMMIT, repo_root=ROOT
+    )
     assert [row["decision"] for row in result["candidates"]] == [
         "strong_keep", "weak_keep", "drop"
     ]
     broken = copy.deepcopy(payloads)
     broken[-1]["primary_batches_updates_1_142_sha256"] = "e" * 64
     with pytest.raises(ValueError, match="不匹配"):
-        summarize(broken)
+        summarize(broken, histories, expected_code_commit=EXPECTED_COMMIT, repo_root=ROOT)
+    trajectory_broken = copy.deepcopy(histories)
+    trajectory_broken["V3-TRY-044"][17]["module_off_metrics"]["H"] += 0.01
+    trajectory_broken["V3-TRY-044"][17]["full_minus_off_delta"]["H"] = (
+        trajectory_broken["V3-TRY-044"][17]["H"]
+        - trajectory_broken["V3-TRY-044"][17]["module_off_metrics"]["H"]
+    )
+    invalid = summarize(
+        payloads, trajectory_broken,
+        expected_code_commit=EXPECTED_COMMIT, repo_root=ROOT,
+    )
+    assert invalid["candidates"][1]["decision"] == "implementation_invalid"
 
 
 def test_canonical_checkpoint_payload_is_weights_only_safe(tmp_path: Path):
@@ -207,6 +348,151 @@ def test_canonical_checkpoint_payload_is_weights_only_safe(tmp_path: Path):
     torch.save(payload, path)
     restored = torch.load(path, map_location="cpu", weights_only=True)
     assert restored["canonical"] == canonical_sha256(restored["optimizer_state_dict"])
+
+
+def _checkpoint_row(
+    *, update: int, index: int, h: float, zs: float, state: dict[str, torch.Tensor],
+) -> dict:
+    full = {"U": h + 1.0, "S": h - 1.0, "H": h, "ZS": zs}
+    return {
+        **full,
+        "update": update,
+        "evaluation_index": index,
+        "module_off_metrics": copy.deepcopy(full),
+        "full_minus_off_delta": {name: 0.0 for name in ("U", "S", "H", "ZS")},
+        "model_state_sha256": canonical_sha256(state),
+    }
+
+
+def _valid_tg_checkpoint():
+    torch.random.default_generator.manual_seed(311)
+    model = torch.nn.Linear(3, 2)
+    initial_state = {name: value.detach().clone() for name, value in model.state_dict().items()}
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    loss = model(torch.ones(2, 3)).square().mean()
+    loss.backward()
+    optimizer.step()
+    current_state = {name: value.detach().clone() for name, value in model.state_dict().items()}
+    schedule = FreshSchedule(optimizer)
+    schedule.set_for_update(141)
+    primary = torch.Generator().manual_seed(7)
+    auxiliary = torch.Generator().manual_seed(7151)
+    history = [
+        _checkpoint_row(update=0, index=0, h=70.0, zs=80.0, state=initial_state),
+        _checkpoint_row(update=141, index=1, h=71.0, zs=81.0, state=current_state),
+    ]
+    initial_identity = {
+        "initialization_strategy": "fresh_seeded_tg",
+        "initial_tg_state_sha256": "a" * 64,
+        "post_build_cuda_rng_sha256": "b" * 64,
+    }
+    checkpoint = {
+        "experiment_id": "V3-TRY-042",
+        "code_commit": EXPECTED_COMMIT,
+        "config_sha256": "c" * 64,
+        "initial_identity": initial_identity,
+        "update": 141,
+        "model_state_dict": current_state,
+        "tg_optimizer_state_dict": optimizer.state_dict(),
+        "gate_optimizer_state_dict": None,
+        "scheduler_state_dict": schedule.state_dict(),
+        "best_update": 141,
+        "best_metrics": copy.deepcopy(history[1]),
+        "best_model_state_dict": copy.deepcopy(current_state),
+        "best_zs_observation": {
+            "ZS": 81.0, "update": 141, "metrics": copy.deepcopy(history[1])
+        },
+        "best_zs_model_state_dict": copy.deepcopy(current_state),
+        "teacher_state": None,
+        "teacher_history": [],
+        "first_update_gradients": {
+            "update1_pre_main_cuda_rng_sha256": "d" * 64,
+            "tg": {"any_nonzero_gradient": True},
+            "module": None,
+        },
+        "rng_state": {
+            "primary": primary.get_state(),
+            "auxiliary": auxiliary.get_state(),
+            "cpu": torch.get_rng_state(),
+            "cuda": torch.cuda.get_rng_state_all(),
+        },
+        "history": history,
+        "reproducibility": {},
+    }
+    seal_checkpoint(checkpoint)
+    return checkpoint, initial_identity
+
+
+def test_checkpoint_semantic_validation_rejects_tampering_and_positive_resume():
+    checkpoint, initial_identity = _valid_tg_checkpoint()
+    validate_checkpoint(
+        checkpoint, module_name="tg", experiment_id="V3-TRY-042",
+        code_commit=EXPECTED_COMMIT, config_sha="c" * 64,
+        initial_identity=initial_identity,
+    )
+    model = torch.nn.Linear(3, 2)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    schedule = FreshSchedule(optimizer)
+    primary = torch.Generator().manual_seed(1)
+    auxiliary = torch.Generator().manual_seed(2)
+    saved_cpu_rng = torch.get_rng_state()
+    saved_cuda_rng = torch.cuda.get_rng_state_all()
+    try:
+        restore_checkpoint_objects(
+            checkpoint, model=model, tg_optimizer=optimizer, gate_optimizer=None,
+            scheduler=schedule, primary_generator=primary,
+            auxiliary_generator=auxiliary,
+        )
+    finally:
+        torch.set_rng_state(saved_cpu_rng)
+        torch.cuda.set_rng_state_all(saved_cuda_rng)
+    assert canonical_sha256(model.state_dict()) == checkpoint["canonical_digests"]["model"]
+
+    tampered_best = copy.deepcopy(checkpoint)
+    tampered_best["best_metrics"]["H"] -= 1.0
+    seal_checkpoint(tampered_best)
+    with pytest.raises(ValueError, match="best-H"):
+        validate_checkpoint(
+            tampered_best, module_name="tg", experiment_id="V3-TRY-042",
+            code_commit=EXPECTED_COMMIT, config_sha="c" * 64,
+            initial_identity=initial_identity,
+        )
+    tampered_history = copy.deepcopy(checkpoint)
+    tampered_history["history"][1]["update"] = 140
+    seal_checkpoint(tampered_history)
+    with pytest.raises(ValueError, match="history update"):
+        validate_checkpoint(
+            tampered_history, module_name="tg", experiment_id="V3-TRY-042",
+            code_commit=EXPECTED_COMMIT, config_sha="c" * 64,
+            initial_identity=initial_identity,
+        )
+    tampered_teacher = copy.deepcopy(checkpoint)
+    tampered_teacher["teacher_history"] = [{"update": 1, "sha256": "e" * 64}]
+    tampered_teacher["teacher_state"] = {"fake": torch.zeros(1)}
+    seal_checkpoint(tampered_teacher)
+    with pytest.raises(ValueError, match="非teacher模块"):
+        validate_checkpoint(
+            tampered_teacher, module_name="tg", experiment_id="V3-TRY-042",
+            code_commit=EXPECTED_COMMIT, config_sha="c" * 64,
+            initial_identity=initial_identity,
+        )
+    tampered_scheduler = copy.deepcopy(checkpoint)
+    tampered_scheduler["scheduler_state_dict"]["last_update"] = 140
+    seal_checkpoint(tampered_scheduler)
+    with pytest.raises(ValueError, match="scheduler"):
+        validate_checkpoint(
+            tampered_scheduler, module_name="tg", experiment_id="V3-TRY-042",
+            code_commit=EXPECTED_COMMIT, config_sha="c" * 64,
+            initial_identity=initial_identity,
+        )
+    tampered_digest = copy.deepcopy(checkpoint)
+    tampered_digest["semantic_evidence_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="semantic evidence"):
+        validate_checkpoint(
+            tampered_digest, module_name="tg", experiment_id="V3-TRY-042",
+            code_commit=EXPECTED_COMMIT, config_sha="c" * 64,
+            initial_identity=initial_identity,
+        )
 
 
 def test_mmt_geodesic_and_teacher_loss_keep_audited_formula():

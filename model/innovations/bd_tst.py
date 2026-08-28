@@ -73,7 +73,7 @@ class BalancedDecoupledTST(nn.Module):
         self.register_buffer("unseen_classes", unseen, persistent=True)
         # Gate初始化不得推进TG/dropout使用的全局CPU RNG；这保证off路径训练轨迹可逐位复现。
         with torch.random.fork_rng(devices=[]):
-            torch.manual_seed(int(gate_initialization_seed))
+            torch.random.default_generator.manual_seed(int(gate_initialization_seed))
             self.gate = TangentStepGate(
                 input_dim=4,
                 max_step=max_transport_step,

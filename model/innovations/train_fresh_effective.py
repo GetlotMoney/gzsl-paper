@@ -257,7 +257,9 @@ def build_model(config: dict, tensors: dict[str, torch.Tensor], device: torch.de
         model: nn.Module = parent
     else:
         with torch.random.fork_rng(devices=[]):
-            torch.manual_seed(int(config["module_initialization_seed"]))
+            torch.random.default_generator.manual_seed(
+                int(config["module_initialization_seed"])
+            )
             if module_name == "gtd":
                 model = GTDTSTModel(
                     parent, seen, hidden_dim=int(config["gtd_hidden_dim"]),
@@ -456,6 +458,235 @@ def _rng_state(primary: torch.Generator, auxiliary: torch.Generator) -> dict[str
     }
 
 
+def _require_finite_tree(value: Any, name: str) -> None:
+    if isinstance(value, torch.Tensor):
+        if (value.is_floating_point() or value.is_complex()) and not torch.isfinite(value).all():
+            raise ValueError(f"{name}包含NaN/Inf。")
+    elif isinstance(value, dict):
+        for key, child in value.items():
+            _require_finite_tree(child, f"{name}.{key}")
+    elif isinstance(value, (list, tuple)):
+        for index, child in enumerate(value):
+            _require_finite_tree(child, f"{name}[{index}]")
+    elif isinstance(value, (float, complex)):
+        parts = (value.real, value.imag) if isinstance(value, complex) else (value,)
+        if not all(math.isfinite(float(part)) for part in parts):
+            raise ValueError(f"{name}包含NaN/Inf。")
+
+
+def _first_strict_max(rows: list[dict], metric: str) -> dict:
+    best = rows[0]
+    for row in rows[1:]:
+        if float(row[metric]) > float(best[metric]):
+            best = row
+    return best
+
+
+def validate_history(
+    history: list[dict], *, current_update: int,
+    current_model_sha256: str, best_update: int, best_metrics: dict,
+    best_state: dict[str, torch.Tensor], best_zs: dict,
+    best_zs_state: dict[str, torch.Tensor],
+) -> None:
+    expected_updates = [0] + [
+        update for update in evaluation_updates() if update <= int(current_update)
+    ]
+    if not isinstance(history, list) or [row.get("update") for row in history] != expected_updates:
+        raise ValueError("fresh resume history update序列不连续。")
+    if [row.get("evaluation_index") for row in history] != list(range(len(history))):
+        raise ValueError("fresh resume history evaluation_index不连续。")
+    required = {"U", "S", "H", "ZS", "module_off_metrics", "full_minus_off_delta", "model_state_sha256"}
+    for row in history:
+        if not required.issubset(row) or len(str(row["model_state_sha256"])) != 64:
+            raise ValueError("fresh resume history schema错误。")
+        _require_finite_tree(row, "history")
+    if history[-1]["model_state_sha256"] != current_model_sha256:
+        raise ValueError("fresh resume current model与history末行SHA不一致。")
+    expected_best = _first_strict_max(history, "H")
+    if int(best_update) != int(expected_best["update"]) or best_metrics != expected_best:
+        raise ValueError("fresh resume best-H不是history首次严格最大值。")
+    if canonical_sha256(best_state) != expected_best["model_state_sha256"]:
+        raise ValueError("fresh resume best-H state SHA错误。")
+    expected_zs = _first_strict_max(history, "ZS")
+    if (
+        int(best_zs.get("update", -1)) != int(expected_zs["update"])
+        or float(best_zs.get("ZS", float("nan"))) != float(expected_zs["ZS"])
+        or best_zs.get("metrics") != expected_zs
+    ):
+        raise ValueError("fresh resume best-ZS不是history首次严格最大值。")
+    if canonical_sha256(best_zs_state) != expected_zs["model_state_sha256"]:
+        raise ValueError("fresh resume best-ZS state SHA错误。")
+
+
+def validate_teacher_state(
+    *, module_name: str, current_update: int,
+    teacher_history: list[dict], teacher_state: Any,
+) -> None:
+    expected_updates = [
+        1 + EVAL_INTERVAL * index
+        for index in range(NOMINAL_EPOCHS)
+        if 1 + EVAL_INTERVAL * index <= int(current_update)
+    ]
+    if module_name not in {"gtd", "mmt"}:
+        if teacher_history != [] or teacher_state is not None:
+            raise ValueError("fresh非teacher模块包含teacher状态。")
+        return
+    if (
+        not isinstance(teacher_history, list)
+        or [row.get("update") for row in teacher_history] != expected_updates
+        or any(set(row) != {"update", "sha256"} or len(str(row["sha256"])) != 64 for row in teacher_history)
+        or teacher_state is None
+    ):
+        raise ValueError("fresh teacher update/schema错误。")
+    if canonical_sha256(teacher_state) != teacher_history[-1]["sha256"]:
+        raise ValueError("fresh teacher state SHA错误。")
+
+
+def checkpoint_semantic_material(checkpoint: dict) -> dict[str, Any]:
+    return {
+        "scheduler_state_dict": checkpoint["scheduler_state_dict"],
+        "history": checkpoint["history"],
+        "best_metrics": checkpoint["best_metrics"],
+        "best_update": checkpoint["best_update"],
+        "best_model_state_dict": checkpoint["best_model_state_dict"],
+        "best_zs_observation": checkpoint["best_zs_observation"],
+        "best_zs_model_state_dict": checkpoint["best_zs_model_state_dict"],
+        "teacher_history": checkpoint["teacher_history"],
+        "teacher_state": checkpoint["teacher_state"],
+        "first_update_gradients": checkpoint["first_update_gradients"],
+        "initial_identity": checkpoint["initial_identity"],
+        "model_state_dict": checkpoint["model_state_dict"],
+        "tg_optimizer_state_dict": checkpoint["tg_optimizer_state_dict"],
+        "gate_optimizer_state_dict": checkpoint["gate_optimizer_state_dict"],
+        "rng_state": checkpoint["rng_state"],
+    }
+
+
+def seal_checkpoint(checkpoint: dict) -> dict:
+    optimizer_payload = {
+        "tg": checkpoint["tg_optimizer_state_dict"],
+        "gate": checkpoint["gate_optimizer_state_dict"],
+    }
+    checkpoint["canonical_digests"] = {
+        "model": canonical_sha256(checkpoint["model_state_dict"]),
+        "optimizer": canonical_sha256(optimizer_payload),
+        "rng": canonical_sha256(checkpoint["rng_state"]),
+    }
+    checkpoint["semantic_evidence_sha256"] = canonical_sha256(
+        checkpoint_semantic_material(checkpoint)
+    )
+    return checkpoint
+
+
+def validate_checkpoint(
+    checkpoint: dict, *, module_name: str, experiment_id: str,
+    code_commit: str, config_sha: str, initial_identity: dict,
+) -> None:
+    current_update = int(checkpoint.get("update", 0))
+    if not all((
+        checkpoint.get("experiment_id") == experiment_id,
+        checkpoint.get("code_commit") == code_commit,
+        checkpoint.get("config_sha256") == config_sha,
+        checkpoint.get("initial_identity") == initial_identity,
+        0 < current_update < TOTAL_UPDATES,
+    )):
+        raise ValueError("fresh resume RUN身份错误。")
+    digests = checkpoint.get("canonical_digests", {})
+    optimizer_payload = {
+        "tg": checkpoint["tg_optimizer_state_dict"],
+        "gate": checkpoint["gate_optimizer_state_dict"],
+    }
+    if (
+        digests.get("model") != canonical_sha256(checkpoint["model_state_dict"])
+        or digests.get("optimizer") != canonical_sha256(optimizer_payload)
+        or digests.get("rng") != canonical_sha256(checkpoint["rng_state"])
+    ):
+        raise ValueError("fresh resume current model/optimizer/RNG digest错误。")
+    if checkpoint.get("semantic_evidence_sha256") != canonical_sha256(
+        checkpoint_semantic_material(checkpoint)
+    ):
+        raise ValueError("fresh resume semantic evidence digest错误。")
+    scheduler = checkpoint.get("scheduler_state_dict")
+    if (
+        not isinstance(scheduler, dict)
+        or set(scheduler) != {"last_update", "has_gate"}
+        or int(scheduler.get("last_update", -1)) != current_update
+        or bool(scheduler.get("has_gate")) != (module_name != "tg")
+    ):
+        raise ValueError("fresh resume scheduler update错误。")
+    validate_history(
+        checkpoint["history"], current_update=current_update,
+        current_model_sha256=digests["model"],
+        best_update=int(checkpoint["best_update"]),
+        best_metrics=checkpoint["best_metrics"],
+        best_state=checkpoint["best_model_state_dict"],
+        best_zs=checkpoint["best_zs_observation"],
+        best_zs_state=checkpoint["best_zs_model_state_dict"],
+    )
+    validate_teacher_state(
+        module_name=module_name, current_update=current_update,
+        teacher_history=checkpoint["teacher_history"],
+        teacher_state=checkpoint["teacher_state"],
+    )
+    current_state = checkpoint["model_state_dict"]
+    for name, state in (
+        ("best-H", checkpoint["best_model_state_dict"]),
+        ("best-ZS", checkpoint["best_zs_model_state_dict"]),
+    ):
+        if set(state) != set(current_state) or any(
+            state[key].shape != current_state[key].shape for key in current_state
+        ):
+            raise ValueError(f"fresh resume {name} state schema错误。")
+    first = checkpoint.get("first_update_gradients")
+    if (
+        not isinstance(first, dict)
+        or set(first) != {"update1_pre_main_cuda_rng_sha256", "tg", "module"}
+        or len(str(first["update1_pre_main_cuda_rng_sha256"])) != 64
+        or not isinstance(first["tg"], dict)
+        or first["tg"].get("any_nonzero_gradient") is not True
+        or ((module_name == "tg") != (first["module"] is None))
+    ):
+        raise ValueError("fresh resume first-update gradient schema错误。")
+    _require_finite_tree(checkpoint_semantic_material(checkpoint), "checkpoint")
+
+
+def restore_checkpoint_objects(
+    checkpoint: dict, *, model: nn.Module,
+    tg_optimizer: torch.optim.Optimizer,
+    gate_optimizer: torch.optim.Optimizer | None,
+    scheduler: FreshSchedule,
+    primary_generator: torch.Generator,
+    auxiliary_generator: torch.Generator,
+) -> None:
+    model.load_state_dict(checkpoint["model_state_dict"], strict=True)
+    tg_optimizer.load_state_dict(checkpoint["tg_optimizer_state_dict"])
+    if gate_optimizer is not None:
+        if checkpoint["gate_optimizer_state_dict"] is None:
+            raise ValueError("fresh candidate缺少Gate optimizer。")
+        gate_optimizer.load_state_dict(checkpoint["gate_optimizer_state_dict"])
+    elif checkpoint["gate_optimizer_state_dict"] is not None:
+        raise ValueError("TG control不得恢复Gate optimizer。")
+    scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+    rng = checkpoint["rng_state"]
+    primary_generator.set_state(rng["primary"])
+    auxiliary_generator.set_state(rng["auxiliary"])
+    torch.set_rng_state(rng["cpu"])
+    if len(rng["cuda"]) != torch.cuda.device_count():
+        raise ValueError("fresh resume CUDA RNG设备数变化。")
+    torch.cuda.set_rng_state_all(rng["cuda"])
+    optimizer_payload = {
+        "tg": tg_optimizer.state_dict(),
+        "gate": gate_optimizer.state_dict() if gate_optimizer else None,
+    }
+    if (
+        canonical_sha256(model.state_dict()) != checkpoint["canonical_digests"]["model"]
+        or canonical_sha256(optimizer_payload) != checkpoint["canonical_digests"]["optimizer"]
+        or canonical_sha256(_rng_state(primary_generator, auxiliary_generator))
+        != checkpoint["canonical_digests"]["rng"]
+    ):
+        raise ValueError("fresh resume load后model/optimizer/RNG身份错误。")
+
+
 def run(
     config_path: Path, output_dir: Path, expected_commit: str,
     resume_from: Path | None = None,
@@ -488,6 +719,9 @@ def run(
             int(config["random_seed"]), strict_determinism=True, deterministic_warn_only=False
         )
         bundle = build_model(config, tensors, device)
+        post_build_cuda_rng_sha256 = canonical_sha256(
+            torch.cuda.get_rng_state(device)
+        )
         initial_tg_sha = tensor_mapping_sha256(dict(bundle.parent.tg_vpr.state_dict()))
         initial_parent_sha = tensor_mapping_sha256(dict(bundle.parent.state_dict()))
         primary_generator = torch.Generator(device="cpu").manual_seed(int(config["random_seed"]))
@@ -501,6 +735,7 @@ def run(
             "initial_parent_state_sha256": initial_parent_sha,
             "primary_batch_generator_initial_sha256": canonical_sha256(initial_primary_state),
             "primary_batches_updates_1_142_sha256": primary_batch_prefix_sha256(initial_primary_state),
+            "post_build_cuda_rng_sha256": post_build_cuda_rng_sha256,
             "loaded_training_checkpoints": [],
             "allowed_initialization_sources": ["frozen_clip_features", "frozen_text_embeddings"],
         }
@@ -532,47 +767,38 @@ def run(
         first_update_gradients = None
         if resume_from is None:
             initial = evaluate(bundle, tensors, device)
-            initial.update({"evaluation_index": 0, "update": 0})
+            initial_state = snapshot_model(bundle.model)
+            initial.update({
+                "evaluation_index": 0,
+                "update": 0,
+                "model_state_sha256": canonical_sha256(initial_state),
+            })
             history = [initial]
             best_metrics = copy.deepcopy(initial)
-            best_state = snapshot_model(bundle.model)
+            best_state = copy.deepcopy(initial_state)
             best_update = 0
             best_zs = {"ZS": float(initial["ZS"]), "update": 0, "metrics": copy.deepcopy(initial)}
+            best_zs_state = copy.deepcopy(initial_state)
             start_update = 1
         else:
             checkpoint = torch.load(resume_from, map_location="cpu", weights_only=True)
-            expected = (
-                checkpoint.get("experiment_id") == config["experiment_id"],
-                checkpoint.get("code_commit") == code_commit,
-                checkpoint.get("config_sha256") == config_sha,
-                checkpoint.get("initial_identity") == initial_identity,
-                0 < int(checkpoint.get("update", 0)) < TOTAL_UPDATES,
+            validate_checkpoint(
+                checkpoint, module_name=bundle.module_name,
+                experiment_id=config["experiment_id"], code_commit=code_commit,
+                config_sha=config_sha, initial_identity=initial_identity,
             )
-            if not all(expected):
-                raise ValueError("fresh resume RUN身份错误。")
-            digests = checkpoint.get("canonical_digests", {})
-            if digests.get("model") != canonical_sha256(checkpoint["model_state_dict"]):
-                raise ValueError("fresh resume model digest错误。")
-            optimizer_payload = {
-                "tg": checkpoint["tg_optimizer_state_dict"],
-                "gate": checkpoint["gate_optimizer_state_dict"],
-            }
-            if digests.get("optimizer") != canonical_sha256(optimizer_payload):
-                raise ValueError("fresh resume optimizer digest错误。")
-            if digests.get("rng") != canonical_sha256(checkpoint["rng_state"]):
-                raise ValueError("fresh resume RNG digest错误。")
-            bundle.model.load_state_dict(checkpoint["model_state_dict"], strict=True)
-            tg_optimizer.load_state_dict(checkpoint["tg_optimizer_state_dict"])
-            if gate_optimizer is not None:
-                gate_optimizer.load_state_dict(checkpoint["gate_optimizer_state_dict"])
-            elif checkpoint["gate_optimizer_state_dict"] is not None:
-                raise ValueError("TG control不得恢复Gate optimizer。")
-            scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+            restore_checkpoint_objects(
+                checkpoint, model=bundle.model, tg_optimizer=tg_optimizer,
+                gate_optimizer=gate_optimizer, scheduler=scheduler,
+                primary_generator=primary_generator,
+                auxiliary_generator=auxiliary_generator,
+            )
             history = checkpoint["history"]
             best_metrics = checkpoint["best_metrics"]
             best_state = checkpoint["best_model_state_dict"]
             best_update = int(checkpoint["best_update"])
             best_zs = checkpoint["best_zs_observation"]
+            best_zs_state = checkpoint["best_zs_model_state_dict"]
             teacher_history = checkpoint["teacher_history"]
             first_update_gradients = checkpoint["first_update_gradients"]
             teacher_state = checkpoint["teacher_state"]
@@ -580,13 +806,6 @@ def run(
                 teacher = teacher_packages_to_device(teacher_state, device)
             elif bundle.module_name == "mmt" and teacher_state is not None:
                 teacher = mmt_teacher_from_state(teacher_state, device)
-            rng = checkpoint["rng_state"]
-            primary_generator.set_state(rng["primary"])
-            auxiliary_generator.set_state(rng["auxiliary"])
-            torch.set_rng_state(rng["cpu"])
-            if len(rng["cuda"]) != torch.cuda.device_count():
-                raise ValueError("fresh resume CUDA RNG设备数变化。")
-            torch.cuda.set_rng_state_all(rng["cuda"])
             reproducibility = checkpoint["reproducibility"]
             start_update = int(checkpoint["update"]) + 1
         eval_set = set(evaluation_updates())
@@ -605,6 +824,10 @@ def run(
                     teacher = make_mmt_teacher(bundle.model, visual_centroids, config, device)
                     teacher_sha = canonical_sha256(mmt_teacher_to_cpu(teacher))
                 teacher_history.append({"update": update, "sha256": teacher_sha})
+            if update == 1:
+                update1_pre_main_cuda_rng_sha256 = canonical_sha256(
+                    torch.cuda.get_rng_state(device)
+                )
             bundle.model.train()
             scheduler.set_for_update(update)
             primary_indices_cpu = torch.randperm(
@@ -676,6 +899,7 @@ def run(
             require_finite_gradients(bundle.model)
             if update == 1:
                 first_update_gradients = {
+                    "update1_pre_main_cuda_rng_sha256": update1_pre_main_cuda_rng_sha256,
                     "tg": gradient_report(tg_parameters),
                     "module": gradient_report(module_parameters) if module_parameters else None,
                 }
@@ -700,8 +924,10 @@ def run(
             if update not in eval_set:
                 continue
             metrics = evaluate(bundle, tensors, device)
+            model_state = snapshot_model(bundle.model)
             metrics.update({
                 "evaluation_index": len(history), "update": update,
+                "model_state_sha256": canonical_sha256(model_state),
                 "train": {name: value / interval_steps for name, value in interval.items()},
                 "tg_lr": float(tg_optimizer.param_groups[0]["lr"]),
                 "gate_lr": float(gate_optimizer.param_groups[0]["lr"]) if gate_optimizer else None,
@@ -715,7 +941,7 @@ def run(
                 best_update = update
             if float(metrics["ZS"]) > float(best_zs["ZS"]):
                 best_zs = {"ZS": float(metrics["ZS"]), "update": update, "metrics": copy.deepcopy(metrics)}
-            model_state = snapshot_model(bundle.model)
+                best_zs_state = copy.deepcopy(model_state)
             optimizer_payload = {
                 "tg": tg_optimizer.state_dict(),
                 "gate": gate_optimizer.state_dict() if gate_optimizer else None,
@@ -735,16 +961,13 @@ def run(
                 "scheduler_state_dict": scheduler.state_dict(),
                 "best_update": best_update, "best_metrics": best_metrics,
                 "best_model_state_dict": best_state, "best_zs_observation": best_zs,
+                "best_zs_model_state_dict": best_zs_state,
                 "teacher_state": teacher_state, "teacher_history": teacher_history,
                 "first_update_gradients": first_update_gradients,
                 "rng_state": rng_state, "history": history,
                 "reproducibility": reproducibility,
-                "canonical_digests": {
-                    "model": canonical_sha256(model_state),
-                    "optimizer": canonical_sha256(optimizer_payload),
-                    "rng": canonical_sha256(rng_state),
-                },
             }
+            seal_checkpoint(checkpoint)
             atomic_torch_save(output_dir / "checkpoint_last.pth", checkpoint)
         if len(history) != 152 or history[-1]["update"] != TOTAL_UPDATES:
             raise RuntimeError("fresh完整RUN必须有152个评估点并结束于21171。")
@@ -755,6 +978,12 @@ def run(
             "config_sha256": config_sha, "best_update": best_update,
             "best_metrics": best_metrics, "model_state_dict": best_state,
         })
+        atomic_torch_save(output_dir / "model_best_zs.pth", {
+            "experiment_id": config["experiment_id"], "code_commit": code_commit,
+            "config_sha256": config_sha, "best_update": int(best_zs["update"]),
+            "best_metrics": best_zs["metrics"],
+            "model_state_dict": best_zs_state,
+        })
         atomic_write_json(output_dir / "evaluation_history.json", {"rows": history})
         result = {
             "experiment_id": config["experiment_id"], "condition_id": config["condition_id"],
@@ -763,6 +992,9 @@ def run(
             "best_metrics": best_metrics, "best_update": best_update,
             "best_full_minus_off_delta": best_metrics["full_minus_off_delta"],
             "best_zs_observation": best_zs, "first_update_gradients": first_update_gradients,
+            "update1_pre_main_cuda_rng_sha256": first_update_gradients[
+                "update1_pre_main_cuda_rng_sha256"
+            ],
             "cross_run_add_delta_vs_try042": None,
             "gate_decision_pending_matched_try042": bundle.module_name != "tg",
             "stop_reason": "completed_fixed_150", "history_length": len(history),
@@ -770,7 +1002,14 @@ def run(
             "unseen_images_used_for_gradient": False, "strict_blind_claim": False,
             "human_annotations_used": False, "asset_id": config["asset_id"],
             "asset_manifest_sha256": config["asset_manifest_sha256"],
+            "random_seed": int(config["random_seed"]),
+            "batch_size": BATCH_SIZE,
+            "total_updates": TOTAL_UPDATES,
+            "eval_interval_steps": EVAL_INTERVAL,
+            "tg_learning_rate": float(config["tg_learning_rate"]),
+            "semantic_evidence_sha256": checkpoint["semantic_evidence_sha256"],
             "model_sha256": sha256_file(output_dir / "model_best.pth"),
+            "model_best_zs_sha256": sha256_file(output_dir / "model_best_zs.pth"),
             "checkpoint_last_sha256": sha256_file(output_dir / "checkpoint_last.pth"),
             "evaluation_history_sha256": sha256_file(output_dir / "evaluation_history.json"),
         }
