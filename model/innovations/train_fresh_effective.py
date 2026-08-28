@@ -301,6 +301,13 @@ def evaluation_updates() -> tuple[int, ...]:
     return values
 
 
+def teacher_refresh_updates(current_update: int) -> tuple[int, ...]:
+    """返回每个训练区间的起点，包括末尾21步的partial区间。"""
+    if not 0 <= int(current_update) <= TOTAL_UPDATES:
+        raise ValueError("fresh teacher current_update越界。")
+    return tuple(range(1, int(current_update) + 1, EVAL_INTERVAL))
+
+
 def canonical_sha256(value: Any) -> str:
     digest = hashlib.sha256()
 
@@ -522,11 +529,7 @@ def validate_teacher_state(
     *, module_name: str, current_update: int,
     teacher_history: list[dict], teacher_state: Any,
 ) -> None:
-    expected_updates = [
-        1 + EVAL_INTERVAL * index
-        for index in range(NOMINAL_EPOCHS)
-        if 1 + EVAL_INTERVAL * index <= int(current_update)
-    ]
+    expected_updates = list(teacher_refresh_updates(current_update))
     if module_name not in {"gtd", "mmt"}:
         if teacher_history != [] or teacher_state is not None:
             raise ValueError("fresh非teacher模块包含teacher状态。")
@@ -971,8 +974,12 @@ def run(
             atomic_torch_save(output_dir / "checkpoint_last.pth", checkpoint)
         if len(history) != 152 or history[-1]["update"] != TOTAL_UPDATES:
             raise RuntimeError("fresh完整RUN必须有152个评估点并结束于21171。")
-        if bundle.module_name in {"gtd", "mmt"} and len(teacher_history) != 150:
-            raise RuntimeError("fresh teacher模块必须有150次refresh。")
+        if bundle.module_name in {"gtd", "mmt"}:
+            expected_refreshes = teacher_refresh_updates(TOTAL_UPDATES)
+            if [row["update"] for row in teacher_history] != list(expected_refreshes):
+                raise RuntimeError(
+                    "fresh teacher refresh必须覆盖150个完整区间和最终partial区间。"
+                )
         atomic_torch_save(output_dir / "model_best.pth", {
             "experiment_id": config["experiment_id"], "code_commit": code_commit,
             "config_sha256": config_sha, "best_update": best_update,

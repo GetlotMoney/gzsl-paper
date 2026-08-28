@@ -28,6 +28,7 @@ from model.innovations.train_fresh_effective import (
     primary_batch_prefix_sha256,
     restore_checkpoint_objects,
     seal_checkpoint,
+    teacher_refresh_updates,
     validate_checkpoint,
 )
 from model.innovations.train_gtd_tst import tensor_mapping_sha256
@@ -57,6 +58,13 @@ def synthetic_assets() -> dict[str, torch.Tensor]:
         "test_unseen_labels": torch.arange(150, 200),
         "role_sentence_embeds": torch.randn(200, 8, 768, generator=generator),
     }
+
+
+def test_teacher_refresh_schedule_includes_final_partial_interval():
+    updates = teacher_refresh_updates(21171)
+    assert len(updates) == 151
+    assert updates[:2] == (1, 142)
+    assert updates[-2:] == (21010, 21151)
 
 
 def test_configs_define_only_fresh_one_stage_matched_conditions():
