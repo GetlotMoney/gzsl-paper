@@ -12,5 +12,5 @@
 - 披露：`test_used_for_selection=true / unseen_images_used_for_gradient=false / strict_blind_claim=false`。
 - 失败：任一独立增益不足0.8或`|U-S|>=8`即drop；不以总体H替代模块独立效果。
 - Experiment：`experiments/v3/confirmation/CONFIRM-014_fresh_effective_modules/`。
-- 代码commit：`b7396dfe6f5be5acd98fa077c77387f1134efec7`。
+- 代码commit：`4e2195e2504314c8d2c83f1a96c73a9e7969cbd3`。
 - 证据状态：本地专项与全量测试通过；服务器micro、两轮独立Agent审查和正式RUN尚未执行。

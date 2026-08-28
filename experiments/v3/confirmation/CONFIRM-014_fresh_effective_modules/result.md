@@ -12,4 +12,4 @@
 
 两项增益均达到0.8但不足1.0仅记为weak；其他情况drop。所有U/S/H/ZS来自同一个Full-best checkpoint，另保存best-ZS观察，不跨checkpoint拼接。
 
-本地验证：专项20 passed；整仓544 passed、3 subtests passed。服务器真实资产、CUDA micro-batch、checkpoint roundtrip和两轮独立Agent审查均尚未执行，因此当前不得启动正式RUN。
+本地验证：专项21 passed、1项CUDA物理卡测试本机skip；整仓545 passed、1 skipped、3 subtests passed。服务器真实资产、CUDA RNG专项、CUDA micro-batch和修复后两轮独立Agent复核均尚未执行，因此当前不得启动正式RUN。旧四个audit smoke因模块初始化推进CUDA RNG，统一标记为`invalid_rng_mismatch`，不得作为正式证据。

@@ -1,12 +1,14 @@
 # V3-CONFIRM-014 审查状态
 
-- 最终RUN code commit：`b7396dfe6f5be5acd98fa077c77387f1134efec7`
+- 最终RUN code commit：`4e2195e2504314c8d2c83f1a96c73a9e7969cbd3`
 - MMT公式来源：`e6cae35a759bf5e40a5900c30a4cb0330fa1f06e`
 - BD公式来源：现有BD-TST当前公式模块（语义内容一致）
-- 本地专项：`20 passed`
-- 本地全量：`544 passed, 3 subtests passed`
+- 本地专项：`21 passed, 1 CUDA test skipped locally`
+- 本地全量：`545 passed, 1 CUDA test skipped locally, 3 subtests passed`
 - 真实资产manifest：`3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6`
 - 服务器CUDA micro-batch：`pending`
+- 服务器CUDA RNG专项：`pending / mandatory`
+- 旧audit smoke：`V3-TRY-042/043/044/045 = invalid_rng_mismatch`；不得作为本修复commit证据。
 - Round 1：`pending`
 - Round 2：`pending`
 - 最终结论：`not approved; formal RUN forbidden until Round 2 passes`
