@@ -2,7 +2,7 @@
 
 idea_id: IDEA-156
 source_type: experiment_result + code_analysis + first_principles
-status: testing
+status: rejected
 evidence_refs:
   - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fresh-effective/V3-TRY-043/metrics.json
   - 645b609:experiments/v3/confirmation/CONFIRM-014_fresh_effective_modules/result.md
@@ -14,3 +14,4 @@ core_change: 在TG+GTD 200类logits后增加四局部CLS共享路由；候选内
 success_condition: 相对V3-TRY-048 best H至少+1.0；同checkpoint Full H减LVER-Off H至少+1.0；best checkpoint的|U-S|<8。
 failure_condition: 任一独立增益低于0.8或|U-S|>=8即drop；两项均至少0.8但不足1.0仅记weak。
 experiment: experiments/v3/innovation/INNOVATION-015_lver/
+result: V3-TRY-049与匹配父V3-TRY-048的U/S/H/ZS完全相同；相对父条件ΔH_add=0，同checkpoint ΔH_remove=0，未形成独立贡献，按预注册drop且不调参。

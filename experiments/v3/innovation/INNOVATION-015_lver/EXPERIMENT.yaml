@@ -11,7 +11,8 @@ evidence_refs:
   - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fresh-effective/V3-TRY-043/metrics.json
   - /data/lby/projects/cv_project/GZSL_Warehouse/assets/v3/CUB_openai_vitl14_336_lver_4view_v2/asset_manifest.json
 research_question: 四个重新编码的局部CLIP视图能否在不移动TG+GTD原型的前提下纠正低margin近邻类别，并通过匹配父条件与同checkpoint关闭的双1H门槛？
-status: approved_round2_pending_run
+status: completed_rejected
+run_commit: 7d184a41b8bc9e7f381dc920a143f4717659f1ff
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 test_used_for_hyperparameter_selection: true
@@ -26,10 +27,10 @@ runs:
     config_ref: config/tries/v3_try_048_fine_grained_evidence.yaml
     config_sha256: fa0cbdf83b34d4392c22ca96031c3e32313d448083eaf15b9ff39323bf195ede
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fine-grained-evidence/V3-TRY-048
-    status: planned
+    status: completed
   - run_id: V3-TRY-049
     condition: TG_PLUS_GTD_PLUS_LVER_FRESH
     config_ref: config/tries/v3_try_049_fine_grained_evidence.yaml
     config_sha256: 52348691ef0f256c429f0168d4b0bfab8aca63259ff551d0d3b750c1ea1d5b76
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fine-grained-evidence/V3-TRY-049
-    status: planned
+    status: completed

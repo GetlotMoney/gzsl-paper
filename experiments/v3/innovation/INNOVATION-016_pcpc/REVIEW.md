@@ -12,3 +12,5 @@
 - reviewed pre-run commit：`e6d07651e64cafdb367eabae5efc98533c8e18ec`
 - Round 2：两名独立审核者均为`P0=0, P1=0`，服务器HEAD/config/asset/GPU/resume身份准确，第2轮通过
 - checkpoint合同修复：首次启动在`update>0`发现服务器Torch2.5的`TorchVersion`对象无法`weights_only`加载，立即停止并隔离为`invalid-checkpoint-contract-V3-TRY-048/049`；`e6d0765`将torch/cuda版本显式转为安全字符串，服务器真实`save → weights_only load`通过。修复后两名审核者重新签署Round 1 `P0/P1/P2=0`与Round 2 `P0/P1=0`。
+- 正式RUN commit：`7d184a41b8bc9e7f381dc920a143f4717659f1ff`
+- 正式闭环：TRY048/050均`loaded_training_checkpoints=[] / completed_fixed_150 / total_updates=21171 / history_length=152`；best模型state SHA、history行、Full/Off和metrics同源校验通过。
