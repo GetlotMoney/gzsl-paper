@@ -190,6 +190,7 @@ def build_manifest(
     raw_image_order_sha: str,
     parent_raw_image_order_sha: str,
     parent_raw_image_order_matches: bool,
+    full_row_alignment: dict[str, object],
     inputs_sha256: dict[str, str],
     outputs_sha256: dict[str, str],
     output_stats: dict[str, dict[str, object]],
@@ -248,7 +249,9 @@ def build_manifest(
             "parent_raw_image_order_and_size_sha256": parent_raw_image_order_sha,
             "raw_image_order_fingerprint_matches_parent": parent_raw_image_order_matches,
             "alignment_contract": "same_xlsa_res101_att_splits_class_order_and_all_split_labels_plus_full_view_parity",
+            "aligned_through_linux_manifest": True,
         },
+        "full_row_alignment": full_row_alignment,
         "inputs_sha256": inputs_sha256,
         "outputs_sha256": outputs_sha256,
         "output_tensors": output_stats,
@@ -309,9 +312,78 @@ def _load_parent(
     return manifest, manifest_sha, tensors
 
 
+def validate_full_row_alignment(
+    manifest_path: Path,
+    expected_manifest_sha256: str,
+    image_order_sha256: str,
+    parent_tensors: dict[str, torch.Tensor],
+    split,
+) -> dict[str, object]:
+    """Prove every current Linux image row matches the legacy parent CLS row."""
+    if (
+        not manifest_path.is_file()
+        or sha256_file(manifest_path) != expected_manifest_sha256
+    ):
+        raise ValueError("LVER全量行对齐manifest SHA错误。")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if (
+        manifest.get("schema_version") != "gzsl-paper.projected-patch-assets.v1"
+        or manifest.get("dataset") != "CUB"
+        or manifest.get("raw_image_order_and_size_sha256") != image_order_sha256
+        or manifest.get("class_order_sha256") != class_order_sha256(split.class_names)
+    ):
+        raise ValueError("LVER全量行对齐资产的原图顺序或类别身份错误。")
+    indices = {
+        "train": split.train_indices,
+        "test_seen": split.test_seen_indices,
+        "test_unseen": split.test_unseen_indices,
+    }
+    outputs = manifest.get("outputs_sha256", {})
+    stats = {}
+    for name, split_indices in indices.items():
+        feature_file = f"{name}_features.pt"
+        label_file = f"{name}_labels.pt"
+        for filename in (feature_file, label_file):
+            path = manifest_path.parent / filename
+            if outputs.get(filename) != sha256_file(path):
+                raise ValueError(f"LVER全量行对齐资产{filename} SHA错误。")
+        labels = torch.load(
+            manifest_path.parent / label_file, map_location="cpu", weights_only=True
+        ).long()
+        if not torch.equal(labels, split.labels.index_select(0, split_indices).long()):
+            raise ValueError(f"LVER全量行对齐资产{name}标签顺序错误。")
+        linux = torch.load(
+            manifest_path.parent / feature_file, map_location="cpu", weights_only=True
+        ).float()
+        parent = parent_tensors[name].float()
+        if linux.shape != parent.shape:
+            raise ValueError(f"LVER全量行对齐资产{name}shape错误。")
+        cosine = F.cosine_similarity(linux, parent, dim=-1)
+        minimum_cosine = float(cosine.min())
+        maximum_abs = float((linux - parent).abs().max())
+        if minimum_cosine < 0.9998 or maximum_abs > 0.003:
+            raise ValueError(f"LVER全量行对齐资产{name}与父CLS逐行不一致。")
+        stats[name] = {
+            "row_count": int(linux.size(0)),
+            "minimum_cosine": minimum_cosine,
+            "maximum_abs_difference": maximum_abs,
+        }
+    return {
+        "manifest": str(manifest_path.resolve()),
+        "manifest_sha256": expected_manifest_sha256,
+        "asset_id": manifest.get("asset_id"),
+        "raw_image_order_and_size_sha256": image_order_sha256,
+        "all_splits_verified": True,
+        "thresholds": {"minimum_cosine": 0.9998, "maximum_abs_difference": 0.003},
+        "splits": stats,
+    }
+
+
 def run(
     config_path: Path,
     parent_manifest_path: Path,
+    alignment_manifest_path: Path,
+    alignment_manifest_sha256: str,
     output_dir: Path,
     *,
     device_name: str,
@@ -355,6 +427,13 @@ def run(
     )
     parent_raw_image_order_sha = str(parent.get("raw_image_order_and_size_sha256", ""))
     parent_raw_image_order_matches = parent_raw_image_order_sha == image_order_sha
+    full_row_alignment = validate_full_row_alignment(
+        alignment_manifest_path,
+        alignment_manifest_sha256,
+        image_order_sha,
+        parent_tensors,
+        split,
+    )
 
     import clip
 
@@ -423,6 +502,7 @@ def run(
         raw_image_order_sha=image_order_sha,
         parent_raw_image_order_sha=parent_raw_image_order_sha,
         parent_raw_image_order_matches=parent_raw_image_order_matches,
+        full_row_alignment=full_row_alignment,
         inputs_sha256=input_sha,
         outputs_sha256=output_sha,
         output_stats={name: _tensor_stats(tensor) for name, tensor in output_tensors.items()},
@@ -441,6 +521,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--parent-manifest", type=Path, required=True)
+    parser.add_argument("--alignment-manifest", type=Path, required=True)
+    parser.add_argument("--alignment-manifest-sha256", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--batch-size", type=int, default=8)
@@ -451,6 +533,8 @@ def main() -> None:
             run(
                 args.config,
                 args.parent_manifest,
+                args.alignment_manifest,
+                args.alignment_manifest_sha256,
                 args.output_dir,
                 device_name=args.device,
                 batch_size=args.batch_size,

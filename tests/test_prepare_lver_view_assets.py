@@ -81,6 +81,7 @@ class LVERViewAssetTests(unittest.TestCase):
             raw_image_order_sha="2" * 64,
             parent_raw_image_order_sha="9" * 64,
             parent_raw_image_order_matches=False,
+            full_row_alignment={"all_splits_verified": True},
             inputs_sha256={"res101": "3" * 64},
             outputs_sha256={"train_local_view_features.pt": "4" * 64},
             output_stats={
@@ -110,8 +111,10 @@ class LVERViewAssetTests(unittest.TestCase):
                 "parent_raw_image_order_and_size_sha256": "9" * 64,
                 "raw_image_order_fingerprint_matches_parent": False,
                 "alignment_contract": "same_xlsa_res101_att_splits_class_order_and_all_split_labels_plus_full_view_parity",
+                "aligned_through_linux_manifest": True,
             },
         )
+        self.assertEqual(manifest["full_row_alignment"], {"all_splits_verified": True})
         self.assertFalse(manifest["unseen_images_used_for_gradient"])
         self.assertIn("python_source_sha256", manifest["clip"])
         self.assertEqual(
@@ -126,6 +129,8 @@ class LVERViewAssetTests(unittest.TestCase):
                 run(
                     Path("missing-source.yaml"),
                     Path("missing-parent.json"),
+                    Path("missing-alignment.json"),
+                    "0" * 64,
                     existing,
                     device_name="cpu",
                     batch_size=1,

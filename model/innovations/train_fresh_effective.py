@@ -390,12 +390,27 @@ def load_visual_assets(config: dict, tensors: dict[str, Any]) -> dict[str, Any]:
             raise ValueError("LVER资产身份、数量或无标注边界错误。")
         parent = manifest.get("parent", {})
         alignment = manifest.get("source_alignment", {})
+        full_alignment = manifest.get("full_row_alignment", {})
         parity = manifest.get("full_view_parent_parity", {})
         if (
             parent.get("manifest_sha256") != config["asset_manifest_sha256"]
             or parent.get("asset_id") != config["asset_id"]
             or alignment.get("alignment_contract")
             != "same_xlsa_res101_att_splits_class_order_and_all_split_labels_plus_full_view_parity"
+            or alignment.get("aligned_through_linux_manifest") is not True
+            or full_alignment.get("all_splits_verified") is not True
+            or full_alignment.get("raw_image_order_and_size_sha256")
+            != manifest.get("raw_image_order_and_size_sha256")
+            or {
+                name: int(row.get("row_count", -1))
+                for name, row in full_alignment.get("splits", {}).items()
+            }
+            != {"train": 7057, "test_seen": 1764, "test_unseen": 2967}
+            or any(
+                float(row.get("minimum_cosine", 0.0)) < 0.9998
+                or float(row.get("maximum_abs_difference", float("inf"))) > 0.003
+                for row in full_alignment.get("splits", {}).values()
+            )
             or float(parity.get("minimum_cosine", 0.0)) < 0.9998
             or float(parity.get("max_abs_difference", float("inf"))) > 0.003
         ):
