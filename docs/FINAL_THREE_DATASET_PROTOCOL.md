@@ -12,6 +12,8 @@
 
 原始图像、八角色原文、CLIP缓存和运行产物全部位于服务器Warehouse，不提交Git。三个数据集统一使用OpenAI CLIP `ViT-L/14@336px`官方权重，checkpoint SHA256固定为`3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02`。
 
+正式缓存统一称为`canonical_visual_plus_role_text_v2`：每个数据集的资产包同时包含全局视觉特征、train/test标签、类别顺序和第二版八角色文本特征。旧称`text_v2`只描述文本组件的版本，不代表资产包缺少视觉特征。带patch、多层或增强视图的超集包统一称为`canonical_visual_plus_role_text_v2_with_dynamic_visual_extensions_v1`；模型可以只读取所需字段，未读取的扩展字段不改变计算语义。旧asset ID、目录和历史实验引用保持不变，用于追溯。
+
 ## 条件与模块
 
 ```text
