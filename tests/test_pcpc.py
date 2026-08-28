@@ -48,9 +48,16 @@ def test_pcpc_changes_only_top2_and_is_zero_sum():
     candidate_mask = torch.zeros_like(logits, dtype=torch.bool)
     candidate_mask.scatter_(1, candidates, True)
     assert torch.count_nonzero(correction.masked_select(~candidate_mask)) == 0
-    assert torch.allclose(correction.sum(dim=1), torch.zeros(4), atol=1e-7, rtol=0.0)
+    assert torch.allclose(
+        diagnostics["correction"].sum(dim=1), torch.zeros(4), atol=1e-7, rtol=0.0
+    )
+    # Reconstructing the correction through (parent + delta) - parent can add
+    # one float32 cancellation ulp even though the registered delta is zero-sum.
+    assert torch.allclose(correction.sum(dim=1), torch.zeros(4), atol=2e-7, rtol=0.0)
     gathered = correction.gather(1, candidates)
-    assert torch.allclose(gathered[:, 0], -gathered[:, 1], atol=1e-7, rtol=0.0)
+    registered = diagnostics["correction"].gather(1, candidates)
+    assert torch.equal(registered[:, 0], -registered[:, 1])
+    assert torch.allclose(gathered[:, 0], -gathered[:, 1], atol=2e-7, rtol=0.0)
 
 
 def test_swapping_candidates_negates_same_patch_evidence():

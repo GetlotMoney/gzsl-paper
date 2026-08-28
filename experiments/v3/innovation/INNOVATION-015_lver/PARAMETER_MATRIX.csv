@@ -1,0 +1,4 @@
+run_id,condition,module,semantic_code_commit,config_ref,config_sha256,seed,batch_size,nominal_epochs,total_updates,eval_interval,tg_lr,module_lr,status,output_uri,decision
+V3-TRY-046,TG_PLUS_GTD_FRESH_CONTROL,gtd,674eb004344101ab3b70b73c1b2b18942ab71b54,config/tries/v3_try_046_fine_grained_evidence.yaml,582bdd14b3a3b97b6c6f64824baf706ee91d9822c4684e8bb893bc54327daaae,7,50,150,21171,141,1e-4,1e-4,planned,/data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fine-grained-evidence/V3-TRY-046,pending_review
+V3-TRY-047,TG_PLUS_GTD_PLUS_LVER_FRESH,lver,674eb004344101ab3b70b73c1b2b18942ab71b54,config/tries/v3_try_047_fine_grained_evidence.yaml,18d73c405e82d694537a750b9d65096e0bfcd4b7c768a6ce5832903c5ac226fc,7,50,150,21171,141,1e-4,1e-4,planned,/data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fine-grained-evidence/V3-TRY-047,pending_review
+
