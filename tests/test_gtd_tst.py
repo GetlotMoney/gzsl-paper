@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 
+import pytest
 import torch
 import torch.nn.functional as F
 
@@ -18,6 +19,7 @@ from model.innovations.train_gtd_tst import (
     GroupwiseSchedule,
     TEACHER_REFRESH_UPDATES,
     _predict,
+    checkpoint_parent_metrics,
     evaluation_updates,
     gtd_screen_decision,
     gtd_screen_outcome,
@@ -223,6 +225,20 @@ def test_awa2_and_sun_dynamic_class_axes_and_budgets():
         refresh = teacher_refresh_updates(train_count=train_count)
         assert len(refresh) == 150
         assert refresh[:2] == (1, 1 + interval)
+
+
+def test_resume_restores_scratch_parent_metric_anchor():
+    metrics = {"U": 1.0, "S": 2.0, "H": 4.0 / 3.0, "ZS": 3.0}
+    checkpoint = {
+        "parent_metrics_percent": metrics,
+        "history": [{"update": 0, **metrics}],
+    }
+    assert checkpoint_parent_metrics(checkpoint, None) == metrics
+    legacy = {"history": [{"update": 0, **metrics}]}
+    assert checkpoint_parent_metrics(legacy, None) == metrics
+    bad = {"parent_metrics_percent": None, "history": [{"update": 1, **metrics}]}
+    with pytest.raises(ValueError, match="update-0父指标"):
+        checkpoint_parent_metrics(bad, None)
 
 
 def test_fixed150_schedule_evaluations_and_config_contract():

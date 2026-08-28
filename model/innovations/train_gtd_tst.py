@@ -6,6 +6,7 @@ import argparse
 import copy
 import hashlib
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -222,6 +223,33 @@ def load_config(path: Path) -> tuple[dict, str]:
     if invalid:
         raise ValueError("GTD运行身份、初始化方式或条件开关错误。")
     return config, sha256_file(path)
+
+
+def checkpoint_parent_metrics(
+    checkpoint: dict,
+    configured_parent: dict | None,
+) -> dict[str, float]:
+    """Restore the update-0 metric anchor required by resumed delta reporting."""
+    candidate = checkpoint.get("parent_metrics_percent")
+    if candidate is None:
+        history = checkpoint.get("history")
+        if not isinstance(history, list) or not history or history[0].get("update") != 0:
+            raise ValueError("GTD resume checkpoint缺少update-0父指标。")
+        candidate = {metric: history[0].get(metric) for metric in ("U", "S", "H", "ZS")}
+    if (
+        not isinstance(candidate, dict)
+        or set(candidate) != {"U", "S", "H", "ZS"}
+        or any(isinstance(value, bool) for value in candidate.values())
+    ):
+        raise ValueError("GTD resume父指标字段错误。")
+    restored = {metric: float(candidate[metric]) for metric in ("U", "S", "H", "ZS")}
+    if not all(math.isfinite(value) for value in restored.values()):
+        raise ValueError("GTD resume父指标包含NaN/Inf。")
+    if configured_parent is not None:
+        configured = {metric: float(configured_parent[metric]) for metric in restored}
+        if any(abs(restored[metric] - configured[metric]) > 1e-8 for metric in restored):
+            raise ValueError("GTD resume父指标与配置父指标不一致。")
+    return restored
 
 
 def _verified_tensor(manifest_path: Path, manifest: dict, name: str) -> torch.Tensor:
@@ -916,6 +944,9 @@ def run(
             teacher_history = checkpoint["teacher_refresh_history"]
             next_teacher_refresh = checkpoint["next_teacher_refresh_update"]
             history = checkpoint["history"]
+            parent_metrics = checkpoint_parent_metrics(
+                checkpoint, config["parent_metrics_percent"]
+            )
             frozen_baseline = checkpoint["frozen_baseline_predictions"]
             best_metrics = checkpoint["best_metrics"]
             best_state = checkpoint["best_model_state_dict"]
@@ -1043,6 +1074,7 @@ def run(
                 "code_commit": code_commit,
                 "config": config,
                 "config_sha256": config_sha,
+                "parent_metrics_percent": parent_metrics,
                 "initial_tg_state_sha256": initial_tg_state_sha256,
                 "update": update,
                 "evaluation_index": metrics["evaluation_index"],
