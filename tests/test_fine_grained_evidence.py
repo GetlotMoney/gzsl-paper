@@ -50,6 +50,7 @@ def screen_config(module: str) -> dict:
             "condition_id": condition_id,
             "idea_id": idea_id,
             "module": module,
+            "initialization_strategy": "fresh_seeded_tg_gtd_visual",
             "lver_asset_manifest": "/asset/lver/asset_manifest.json" if module == "lver" else None,
             "lver_asset_manifest_sha256": "1" * 64 if module == "lver" else None,
             "lver_asset_id": "lver-fixed" if module == "lver" else None,

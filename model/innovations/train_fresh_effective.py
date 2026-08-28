@@ -196,7 +196,8 @@ def load_config(path: Path) -> tuple[dict, str]:
         config["idea_id"] == (identity[2] if identity else None),
         config["framework_id"] == "FRAMEWORK-V3-EXPLORATION",
         config["dataset"] == "CUB",
-        config["initialization_strategy"] == "fresh_seeded_tg",
+        config["initialization_strategy"]
+        == ("fresh_seeded_tg_gtd_visual" if is_visual_screen else "fresh_seeded_tg"),
         config["training_strategy"] == "one_stage_simultaneous",
         config["stagewise_training"] is False,
         config["checkpoint_handoff"] is False,
@@ -858,7 +859,7 @@ def run(
         primary_generator = torch.Generator(device="cpu").manual_seed(int(config["random_seed"]))
         initial_primary_state = primary_generator.get_state().clone()
         initial_identity = {
-            "initialization_strategy": "fresh_seeded_tg",
+            "initialization_strategy": config["initialization_strategy"],
             "initial_tg_state_sha256": initial_tg_sha,
             "initial_parent_state_sha256": initial_parent_sha,
             "primary_batch_generator_initial_sha256": canonical_sha256(initial_primary_state),
