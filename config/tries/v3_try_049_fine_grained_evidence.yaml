@@ -1,5 +1,5 @@
 schema_version: gzsl-paper.v3-fine-grained-evidence.v1
-experiment_id: V3-TRY-047
+experiment_id: V3-TRY-049
 idea_id: IDEA-156
 framework_id: FRAMEWORK-V3-EXPLORATION
 dataset: CUB
@@ -61,3 +61,4 @@ test_used_for_selection: true
 test_used_for_hyperparameter_selection: true
 unseen_images_used_for_gradient: false
 strict_blind_claim: false
+

@@ -53,9 +53,9 @@ def screen_config(module: str) -> dict:
         (ROOT / "config/tries/v3_try_043_fresh_effective.yaml").read_text(encoding="utf-8")
     )
     identities = {
-        "gtd": ("V3-TRY-046", "TG_PLUS_GTD_FRESH_CONTROL", "IDEA-155"),
-        "lver": ("V3-TRY-047", "TG_PLUS_GTD_PLUS_LVER_FRESH", "IDEA-156"),
-        "pcpc": ("V3-TRY-048", "TG_PLUS_GTD_PLUS_PCPC_FRESH", "IDEA-157"),
+        "gtd": ("V3-TRY-048", "TG_PLUS_GTD_FRESH_CONTROL", "IDEA-155"),
+        "lver": ("V3-TRY-049", "TG_PLUS_GTD_PLUS_LVER_FRESH", "IDEA-156"),
+        "pcpc": ("V3-TRY-050", "TG_PLUS_GTD_PLUS_PCPC_FRESH", "IDEA-157"),
     }
     experiment_id, condition_id, idea_id = identities[module]
     config.update(
@@ -232,7 +232,7 @@ def test_visual_candidate_checkpoint_roundtrip_restores_next_batch_and_lr(
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="requires one physical CUDA GPU")
-@pytest.mark.parametrize("attempt,module", [("047", "lver"), ("048", "pcpc")])
+@pytest.mark.parametrize("attempt,module", [("049", "lver"), ("050", "pcpc")])
 def test_real_gpu_candidate_microbatch(attempt: str, module: str):
     config_path = ROOT / f"config/tries/v3_try_{attempt}_fine_grained_evidence.yaml"
     config, _ = load_config(config_path)

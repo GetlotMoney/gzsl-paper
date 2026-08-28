@@ -58,9 +58,9 @@ WARMUP_UPDATES = 705
 CONDITIONS = {
     "V3-TRY-042": ("TG_FRESH_FIXED150", "tg", "IDEA-155"),
     "V3-TRY-043": ("TG_PLUS_GTD_FRESH_FIXED150", "gtd", "IDEA-155"),
-    "V3-TRY-046": ("TG_PLUS_GTD_FRESH_CONTROL", "gtd", "IDEA-155"),
-    "V3-TRY-047": ("TG_PLUS_GTD_PLUS_LVER_FRESH", "lver", "IDEA-156"),
-    "V3-TRY-048": ("TG_PLUS_GTD_PLUS_PCPC_FRESH", "pcpc", "IDEA-157"),
+    "V3-TRY-048": ("TG_PLUS_GTD_FRESH_CONTROL", "gtd", "IDEA-155"),
+    "V3-TRY-049": ("TG_PLUS_GTD_PLUS_LVER_FRESH", "lver", "IDEA-156"),
+    "V3-TRY-050": ("TG_PLUS_GTD_PLUS_PCPC_FRESH", "pcpc", "IDEA-157"),
 }
 FORBIDDEN_NON_NULL = (
     "tg_checkpoint",
@@ -189,7 +189,7 @@ def load_config(path: Path) -> tuple[dict, str]:
     )
     checks = (
         schema in {SCHEMA, LEGACY_SCHEMA},
-        is_visual_screen == (config["experiment_id"] in {"V3-TRY-046", "V3-TRY-047", "V3-TRY-048"}),
+        is_visual_screen == (config["experiment_id"] in {"V3-TRY-048", "V3-TRY-049", "V3-TRY-050"}),
         identity is not None,
         config["condition_id"] == (identity[0] if identity else None),
         config["module"] == (identity[1] if identity else None),
