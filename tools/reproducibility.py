@@ -49,8 +49,8 @@ def reproducibility_state(seed, strict_determinism=False, deterministic_warn_onl
         "cudnn_deterministic": bool(torch.backends.cudnn.deterministic),
         "deterministic_algorithms": bool(torch.are_deterministic_algorithms_enabled()),
         "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG", ""),
-        "torch_version": torch.__version__,
-        "cuda_version": torch.version.cuda or "",
+        "torch_version": str(torch.__version__),
+        "cuda_version": str(torch.version.cuda or ""),
     }
 
 

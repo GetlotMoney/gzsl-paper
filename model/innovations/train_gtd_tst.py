@@ -1,4 +1,4 @@
-"""Fixed-150 one-stage GTD-TST training from the exact V3 TG checkpoint."""
+"""Fixed-150 GTD-TST training from either a TG checkpoint or matched scratch init."""
 
 from __future__ import annotations
 
@@ -30,6 +30,7 @@ from tools.runtime import sha256_file
 
 
 SCHEMA = "gzsl-paper.v3-gtd-tst-train.v1"
+SCRATCH_SCHEMA = "gzsl-paper.v3-gtd-scratch-confirm.v1"
 TRAIN_COUNT = 7057
 SEEN_COUNT = 150
 CLASS_COUNT = 200
@@ -108,12 +109,9 @@ def load_config(path: Path) -> tuple[dict, str]:
         "H": 76.65765903827264,
         "ZS": 86.14675998687744,
     }
-    if (
-        config["schema_version"] != SCHEMA
-        or config["experiment_id"] != "V3-TRY-022"
-        or config["framework_id"] != "FRAMEWORK-V3-EXPLORATION"
+    shared_invalid = (
+        config["framework_id"] != "FRAMEWORK-V3-EXPLORATION"
         or config["dataset"] != "CUB"
-        or config["condition_id"] != "TG_PLUS_GTD_TST_FIXED150"
         or int(config["random_seed"]) != 7
         or int(config["batch_size"]) != BATCH_SIZE
         or int(config["nominal_epochs"]) != NOMINAL_EPOCHS
@@ -126,13 +124,11 @@ def load_config(path: Path) -> tuple[dict, str]:
         or int(config["gate_warmup_epochs"]) != 5
         or float(config["weight_decay"]) != 1e-4
         or float(config["topology_weight"]) != 0.1
-        or float(config["gate_loss_weight"]) != 1.0
         or int(config["hidden_dim"]) != 16
         or int(config["grid_points"]) != 33
         or float(config["theta_penalty"]) != 0.1
         or float(config["max_transport_step"]) != 1.5
         or config["early_stopping_enabled"] is not False
-        or config["parent_metrics_percent"] != parent
         or float(config["required_delta_h"]) != 1.0
         or float(config["max_us_gap"]) != 8.0
         or config["human_annotations_used"] is not False
@@ -140,8 +136,36 @@ def load_config(path: Path) -> tuple[dict, str]:
         or config["test_used_for_hyperparameter_selection"] is not True
         or config["unseen_images_used_for_gradient"] is not False
         or config["strict_blind_claim"] is not False
-    ):
-        raise ValueError("GTD首轮身份、训练参数、硬门槛或披露边界错误。")
+    )
+    if shared_invalid:
+        raise ValueError("GTD共享训练参数、预算或披露边界错误。")
+    if config["schema_version"] == SCHEMA:
+        invalid = (
+            config["experiment_id"] != "V3-TRY-022"
+            or config["condition_id"] != "TG_PLUS_GTD_TST_FIXED150"
+            or config["parent_metrics_percent"] != parent
+            or float(config["gate_loss_weight"]) != 1.0
+            or not isinstance(config["tg_checkpoint"], str)
+            or not isinstance(config["tg_checkpoint_sha256"], str)
+        )
+    elif config["schema_version"] == SCRATCH_SCHEMA:
+        expected = {
+            "V3-TRY-040": ("TG_SCRATCH_FIXED150", 0.0),
+            "V3-TRY-041": ("TG_PLUS_GTD_SCRATCH_FIXED150", 1.0),
+        }
+        identity = expected.get(config["experiment_id"])
+        invalid = (
+            identity is None
+            or config["condition_id"] != (identity[0] if identity else None)
+            or float(config["gate_loss_weight"]) != (identity[1] if identity else -1.0)
+            or config["tg_checkpoint"] is not None
+            or config["tg_checkpoint_sha256"] is not None
+            or config["parent_metrics_percent"] is not None
+        )
+    else:
+        invalid = True
+    if invalid:
+        raise ValueError("GTD运行身份、初始化方式或条件开关错误。")
     return config, sha256_file(path)
 
 
@@ -220,21 +244,22 @@ def build_model(config: dict, tensors: dict[str, torch.Tensor], device: torch.de
         outer_ratio=0.65,
         temperature=0.07,
     ).to(device)
-    checkpoint_path = Path(config["tg_checkpoint"])
-    if (
-        not checkpoint_path.is_file()
-        or sha256_file(checkpoint_path) != config["tg_checkpoint_sha256"]
-    ):
-        raise ValueError("GTD TG checkpoint SHA错误。")
-    checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
-    state = {
-        key.removeprefix("parent."): value
-        for key, value in checkpoint["model_state_dict"].items()
-        if key.startswith("parent.")
-    }
-    missing, unexpected = parent.load_state_dict(state, strict=False)
-    if missing or unexpected:
-        raise ValueError(f"GTD TG状态不完整：missing={missing}, unexpected={unexpected}")
+    if config["tg_checkpoint"] is not None:
+        checkpoint_path = Path(config["tg_checkpoint"])
+        if (
+            not checkpoint_path.is_file()
+            or sha256_file(checkpoint_path) != config["tg_checkpoint_sha256"]
+        ):
+            raise ValueError("GTD TG checkpoint SHA错误。")
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=True)
+        state = {
+            key.removeprefix("parent."): value
+            for key, value in checkpoint["model_state_dict"].items()
+            if key.startswith("parent.")
+        }
+        missing, unexpected = parent.load_state_dict(state, strict=False)
+        if missing or unexpected:
+            raise ValueError(f"GTD TG状态不完整：missing={missing}, unexpected={unexpected}")
     return GTDTSTModel(
         parent,
         seen,
@@ -499,12 +524,13 @@ def evaluate(
     packages: list[dict[str, torch.Tensor]],
     device: torch.device,
     *,
+    gtd_enabled: bool = True,
     frozen_baseline: dict[str, torch.Tensor] | None = None,
     return_predictions: bool = False,
 ) -> dict:
     model.eval()
     bundle = model.prototype_bundle()
-    final = bundle["final"]
+    final = bundle["final"] if bool(gtd_enabled) else bundle["parent"]
     parent = bundle["parent"]
     scale = model.scale().detach()
     seenclasses = model.seen_classes.cpu()
@@ -529,11 +555,31 @@ def evaluate(
     u = 100.0 * per_class_accuracy(unseen_labels, predictions["unseen"], unseenclasses)
     z = 100.0 * per_class_accuracy(unseen_labels, predictions["zs"], unseenclasses)
     h = 2.0 * s * u / (s + u) if s + u else 0.0
+    parent_s = 100.0 * per_class_accuracy(seen_labels, joint_parent["seen"], seenclasses)
+    parent_u = 100.0 * per_class_accuracy(unseen_labels, joint_parent["unseen"], unseenclasses)
+    parent_z = 100.0 * per_class_accuracy(unseen_labels, joint_parent["zs"], unseenclasses)
+    parent_h = (
+        2.0 * parent_s * parent_u / (parent_s + parent_u)
+        if parent_s + parent_u
+        else 0.0
+    )
     result = {
         "U": u,
         "S": s,
         "H": h,
         "ZS": z,
+        "module_off_metrics": {
+            "U": parent_u,
+            "S": parent_s,
+            "H": parent_h,
+            "ZS": parent_z,
+        },
+        "full_minus_off_delta": {
+            "U": u - parent_u,
+            "S": s - parent_s,
+            "H": h - parent_h,
+            "ZS": z - parent_z,
+        },
         "gtd_residual_transitions_vs_joint_tg": {
             "seen": _transitions(joint_parent["seen"], predictions["seen"], seen_labels),
             "unseen": _transitions(
@@ -624,6 +670,9 @@ def run(
         )
         print(f"GTD RUN={config['experiment_id']} commit={code_commit} config_sha={config_sha}")
         model = build_model(config, tensors, device)
+        gtd_enabled = config["condition_id"] != "TG_SCRATCH_FIXED150"
+        scratch_initialization = config["tg_checkpoint"] is None
+        initial_tg_state_sha256 = tensor_mapping_sha256(dict(model.parent.state_dict()))
         train_features = tensors["train_features"].to(device).float()
         train_labels = labels.to(device)
         seen_device = seen.to(device)
@@ -670,7 +719,14 @@ def run(
                 )
             ]
             next_teacher_refresh = TEACHER_REFRESH_UPDATES[1]
-            initial = evaluate(model, tensors, packages, device, return_predictions=True)
+            initial = evaluate(
+                model,
+                tensors,
+                packages,
+                device,
+                gtd_enabled=gtd_enabled,
+                return_predictions=True,
+            )
             frozen_baseline = initial.pop("_predictions")
             zero_transitions = {
                 split: _transitions(prediction, prediction, label)
@@ -681,9 +737,14 @@ def run(
                 )
             }
             initial["full_model_transitions_vs_frozen_tg"] = zero_transitions
-            for metric in ("U", "S", "H", "ZS"):
-                if abs(float(initial[metric]) - float(parent_metrics[metric])) > 1e-6:
-                    raise ValueError(f"GTD theta0未复现父TG {metric}。")
+            if parent_metrics is None:
+                parent_metrics = {
+                    metric: float(initial[metric]) for metric in ("U", "S", "H", "ZS")
+                }
+            else:
+                for metric in ("U", "S", "H", "ZS"):
+                    if abs(float(initial[metric]) - float(parent_metrics[metric])) > 1e-6:
+                        raise ValueError(f"GTD theta0未复现父TG {metric}。")
             initial.update(
                 {
                     "evaluation_index": 0,
@@ -710,6 +771,7 @@ def run(
                 checkpoint.get("experiment_id") != config["experiment_id"]
                 or checkpoint.get("code_commit") != code_commit
                 or checkpoint.get("config_sha256") != config_sha
+                or checkpoint.get("initial_tg_state_sha256") != initial_tg_state_sha256
                 or not 0 < int(checkpoint.get("update", 0)) < TOTAL_UPDATES
             ):
                 raise ValueError("GTD resume checkpoint RUN身份或update错误。")
@@ -799,6 +861,7 @@ def run(
                 tensors,
                 packages,
                 device,
+                gtd_enabled=gtd_enabled,
                 frozen_baseline=frozen_baseline,
             )
             metrics.update(
@@ -833,6 +896,7 @@ def run(
                 "code_commit": code_commit,
                 "config": config,
                 "config_sha256": config_sha,
+                "initial_tg_state_sha256": initial_tg_state_sha256,
                 "update": update,
                 "evaluation_index": metrics["evaluation_index"],
                 "model_state_dict": {k: v.detach().cpu() for k, v in model.state_dict().items()},
@@ -874,8 +938,20 @@ def run(
         )
         delta_h = float(best_metrics["H"]) - float(parent_metrics["H"])
         gap = abs(float(best_metrics["U"]) - float(best_metrics["S"]))
-        screen = gtd_screen_outcome(delta_h, gap)
-        decision = str(screen["decision"])
+        if scratch_initialization:
+            screen = {
+                "matched_comparison_required": bool(gtd_enabled),
+                "matched_control_triggered": bool(gtd_enabled),
+                "static_support_passed": None,
+            }
+            decision = (
+                "pending_matched_scratch_control"
+                if gtd_enabled
+                else "complete_scratch_tg_control"
+            )
+        else:
+            screen = gtd_screen_outcome(delta_h, gap)
+            decision = str(screen["decision"])
         atomic_write_json(output_dir / "evaluation_history.json", {"rows": history})
         atomic_write_json(
             output_dir / "teacher_refresh_history.json",
@@ -890,9 +966,16 @@ def run(
             "code_commit": code_commit,
             "config_sha256": config_sha,
             "parent_metrics_percent": parent_metrics,
+            "initialization_mode": (
+                "random_tg_seed7" if scratch_initialization else "tg_checkpoint_warm_start"
+            ),
+            "gtd_enabled": bool(gtd_enabled),
+            "initial_tg_state_sha256": initial_tg_state_sha256,
             "best_metrics": best_metrics,
             "best_update": best_update,
             "best_delta_H": delta_h,
+            "module_off_metrics": best_metrics["module_off_metrics"],
+            "best_full_minus_off_delta": best_metrics["full_minus_off_delta"],
             "best_gap_U_S": gap,
             "matched_comparison_required": screen["matched_comparison_required"],
             "matched_control_triggered": screen["matched_control_triggered"],
