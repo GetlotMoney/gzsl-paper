@@ -29,6 +29,7 @@ def test_scratch_configs_are_matched_except_registered_condition():
     assert tg["parent_metrics_percent"] is None
     assert tg["gate_loss_weight"] == 0.0
     assert gtd["gate_loss_weight"] == 1.0
+    assert tg["tg_learning_rate"] == tg["tg_min_learning_rate"] == 1e-4
     allowed = {"experiment_id", "condition_id", "gate_loss_weight"}
     assert {key for key in tg if tg[key] != gtd[key]} == allowed
 

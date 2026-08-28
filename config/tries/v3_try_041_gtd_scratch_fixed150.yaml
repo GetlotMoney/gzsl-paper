@@ -17,9 +17,9 @@ batch_size: 50
 nominal_epochs: 150
 total_updates: 21171
 eval_interval_steps: 141
-tg_learning_rate: 1.0e-05
+tg_learning_rate: 1.0e-04
 gate_learning_rate: 1.0e-04
-tg_min_learning_rate: 1.0e-06
+tg_min_learning_rate: 1.0e-04
 gate_min_learning_rate: 1.0e-05
 gate_warmup_epochs: 5
 weight_decay: 1.0e-04

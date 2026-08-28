@@ -117,10 +117,6 @@ def load_config(path: Path) -> tuple[dict, str]:
         or int(config["nominal_epochs"]) != NOMINAL_EPOCHS
         or int(config["total_updates"]) != TOTAL_UPDATES
         or int(config["eval_interval_steps"]) != EVAL_INTERVAL
-        or float(config["tg_learning_rate"]) != 1e-5
-        or float(config["gate_learning_rate"]) != 1e-4
-        or float(config["tg_min_learning_rate"]) != 1e-6
-        or float(config["gate_min_learning_rate"]) != 1e-5
         or int(config["gate_warmup_epochs"]) != 5
         or float(config["weight_decay"]) != 1e-4
         or float(config["topology_weight"]) != 0.1
@@ -145,6 +141,10 @@ def load_config(path: Path) -> tuple[dict, str]:
             or config["condition_id"] != "TG_PLUS_GTD_TST_FIXED150"
             or config["parent_metrics_percent"] != parent
             or float(config["gate_loss_weight"]) != 1.0
+            or float(config["tg_learning_rate"]) != 1e-5
+            or float(config["gate_learning_rate"]) != 1e-4
+            or float(config["tg_min_learning_rate"]) != 1e-6
+            or float(config["gate_min_learning_rate"]) != 1e-5
             or not isinstance(config["tg_checkpoint"], str)
             or not isinstance(config["tg_checkpoint_sha256"], str)
         )
@@ -161,6 +161,10 @@ def load_config(path: Path) -> tuple[dict, str]:
             or config["tg_checkpoint"] is not None
             or config["tg_checkpoint_sha256"] is not None
             or config["parent_metrics_percent"] is not None
+            or float(config["tg_learning_rate"]) != 1e-4
+            or float(config["gate_learning_rate"]) != 1e-4
+            or float(config["tg_min_learning_rate"]) != 1e-4
+            or float(config["gate_min_learning_rate"]) != 1e-5
         )
     else:
         invalid = True
@@ -296,7 +300,7 @@ class GroupwiseSchedule:
         if (
             self.total_updates <= 0
             or not 1 < self.warmup_updates < self.total_updates
-            or not 0.0 < self.tg_min_multiplier < 1.0
+            or not 0.0 < self.tg_min_multiplier <= 1.0
             or not 0.0 < self.gate_min_multiplier < 1.0
         ):
             raise ValueError("GTD调度器边界错误。")
