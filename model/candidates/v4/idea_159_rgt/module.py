@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from model.innovations.gtd_tst import geodesic_points
+from model.frameworks.v4.gtd import geodesic_points
 
 
 FEATURE_DIM = 768

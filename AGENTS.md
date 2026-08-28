@@ -9,11 +9,12 @@
 ## Git 管理
 
 - `main` 是当前已接纳代码和轻量账本的默认分支，禁止 force-push。
-- 公共工作流规范、已接纳代码和已接纳轻量账本进入`main`；未接纳候选不得借文档合并混入`main`。
+- 公共工作流规范、已接纳代码和轻量账本进入`main`。未接纳或失败候选允许按版本归档在`model/candidates/`，但必须绑定原实验分支与准确commit，不得冒充正式Framework、正式训练入口或已接纳创新。
+- `model/frameworks/`只放owner正式接纳的代码，且不得反向依赖`model/candidates/`；候选可以依赖其准确父Framework。
 - `framework/vX` 与 Tag `vX` 固定在同一正式框架 commit，均不移动。
 - 每个新分支必须保留此前全部`experiments/v1/`至`experiments/vX-1/`账本作为只读历史；不得因切换版本删除、移动、复制、重编号或改写旧版本账本。
 - 当前版本的新TRY只写入`experiments/vX/EXPERIMENT_QUEUE.csv`；跨版本证据直接引用原路径、原RUN和原commit，不复制成当前版本结果。
-- 失败候选分支只保留代码与实验留痕，不作为下一候选的代码基线；继续寻找同版本新模块时，必须由owner确认准确父commit，并从该commit新建独立`exp/vX/<kind>/<module>`分支，禁止在失败候选代码上继续堆叠。
+- 失败候选的准确运行身份继续由原分支和commit固定；`main`中的候选目录只是便于人工浏览的归档，不作为下一候选的代码基线。继续寻找同版本新模块时，必须由owner确认准确父commit，并从该commit新建独立`exp/vX/<kind>/<module>`分支，禁止在失败候选代码上继续堆叠。
 - 不创建 `framework/vX-template-vN` 或 `model/vX-template-vN`。
 - 每个实验由 owner 明确指定准确 base ref/commit；实验归属版本不自动决定代码起点。
 - 实验分支使用 `exp/vX/<kind>/<id>-<slug>`；临时实现分支使用 `codex/<slug>`。

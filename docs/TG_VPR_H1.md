@@ -61,7 +61,7 @@ H mean=`73.853094`，min=`73.709453`，max=`74.023182`，range=`0.313729`。固�
 - 独立训练入口：`python -m model.frameworks.v2.train`
 - 冻结配置：`config/tg_vpr_h1.yaml`
 - 来源：`docs/TG_VPR_H1_SOURCE.yaml`
-- 测试：`tests/test_tg_vpr_h1.py`
+- 测试：`tests/frameworks/v2/test_tg_vpr_h1.py`
 - V2身份：`experiments/v2/FRAMEWORK.yaml`
 - V2模块说明：`experiments/v2/MODULES.md`
 - HTML框架图：`experiments/v2/framework_diagram.html`

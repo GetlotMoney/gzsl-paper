@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 
-from model.innovations.rgt import RefutationGatedTransport
+from model.candidates.v4.idea_159_rgt.module import RefutationGatedTransport
 
 
 def _basis(index: int) -> torch.Tensor:

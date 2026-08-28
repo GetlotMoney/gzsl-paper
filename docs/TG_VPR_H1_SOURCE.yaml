@@ -40,10 +40,10 @@ target_files:
     sha256: c6754432a299eedbba1279d5e938b61e23994c6041caa893955a6497642eca22
   framework_document:
     path: docs/TG_VPR_H1.md
-    sha256: d510fb8d5f15dcd73e9ef1ad702b274b8b7a51e679c7adf4f1c6d317c27aaab8
+    sha256: 88bd5e4c3e631d5d65760688e1c649a12cdb948c0302bcde1a5ef4b127b9397e
   test:
-    path: tests/test_tg_vpr_h1.py
-    sha256: 5fe6bc2e86d19e2307671c35839c9b3afbbd17341a8c647cdea9958fb17efda1
+    path: tests/frameworks/v2/test_tg_vpr_h1.py
+    sha256: 349138de5e8b3622449f18536381a5431beafa5027a7b6ac029048635e65673b
   editable_diagram:
     path: docs/TG_VPR_H1_framework_diagram.drawio
     sha256: b96b9385c1767c7d86ba0a75726f0caa71af77aa6b2e0b2694845c50d11fbdc9

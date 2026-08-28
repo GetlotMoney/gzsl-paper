@@ -12,8 +12,8 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-from model.innovations.gave import GeodesicAlignedVisualEvidence
-from model.innovations.train_gtd_tst import build_model, load_assets, load_config
+from model.candidates.v4.idea_158_gave.module import GeodesicAlignedVisualEvidence
+from model.frameworks.v4.train import build_model, load_assets, load_config
 from tools.gzsl_data import per_class_accuracy
 from tools.reproducibility import configure_reproducibility
 from tools.run_contract import current_code_commit, prepare_output_dir, require_clean_code_tree

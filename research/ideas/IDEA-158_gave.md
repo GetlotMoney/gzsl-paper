@@ -2,7 +2,7 @@
 
 idea_id: IDEA-158
 source_type: first_principles + code_analysis + nearest_work_boundary
-status: testing_weak_positive_diagnostic
+status: revised_weak_signal_only_not_promoted
 base_framework: FRAMEWORK-V4
 base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
 problem: V4的TG与GTD只依据全局CLS、角色文本和seen视觉中心学习类别原型；真正测试图像的局部patch没有验证某个候选类别的Mean8→Value语义移动方向是否在该实例中可见。直接patch-text Top-K、局部视图路由和Top-2角色差比较均不能回答“当前视觉证据是否支持V4的语义迁移方向”。

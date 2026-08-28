@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 
-from model.innovations.gave import GeodesicAlignedVisualEvidence, geodesic_tangent
+from model.candidates.v4.idea_158_gave.module import GeodesicAlignedVisualEvidence, geodesic_tangent
 
 
 def _basis(index: int) -> torch.Tensor:
