@@ -4,7 +4,7 @@
 idea_id: IDEA-003
 source_type: local_model_analysis
 evidence_refs:
-  - model/tg_vpr_h1/module.py
+  - model/frameworks/v2/model.py
   - V2-CONFIRM-001/RUN-001
 base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
 problem: TG-VPR对所有图像固定使用local/unique/overall等权语义，无法适应不同图像可见线索不同的问题。

@@ -4,7 +4,7 @@
 idea_id: IDEA-004
 source_type: local_failure_analysis
 evidence_refs:
-  - model/tg_vpr_h1/module.py
+  - model/frameworks/v2/model.py
   - V2-TRY-010
   - V2-TRY-011
   - V2-TRY-012

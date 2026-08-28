@@ -5,7 +5,7 @@ idea_id: IDEA-008
 source_type: local_model_analysis
 evidence_refs:
   - V2-INNOVATION-002
-  - model/tg_vpr_h1/module.py
+  - model/frameworks/v2/model.py
 base_commit: 0b919b14f052ec5e3f99378383e94053a2cf45ae
 problem: TG-VPR接收seen视觉中心但正式forward未使用该buffer，seen语义原型仍可能偏离真实视觉簇。
 hypothesis: 用训练得到的有界强度把seen原型轻微锚向seen视觉中心，可在保持TST unseen原型不变的前提下提高整体H。

@@ -5,7 +5,7 @@ idea_id: IDEA-010
 source_type: local_model_analysis
 evidence_refs:
   - V2-INNOVATION-002
-  - model/innovations/elpt.py
+  - model/frameworks/v4/tg.py
 base_commit: 0b919b14f052ec5e3f99378383e94053a2cf45ae
 problem: TST gate只接收top-5相似度的均值与最大值，无法区分单一近邻和多个近邻形成的不同语义局部结构。
 hypothesis: 输入完整top-5邻域相似度分布，可让gate更准确地决定每个类的切空间迁移步长并提高H。

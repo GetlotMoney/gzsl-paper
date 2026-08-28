@@ -55,5 +55,14 @@ conda run -n dvsr_gpu python train.py `
 - 独立训练入口：`python -m model.frameworks.v2.train`
 - 冻结配置：`config/tg_vpr_h1.yaml`
 - 来源身份：`INNOVATION-MODULE-1`
-- 三数据集统一模型：`model/frameworks/v4/model.py`
-- 三数据集正式训练：`python -m model.candidates.v2.trainers.paper_v2`
+- 历史三数据集候选训练器：`python -m model.candidates.v2.trainers.paper_v2`（不是正式Framework入口）
+
+## FRAMEWORK-V4 入口
+
+- 正式模型代码：`model/frameworks/v4/`
+- 晋级来源复现入口：`python -m model.frameworks.v4.train`
+- 当前边界：该训练器只接受已冻结的`FRAMEWORK-V3-EXPLORATION`晋级RUN配置；仓库尚未提供新的`FRAMEWORK-V4`基础训练配置，不能把它描述成任意V4新RUN入口。
+
+## checkpoint兼容边界
+
+正式checkpoint保存为`state_dict`或包含`model_state_dict`的字典，目录迁移保持参数键不变。V1额外保留`model.MyModel.GTPJ`旧导入；仓库不承诺加载历史上通过`torch.save(model)`保存的V2/V4完整Python对象pickle。

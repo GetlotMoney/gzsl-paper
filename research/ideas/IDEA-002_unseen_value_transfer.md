@@ -4,7 +4,7 @@
 idea_id: IDEA-002
 source_type: local_observation
 evidence_refs:
-  - model/tg_vpr_h1/module.py
+  - model/frameworks/v2/model.py
   - V2-CONFIRM-001/RUN-001
   - LEGACY-H1-EVIDENCE-001
 base_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca
