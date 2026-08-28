@@ -47,14 +47,13 @@
 - [ ] 本地相关测试和服务器相关测试通过，工作树clean后才能启动。
 - [ ] 第一轮独立Agent已完成对抗审查；P0/P1已全部修复并有直接测试。
 - [ ] 第二轮由另一独立Agent审查准确post-fix commit并明确“无P0/P1，第2轮通过”；此后代码未再变化。
-- [ ] 当前Experiment记录两轮reviewed commit、发现、修复和最终结论；不能用机器测试替代Agent审查。
-- [ ] 审核前共享证据已准备：准确diff、相关测试、本地完整测试、资产/config校验、服务器临时micro-batch；Agent不重复整仓测试或全量SHA。
-- [ ] 共享证据齐全且无缺陷时两轮力争10分钟完成；时长不凌驾于完整性，超过10分钟汇报剩余项并继续审完。
-- [ ] 冻结一个commit并建立审查矩阵；多个只读Agent并行覆盖公式/训练/评估/资产/GPU/checkpoint，发现首个问题后仍完成各自分工。
-- [ ] 等全部Agent汇合后一次性去重P0/P1/P2，只做一个集中修复补丁；禁止边审边改和逐bug重复全流程。
-- [ ] 修复后多Agent并行复核同一最终diff；签字绑定最终RUN commit、审查路径tree hash、config SHA、资产manifest SHA和环境/GPU fingerprint，未变化证据直接复用。
-- [ ] 每个不同objective/forward/loss路径至少一次真实GPU micro-batch；相同路径不跨GPU重复，第二GPU只验证设备及特有差异；共享闭环覆盖梯度、ZS、动态停止、best和checkpoint。
-- [ ] 纯配置免两轮仅限已审schema内且不启用新计算/评估路径；纯队列、结果和文档在签字身份不变时只走contract。
+- [ ] 冻结准确RUN commit/config；纯配置、队列、结果、文档不启动代码审核。
+- [ ] 共享证据只生成一次：专项测试、一次完整测试、每objective一次GPU micro-batch、一次正常checkpoint恢复。
+- [ ] Round 1只审公式/初始化/梯度/数据/Full-Off；Round 2只审身份/clean/真实评估/resume；两轮目标5–10分钟。
+- [ ] 默认不做恶意checkpoint篡改、fuzz、逐张量hash链、重复完整测试、重复GPU或重复大资产SHA。
+- [ ] P0/P1一次性汇总，只做一批集中修复；复核只审最终diff，未变化证据直接复用。
+- [ ] 两次命令失败后停止自造入口，改用现有训练/测试入口；不新增receipt、证据页、状态机或额外目录。
+- [ ] 第二轮明确“无P0/P1，第2轮通过”后立即启动，不增加第三轮准备。
 - [ ] 生成后资产在生成代码、config和父身份不变时只做manifest/SHA/shape/dtype/count contract；身份变化则重新审核受影响范围。
 - [ ] 不自动push GitHub，不移动正式framework分支或Tag。
 
