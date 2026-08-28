@@ -14,7 +14,7 @@ lver_asset_id: null
 pcpc_asset_manifest: null
 pcpc_asset_manifest_sha256: null
 pcpc_asset_id: null
-initialization_strategy: fresh_seeded_tg_gtd_visual
+initialization_strategy: fresh_seeded_tg_gtd
 training_strategy: one_stage_simultaneous
 stagewise_training: false
 checkpoint_handoff: false

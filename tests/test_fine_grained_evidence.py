@@ -65,7 +65,9 @@ def screen_config(module: str) -> dict:
             "condition_id": condition_id,
             "idea_id": idea_id,
             "module": module,
-            "initialization_strategy": "fresh_seeded_tg_gtd_visual",
+            "initialization_strategy": (
+                "fresh_seeded_tg_gtd" if module == "gtd" else "fresh_seeded_tg_gtd_visual"
+            ),
             "lver_asset_manifest": "/asset/lver/asset_manifest.json" if module == "lver" else None,
             "lver_asset_manifest_sha256": "1" * 64 if module == "lver" else None,
             "lver_asset_id": "lver-fixed" if module == "lver" else None,
@@ -103,6 +105,16 @@ def test_three_screen_configs_are_exact_and_reject_cross_asset(tmp_path: Path):
         pass
     else:
         raise AssertionError("LVER配置不得同时绑定PCPC资产。")
+
+
+def test_legacy_tg_control_stays_on_nonvisual_asset_and_prototype_evaluation_path():
+    config, _ = load_config(ROOT / "config/tries/v3_try_042_fresh_effective.yaml")
+    tensors = synthetic_assets()
+    assert load_visual_assets(config, tensors) is tensors
+    torch.manual_seed(7)
+    bundle = build_model(config, tensors, torch.device("cpu"))
+    metrics = evaluate(bundle, tensors, torch.device("cpu"))
+    assert metrics["full_minus_off_delta"] == {"U": 0.0, "S": 0.0, "H": 0.0, "ZS": 0.0}
 
 
 def test_candidates_share_exact_fresh_tg_and_gtd_initialization():

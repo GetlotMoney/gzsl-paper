@@ -197,7 +197,13 @@ def load_config(path: Path) -> tuple[dict, str]:
         config["framework_id"] == "FRAMEWORK-V3-EXPLORATION",
         config["dataset"] == "CUB",
         config["initialization_strategy"]
-        == ("fresh_seeded_tg_gtd_visual" if is_visual_screen else "fresh_seeded_tg"),
+        == (
+            "fresh_seeded_tg_gtd"
+            if is_visual_screen and module_name == "gtd"
+            else "fresh_seeded_tg_gtd_visual"
+            if is_visual_screen
+            else "fresh_seeded_tg"
+        ),
         config["training_strategy"] == "one_stage_simultaneous",
         config["stagewise_training"] is False,
         config["checkpoint_handoff"] is False,
@@ -361,7 +367,7 @@ def primary_batch_prefix_sha256(generator_state: torch.Tensor, count: int = 142)
 def load_visual_assets(config: dict, tensors: dict[str, Any]) -> dict[str, Any]:
     """Load only the visual asset selected by the registered candidate."""
     module_name = str(config["module"])
-    if module_name == "gtd":
+    if module_name in {"tg", "gtd"}:
         return tensors
     if module_name == "lver":
         manifest_path = Path(config["lver_asset_manifest"])
@@ -383,11 +389,17 @@ def load_visual_assets(config: dict, tensors: dict[str, Any]) -> dict[str, Any]:
         ):
             raise ValueError("LVER资产身份、数量或无标注边界错误。")
         parent = manifest.get("parent", {})
+        alignment = manifest.get("source_alignment", {})
+        parity = manifest.get("full_view_parent_parity", {})
         if (
             parent.get("manifest_sha256") != config["asset_manifest_sha256"]
             or parent.get("asset_id") != config["asset_id"]
+            or alignment.get("alignment_contract")
+            != "same_xlsa_res101_att_splits_class_order_and_all_split_labels_plus_full_view_parity"
+            or float(parity.get("minimum_cosine", 0.0)) < 0.9998
+            or float(parity.get("max_abs_difference", float("inf"))) > 0.003
         ):
-            raise ValueError("LVER父全局资产身份不匹配。")
+            raise ValueError("LVER父全局资产身份、全量标签行序合同或整图parity不匹配。")
         filenames = {
             "train_local_views": "train_local_view_features.pt",
             "test_seen_local_views": "test_seen_local_view_features.pt",
@@ -510,7 +522,7 @@ def evaluate(bundle: ModelBundle, tensors: dict[str, Any], device: torch.device)
     seen = bundle.parent.seen_classes.cpu()
     all_classes = torch.arange(CLASS_COUNT)
     unseen = all_classes[~torch.isin(all_classes, seen)]
-    if bundle.module_name == "gtd":
+    if bundle.module_name in {"tg", "gtd"}:
         kwargs = dict(
             scale=bundle.parent.scale(),
             seen_features=tensors["test_seen_features"], seen_labels=tensors["test_seen_labels"],
