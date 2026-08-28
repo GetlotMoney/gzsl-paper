@@ -4,7 +4,7 @@ slug: pcpc
 kind: innovation
 framework_id: FRAMEWORK-V3-EXPLORATION
 base_commit: bb7d900910ef317142e956537d2d84a2b074f9d8
-semantic_code_commit: a2b4b2f6720821eed94909393d7c1991e951d203
+semantic_code_commit: 656ba707c409d6859d66a3353ca7c96ac24e3f0e
 framework_diagram: experiments/v3/innovation/INNOVATION-016_pcpc/framework_diagram.html
 idea_id: IDEA-157
 evidence_refs:
@@ -18,18 +18,18 @@ test_used_for_hyperparameter_selection: true
 unseen_images_used_for_gradient: false
 strict_blind_claim: false
 training_strategy: one_stage_simultaneous
-matched_control: V3-TRY-046
+matched_control: V3-TRY-048
 thresholds: {strong_delta_H: 1.0, weak_delta_H: 0.8, max_US_gap_exclusive: 8.0}
 runs:
-  - run_id: V3-TRY-046
-    condition: TG_PLUS_GTD_FRESH_CONTROL
-    config_ref: config/tries/v3_try_046_fine_grained_evidence.yaml
-    config_sha256: aeaef5d91b8f2cf7d42dd0991348b42421eb3183a6660c23051dcff9c2fb0aa5
-    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fine-grained-evidence/V3-TRY-046
-    status: planned
   - run_id: V3-TRY-048
-    condition: TG_PLUS_GTD_PLUS_PCPC_FRESH
+    condition: TG_PLUS_GTD_FRESH_CONTROL
     config_ref: config/tries/v3_try_048_fine_grained_evidence.yaml
-    config_sha256: 9f654e6bf4eeeb17d5a0f24191773837631821e4c63ea70a96c2081ea7bae6e9
+    config_sha256: fa0cbdf83b34d4392c22ca96031c3e32313d448083eaf15b9ff39323bf195ede
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fine-grained-evidence/V3-TRY-048
+    status: planned
+  - run_id: V3-TRY-050
+    condition: TG_PLUS_GTD_PLUS_PCPC_FRESH
+    config_ref: config/tries/v3_try_050_fine_grained_evidence.yaml
+    config_sha256: 79b5a4222cdb2478efdef4a8e284c240bc83a2b1fa79114df58410c9b22ebd44
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fine-grained-evidence/V3-TRY-050
     status: planned
