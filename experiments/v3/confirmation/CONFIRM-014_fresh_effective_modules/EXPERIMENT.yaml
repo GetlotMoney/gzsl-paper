@@ -6,10 +6,10 @@ framework_id: FRAMEWORK-V3-EXPLORATION
 framework_ref: 8ea2329191e40d15fb1dcd5aef7fb757f58766a8
 framework_diagram: experiments/v3/confirmation/CONFIRM-014_fresh_effective_modules/framework_diagram.html
 base_commit: 8ea2329191e40d15fb1dcd5aef7fb757f58766a8
-code_commit: 4e2195e2504314c8d2c83f1a96c73a9e7969cbd3
+code_commit: 13bd1ccb513710ce798fbaa7147af447d43b0b36
 idea_id: IDEA-155
 research_question: 在禁止加载任何CUB训练checkpoint的fresh一段式训练下，GTD、MMT、BD能否同时通过相对匹配TG控制和同checkpoint模块关闭的独立1H门槛？
-status: planned_pending_two_round_review
+status: running
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 test_used_for_hyperparameter_selection: true
@@ -31,23 +31,23 @@ server:
 runs:
   - run_id: V3-TRY-042
     condition: TG_FRESH_FIXED150
-    code_commit: 4e2195e2504314c8d2c83f1a96c73a9e7969cbd3
+    code_commit: 13bd1ccb513710ce798fbaa7147af447d43b0b36
     seed: 7
     config_ref: config/tries/v3_try_042_fresh_effective.yaml
     config_sha256: c300ea611295d994adcf9f98b59fef9f5dc3fb99147de1741e7cc712abfa934c
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fresh-effective/V3-TRY-042
-    status: planned
+    status: running
   - run_id: V3-TRY-043
     condition: TG_PLUS_GTD_FRESH_FIXED150
-    code_commit: 4e2195e2504314c8d2c83f1a96c73a9e7969cbd3
+    code_commit: 13bd1ccb513710ce798fbaa7147af447d43b0b36
     seed: 7
     config_ref: config/tries/v3_try_043_fresh_effective.yaml
     config_sha256: 238415147bdbc87887bb10f2f1b5baf85361ebb8612d18f2473e25b2bfd8fda7
     output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/fresh-effective/V3-TRY-043
-    status: planned
+    status: running
   - run_id: V3-TRY-044
     condition: TG_PLUS_MMT_FRESH_FIXED150
-    code_commit: 4e2195e2504314c8d2c83f1a96c73a9e7969cbd3
+    code_commit: 13bd1ccb513710ce798fbaa7147af447d43b0b36
     seed: 7
     config_ref: config/tries/v3_try_044_fresh_effective.yaml
     config_sha256: a7a703b74bab99f91112e87d20a34af7ae2316dfc81969eac345008b2a8650b7
@@ -55,7 +55,7 @@ runs:
     status: planned
   - run_id: V3-TRY-045
     condition: TG_PLUS_BD_FRESH_FIXED150
-    code_commit: 4e2195e2504314c8d2c83f1a96c73a9e7969cbd3
+    code_commit: 13bd1ccb513710ce798fbaa7147af447d43b0b36
     seed: 7
     config_ref: config/tries/v3_try_045_fresh_effective.yaml
     config_sha256: d1582a4aa678b20eee1257e3bea992324185feb47e4736faf5057823deb50938
