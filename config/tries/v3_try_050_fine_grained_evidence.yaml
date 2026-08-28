@@ -61,4 +61,3 @@ test_used_for_selection: true
 test_used_for_hyperparameter_selection: true
 unseen_images_used_for_gradient: false
 strict_blind_claim: false
-
