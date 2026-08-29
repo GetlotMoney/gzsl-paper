@@ -417,21 +417,30 @@ def evaluate_solvers(edges, labels, class_ids, mapping, modes):
 
 
 def top_r_equivalence(edges, labels, mapping, modes, count=32):
-    maximum = 0.0
-    checked = 0
-    for image_index in range(min(count, len(edges))):
-        nodes = mapping[int(labels[image_index])]
-        if not nodes:
-            continue
-        role_edges = np.stack([edges[image_index, concept] for _, concept in nodes])
-        for mode in modes:
+    results = {}
+    for mode in modes:
+        production_maximum = 0.0
+        theorem_maximum = 0.0
+        checked = 0
+        for image_index in range(min(count, len(edges))):
+            nodes = mapping[int(labels[image_index])]
+            if not nodes:
+                continue
+            role_edges = np.stack([edges[image_index, concept] for _, concept in nodes])
             current = pool_regions(role_edges) if mode == "region_capacity1" else role_edges
             capacity = 2 if mode == "patch_capacity2" else 1
             top_score, _, _ = exact_assignment(current, capacity, top_r=True)
             full_score, _, _ = exact_assignment(current, capacity, top_r=False)
-            maximum = max(maximum, abs(top_score - full_score))
+            production_score, _, _ = fast_assignment(current, capacity)
+            theorem_maximum = max(theorem_maximum, abs(top_score - full_score))
+            production_maximum = max(production_maximum, abs(production_score - full_score))
             checked += 1
-    return {"checked": checked, "maximum_abs": maximum}
+        results[mode] = {
+            "checked": checked,
+            "production_vs_full_maximum_abs": production_maximum,
+            "top_r_dp_vs_full_maximum_abs": theorem_maximum,
+        }
+    return results
 
 
 def decision_pre_gates(result, config):
@@ -688,7 +697,8 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
         prepass_modes = [
             mode for mode in modes
             if decision_pre_gates(solver_results[mode], config)
-            and equivalence["maximum_abs"] <= float(config["top_r_equivalence_tolerance"])
+            and equivalence[mode]["production_vs_full_maximum_abs"]
+            <= float(config["top_r_equivalence_tolerance"])
         ]
         if prepass_modes:
             import clip
@@ -806,7 +816,7 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
         passed = (
             reader_gate
             and row["pre_gates_pass"]
-            and real["top_r_equivalence"]["maximum_abs"]
+            and real["top_r_equivalence"][mode]["production_vs_full_maximum_abs"]
             <= float(config["top_r_equivalence_tolerance"])
             and row["deletion"] is not None
             and row["deletion"]["selected_drop_greater_fraction"]

@@ -8,6 +8,7 @@ from tools.diagnose_constrained_evidence_search import (
     fast_assignment,
     independent_assignment,
     pool_regions,
+    top_r_equivalence,
 )
 
 
@@ -52,3 +53,17 @@ def test_region_pooling_is_two_by_two_mean():
     pooled = pool_regions(edges)
     assert pooled.shape == (1, 144)
     assert np.isclose(pooled[0, 0], np.mean([0, 1, 24, 25]))
+
+
+def test_real_oracle_binds_each_production_solver_mode():
+    rng = np.random.default_rng(3)
+    edges = rng.normal(size=(1, 3, 576)).astype(np.float32)
+    labels = np.asarray([7])
+    mapping = {7: [(0, 0), (1, 1), (2, 2)]}
+    modes = ("patch_capacity1", "patch_capacity2", "region_capacity1")
+    result = top_r_equivalence(edges, labels, mapping, modes, count=1)
+    assert set(result) == set(modes)
+    for mode in modes:
+        assert result[mode]["checked"] == 1
+        assert result[mode]["production_vs_full_maximum_abs"] <= 1e-6
+        assert result[mode]["top_r_dp_vs_full_maximum_abs"] <= 1e-6
