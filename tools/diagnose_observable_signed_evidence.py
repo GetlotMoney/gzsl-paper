@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import platform
@@ -96,7 +97,8 @@ def load_config(path: Path) -> dict:
         "causal_weight", "region_patch_side", "evaluation_batch_size",
         "hard_negative_count", "signed_temperature", "observability_threshold",
         "pairwise_gate", "coverage_gate",
-        "observability_causal_gate", "signed_causal_gate", "patch_identity_gate",
+        "observability_causal_gate", "signed_causal_gate", "minimum_causal_drop",
+        "observability_std_gate", "patch_identity_gate",
         "reference_invariance_tolerance",
         "unseen_images_used", "human_annotations_used",
     }
@@ -318,6 +320,12 @@ def intervene(image: torch.Tensor, patch_index: int, patch_side: int, mode: str)
     return output
 
 
+def regions_overlap(left_index: int, right_index: int, patch_side: int) -> bool:
+    lt, lb, ll, lr = region_bounds(left_index, patch_side)
+    rt, rb, rl, rr = region_bounds(right_index, patch_side)
+    return not (lb <= rt or rb <= lt or lr <= rl or rr <= ll)
+
+
 def select_rows(labels: np.ndarray, classes: np.ndarray, count: int, seed: int):
     rows = np.flatnonzero(np.isin(labels, classes))
     rng = np.random.default_rng(seed)
@@ -353,8 +361,12 @@ def build_causal_cache(
         )
         selected_index = int(attention[0, :, 0].argmax())
         random_index = int(rng.integers(0, 576))
-        if region_bounds(random_index, patch_side) == region_bounds(selected_index, patch_side):
-            random_index = (random_index + patch_side * 3) % 576
+        attempts = 0
+        while regions_overlap(random_index, selected_index, patch_side):
+            random_index = int(rng.integers(0, 576))
+            attempts += 1
+            if attempts > 100:
+                raise RuntimeError("无法采样与证据区域不重叠的随机区域。")
         variants = torch.stack(
             (
                 intervene(image, selected_index, patch_side, mode),
@@ -368,6 +380,7 @@ def build_causal_cache(
         target_classes.append(class_id)
         target_roles.append(role)
     return {
+        "rows": rows.astype(np.int64),
         "original": torch.stack(originals),
         "selected": torch.stack(selected),
         "random": torch.stack(randoms),
@@ -376,6 +389,11 @@ def build_causal_cache(
         "mean_patch_cosine": float(np.mean(parity)),
         "minimum_image_mean_patch_cosine": float(np.min(parity)),
     }
+
+
+def sampling_sha256(cache) -> str:
+    payload = np.stack((cache["rows"], cache["classes"], cache["roles"]), axis=1)
+    return hashlib.sha256(payload.astype(np.int64).tobytes()).hexdigest()
 
 
 def one_variables(reader, patches, class_id, role, class_queries, role_queries):
@@ -480,33 +498,45 @@ def pairwise_accuracy(
     alternatives = hard_neighbors(class_queries, evaluation_classes, negative_count)
     class_position = {int(value): index for index, value in enumerate(evaluation_classes)}
     correct = visible_total = 0
+    unmasked_correct = unmasked_total = 0
+    observability_rows = []
     for start in range(0, len(rows), batch_size):
         batch_rows = rows[start:start+batch_size]
         batch = torch.from_numpy(np.asarray(patches[batch_rows], dtype=np.float16).copy()).to(device)
         scores = reader(batch, queries).reshape(len(batch_rows), CLASS_COUNT, ROLE_COUNT)
         signed = fixed_reference_d(scores).cpu().numpy()
         observable = reader.observability(batch, role_queries.to(device)).cpu().numpy()
+        observability_rows.append(observable)
         for local_row, class_id in enumerate(labels[batch_rows]):
             local_class = class_position[int(class_id)]
             for role in range(ROLE_COUNT):
-                if observable[local_row, role] < observability_threshold:
-                    continue
                 negatives = alternatives[local_class, role]
                 true_value = signed[local_row, int(class_id), role]
                 negative_value = signed[local_row, negatives, role].max()
-                correct += int(
+                signed_correct = bool(
                     true_value > 0 and negative_value < 0 and true_value > negative_value
                 )
+                unmasked_correct += int(signed_correct)
+                unmasked_total += 1
+                if observable[local_row, role] < observability_threshold:
+                    continue
+                correct += int(signed_correct)
                 visible_total += 1
+    observability_values = np.concatenate(observability_rows)
     return {
         "visible_signed_accuracy": correct / max(visible_total, 1),
+        "unmasked_signed_accuracy": unmasked_correct / max(unmasked_total, 1),
         "visible_role_count": int(visible_total),
         "visible_role_coverage": visible_total / (len(rows) * ROLE_COUNT),
+        "observability_mean": float(observability_values.mean()),
+        "observability_std": float(observability_values.std()),
+        "observability_minimum": float(observability_values.min()),
+        "observability_maximum": float(observability_values.max()),
     }
 
 
 @torch.no_grad()
-def evaluate_causal(reader, cache, class_queries, role_queries, device):
+def evaluate_causal(reader, cache, class_queries, role_queries, minimum_drop, device):
     observability_better = []
     signed_better = []
     rows = []
@@ -529,8 +559,12 @@ def evaluate_causal(reader, cache, class_queries, role_queries, device):
         random_drop_o = float(original_o - random_o)
         selected_drop_d = float(original_d - selected_d)
         random_drop_d = float(original_d - random_d)
-        observability_better.append(selected_drop_o > 0 and selected_drop_o > random_drop_o)
-        signed_better.append(selected_drop_d > 0 and selected_drop_d > random_drop_d)
+        observability_better.append(
+            selected_drop_o >= minimum_drop and selected_drop_o > random_drop_o
+        )
+        signed_better.append(
+            selected_drop_d >= minimum_drop and selected_drop_d > random_drop_d
+        )
         if len(rows) < 20:
             rows.append(
                 {
@@ -621,13 +655,25 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
         patch_side=int(config["region_patch_side"]), mode="mean_fill", device=device,
     )
     causal_result = evaluate_causal(
-        reader, causal_eval, class_queries, role_queries, device
+        reader,
+        causal_eval,
+        class_queries,
+        role_queries,
+        float(config["minimum_causal_drop"]),
+        device,
     )
     dummy = torch.randn(2, CLASS_COUNT, ROLE_COUNT, device=device)
     base_d = fixed_reference_d(dummy)
     permuted = torch.randperm(CLASS_COUNT, device=device)
     restored = fixed_reference_d(dummy[:, permuted])[:, torch.argsort(permuted)]
     invariance = float((base_d - restored).abs().max())
+    sample_patch = torch.from_numpy(
+        np.asarray(patches[evaluation_rows[:2]], dtype=np.float16).copy()
+    ).to(device)
+    original_o = reader.observability(sample_patch, role_queries.to(device))
+    permuted_role_queries = F.normalize(class_queries[permuted.cpu()].mean(dim=0), dim=-1)
+    permuted_o = reader.observability(sample_patch, permuted_role_queries.to(device))
+    observability_invariance = float((original_o - permuted_o).abs().max())
     output.parent.mkdir(parents=True, exist_ok=True)
     checkpoint_path = output.with_suffix(".pth")
     torch.save(
@@ -649,19 +695,22 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
         "warmup": warmup,
         "joint": joint,
         "reference_invariance_max_abs": invariance,
-        "observability_candidate_invariance_max_abs": 0.0,
+        "observability_candidate_invariance_max_abs": observability_invariance,
         "pairwise_accuracy": pairwise,
         "causal_train_identity": {
+            "sampling_sha256": sampling_sha256(causal_train),
             "mean_patch_cosine": causal_train["mean_patch_cosine"],
             "minimum_image_mean_patch_cosine": causal_train["minimum_image_mean_patch_cosine"],
         },
         "causal_eval_identity": {
+            "sampling_sha256": sampling_sha256(causal_eval),
             "mean_patch_cosine": causal_eval["mean_patch_cosine"],
             "minimum_image_mean_patch_cosine": causal_eval["minimum_image_mean_patch_cosine"],
         },
         "causal_eval": causal_result,
         "checkpoint_path": str(checkpoint_path),
         "checkpoint_sha256": sha256_file(checkpoint_path),
+        "all_class_text_reference_used_for_gradient": True,
         "unseen_images_used": False,
         "human_annotations_used": False,
     }
@@ -682,10 +731,34 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
     for result in (real, shuffled):
         if result.get("code_commit") != expected_commit or result.get("config_sha256") != config_sha:
             raise ValueError("结果代码/config身份错误。")
+        if (
+            result.get("all_class_text_reference_used_for_gradient") is not True
+            or result.get("unseen_images_used") is not False
+            or result.get("human_annotations_used") is not False
+        ):
+            raise ValueError("结果文本参考或图像/标注边界披露错误。")
         if not Path(result["checkpoint_path"]).is_file() or sha256_file(Path(result["checkpoint_path"])) != result["checkpoint_sha256"]:
             raise ValueError("checkpoint缺失或SHA错误。")
+        checkpoint = torch.load(
+            result["checkpoint_path"], map_location="cpu", weights_only=True
+        )
+        if (
+            checkpoint.get("code_commit") != expected_commit
+            or checkpoint.get("config_sha256") != config_sha
+            or checkpoint.get("asset_identity") != result["asset_identity"]
+            or checkpoint.get("mode") != result["mode"]
+            or not isinstance(checkpoint.get("model_state_dict"), dict)
+        ):
+            raise ValueError("checkpoint内部身份与结果JSON不一致。")
+    if Path(real["checkpoint_path"]).resolve() == Path(shuffled["checkpoint_path"]).resolve():
+        raise ValueError("real/shuffled不得复用同一checkpoint。")
     if real["train_classes"] != shuffled["train_classes"] or real["evaluation_classes"] != shuffled["evaluation_classes"] or real["asset_identity"] != shuffled["asset_identity"]:
         raise ValueError("real/shuffled split或资产身份错误。")
+    if real["environment"] != shuffled["environment"]:
+        raise ValueError("real/shuffled环境/GPU身份不一致。")
+    for stage in ("causal_train_identity", "causal_eval_identity"):
+        if real[stage]["sampling_sha256"] != shuffled[stage]["sampling_sha256"]:
+            raise ValueError("real/shuffled采样行或角色轨迹不一致。")
     gates = {
         "reference_invariance": real["reference_invariance_max_abs"] <= float(config["reference_invariance_tolerance"]),
         "observability_candidate_invariance": real["observability_candidate_invariance_max_abs"]
@@ -694,16 +767,20 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
         >= float(config["pairwise_gate"]),
         "visible_role_coverage": real["pairwise_accuracy"]["visible_role_coverage"]
         >= float(config["coverage_gate"]),
+        "observability_noncollapsed": real["pairwise_accuracy"]["observability_std"]
+        >= float(config["observability_std_gate"]),
         "observability_causal": real["causal_eval"]["observability_selected_positive_and_greater_fraction"]
         >= float(config["observability_causal_gate"]),
         "signed_causal": real["causal_eval"]["signed_selected_positive_and_greater_fraction"]
         >= float(config["signed_causal_gate"]),
         "patch_identity": min(
             real["causal_train_identity"]["mean_patch_cosine"],
+            real["causal_train_identity"]["minimum_image_mean_patch_cosine"],
             real["causal_eval_identity"]["mean_patch_cosine"],
+            real["causal_eval_identity"]["minimum_image_mean_patch_cosine"],
         )
         >= float(config["patch_identity_gate"]),
-        "shuffled_pairwise_failed": shuffled["pairwise_accuracy"]["visible_signed_accuracy"]
+        "shuffled_pairwise_failed": shuffled["pairwise_accuracy"]["unmasked_signed_accuracy"]
         < float(config["pairwise_gate"]),
         "shuffled_observability_causal_failed": shuffled["causal_eval"]["observability_selected_positive_and_greater_fraction"]
         < float(config["observability_causal_gate"]),

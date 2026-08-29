@@ -8,6 +8,7 @@ from tools.diagnose_observable_signed_evidence import (
     derangement,
     fixed_reference_d,
     region_bounds,
+    regions_overlap,
     shuffled_query_bank,
     state_loss,
     state_probabilities,
@@ -94,3 +95,8 @@ def test_region_is_fixed_area_and_inside_336_pixels():
         assert 0 <= left < right <= 336
         assert bottom - top == 56
         assert right - left == 56
+
+
+def test_random_intervention_regions_can_be_required_not_to_overlap():
+    assert regions_overlap(0, 1, patch_side=4)
+    assert not regions_overlap(0, 24 * 12 + 12, patch_side=4)

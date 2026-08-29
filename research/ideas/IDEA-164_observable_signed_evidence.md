@@ -22,7 +22,7 @@ closest_paradigm_work:
   - CREST使用attribute定位与Evidential Deep Learning表达不确定性；本Idea不使用人工attributes或独立证据Head，而以候选无关`o`和固定参考`d`生成严格归一的三态概率。
   - Counterfactual ZSL通过生成样本级反事实做seen/unseen一致性判断；本Idea的干预只用于学习/验证角色证据区域，不生成unseen视觉样本。
   - IDEA-163已经证明动态近邻离散三态和事后attention删除不成立，IDEA-164不能复用其运行代码或把失败公式改名。
-minimal_falsification: Gate 1只使用CUB formal-seen图像，seed 7固定100类Reader训练、50类完全隔离评估，true-unseen图像不读取。一个rank-64共享Reader先以固定Top20%类别图像包证据竞争建立`s`；分类损失使用`stop_gradient(o)`，模型级反例必须证明一次纯分类更新后同图`o`逐值不变。从100类中固定250张图、每图轮换一个角色，用Reader声称的Top区域产生局部模糊和随机同面积干预缓存，再以`L_state+L_causal`完成固定总更新；50类中的另250张图使用不同的均值填充干预只评估。Gate 1同时要求：(1)候选无关`o_r`与固定200类`d`对候选轴排列逐值不变，且在线原图/缓存patch平均余弦≥0.99；(2)只在`o≥0.5`的角色上，真命题`d>0`、4个困难命题最强值`<0`且真值更大的五选一准确率≥65%，可见角色覆盖≥30%；(3)在250张class-disjoint图像上，证据区域干预造成的`o`正下降并优于随机的比例≥70%，有符号`tanh(d/2)`正下降并优于随机的比例也≥70%。打乱对照固定相同采样轨迹，只把全部1200个类×角色文本槽做无固定点错配。任一失败立即reject，不进入Gate 2。
+minimal_falsification: Gate 1只使用CUB formal-seen图像，seed 7固定100类图像与标签用于Reader训练、50类图像与标签完全不进入梯度；与标准ZSL一致，全部200类冻结文本允许作为固定语义参考并参与可导证据标尺，必须明确披露为`all_class_text_reference_used_for_gradient=true`。一个rank-64共享Reader先以固定Top20%类别图像包证据竞争建立`s`；模型级反例必须证明一次纯分类更新后同图`o`逐值不变。从100类中固定250张图、每图轮换一个角色，用Reader声称的Top区域产生局部模糊和不重叠随机同面积干预缓存，再以`L_state+L_causal`完成固定总更新；50类中的另250张图使用均值填充干预只评估。Gate 1同时要求：(1)候选无关`o_r`与固定200类`d`对候选轴排列逐值不变，在线原图/缓存patch平均余弦≥0.99；(2)只在`o≥0.5`的角色上，真命题`d>0`、4个困难命题最强值`<0`且真值更大的五选一准确率≥65%，可见角色覆盖≥30%，同时`o`在class-disjoint图像上的标准差≥0.02；(3)在250张class-disjoint图像上，证据区域干预造成的`o`下降至少0.01且优于随机的比例≥70%，有符号`tanh(d/2)`下降至少0.01且优于随机的比例也≥70%。打乱对照固定相同采样轨迹，只把全部1200个类×角色文本槽做无固定点错配；其signed-d失败按不经`o`筛选的全角色准确率判断。任一失败立即reject。
 paper_level_claim: Gate 1、后续100/50净纠错及正式TG+GTD联合训练均成立后，才能窄化声称“用文本角色的候选无关可观察性与固定参考有符号证据，把GZSL点原型兼容度转化为连续证据状态更新”；`L_final=L_TG+GTD+beta*E`只能称为证据logit更新，在完成概率校准前不得称严格贝叶斯后验或声称首次。
 evidence_refs:
   - research/ideas/IDEA-162_learnable_concept_readout_probe.md
@@ -30,5 +30,5 @@ evidence_refs:
   - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/prequeue/IDEA-162-learnable-concept-readout-seed7/result.json@sha256:4f73cbbd0308b9e96af1342df2f45bb2f89ed0ffb8ec1bf6001e835101b574af
   - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/prequeue/IDEA-163-tristate-predicate-seed7/result.json@sha256:3373601ac0736936d193136895c29178d58619ad585a7590d38f03c9db4bfc91
 success_condition: Gate 1三项必须同时通过且打乱角色文本对照不得通过任一主门槛；通过只允许进入Gate 2，不等于范式、H或论文claim成立。
-failure_condition: `o`受候选类别或类别证据adapter影响、`d`不满足稳定固定200类参考、可见角色覆盖<30%、class-disjoint signed pairwise<65%、第二种干预下`o`或signed-d任一删除优势<70%、打乱对照通过任一内容门槛或patch同源平均余弦<0.99，均立即置为rejected并停止当前公式。
+failure_condition: `o`受候选类别或类别证据adapter影响、`o`标准差<0.02、`d`不满足稳定固定200类参考、可见角色覆盖<30%、class-disjoint signed pairwise<65%、第二种干预下`o`或signed-d任一删除优势<70%或下降幅度<0.01、打乱对照通过任一内容门槛、real/shuffled采样/环境不匹配或patch同源平均余弦<0.99，均立即置为rejected并停止当前公式。
 owner_decision: 2026-08-29 owner回复“行，开始尝试”，批准IDEA-164从FRAMEWORK-V4准确父commit独立分叉并只执行Gate 1。
