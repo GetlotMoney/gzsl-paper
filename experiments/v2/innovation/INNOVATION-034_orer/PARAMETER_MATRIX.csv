@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_epoch,parent_gamma,gamma_residual,final_gamma,test_used_for_selection,output_uri,decision
+RUN-001,aeac7a637075f99c41fc9ad75c356f13977fc80c,experiments/v2/innovation/INNOVATION-034_orer/configs/RUN-001.yaml,c4195da5fb7c7510128d03bd6e14fb532b541de9b84344359372fe6157c754e0,5,completed,77.094042,79.075468,78.072185,84.185731,0,0.153261,0.0,0.153261,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-034_orer/RUN-001,drop_recalibration_no_gain

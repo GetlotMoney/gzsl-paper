@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>FRAMEWORK-V2 · TG-VPR-H1 Framework Diagram</title>
+  <style>
+    :root{--ink:#172033;--muted:#667085;--line:#98a2b3;--green:#d5e8d4;--green-s:#82b366;--blue:#dae8fc;--blue-s:#6c8ebf;--purple:#e1d5e7;--purple-s:#9673a6;--yellow:#fff2cc;--yellow-s:#d6b656;--orange:#ffe6cc;--orange-s:#d79b00;--red:#f8cecc;--red-s:#b85450;--grey:#f5f5f5;--grey-s:#666}
+    *{box-sizing:border-box} body{margin:0;background:#f7f8fb;color:var(--ink);font:15px/1.5 Inter,"Segoe UI",sans-serif} main{max-width:1560px;margin:auto;padding:28px} h1{margin:0 0 4px;font-size:28px} .sub{color:var(--muted);margin-bottom:16px}.badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.badge{background:#fff;border:1px solid #d0d5dd;border-radius:999px;padding:5px 10px;font-size:13px}.board{background:#fff;border:1px solid #d0d5dd;border-radius:18px;box-shadow:0 12px 30px #10182812;overflow:auto}.board svg{display:block;width:100%;min-width:1180px;height:auto}.node{stroke-width:2}.label{font-size:15px;font-weight:700;fill:#172033;text-anchor:middle}.small{font-size:12px;font-weight:500;fill:#344054}.edge{fill:none;stroke:#667085;stroke-width:2.2;marker-end:url(#arrow)}.dash{stroke-dasharray:8 6}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:18px}.card{background:#fff;border:1px solid #d0d5dd;border-radius:14px;padding:16px}.card h2{font-size:16px;margin:0 0 8px}.card code{font-size:12px;overflow-wrap:anywhere}.formula{font-family:"Cambria Math",serif;background:#f9fafb;border-radius:8px;padding:8px 10px;margin:6px 0}.warn{border-left:4px solid var(--red-s)}
+  </style>
+</head>
+<body>
+<main>
+  <h1>FRAMEWORK-V2 · TG-VPR-H1</h1>
+  <div class="sub">Tri-Group Value Prototype Reparameterization · independent formal framework</div>
+  <div class="badges">
+    <span class="badge">source module: INNOVATION-MODULE-1 @ 4a063218989c6e193a7aa3c593bb4f0f8ecb7379</span>
+    <span class="badge">formal identity: framework/v2 = tag v2</span>
+    <span class="badge">V2 baseline: H=74.023182% · seed 7</span>
+    <span class="badge">integration: independent from FRAMEWORK-V1</span>
+  </div>
+  <section class="board" aria-label="TG-VPR-H1 architecture">
+    <svg viewBox="0 0 1500 900" role="img" aria-labelledby="title desc">
+      <title id="title">TG-VPR-H1 数据流和训练评估边界</title>
+      <desc id="desc">八句语义形成局部、独特、整体三组，固定等权通过单一Value路径、内部残差和外部残差生成类别原型，再与图像CLS计算logits并输出损失和GZSL指标。</desc>
+      <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#667085"/></marker></defs>
+      <rect x="30" y="70" width="170" height="70" rx="12" fill="var(--green)" stroke="var(--green-s)" class="node"/><text x="115" y="98" class="label">8句语义缓存</text><text x="115" y="122" class="small">[200, 8, 768]</text>
+      <rect x="260" y="25" width="155" height="58" rx="12" fill="var(--blue)" stroke="var(--blue-s)" class="node"/><text x="338" y="49" class="label">局部组</text><text x="338" y="68" class="small">前6句均值</text>
+      <rect x="260" y="95" width="155" height="58" rx="12" fill="var(--blue)" stroke="var(--blue-s)" class="node"/><text x="338" y="119" class="label">独特组</text><text x="338" y="138" class="small">第8句</text>
+      <rect x="260" y="165" width="155" height="58" rx="12" fill="var(--blue)" stroke="var(--blue-s)" class="node"/><text x="338" y="189" class="label">整体组</text><text x="338" y="208" class="small">第7句</text>
+      <rect x="485" y="82" width="190" height="84" rx="12" fill="var(--purple)" stroke="var(--purple-s)" class="node"/><text x="580" y="112" class="label">三组固定各 1/3</text><text x="580" y="137" class="small">[200, 3, 768]</text>
+      <rect x="745" y="72" width="230" height="104" rx="12" fill="var(--purple)" stroke="var(--purple-s)" class="node"/><text x="860" y="103" class="label">共享单一 Value 路径</text><text x="860" y="128" class="small">V 768→768 · Output</text><text x="860" y="148" class="small">Projection · Dropout</text>
+      <rect x="1040" y="82" width="220" height="84" rx="12" fill="var(--yellow)" stroke="var(--yellow-s)" class="node"/><text x="1150" y="111" class="label">内部残差 + LN</text><text x="1150" y="137" class="small">0.35 context + 0.65 source</text>
+      <rect x="745" y="260" width="190" height="62" rx="12" fill="var(--grey)" stroke="var(--grey-s)" class="node"/><text x="840" y="286" class="label">Mean8 / 三组基准 b</text><text x="840" y="307" class="small">unseen fallback</text>
+      <rect x="1040" y="250" width="220" height="82" rx="12" fill="var(--orange)" stroke="var(--orange-s)" class="node"/><text x="1150" y="278" class="label">外部残差融合</text><text x="1150" y="305" class="small">0.35 b + 0.65/3 Σg̃k</text>
+      <rect x="1040" y="410" width="220" height="88" rx="12" fill="var(--green)" stroke="var(--green-s)" class="node"/><text x="1150" y="440" class="label">归一化类别原型</text><text x="1150" y="464" class="small">[200, 768]</text><text x="1150" y="483" class="small">unseen 保持 Mean8</text>
+      <rect x="690" y="425" width="190" height="62" rx="12" fill="var(--green)" stroke="var(--green-s)" class="node"/><text x="785" y="452" class="label">图像 CLS</text><text x="785" y="473" class="small">[B, 768]</text>
+      <rect x="985" y="570" width="255" height="90" rx="12" fill="var(--orange)" stroke="var(--orange-s)" class="node"/><text x="1113" y="600" class="label">Cosine logits × scale</text><text x="1113" y="625" class="small">train [B,150] · eval [B,200]</text>
+      <rect x="710" y="735" width="145" height="58" rx="12" fill="var(--red)" stroke="var(--red-s)" class="node"/><text x="783" y="769" class="label">Seen CE</text>
+      <rect x="920" y="725" width="190" height="78" rx="12" fill="var(--red)" stroke="var(--red-s)" class="node"/><text x="1015" y="754" class="label">Topology × 0.1</text><text x="1015" y="779" class="small">保持200类关系</text>
+      <rect x="1170" y="735" width="200" height="58" rx="12" fill="var(--red)" stroke="var(--red-s)" class="node"/><text x="1270" y="759" class="label">总损失</text><text x="1270" y="780" class="small">CE + 0.1 Ltopo</text>
+      <rect x="1270" y="570" width="200" height="90" rx="12" fill="var(--green)" stroke="var(--green-s)" class="node"/><text x="1370" y="601" class="label">U / S / H / ZS</text><text x="1370" y="626" class="small">200类GZSL</text><text x="1370" y="646" class="small">50类ZS</text>
+      <rect x="40" y="470" width="460" height="125" rx="12" fill="var(--yellow)" stroke="var(--yellow-s)" class="node"/><text x="60" y="500" class="label" text-anchor="start">代码身份与基线关系</text><text x="60" y="526" class="small" text-anchor="start">source module: 4a063218989c6e193a7aa3c593bb4f0f8ecb7379</text><text x="60" y="550" class="small" text-anchor="start">formal identity: framework/v2 = tag v2</text><text x="60" y="574" class="small" text-anchor="start">独立FRAMEWORK-V2 · 不替换FRAMEWORK-V1</text>
+      <rect x="40" y="635" width="350" height="110" rx="12" fill="var(--grey)" stroke="var(--grey-s)" class="node"/><text x="60" y="663" class="label" text-anchor="start">协议边界</text><text x="60" y="689" class="small" text-anchor="start">梯度：仅7057张seen训练图像</text><text x="60" y="713" class="small" text-anchor="start">official test参与选择：true</text><text x="60" y="735" class="small" text-anchor="start">不是blind-test</text>
+      <rect x="40" y="775" width="350" height="74" rx="12" fill="var(--grey)" stroke="var(--grey-s)" class="node"/><text x="60" y="804" class="label" text-anchor="start">Baseline-off</text><text x="60" y="830" class="small" text-anchor="start">关闭Value重参数化 → Mean8 / 三组基准</text>
+      <path d="M200 105 H235 V54 H260" class="edge"/><path d="M200 105 H260" class="edge"/><path d="M200 105 H235 V194 H260" class="edge"/>
+      <path d="M415 54 H455 V105 H485" class="edge"/><path d="M415 124 H485" class="edge"/><path d="M415 194 H455 V145 H485" class="edge"/>
+      <path d="M675 124 H745" class="edge"/><path d="M975 124 H1040" class="edge"/><path d="M1150 166 V210 H1185 V250" class="edge"/><path d="M935 291 H1040" class="edge"/>
+      <path d="M1150 332 V410" class="edge"/><path d="M880 456 H940 V615 H985" class="edge"/><path d="M1150 498 V535 H1113 V570" class="edge"/>
+      <path d="M1113 660 V690 H783 V735" class="edge"/><path d="M1040 454 H900 V690 H1015 V725" class="edge"/><path d="M855 764 H1170" class="edge"/><path d="M1110 764 H1170" class="edge"/><path d="M1240 615 H1270" class="edge"/>
+    </svg>
+  </section>
+  <section class="cards">
+    <article class="card"><h2>核心公式</h2><div class="formula">g̃<sub>k</sub> = LN(2[0.35c<sub>k</sub> + 0.65g<sub>k</sub>])</div><div class="formula">p = Norm(0.35b + 0.65/3 Σg̃<sub>k</sub>)</div><div class="formula">L = L<sub>CE</sub> + 0.1L<sub>topology</sub></div></article>
+    <article class="card"><h2>固定参数</h2><p>local / unique / overall三组各1/3；Value heads=1；inner=0.35；outer=0.65；topology=0.1。</p></article>
+    <article class="card"><h2>当前仓库基线</h2><p>V2-CONFIRM-001 / RUN-001：H=<b>74.023182%</b>，seed 7，best epoch 50。</p></article>
+    <article class="card warn"><h2>当前边界</h2><p>V2首个正式单seed基线已完成；迁入的其他seed结果仍只作来源证据，不能替代当前仓库多seed验证。V2不会替换FRAMEWORK-V1。</p></article>
+  </section>
+</main>
+</body>
+</html>

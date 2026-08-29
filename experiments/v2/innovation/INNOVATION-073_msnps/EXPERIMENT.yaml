@@ -1,0 +1,23 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-073
+idea_id: IDEA-107
+framework_id: FRAMEWORK-V2
+title: Mutual Semantic Neighborhood Pair Selector
+base_commit: 2e78bae9b101761b2c0ad7854bc54d6ec13c6983
+code_commit: 6112ad53643f2971b05a267be44d94a8b28dd178
+status: supported_two_seed_patch_free
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-073_msnps/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 6112ad53643f2971b05a267be44d94a8b28dd178
+    config_ref: experiments/v2/innovation/INNOVATION-073_msnps/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-073_msnps/RUN-001
+    status: completed_positive
+  - run_id: RUN-002
+    code_commit: 9581e76064b24f5520f5cc651b95d1509efa062e
+    config_ref: experiments/v2/innovation/INNOVATION-073_msnps/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-073_msnps/RUN-002
+    status: completed_positive

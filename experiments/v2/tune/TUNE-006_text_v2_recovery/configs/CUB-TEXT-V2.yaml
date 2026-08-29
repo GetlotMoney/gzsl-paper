@@ -1,0 +1,12 @@
+schema_version: gzsl-paper.text-diagnostic-run.v1
+experiment_id: V2-TUNE-006
+run_id: CUB-TEXT-V2-DIAGNOSTIC
+dataset: CUB
+asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/69c9c6d82a755fe8/asset_manifest.json
+asset_manifest_sha256: 52c50c2f55250399bce360a218c30e70b66945953bec7e825e8dd8f20dddf91f
+base_role_name: text-v2
+role_variants: []
+official_test_loaded: false
+seen_images_only: true
+unseen_images_used: false
+diagnostic_no_model: true

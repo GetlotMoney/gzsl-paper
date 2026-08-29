@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-021 ECPE</title></head>
+<body>
+<h1>ECPE：episode训练的类别条件patch证据</h1>
+<p><strong>Base commit：</strong>476c92576ed3d69f30469fe06e0974ad1286d6aa；<strong>RUN-001 code commit：</strong>f6a84248c44781e7d1d5a8990ac74630c85392e3。</p>
+<h2>推理公式</h2><p>与CCPE完全相同：SEBC logits + beta × 每类top2局部patch平均相似度。关闭beta时严格复现SEBC。</p>
+<h2>分阶段episode训练</h2>
+<pre>3 folds × (100 pseudo-seen classes + 50 pseudo-unseen classes)
+batch = 25 pseudo-seen images + 25 pseudo-unseen images
+fold_logits = frozen fold TG + frozen NCRA/SDRS + frozen SEBC
+loss = CE(fold_logits + beta × top2_patch_score, 150 global seen classes)</pre>
+<p>三个fold父模型各自只训练过100类；beta训练使用的所有图像仍属于全局seen 150类。主模型、fold模型和SEBC全部冻结，只训练一个beta。</p>
+<h2>评估边界</h2><p>20个episode epoch，每epoch评估official test并保存整次RUN一个最高H。真实unseen图像不进入梯度；U/S/H为200类联合竞争，ZS为50类竞争；test_used_for_selection=true。分阶段优化不同于陈代码单阶段更新，但数据边界和test-selected评估口径一致。</p>
+</body></html>

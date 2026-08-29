@@ -1,0 +1,23 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-084
+idea_id: IDEA-118
+framework_id: FRAMEWORK-V2
+title: Neighborhood Degree Pair Selector
+base_commit: f56e141b51add526ab0819608a965c5f039e03f0
+code_commit: 1e2228bf9ee6a0d2c21e367e94fcdff5f0317a21
+status: rejected_not_two_seed_consistent
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-084_ndps/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 1e2228bf9ee6a0d2c21e367e94fcdff5f0317a21
+    config_ref: experiments/v2/innovation/INNOVATION-084_ndps/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-084_ndps/RUN-001
+    status: completed_weak_positive
+  - run_id: RUN-002
+    code_commit: 3ac859bc1396a9b7715f52281c64cfdf757ae601
+    config_ref: experiments/v2/innovation/INNOVATION-084_ndps/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-084_ndps/RUN-002
+    status: completed_equal_top3

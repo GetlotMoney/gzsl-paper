@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-061 AGPT</title></head>
+<body>
+<h1>AGPT：歧义门控局部patch二选一</h1>
+<p><strong>Base commit：</strong>b850a3dd2f45d01e510f7c652912f56d94c9b477；<strong>RUN code commit：</strong>b2d276498b9eb2bce1c0cefce0c499d6a986fd9b。</p>
+<pre>固定AGCT 25分位gate（同族低margin top2）
+       ↓
+每个候选类别的top2局部patch分数
+       ↓ 在top2内减均值
+logits' = SDCR logits + beta×gate×centered_patch_top2</pre>
+<p>只有top2相对次序可能改变，top2均值与其他198类不变。beta由seen训练图像更新；unseen patch只用于official评估，不进入梯度。</p>
+<p>patch来源provenance仍不完整，本结果只能作辅助候选，不能掩盖该边界。</p>
+</body></html>

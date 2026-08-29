@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-077
+idea_id: IDEA-111
+framework_id: FRAMEWORK-V2
+title: Error-Targeted Pair Correction
+base_commit: bb0c17f63e2a15a9ea72b532b7dd04de93fe62f7
+code_commit: 5c2d67f89ce3d3feb4fe7d2815321805297fb21f
+status: rejected_best_parent
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-077_etpc/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 5c2d67f89ce3d3feb4fe7d2815321805297fb21f
+    config_ref: experiments/v2/innovation/INNOVATION-077_etpc/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-077_etpc/RUN-001
+    status: completed_no_gain

@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-021
+idea_id: IDEA-055
+framework_id: FRAMEWORK-V2
+title: Episodic Class-Conditioned Patch Evidence
+base_commit: 476c92576ed3d69f30469fe06e0974ad1286d6aa
+code_commit: f6a84248c44781e7d1d5a8990ac74630c85392e3
+status: rejected_episode_opposite_direction
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-021_ecpe/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: f6a84248c44781e7d1d5a8990ac74630c85392e3
+    config_ref: experiments/v2/innovation/INNOVATION-021_ecpe/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-021_ecpe/RUN-001
+    status: completed

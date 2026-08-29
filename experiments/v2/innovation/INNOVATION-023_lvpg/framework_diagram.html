@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-023 LVPG</title></head>
+<body>
+<h1>LVPG：局部视觉原型生成</h1>
+<p><strong>Base commit：</strong>8dd45d33ad1fee24c910590293adb951838f177f；<strong>RUN-001 code commit：</strong>a065f06a290792e54eddc52d33f9351a710bdfa9。</p>
+<h2>seen局部视觉中心</h2>
+<pre>for each seen training image:
+  true_local_text = orthogonal_local_text[label]
+  local_image = mean(top2_patches matched by true_local_text)
+visual_centroid_c = mean(local_image of seen class c)</pre>
+<h2>语义到局部视觉生成</h2>
+<pre>K = seen_local_semantics @ seen_local_semantics.T
+A = solve(K + 0.1 I, seen_visual_centroids)
+visual_local_prototype_all = Norm(all_local_semantics @ seen_local_semantics.T @ A)
+local_score = mean(top2_n cos(patch_n, visual_local_prototype_c))
+final_logits = SEBC_logits + beta × local_score</pre>
+<p>ridge只使用150个seen类视觉中心和200类允许使用的文本。raw_beta零初始化，关闭时严格复现SEBC。</p>
+<h2>训练与边界</h2><p>只用7,057张seen图像训练beta，28,228次随机更新；每141次更新official test选一个全局best。真实unseen patch不进入中心、ridge或梯度；test_used_for_selection=true。遗留CLIP patch准确checkpoint provenance仍不完整。</p>
+</body></html>

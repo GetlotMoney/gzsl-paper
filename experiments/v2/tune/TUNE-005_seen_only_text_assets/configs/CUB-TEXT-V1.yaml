@@ -1,0 +1,17 @@
+schema_version: gzsl-paper.text-diagnostic-run.v1
+experiment_id: V2-TUNE-005
+run_id: CUB-TEXT-V1-DIAGNOSTIC
+dataset: CUB
+asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/openai_d05afc4_codex_roles_v1/asset_manifest.json
+asset_manifest_sha256: 6e54351f1249d1bea1f559d1237ece21450ef0e5d9314df0e863da740df24ec5
+base_role_name: text-v1
+role_variants:
+  - name: old-eight-role-diagnostic
+    path: /data/lby/projects/cv_project/gzsl-paper/data/cache/CUB_gpt55_8role_sentence_embeds.pt
+    sha256: e3b428a3588d4e715910e07472848de4641ddb7e37791edbe6c07f8681213663
+    class_order_sha256: 7b6ffe26103bfeb73324f328fac499d6ea7cfadfb2b56448b0df295aca22df38
+    class_order_evidence: config/tg_vpr_h1.yaml binds the same tensor SHA and Xian class_order_sha256; old encoder metadata lacks exact checkpoint SHA so this variant is diagnostic only
+official_test_loaded: false
+seen_images_only: true
+unseen_images_used: false
+diagnostic_no_model: true

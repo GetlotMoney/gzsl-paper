@@ -1,0 +1,28 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-038
+idea_id: IDEA-072
+framework_id: FRAMEWORK-V2
+title: Conservative Adaptive Sentence Routing
+base_commit: bb5a6a8b5318a29c9fbef445859f6be391d6dc8f
+code_commit: cba46825c4a010dc9952815b18e7d3e7068b4d7a
+status: supported_two_seed_strong_candidate
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-038_casr/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 0940f33ad2d81b7040c536830b4a968c1411ebef
+    config_ref: experiments/v2/innovation/INNOVATION-038_casr/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-038_casr/RUN-001
+    status: completed
+  - run_id: RUN-002
+    code_commit: c05c48117fdd15d2346be5928ecf09241d6e9619
+    config_ref: experiments/v2/innovation/INNOVATION-038_casr/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-038_casr/RUN-002
+    status: completed
+  - run_id: RUN-003
+    code_commit: cba46825c4a010dc9952815b18e7d3e7068b4d7a
+    config_ref: experiments/v2/innovation/INNOVATION-038_casr/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-038_casr/RUN-003
+    status: completed

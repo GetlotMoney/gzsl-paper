@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-018
+idea_id: IDEA-052
+framework_id: FRAMEWORK-V2
+title: Class-Normalized Patch Evidence
+base_commit: a6d27bc782963353a704a1c6bf4a9301e794962e
+code_commit: ea80ee2f8351b68e4b06d172b012b5b1dc61fea1
+status: rejected_below_ccpe
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-018_cnpe/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: ea80ee2f8351b68e4b06d172b012b5b1dc61fea1
+    config_ref: experiments/v2/innovation/INNOVATION-018_cnpe/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-018_cnpe/RUN-001
+    status: completed

@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,learned_beta,test_used_for_selection,output_uri,decision
+RUN-001,aaa26eb94cd66cd9259dbeecc2497a8e7f4fc9a9,experiments/v2/innovation/INNOVATION-032_bocr/configs/RUN-001.yaml,ca196ccc7a59d06457b7609467e136500475feaf32886cb85ae38b2b8657af1a,5,completed,75.559455,79.815209,77.629049,83.221674,4512,3.285816,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-032_bocr/RUN-001,drop_over_orthogonalized

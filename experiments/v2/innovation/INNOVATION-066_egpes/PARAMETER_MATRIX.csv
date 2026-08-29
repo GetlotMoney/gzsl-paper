@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,pair_count,train_threshold,selector_bias,test_used_for_selection,output_uri,decision
+RUN-001,6f7694f92a13ed38a782f265cceb86cfc91d2599,experiments/v2/innovation/INNOVATION-066_egpes/configs/RUN-001.yaml,c9af6a9416cddcf37a876e5817b4774e4e9405f43c24034e3ee76a012ea9e9ca,5,completed,76.747566,80.057371,78.367537,83.954543,141,386,0.542624,0.071393,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-066_egpes/RUN-001,drop_below_gwps

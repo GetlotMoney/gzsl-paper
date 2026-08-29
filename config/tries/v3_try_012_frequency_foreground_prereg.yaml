@@ -1,0 +1,35 @@
+schema_version: gzsl-paper.v3-frequency-foreground-prereg.v1
+experiment_id: V3-TRY-012
+idea_id: IDEA-142
+framework_id: FRAMEWORK-V3-EXPLORATION
+dataset: CUB
+parent_condition: V3-TRY-002-TG-BASE
+parent_code_commit: cd30797a5eab3aa6ed28bd04df0b17f413730063
+implementation_commit: ea802ec7d25a2a367d0f7ea5b58d051fc9ad92c3
+parent_metrics_percent:
+  U: 78.40787768363953
+  S: 74.98387098312378
+  H: 76.65765903827264
+  ZS: 86.14675998687744
+parent_cls_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/openai_d05afc4_codex_roles_v1/asset_manifest.json
+parent_cls_manifest_sha256: 6e54351f1249d1bea1f559d1237ece21450ef0e5d9314df0e863da740df24ec5
+parent_cls_asset_id: f61a4af0d7644477
+frequency_asset_output: /data/lby/projects/cv_project/GZSL_Warehouse/assets/rgve/CUB_openai_vitl14_336_frequency_foreground_v1
+patch_stage: last_transformer_block_post_ln_post_pre_projection
+fft_axis: feature_channel
+formulas: [repo, paper]
+per_channel_k: [1, 144, 288]
+gaussian_sigma: sqrt_hidden_dim
+paper_epsilon: 1.0e-06
+candidate_k: 3
+beta_values: [0.0, 0.05, 0.1, 0.2, 0.5, 1.0]
+local_normalization: center_only
+required_delta_h: 1.0
+max_us_gap: 8.0
+human_annotations_used: false
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+frequency_asset_manifest: pending_reviewed_generation
+diagnostic_output: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/frequency-foreground/V3-TRY-012

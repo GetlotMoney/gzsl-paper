@@ -1,0 +1,31 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-CONFIRM-006
+slug: chen_stagewise_pseudo_unseen
+kind: confirmation
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+framework_diagram: experiments/v2/confirmation/CONFIRM-006_chen_stagewise_pseudo_unseen/framework_diagram.html
+base_commit: e654af25d0f6e3f7fcfcda339e16cbedb3d00474
+code_commit: 63e0b29e6ff4366a6188e89291860fec08756eba
+research_question: 在最佳0.5迁移上限下，阶段2增加seen内部pseudo-unseen CE能否把无专家Chen-style H从76.006848推到77.023以上？
+status: completed_rejected
+evaluation_protocol: chen_shiming_code_aligned_stagewise_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+training_strategy: stagewise_fixed_boundaries_then_joint
+selection_scope: whole_run_whole_model_only
+nested_official_test_selection: false
+unique_change: stage2 adds 0.25 times pseudo-unseen CE over fixed three folds of the 150 seen classes
+server:
+  ssh_host: lab4090
+  gpu: 1
+  output_root: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-006_chen_stagewise_pseudo_unseen
+runs:
+  - run_id: RUN-001
+    condition: no_expert_stagewise_pseudo_unseen
+    code_commit: 63e0b29e6ff4366a6188e89291860fec08756eba
+    seed: 5
+    config_ref: experiments/v2/confirmation/CONFIRM-006_chen_stagewise_pseudo_unseen/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-006_chen_stagewise_pseudo_unseen/RUN-001
+    status: completed

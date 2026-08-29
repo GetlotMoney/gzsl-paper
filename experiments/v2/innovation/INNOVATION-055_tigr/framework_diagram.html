@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-055 TIGR</title></head>
+<body>
+<h1>TIGR：同族类内身份残差</h1>
+<p><strong>Base commit：</strong>60e3f837ae7c7a4cf9d96b11a6c98db94c5d208c；<strong>RUN code commit：</strong>039eacc194383a820d7b8ab56ebb27810763a55e。</p>
+<pre>CUB类别名最后词 → Warbler / Sparrow / Gull / Vireo ...族群
+每类身份方向 d_c = Norm(SDCR原型 p_c - 同族原型均值)
+
+冻结父logits + 固定beta×p_c + 可训练beta×d_c
+                                  ↑
+                           seen CE只训练1个标量</pre>
+<p>beta=0严格复现SDCR。与HGCS不同：HGCS加减组公共logit；TIGR只增加每类相对组中心的身份差异。</p>
+<p>族群完全由200个类别名文本确定；真实unseen图像不进入梯度。训练固定28,228次更新，每141次official test，按完整模型H保存best。</p>
+</body></html>

@@ -1,0 +1,5 @@
+run_id: RUN-005
+condition: +CRA
+source_ref: V2-TRY-104
+code_commit: c20f734cf910325ade95f2a8ef25c353c57f56fb
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-104

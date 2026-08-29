@@ -1,0 +1,22 @@
+schema_version: gtpj.experiment.v1
+experiment_id: V5-ABLATION-014
+framework_id: FRAMEWORK-V5
+source_experiment: V5-INNOVATION-024
+idea_id: IDEA-0021
+question: H1增益来自三组结构、单一Value路径、可学习组权重还是它们的组合
+seed: 7
+ablation_code_commit: 495b401b33e60be43036251534335cace706090b
+conditions:
+  - SINGLE-GROUP-VALUE
+  - THREE-GROUP-NO-VALUE
+  - THREE-GROUP-FIXED-EQUAL-VALUE
+  - FULL-H1-LEARNED-WEIGHTS
+status: completed
+run_commit: 4d81ab2600cd37e38a503fc80abbd80049e0f7b7
+formal_evidence: false
+not_confirmation_evidence: true
+conclusions:
+  three_group_delta_H_vs_single_group: 0.131688
+  value_delta_H: 6.376252
+  learned_weight_delta_H_vs_fixed_equal: -0.003517
+  decision: keep_three_groups_and_value_remove_learned_group_weights

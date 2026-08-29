@@ -1,0 +1,105 @@
+schema_version: gzsl-paper.paper-assets.v1
+code_semantics_commit: b7e25c2758da896411236c2ea60662439a01244b
+text_v2_derivation_commit: 4b660f5848c5d13584248a0de0b96ac6d54ec9a8
+canonical_class_name_derivation_commit: d0b3d6943b8f1ed5555df2dc48f0b0743ad12538
+bundle_naming:
+  canonical_visual_plus_role_text_v1:
+    description: 全局视觉特征、标签、类别顺序与第一版八角色文本特征的完整资产包
+  canonical_visual_plus_role_text_v2:
+    legacy_label: text_v2
+    description: 全局视觉特征、标签、类别顺序与第二版八角色文本特征的完整资产包
+  canonical_visual_plus_class_name_text_v2:
+    legacy_label: canonical_class_name_v2
+    description: 全局视觉特征、标签、类别顺序与从第二版文本冻结前缀派生的类别名特征资产包
+  canonical_visual_plus_role_text_v2_with_dynamic_visual_extensions_v1:
+    legacy_label: dynamic_v3
+    description: 视觉与第二版八角色文本完整资产包，额外包含patch、多层和增强视图；消费方按需读取
+clip:
+  implementation_commit: d05afc436d78f1c48dc0dbf8e5980a9d471f35f6
+  checkpoint_sha256: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02
+  model: ViT-L/14@336px
+datasets:
+  CUB:
+    logical_bundle_name: canonical_visual_plus_role_text_v1
+    asset_id: f61a4af0d7644477
+    manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/openai_d05afc4_codex_roles_v1/asset_manifest.json
+    manifest_sha256: 6e54351f1249d1bea1f559d1237ece21450ef0e5d9314df0e863da740df24ec5
+    role_text_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/frozen/CUB_role_texts.json
+    role_text_sha256: 80ab16ae6efe0ddecb3a687208d2a6625837a2ea63a46bb2ce063ec0400b23da
+    text_v2:
+      logical_bundle_name: canonical_visual_plus_role_text_v2
+      asset_id: 69c9c6d82a755fe8
+      parent_asset_id: f61a4af0d7644477
+      manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/69c9c6d82a755fe8/asset_manifest.json
+      manifest_sha256: 52c50c2f55250399bce360a218c30e70b66945953bec7e825e8dd8f20dddf91f
+      role_text_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/CUB/text-v2-bd935b8a4ed42d59/role_texts.json
+      role_text_sha256: bd935b8a4ed42d59c3a39c3f30bb99552c717ef18dadbf3349422b1cef728985
+    canonical_class_name_v2:
+      logical_bundle_name: canonical_visual_plus_class_name_text_v2
+      asset_id: 4aee52e1a1360969
+      parent_asset_id: 69c9c6d82a755fe8
+      manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/4aee52e1a1360969/asset_manifest.json
+      manifest_sha256: d734d69a40e946577e9dfdb9ffad2f764be6f89b29ef571fb183081afa5c8084
+      prompt_source: exact shared class-name prefix of frozen text-v2 role sentences
+    classes: 200
+    seen_classes: 150
+    unseen_classes: 50
+    train_images: 7057
+    test_seen_images: 1764
+    test_unseen_images: 2967
+  AWA2:
+    logical_bundle_name: canonical_visual_plus_role_text_v1
+    asset_id: 803b2f38aae164e5
+    manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/AWA2/openai_d05afc4_codex_roles_v1/asset_manifest.json
+    manifest_sha256: d391e4bc2014af79a9adbca3509b49f7883bac86a32b0e66e02df6a971b543dc
+    role_text_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/frozen/AWA2_role_texts.json
+    role_text_sha256: acfa1b07f60b31f61721bf393482814c74687c85bd2d2188a5476aa5cfbf4e98
+    text_v2:
+      logical_bundle_name: canonical_visual_plus_role_text_v2
+      asset_id: 7f0e1989635ca98d
+      parent_asset_id: 803b2f38aae164e5
+      manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/AWA2/7f0e1989635ca98d/asset_manifest.json
+      manifest_sha256: 554dd677e8e3e344633d9c2aa84b3e5a9aeebd941e0716e71b0fb39ed7496594
+      role_text_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/AWA2/text-v2-6842d00c1c41075d/role_texts.json
+      role_text_sha256: 6842d00c1c41075d9b550688b0145e3082c78f31f5c134faf8f4278ad71a6d50
+    canonical_class_name_v2:
+      logical_bundle_name: canonical_visual_plus_class_name_text_v2
+      asset_id: b72e978b7fc42fa0
+      parent_asset_id: 7f0e1989635ca98d
+      manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/AWA2/b72e978b7fc42fa0/asset_manifest.json
+      manifest_sha256: 5f4d286362750b04543ea30eee37b705cccea9711183baf82447995eeabfd1ef
+      prompt_source: exact shared class-name prefix of frozen text-v2 role sentences
+    classes: 50
+    seen_classes: 40
+    unseen_classes: 10
+    train_images: 23527
+    test_seen_images: 5882
+    test_unseen_images: 7913
+  SUN:
+    logical_bundle_name: canonical_visual_plus_role_text_v1
+    asset_id: baaea1e1bfdc31e4
+    manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/SUN/openai_d05afc4_codex_roles_v1/asset_manifest.json
+    manifest_sha256: 3e507e1cfdb02211748f891722d2f11af1d700312aa4ffa4cc90d0a2a41fcef6
+    role_text_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/frozen/SUN_role_texts.json
+    role_text_sha256: 0111e6f2eae2bc8d7d24519e5f98e89487b62af69c23bf64c9a6fbf1e9deb727
+    text_v2:
+      logical_bundle_name: canonical_visual_plus_role_text_v2
+      asset_id: bfe12cda3c37abdb
+      parent_asset_id: baaea1e1bfdc31e4
+      manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/SUN/bfe12cda3c37abdb/asset_manifest.json
+      manifest_sha256: 177406ac028226aa4358d2ac2015e2aa43748107b7f98283e8a749eda3fea676
+      role_text_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/SUN/text-v2-ce7df66c0f6c5f9a/role_texts.json
+      role_text_sha256: ce7df66c0f6c5f9a457f4ab60017b378a1080097e239685cfc78fc133b65086f
+    canonical_class_name_v2:
+      logical_bundle_name: canonical_visual_plus_class_name_text_v2
+      asset_id: 5e9c8308ebc5b075
+      parent_asset_id: bfe12cda3c37abdb
+      manifest_uri: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/SUN/5e9c8308ebc5b075/asset_manifest.json
+      manifest_sha256: 71601a83d42e8d647bdd6ae90dd3f60d4f549bf34a3376a05114c9ad9fb5fab5
+      prompt_source: exact shared class-name prefix of frozen text-v2 role sentences
+    classes: 717
+    seen_classes: 645
+    unseen_classes: 72
+    train_images: 10320
+    test_seen_images: 2580
+    test_unseen_images: 1440

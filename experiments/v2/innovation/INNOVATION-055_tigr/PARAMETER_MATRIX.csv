@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,identity_beta,group_count,grouped_classes,test_used_for_selection,output_uri,decision
+RUN-001,039eacc194383a820d7b8ab56ebb27810763a55e,experiments/v2/innovation/INNOVATION-055_tigr/configs/RUN-001.yaml,15a19c785c24a58c970ab470b675ba2e7a996397d649844a53349568f400116f,5,completed,76.747000,79.959893,78.320510,83.953977,-1,0.000000,37,167,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-055_tigr/RUN-001,drop_identity_direction_no_gain

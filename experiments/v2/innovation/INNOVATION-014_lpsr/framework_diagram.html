@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-014 LPSR</title></head>
+<body>
+<h1>LPSR：局部patch与局部文本残差对齐</h1>
+<p><strong>Base commit：</strong>90a84babdf8b1e782e99165dced3ecf4d2de7279；<strong>RUN-001 code commit：</strong>a19264e0f27c9c2f194b29ee04834e8a9c6e0cac（failed_runtime，未训练）；<strong>RUN-002 code commit：</strong>cd7c8ad9f70623beabbfc9b41f5c5a9b5ef653fb。</p>
+<h2>输入</h2>
+<p>父路径：冻结CLS[Ｂ,768] → TG-VPR/TST/CCGR → NCRA → SDRS → SEBC → 父logits[B,200]。新增路径读取冻结patch[B,576,768]以及八角色文本[200,8,768]，不训练CLIP。</p>
+<h2>新增数据流与公式</h2>
+<pre>patch_score = mean_abs(patch - mean(all_patches))
+local_image = Norm(mean(top64(patch_score)))
+local_text = Norm(mean(first_6_role_sentences))
+text_residual = Norm(local_text - proj_class_name(local_text))
+final_logits = SEBC_logits + beta × local_image @ text_residual.T
+beta = 10 × tanh(raw_beta)</pre>
+<p>raw_beta零初始化，关闭时逐值复现SEBC父模型。固定pooling预先计算为[N,768]，训练期间唯一可训练参数是raw_beta。</p>
+<h2>loss与评估边界</h2>
+<p>7,057张seen训练图像、batch50、28,228次随机更新、seen 150类CE；每141次更新评估official test，整次RUN只保存一个最高H权重。真实unseen patch不进入梯度。U/S/H为200类联合竞争，ZS为50类竞争；test_used_for_selection=true，不是blind-test。遗留CLIP patch准确checkpoint来源尚未补齐，因此feature_provenance_complete=false。</p>
+</body></html>

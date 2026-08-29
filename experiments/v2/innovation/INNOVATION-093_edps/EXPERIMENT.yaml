@@ -1,0 +1,34 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-093
+idea_id: IDEA-127
+framework_id: FRAMEWORK-V2
+title: Evidence-Dropout Pair Selector
+base_commit: 357860fcc3c17023f6e2bc26076ab2205b1d787e
+code_commit: null
+status: failed_runtime_closed_without_method_result
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-093_edps/framework_diagram.html
+runtime_failures:
+  - run_id: RUN-001
+    code_commit: a949408ae329f47a9488e3b2a09d89fbddf7ed3a
+    status: failed_runtime
+    reason: edps_schema_missing_from_twelve_feature_dispatch
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-093_edps/RUN-001
+  - run_id: RUN-001-RERUN
+    code_commit: cef2f96d1e5849756b0695f05a5cfec0c79b8885
+    status: failed_runtime
+    reason: edps_schema_still_missing_from_effective_feature_dispatch
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-093_edps/RUN-001-RERUN
+runs:
+  - run_id: RUN-001
+    code_commit: a949408ae329f47a9488e3b2a09d89fbddf7ed3a
+    config_ref: experiments/v2/innovation/INNOVATION-093_edps/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-093_edps/RUN-001
+    status: failed_runtime
+  - run_id: RUN-001-RERUN
+    code_commit: cef2f96d1e5849756b0695f05a5cfec0c79b8885
+    config_ref: experiments/v2/innovation/INNOVATION-093_edps/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-093_edps/RUN-001-RERUN
+    status: failed_runtime

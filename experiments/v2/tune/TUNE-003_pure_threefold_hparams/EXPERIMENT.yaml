@@ -1,0 +1,86 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-TUNE-003
+slug: pure_threefold_hparams
+kind: tune
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+base_commit: 21b58d64c795a59ea23511f71b8e63fa4b46f2c2
+code_commit: eebc7dc163228007012a4f4e6cef75fe2cc7cc47
+status: completed_hyperparameters_frozen
+research_question: 在不使用pseudo-unseen训练loss和official test的条件下，三模块超参数在150类纯三折validation上的mean/min/range是多少？
+evaluation_protocol: threefold_class_disjoint_gzsl_validation
+validation_used_for_selection: true
+test_used_for_selection: false
+official_test_loaded: false
+pseudo_unseen_images_used_for_gradient: false
+historical_test_informed_architecture: true
+strict_blind_claim: false
+final_test_eligible: false
+framework_diagram: experiments/v2/tune/TUNE-003_pure_threefold_hparams/framework_diagram.html
+split:
+  source_classes: trainval_loc_150_seen
+  fold_count: 3
+  pseudo_unseen_classes_per_fold: 50
+  pseudo_unseen_image_counts: [2351, 2353, 2353]
+  fold_sha256: b8d9878a166f3a232342e09b91d984d855aa8f14e0720098296d4f44a3640b3b
+runs:
+  - run_id: RUN-001
+    condition: baseline_topology_0_1_transport_1_5_ccgr_0_2
+    code_commit: eebc7dc163228007012a4f4e6cef75fe2cc7cc47
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-001
+    status: completed_baseline
+  - run_id: RUN-002
+    condition: topology_0_03
+    code_commit: 524cd553eaf76ca4daa5a49d6c296e46d078faad
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-002
+    status: completed_below_baseline
+  - run_id: RUN-003
+    condition: topology_0_2
+    code_commit: 524cd553eaf76ca4daa5a49d6c296e46d078faad
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-003
+    status: completed_h_gain_u_zs_drop
+  - run_id: RUN-004
+    condition: transport_0_5
+    code_commit: b1a4182e2f9976194fd8aa9457c34e1a38df9917
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-004.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-004
+    status: completed_u_bias_low_h
+  - run_id: RUN-005
+    condition: transport_1_0
+    code_commit: b1a4182e2f9976194fd8aa9457c34e1a38df9917
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-005.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-005
+    status: completed_below_baseline
+  - run_id: RUN-006
+    condition: generator_magnitude_0_05
+    code_commit: bec30ab29eac329d748b29fa784c9bd3d8c02587
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-006.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-006
+    status: completed_u_drop
+  - run_id: RUN-007
+    condition: generator_magnitude_0_1
+    code_commit: bec30ab29eac329d748b29fa784c9bd3d8c02587
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-003_pure_threefold_hparams/configs/RUN-007.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-003_pure_threefold_hparams/RUN-007
+    status: completed_h_zs_gain_u_drop
+selected_hyperparameters:
+  source_run: RUN-001
+  selected_epoch: 17
+  topology_weight: 0.1
+  max_transport_step: 1.5
+  max_generator_magnitude: 0.2
+  mean_H: 76.113854
+  mean_U: 74.925892
+  mean_ZS: 79.673799
+  min_H: 75.703050
+  range_H: 1.032817

@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-046 R-MGSR</title></head>
+<body>
+<h1>R-MGSR：系数正则化多几何路由</h1>
+<p><strong>Base commit：</strong>5cedbf0a1996e49f61480461297568166395c74f；<strong>RUN-001 code commit：</strong>21b3924dd8f5572813351b1f1599da55fe6a99cf；<strong>RUN-002 code commit：</strong>c61a5b07a52b7b63b0a0d763676a718b8e16d9c9。</p>
+<pre>MGSR四个纯文本几何特征 → 4个共享系数 → 类别句权重 → 残差logits
+训练loss = seen CE + 0.01×KL(类别权重 || SDCR全局权重)
+                    + 0.05×mean(共享系数²)</pre>
+<p>相对MGSR唯一变化是直接限制共享系数幅度，不再继续缩小输出上限；关闭L2项时回到MGSR公式。</p>
+<p>冻结所有父模块，只用7,057张seen图像训练；28,228次更新，每141次official test并按整模型H保存best。unseen图像不进入梯度；test_used_for_selection=true；strict_blind_claim=false。</p>
+</body></html>

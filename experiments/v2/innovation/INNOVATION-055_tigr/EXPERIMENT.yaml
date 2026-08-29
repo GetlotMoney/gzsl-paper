@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-055
+idea_id: IDEA-089
+framework_id: FRAMEWORK-V2
+title: Taxonomic Intra-Group Residual
+base_commit: 60e3f837ae7c7a4cf9d96b11a6c98db94c5d208c
+code_commit: 039eacc194383a820d7b8ab56ebb27810763a55e
+status: rejected_identity_direction_no_gain
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-055_tigr/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 039eacc194383a820d7b8ab56ebb27810763a55e
+    config_ref: experiments/v2/innovation/INNOVATION-055_tigr/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-055_tigr/RUN-001
+    status: completed_failed_parent_only

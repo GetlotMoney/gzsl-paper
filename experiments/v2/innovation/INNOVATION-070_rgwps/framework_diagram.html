@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-070 R-GWPS</title></head>
+<body>
+<h1>R-GWPS：角色感知成对选择器</h1>
+<p><strong>Base commit：</strong>845ec3dfb76bea0a4a72a1dbb5b57ef81bc8af3e；<strong>RUN-001 code commit：</strong>04aa3dfd95c40f65581ac2725ca7ceb56b521182。</p>
+<pre>seen图像缓存
+  ├─ parent margin / Claude差 / merge差 / 类名差
+  └─ GPT-5.6八个角色句分别计算top1-top2差值
+                         ↓
+              Linear(12,1) bounded selector
+                         ↓
+      仅修正同族低margin top1/top2最终logits
+                         ↓
+       200-way U/S/H；50-way ZS</pre>
+<p>训练输入只含150个seen类的7,057张图像；八句与其余文本只提供语义原型。真实unseen图像不进入梯度。official test按陈使明公开代码方式每141步评估并选择整模型最高H，明确test_used_for_selection=true。</p>
+<p>相对base唯一变化：把八个角色句的独立top1/top2分歧加入S-GWPS线性选择器；不读取patch cache。</p>
+</body></html>

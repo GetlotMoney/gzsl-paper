@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-056 TWLS</title></head>
+<body>
+<h1>TWLS：同族logit差值缩放</h1>
+<p><strong>Base commit：</strong>c27dc9c1f9495ac3b8a90bfe5323a6e53124264d；<strong>RUN code commit：</strong>6e140c3c06efd1b971b54af13065ba585c7e0d6f。</p>
+<pre>最终SDCR logits → 按类别名族群切片
+每组：centered = logits_group - mean(logits_group)
+      logits_group' = logits_group + alpha × centered
+
+组均值严格不变；alpha>0放大族内差值，alpha<0收缩
+seen CE只训练1个alpha，范围[-1,1]</pre>
+<p>alpha=0严格复现SDCR。与HGCS/TIGR不同，本实验不新增语义原型或组公共logit，只校准最终族内竞争margin。</p>
+<p>真实unseen图像不进入梯度；训练固定28,228次更新，每141次official test，按完整模型H保存best。</p>
+</body></html>

@@ -1,0 +1,19 @@
+schema_version: gzsl-paper.ara.v3
+attempt_id: V2-TRY-097
+idea_id: IDEA-029
+framework_id: FRAMEWORK-V2
+base_config: config/tg_vpr_h1.yaml
+ccgr_model: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-078/ccgr_model.pth
+ccgr_model_sha256: 5a7a53dd0a8674b6b088afe023e63de0a3a50a5f4a21cf72ba370973a20af9e4
+ccgr_enabled: false
+sdm_model: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-086/sdm_model.pth
+sdm_model_sha256: e1aa1342b05cfb8d319cd87e5708548a97cf450eb9fb179e8a5acb80f77748d6
+sdm_enabled: false
+seed: 17
+epochs: 20
+batch_size: 256
+lr: 0.01
+weight_decay: 0.0
+ridge: 0.01
+max_beta: 20.0
+parent_metrics_percent: {U: 74.31902885437012, S: 80.06812930107117, H: 77.08653599090839, ZS: 81.4302384853363}

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-045 MGSR</title></head>
+<body>
+<h1>MGSR：多几何类别句子路由</h1>
+<p><strong>Base commit：</strong>4e4734b0f0885d9cccfd7f99488653b4b3bd0419；<strong>RUN-001 code commit：</strong>7e5911f29a03faa0d7b663210d9d5ea47b5bf676。</p>
+<h2>结构</h2>
+<pre>每类×每句的4个纯文本几何量
+  ①句子-类名cos  ②句子-TG父原型cos
+  ③句子-类内八句中心cos  ④句子-seen同角色中心cos
+                  ↓  seen统计标准化
+          共享4维系数 + tanh受限残差
+                  ↓
+SDCR全局句权重 → 每类八句权重 → 正交类名残差原型
+                  ↓
+冻结父logits + beta×残差logits → 150类seen CE + 0.01×KL</pre>
+<p>关闭共享系数时严格复现SDCR；推理时同一纯文本规则同时生成seen与unseen类别权重。</p>
+<h2>训练与评估边界</h2>
+<p>冻结TG-VPR/NTR/CCGR、SEBC与SDCR父解，仅训练4个共享几何系数。使用7,057张seen图像、batch 50、28,228次更新；每141次official test并按整模型H保存唯一best。unseen图像不进入梯度；test_used_for_selection=true；strict_blind_claim=false。</p>
+</body></html>

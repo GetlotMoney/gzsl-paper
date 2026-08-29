@@ -1,0 +1,11 @@
+# V2 Tune
+
+| Experiment | 目的 | 状态 | 目录 |
+|---|---|---|---|
+| V2-TUNE-001 | 标准类别不相交validation上的无专家/专家双路线 | topology axis closed | `TUNE-001_standard_clip_validation/` |
+| V2-TUNE-002 | 三模块内层语义平衡三折 + 外层标准validation | closed; no gain | `TUNE-002_nested_three_module_validation/` |
+| V2-TUNE-003 | 150类纯三折超参数validation | completed; RUN-001 selected | `TUNE-003_pure_threefold_hparams/` |
+| V2-TUNE-004 | 三数据集Chen-style顺序超参数搜索 | planned topology coarse | `TUNE-004_multidataset_chen_hparams/` |
+| V2-TUNE-005 | 三数据集seen-only文本资产诊断与text-v2选择 | completed text-v1 diagnostic | `TUNE-005_seen_only_text_assets/` |
+| V2-TUNE-006 | CLIP锚定text-v2的seen-only恢复验证 | phase 1 completed; phase 2 planned | `TUNE-006_text_v2_recovery/` |
+| V2-TUNE-007 | text-v2 Stagewise三数据集顺序超参数搜索 | topology coarse completed; paused | `TUNE-007_text_v2_chen_hparams/` |

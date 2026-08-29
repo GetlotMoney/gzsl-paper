@@ -1,0 +1,49 @@
+schema_version: gzsl-paper.framework.v1
+framework_id: FRAMEWORK-V4
+framework_ref: v4
+framework_branch: framework/v4
+framework_tag: v4
+framework_diagram: experiments/v4/framework_diagram.html
+method_name: TG+GTD
+method_full_name: Tri-Group Prototype Learning with Geodesic Target Distillation
+derived_from_framework: FRAMEWORK-V3-EXPLORATION
+source_idea: IDEA-146
+code_semantics_commit: 4013cca894b00933f6bfed0a125690c66e54cba1
+owner_promotion_decision: promote_tg_plus_gtd_as_framework_v4_2026-08-28
+status: promoted_with_three_dataset_evidence
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+training_entry: model/frameworks/v4/train.py
+training_entry_scope: reproduce_promoted_v3_runs_only
+v4_base_training_config: not_created
+asset_bundle_name: canonical_visual_plus_role_text_v2
+modules:
+  - TG tri-group seen prototype learning
+  - GTD detached seen-class oracle target construction
+  - GTD shared geodesic ratio gate
+  - true-unseen-only spherical prototype transport
+  - exact theta-zero TG fallback
+  - cosine GZSL classifier with dataset-specific class axis
+evidence:
+  CUB:
+    primary_run: V3-TRY-041
+    control_run: V3-TRY-040
+    run_code_commit: 4d46ba1ef8d1c53c0e7fd5c5623f3c56af6dc1b2
+    H: 78.119641
+    same_checkpoint_delta_H: 1.470620
+    evidence_status: owner_accepted_matched_local_confirmation
+  AWA2:
+    primary_run: V3-TRY-046
+    run_code_commit: 4013cca894b00933f6bfed0a125690c66e54cba1
+    H: 96.372177
+    same_checkpoint_delta_H: 0.0
+    evidence_status: two_round_reviewed_server_confirmation_neutral_gtd_boundary
+  SUN:
+    primary_run: V3-TRY-047
+    run_code_commit: 4013cca894b00933f6bfed0a125690c66e54cba1
+    H: 73.341746
+    same_checkpoint_delta_H: 3.099005
+    evidence_status: two_round_reviewed_server_confirmation

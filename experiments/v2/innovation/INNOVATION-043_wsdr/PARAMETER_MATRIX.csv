@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,weight_std,weight_min,weight_max,test_used_for_selection,output_uri,decision
+RUN-001,c232076171119f318e8c830d08214e584ea2c5b7,experiments/v2/innovation/INNOVATION-043_wsdr/configs/RUN-001.yaml,caa235a60f0ee9574472a1764f98f0f02363d2bd97e392b24fc49a315469f322,5,completed,76.679766,79.959893,78.285486,83.920646,18189,0.055120,0.046175,0.234550,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-043_wsdr/RUN-001,drop_below_sdcr

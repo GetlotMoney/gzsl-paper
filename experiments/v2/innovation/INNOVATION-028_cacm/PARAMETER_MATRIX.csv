@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,weight_mean,weight_std,test_used_for_selection,output_uri,decision
+RUN-001,d8b5b63c5ef04ffcb9132298e90840a13d3585f9,experiments/v2/innovation/INNOVATION-028_cacm/configs/RUN-001.yaml,b624a56106a4671df0296bba5340c0af1484a71f445c818231d1149570a3ce90,5,completed,75.997263,79.715264,77.811876,83.523118,3102,0.990835,0.000207,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-028_cacm/RUN-001,drop_constant_endpoint

@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,local_count,source_weight_norm,test_used_for_selection,output_uri,decision
+RUN-001,7f0e9f703adae64aebf63e0a78624259670453ba,experiments/v2/innovation/INNOVATION-085_lscr/configs/RUN-001.yaml,d3fb1b42e527e40ac209e201dc3d3263eb77721e1116d65dca583a07fb16974d,5,completed,76.747000,79.959893,78.320510,83.953977,-1,5241,0.000000,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-085_lscr/RUN-001,drop_best_parent

@@ -1,0 +1,5 @@
+run_id,condition,seed,code_commit,U,S,H,ZS,delta_H_previous,delta_H_base,output_uri
+RUN-001,TG-VPR,7,3dc078c0d52bf358bf24a26e48346c97de9e99ca,72.655779,75.443041,74.023182,81.534684,0.000000,0.000000,/data/lby/projects/cv_project/GZSL_Warehouse/runs/v2/CONFIRM-001_v2_baseline/RUN-001
+RUN-002,TG-VPR+TST,7,0b919b14f052ec5e3f99378383e94053a2cf45ae,74.225152,79.957026,76.984545,81.264132,2.961363,2.961363,/data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-015
+RUN-003,TG-VPR+TST+NTR,7,42cd4457a65f89023ff342ba13679471d5db0942,74.319029,80.068129,77.086536,81.430238,0.101991,3.063354,/data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-028
+RUN-004,TG-VPR+TST+NTR+CCGR,7,5e2038ef963c0a55d7c53580bbb1cdf33aa77267,74.429679,80.583262,77.384331,81.815892,0.297795,3.361149,/data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-060

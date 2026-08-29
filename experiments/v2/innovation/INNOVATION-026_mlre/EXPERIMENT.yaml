@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-026
+idea_id: IDEA-060
+framework_id: FRAMEWORK-V2
+title: Merged-LLM Residual Evidence
+base_commit: d281f8b01b6ebeae58c922516bdc3b00a06d6656
+code_commit: ef33cf34b245ef05e7574330303a3b530895e60e
+status: supported_weak_H_candidate
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-026_mlre/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: ef33cf34b245ef05e7574330303a3b530895e60e
+    config_ref: experiments/v2/innovation/INNOVATION-026_mlre/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-026_mlre/RUN-001
+    status: completed

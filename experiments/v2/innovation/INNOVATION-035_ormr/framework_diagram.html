@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-035 ORMR</title></head>
+<body>
+<h1>ORMR：GPT-5.6 role-matched正交残差</h1>
+<p><strong>Base commit：</strong>597c012d6c4545c58a1a50ad17c604a21bf1be5f；<strong>RUN-001 code commit：</strong>8ef8605f2ed1682b3082e87bda515590018fea7e。</p>
+<h2>输入与正交化</h2>
+<pre>role_mean_c = Norm(mean(GPT56_rolematched_7_sentences_c))
+name_c = Norm(class_name_c)
+unique_c = Norm(role_mean_c - (role_mean_c·name_c) name_c)
+final_logits = SEBC_logits + beta × Norm(image_CLS) @ unique.T
+beta = 20 × tanh(raw_beta)</pre>
+<p>与OCLR唯一结构差异是语义来源；raw_beta零初始化，关闭时严格复现SEBC。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新official test选全局best。unseen文本允许使用、unseen图像不进入梯度；test_used_for_selection=true。GPT-5.6 cache准确prompt provenance未完整。</p>
+</body></html>

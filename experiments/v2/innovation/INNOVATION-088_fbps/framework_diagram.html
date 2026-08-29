@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-088 FBPS</title></head>
+<body>
+<h1>FBPS：焦点边界成对选择器</h1>
+<p><strong>Base commit：</strong>bede006f8ce3c362296c816db95ffc55dba8c096；<strong>RUN-001 code commit：</strong>fbee96469caec6c4fa7a38f460d08f7443d5440e；<strong>RUN-002 code commit：</strong>082fd02d5400f9360296971508826cb345e14c04。</p>
+<pre>稳定SNPS全部相关pair（不删样本）
+→ pair CE × (1 - p_true)²
+→ 容易正确top1自动降权
+→ 困难错误pair保留高梯度
+
+原12维selector与推理公式不变
+→ 200-way U/S/H；50-way ZS</pre>
+<p>相比MHPS，本方法保留全部4,4xx样本；相比逆频率平衡，不引入大类别权重。训练仅使用seen图像，official test按陈式协议选择最高H。</p>
+</body></html>

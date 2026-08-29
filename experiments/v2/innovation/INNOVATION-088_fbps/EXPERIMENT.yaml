@@ -1,0 +1,23 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-088
+idea_id: IDEA-122
+framework_id: FRAMEWORK-V2
+title: Focal Boundary Pair Selector
+base_commit: bede006f8ce3c362296c816db95ffc55dba8c096
+code_commit: fbee96469caec6c4fa7a38f460d08f7443d5440e
+status: rejected_not_two_seed_consistent
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-088_fbps/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: fbee96469caec6c4fa7a38f460d08f7443d5440e
+    config_ref: experiments/v2/innovation/INNOVATION-088_fbps/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-088_fbps/RUN-001
+    status: completed_weak_positive
+  - run_id: RUN-002
+    code_commit: 082fd02d5400f9360296971508826cb345e14c04
+    config_ref: experiments/v2/innovation/INNOVATION-088_fbps/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-088_fbps/RUN-002
+    status: completed_below_top3

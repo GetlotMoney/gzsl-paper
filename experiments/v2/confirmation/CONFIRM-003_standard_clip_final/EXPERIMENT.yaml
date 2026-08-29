@@ -1,0 +1,41 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-CONFIRM-003
+slug: standard_clip_final
+kind: confirmation
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+framework_diagram: experiments/v2/confirmation/CONFIRM-003_standard_clip_final/framework_diagram.html
+base_commit: f19e5bc6332dfe0fc37dda61cfee3724e23a5143
+code_commit: 265513ab684ca4ba6b23644288ee966e7e3086a5
+research_question: validation冻结后的无专家与专家CLIP-GZSL路线在完整trainval重训后得到什么official U/S/H/ZS？
+status: completed_owner_authorized_final_evaluation
+evaluation_protocol: xlsa17_ps_gzsl_after_validation_freeze
+test_used_for_selection: false
+owner_authorized_final_test: "2026-08-23"
+feature_provenance_complete: false
+historical_test_informed_architecture: true
+strict_blind_claim_eligible: false
+server:
+  ssh_host: lab4090
+  gpu: 1
+  repository: /data/lby/projects/cv_project/gzsl-paper
+  output_root: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-003_standard_clip_final
+runs:
+  - run_id: RUN-001
+    condition: no_expert_validation_frozen
+    validation_ref: V2-TUNE-001/RUN-001
+    selected_epoch: 24
+    code_commit: 265513ab684ca4ba6b23644288ee966e7e3086a5
+    seed: 7
+    config_ref: experiments/v2/confirmation/CONFIRM-003_standard_clip_final/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-003_standard_clip_final/RUN-001
+    status: completed
+  - run_id: RUN-002
+    condition: expert_validation_frozen
+    validation_ref: V2-TUNE-001/RUN-006
+    selected_epoch: 22
+    code_commit: 265513ab684ca4ba6b23644288ee966e7e3086a5
+    seed: 7
+    config_ref: experiments/v2/confirmation/CONFIRM-003_standard_clip_final/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-003_standard_clip_final/RUN-002
+    status: completed

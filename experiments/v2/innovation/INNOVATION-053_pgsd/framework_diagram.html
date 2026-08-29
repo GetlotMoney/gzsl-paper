@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-053 PGSD</title></head>
+<body>
+<h1>PGSD：patch引导的句子dropout训练</h1>
+<p><strong>Base commit：</strong>1562f4ca29d95bdbde344f94a7b2dbbf0f2ad3f3；<strong>RUN code commit：</strong>a00f6b7aa2067e24a14995096f79977aef214029。</p>
+<pre>仅train图像patch → 每类top2分数 → 真类相对可靠性z
+sample weight = 1 + 0.25×tanh(z) ∈ [0.75,1.25]
+
+训练：weighted seen CE + 0.01×SDCR KL，只更新8维句权重
+推理：原始SDCR完整8句，不读取任何patch</pre>
+<p>真实unseen图像与patch均不进入梯度；official test评估阶段只使用原始全局特征和SDCR，patch完全退出推理。</p>
+<p>训练固定batch 50、28,228次更新、每141次official test，整次RUN按完整模型H保存一个best。test_used_for_selection=true；strict_blind_claim=false。</p>
+</body></html>

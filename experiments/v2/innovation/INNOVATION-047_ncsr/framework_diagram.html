@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-047 NCSR</title></head>
+<body>
+<h1>NCSR：近邻对比语义残差</h1>
+<p><strong>Base commit：</strong>a18340587bb8a9a661f3518fe194a6294147768a；<strong>RUN-001 code commit：</strong>fbd90f5235a14264f08039f849b681f7c7dc4371；<strong>RUN-002 code commit：</strong>eea1e47ea467fe9b37ff9c930d15054dcf1fc70c。</p>
+<pre>SDCR每类语义原型 p_c
+       ├─ 计算200类语义相似度并排除自身
+       ├─ 取top-5近邻均值 n_c
+       └─ d_c = Norm((p_c - n_c) 在 p_c 正交补空间的分量)
+
+冻结父logits + beta×image·p_c + gamma×image·d_c
+                                     ↑
+                          seen CE只训练1个有界gamma</pre>
+<p>gamma=0严格复现SDCR。近邻和判别方向只由文本原型产生；真实unseen图像不进入梯度。</p>
+<p>训练固定batch 50、28,228次更新、每141次official test，整次RUN只按完整模型H保存一个best。test_used_for_selection=true；strict_blind_claim=false。</p>
+</body></html>

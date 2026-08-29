@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-018 CNPE</title></head>
+<body>
+<h1>CNPE：按seen参考分布归一化局部证据</h1>
+<p><strong>Base commit：</strong>a6d27bc782963353a704a1c6bf4a9301e794962e；<strong>RUN-001 code commit：</strong>ea80ee2f8351b68e4b06d172b012b5b1dc61fea1。</p>
+<h2>父路径</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC，输出[B,200]父logits。CNPE替代CCPE局部分支。</p>
+<h2>类别归一化局部证据</h2>
+<pre>raw_score_ic = mean(top2_n cos(patch_in, orthogonal_local_text_c))
+mu_c, sigma_c = statistics over 7057 seen training images
+normalized_score_ic = (raw_score_ic - mu_c) / sigma_c
+final_logits = SEBC_logits + beta × normalized_score
+beta = 2 × tanh(raw_beta)</pre>
+<p>均值/标准差对200个类别分别估计；unseen类的参考分布同样只来自seen图像，因此不使用真实unseen图像训练。raw_beta零初始化，关闭时严格复现SEBC。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新评估official test并保存一个全局最高H。真实unseen patch不进入梯度；test_used_for_selection=true。遗留CLIP patch准确checkpoint provenance仍不完整。</p>
+</body></html>

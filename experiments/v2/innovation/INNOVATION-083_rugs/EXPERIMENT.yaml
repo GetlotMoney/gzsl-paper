@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-083
+idea_id: IDEA-117
+framework_id: FRAMEWORK-V2
+title: Role Uncertainty-Gated Selector
+base_commit: f757219ac0949214d51b1e90fb4d28aadfcda7be
+code_commit: 9773f9f21f5639a36a79ce333337af430dd32762
+status: rejected_gamma_zero
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-083_rugs/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 9773f9f21f5639a36a79ce333337af430dd32762
+    config_ref: experiments/v2/innovation/INNOVATION-083_rugs/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-083_rugs/RUN-001
+    status: completed_no_gain

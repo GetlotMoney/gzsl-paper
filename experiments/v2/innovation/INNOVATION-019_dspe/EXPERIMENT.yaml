@@ -1,0 +1,33 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-019
+idea_id: IDEA-053
+framework_id: FRAMEWORK-V2
+title: Dual-Scale Patch Evidence
+base_commit: 3462a34b2333dce828f12acb8c3303ee99cfa810
+code_commit: 0f98eb0ab0977d2f12a4d5e6e614ba68687f45b6
+status: rejected_no_complementarity
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-019_dspe/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 223a6f5ce2edd3a1d9db60ac2cbae68587feb7fd
+    config_ref: experiments/v2/innovation/INNOVATION-019_dspe/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-019_dspe/RUN-001
+    status: failed_runtime
+  - run_id: RUN-002
+    code_commit: b89018a4588bc71c47cf3a7af8b8efcf3cf830b6
+    config_ref: experiments/v2/innovation/INNOVATION-019_dspe/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-019_dspe/RUN-002
+    status: completed
+  - run_id: RUN-003
+    code_commit: 4af27ab24c20bdb3154dbf0832b182ed7dfa59fa
+    config_ref: experiments/v2/innovation/INNOVATION-019_dspe/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-019_dspe/RUN-003
+    status: failed_runtime
+  - run_id: RUN-004
+    code_commit: 0f98eb0ab0977d2f12a4d5e6e614ba68687f45b6
+    config_ref: experiments/v2/innovation/INNOVATION-019_dspe/configs/RUN-004.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-019_dspe/RUN-004
+    status: completed

@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-040
+idea_id: IDEA-074
+framework_id: FRAMEWORK-V2
+title: Image-Conditioned Conservative Sentence Routing
+base_commit: 943554e302f5a5338daa596e6fe666eaa580f6a8
+code_commit: 84d417ed05ecb13980793b26717786b4ab99cb1f
+status: rejected_dynamic_collapse
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-040_icsr/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 84d417ed05ecb13980793b26717786b4ab99cb1f
+    config_ref: experiments/v2/innovation/INNOVATION-040_icsr/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-040_icsr/RUN-001
+    status: completed

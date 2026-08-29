@@ -1,0 +1,12 @@
+schema_version: gzsl-paper.text-diagnostic-run.v1
+experiment_id: V2-TUNE-006
+run_id: SUN-TEXT-V2-DIAGNOSTIC
+dataset: SUN
+asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/SUN/bfe12cda3c37abdb/asset_manifest.json
+asset_manifest_sha256: 177406ac028226aa4358d2ac2015e2aa43748107b7f98283e8a749eda3fea676
+base_role_name: text-v2
+role_variants: []
+official_test_loaded: false
+seen_images_only: true
+unseen_images_used: false
+diagnostic_no_model: true

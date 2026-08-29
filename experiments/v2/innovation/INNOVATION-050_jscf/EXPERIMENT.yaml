@@ -1,0 +1,30 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-050
+idea_id: IDEA-084
+framework_id: FRAMEWORK-V2
+title: Joint Semantic Coordination Fine-Tuning
+base_commit: dce549ffbb507eefd375c1b324403854cbcc5561
+code_commit: 7ae32fce2403b567903c7ee539e1ef7b81fb330e
+status: rejected_coordination_no_gain
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-050_jscf/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 7ae32fce2403b567903c7ee539e1ef7b81fb330e
+    config_ref: experiments/v2/innovation/INNOVATION-050_jscf/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-050_jscf/RUN-001
+    status: completed_failed_sebc_drift
+  - run_id: RUN-002
+    code_commit: 930be73d798715742e8840d681f5491bc81e1615
+    config_ref: experiments/v2/innovation/INNOVATION-050_jscf/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-050_jscf/RUN-002
+    status: completed_failed_sdrs_drift
+  - run_id: RUN-003
+    code_commit: f446443ac550c0c99f9b97ddeef1ad5e3c700c5b
+    config_ref: experiments/v2/innovation/INNOVATION-050_jscf/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-050_jscf/RUN-003
+    status: completed_failed_parent_only
+    attempt_no: RESCUE-2
+    attempt_no: RESCUE-1

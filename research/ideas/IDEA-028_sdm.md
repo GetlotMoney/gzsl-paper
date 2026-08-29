@@ -1,0 +1,37 @@
+# IDEA-028：SDM对称对角度量
+
+```yaml
+idea_id: IDEA-028
+source_type: representation_metric_reframing
+evidence_refs: [V2-TRY-069, V2-TRY-075, V2-TRY-078, V2-TRY-085]
+base_commit: 00d6151934e186c979d69bc86a1fa257fdddc42b
+problem: 当前余弦距离等权使用768个CLIP维度，且unseen域内错误14.00%；只适配图像会产生seen偏置，继续微调CCGR也已到局部最优。
+hypothesis: 对图像和原型同步学习有界正对角度量，可重标定细粒度判别维度，同时避免图像单边适配造成的跨模态漂移。
+core_change: 冻结TG-VPR/TST/NTR/CCGR，训练中心化log权重范围+-0.1的768维对角度量；同一权重同时作用于图像和原型，epoch 0严格回到TRY-078。
+success_condition: seed17最高H超过77.572682%，U/S任一下降不超过2个百分点，权重不全部顶到边界。
+failure_condition: 首次TRY和最多3次方法级补救后仍不超过当前最高结果。
+status: supported
+paper_core_innovation: false
+parent_condition: V2-TRY-078 / TG-VPR + TST + NTR + CCGR
+current_attempt: none
+last_attempt: V2-TRY-091
+last_decision: keep_as_auxiliary_refinement
+```
+
+SDM只用150个seen类的三折pseudo-unseen episode训练；true-unseen图像仅用于项目允许的逐epoch选择，不进入梯度。若有效，它作为最终共享度量层连接图像与CCGR原型，不改变三项核心创新逻辑。
+
+## V2-TRY-086结果
+
+第2轮得到`U=74.652368%`、`S=80.818135%`、`H=77.612988%`、`ZS=82.173079%`，相对TRY-078的`Delta H=+0.040306`并成为新最高；ZS提高`0.335044`，说明共享度量确实增强了域内细粒度判别。权重范围`[0.955329,1.021291]`远未触及边界，瓶颈是纯对角度量无法表达维度交互。补救1将保持对称变换和零初始化，增加受控低秩交互。
+
+## V2-TRY-087结果
+
+冻结对角度量后训练rank-64低秩主方向，loss从`0.724616`降到`0.686161`，说明低秩参数实际更新；但所有非零epoch均低于父模型，最高仅`77.552835%`，最终选回epoch 0。失败来自低秩方向无法由冻结对角基补偿。补救2保持rank、学习率和边界不变，只允许对角与低秩权重联合更新。
+
+## V2-TRY-088结果与低秩止损
+
+联合训练对角与rank-64权重后，loss继续下降但official H持续低于父模型，最终仍选epoch 0。冻结与联合两种低秩路径均失败，停止低秩补救并保留TRY-086纯对角SDM；下一步只做不同父CCGR训练seed的可靠性验证。
+
+## 四训练seed可靠性结论
+
+父CCGR Gate训练seed 7/17/27/37上的SDM `Delta H=+0.013633/+0.040306/+0.024673/+0.000000`，三组正增益、一组由epoch 0保持不变，无负增益；候选H mean/min/max/range=`77.565783/77.503927/77.612988/0.109061`。IDEA-028标记`supported`但`paper_core_innovation=false`：它是稳定共享度量优化，不单列为第四个论文核心模块，后续在最终组合消融中报告开关结果。

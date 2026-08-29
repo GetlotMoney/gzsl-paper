@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-084 NDPS</title></head>
+<body>
+<h1>NDPS：语义邻域密度成对选择器</h1>
+<p><strong>Base commit：</strong>f56e141b51add526ab0819608a965c5f039e03f0；<strong>RUN-001 code commit：</strong>1e2228bf9ee6a0d2c21e367e94fcdff5f0317a21；<strong>RUN-002 code commit：</strong>3ac859bc1396a9b7715f52281c64cfdf757ae601。</p>
+<pre>SNPS union top-3无向语义图
+→ 每类degree
+→ 第13维 log(1+degree_top1)-log(1+degree_top2)
+
+稳定SNPS 12维 + 邻域密度差
+→ Linear(13,1) pair修正
+→ 200-way U/S/H；50-way ZS</pre>
+<p>度数表示类别所处语义区域的拥挤程度，纯文本构建；训练仍只使用seen图像，official test按陈式协议选择最高H。</p>
+</body></html>

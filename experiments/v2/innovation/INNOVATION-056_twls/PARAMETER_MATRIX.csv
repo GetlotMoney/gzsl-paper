@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,within_group_alpha,group_count,grouped_classes,test_used_for_selection,output_uri,decision
+RUN-001,6e140c3c06efd1b971b54af13065ba585c7e0d6f,experiments/v2/innovation/INNOVATION-056_twls/configs/RUN-001.yaml,c0ba0745552f98d3207164fbfa2e38d98a8c0ce515342df5bed1f727df894b7b,5,completed,76.747000,79.959893,78.320510,83.953977,-1,0.000000,37,167,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-056_twls/RUN-001,drop_uniform_sharpening

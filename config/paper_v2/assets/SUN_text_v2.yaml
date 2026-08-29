@@ -1,0 +1,8 @@
+schema_version: gzsl-paper.clip-text-asset-derivation.v1
+dataset: SUN
+parent_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/SUN/openai_d05afc4_codex_roles_v1/asset_manifest.json
+parent_manifest_sha256: 3e507e1cfdb02211748f891722d2f11af1d700312aa4ffa4cc90d0a2a41fcef6
+role_texts: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/SUN/text-v2-ce7df66c0f6c5f9a/role_texts.json
+role_texts_sha256: ce7df66c0f6c5f9a457f4ab60017b378a1080097e239685cfc78fc133b65086f
+clip_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_checkpoints/ViT-L-14-336px.pt
+clip_checkpoint_sha256: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02

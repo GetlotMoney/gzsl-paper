@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-093 EDPS</title></head>
+<body>
+<h1>EDPS：证据Dropout成对选择器</h1>
+<p><strong>Base commit：</strong>357860fcc3c17023f6e2bc26076ab2205b1d787e；<strong>RUN-001 code commit：</strong>pre-run后绑定。</p>
+<pre>稳定SNPS 12维pair特征
+→ margin维始终保留
+→ 每个batch循环屏蔽1个非margin证据
+→ 用该维训练均值替换，标准化后严格为0
+→ 11个证据按seed偏移循环均匀覆盖
+
+推理恢复完整12维证据
+→ 200-way U/S/H；50-way ZS</pre>
+<p>训练期证据dropout迫使selector不依赖单一文本来源，推理公式不变。训练仅使用seen图像，official test按陈式协议选择最高H。</p>
+</body></html>

@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-099 TDRS</title><style>body{font-family:system-ui;margin:32px;background:#f7f9fc;color:#172033}.box{background:#fff;border:1px solid #b9c4d6;border-radius:12px;padding:16px;margin:12px}.arrow{text-align:center;font-size:24px}.tag{font-weight:700;color:#3156a3}code{background:#eef2f8;padding:2px 5px}</style></head><body>
+<h1>TDRS 最具判别性角色选择</h1>
+<div class="box"><span class="tag">代码身份</span>：<code>f152d3c4b95156a3660b341ccbd1f1ebb49017ef</code>；base <code>22192efd76adf9d4069245af07087991ccfaf091</code></div>
+<div class="box"><span class="tag">阶段一</span>：加载并冻结S-EDPS的12维线性selector与证据统计。</div><div class="arrow">↓</div>
+<div class="box"><span class="tag">角色选择</span>：对当前top1/top2计算8个角色文本余弦距离，选择距离最大的角色；读取该角色的图像相似度差作为第13维。</div><div class="arrow">↓</div>
+<div class="box"><span class="tag">阶段二</span>：只训练一个role_weight；<code>raw=raw_SEDPS+w_role*z_role</code>，初始w=0严格复现父模型。</div><div class="arrow">↓</div>
+<div class="box"><span class="tag">评估</span>：seen pair CE，28,228次随机batch更新；每141步official test并按H选best，200类U/S/H与50类ZS。</div>
+<div class="box"><span class="tag">边界</span>：角色选择只由目标类别文本决定；true unseen图像不进入梯度；无测试时手工调分。</div>
+</body></html>

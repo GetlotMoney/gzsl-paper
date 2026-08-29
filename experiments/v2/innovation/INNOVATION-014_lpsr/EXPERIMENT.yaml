@@ -1,0 +1,23 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-014
+idea_id: IDEA-048
+framework_id: FRAMEWORK-V2
+title: Local Patch-Semantic Residual
+base_commit: 90a84babdf8b1e782e99165dced3ecf4d2de7279
+code_commit: cd7c8ad9f70623beabbfc9b41f5c5a9b5ef653fb
+status: rejected_negligible_wrong_sign
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-014_lpsr/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: a19264e0f27c9c2f194b29ee04834e8a9c6e0cac
+    config_ref: experiments/v2/innovation/INNOVATION-014_lpsr/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-014_lpsr/RUN-001
+    status: failed_runtime
+  - run_id: RUN-002
+    code_commit: cd7c8ad9f70623beabbfc9b41f5c5a9b5ef653fb
+    config_ref: experiments/v2/innovation/INNOVATION-014_lpsr/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-014_lpsr/RUN-002
+    status: completed

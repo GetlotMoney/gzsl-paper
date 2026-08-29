@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,pair_count,selector_bias,test_used_for_selection,output_uri,decision
+RUN-001,ffc06d444cd0da01784424122c36a7847ccca090,experiments/v2/innovation/INNOVATION-092_tfps/configs/RUN-001.yaml,b1f8a486da824897d56aae045e346dc127890b33d0f4facfc3a228a474300449,5,completed,76.917076,80.062246,78.458154,84.055674,423,4604,0.027900,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-092_tfps/RUN-001,drop_below_top3

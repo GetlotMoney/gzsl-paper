@@ -1,0 +1,28 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-078
+idea_id: IDEA-112
+framework_id: FRAMEWORK-V2
+title: Role Disagreement Scale Selector
+base_commit: 0dce83c9b8530402b89efb594f69761f66d2d3fa
+code_commit: 372d26f25a95f3197f9b7ee9021a2b925cce59d0
+status: retained_highest_seed_not_stable
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-078_rdss/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 372d26f25a95f3197f9b7ee9021a2b925cce59d0
+    config_ref: experiments/v2/innovation/INNOVATION-078_rdss/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-078_rdss/RUN-001
+    status: completed_positive_new_high
+  - run_id: RUN-002
+    code_commit: 376c347a514198fdfc7f3917642f9a525a1840e5
+    config_ref: experiments/v2/innovation/INNOVATION-078_rdss/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-078_rdss/RUN-002
+    status: completed_positive_vs_sdcr_below_top3
+  - run_id: RUN-003
+    code_commit: f95544256c87406b76c959593e363f2f7b56994e
+    config_ref: experiments/v2/innovation/INNOVATION-078_rdss/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-078_rdss/RUN-003
+    status: completed_below_seed5

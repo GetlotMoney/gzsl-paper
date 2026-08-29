@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-037 AOSR</title></head>
+<body>
+<h1>AOSR：自适应八句正交残差</h1>
+<p><strong>Base commit：</strong>442b28a44d5c79cbe2aad73c31598b7ccbae7ee4；<strong>RUN-001 code commit：</strong>15e09c78247f138b467f5b77289127076904a3ff；<strong>RUN-002 code commit：</strong>471f3c66a8c717d37ebb79c24d5565f097771a3e（mechanism collapse）。</p>
+<h2>从OESR严格起步</h2>
+<pre>w = softmax(raw_weights), raw_weights=0 → w_r=1/8
+mixed_c = sum_r w_r × GPT56_sentence_cr
+unique_c = Norm(mixed_c - proj_class_name(mixed_c))
+final_logits = SEBC_logits + fixed_OESR_beta × image @ unique.T</pre>
+<p>OESR beta从SHA绑定best加载并冻结；只训练8个共享句子权重。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新official test选全局best。unseen文本允许使用、unseen图像不进入梯度；test_used_for_selection=true。GPT-5.6 cache provenance未完整。</p>
+</body></html>

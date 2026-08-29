@@ -1,0 +1,35 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-004
+idea_id: IDEA-029
+evidence_refs: [PAPER-002, PAPER-003, PAPER-004, V2-TRY-096, V2-TRY-097]
+framework_id: FRAMEWORK-V2
+base_commit: f5bb00266ec5e3771775db50ac73c3b42074970c
+code_commits:
+  initial: 75b8f32cbb0b180969358a5628f74b0fec3fc56b
+  final_multiseed: 88709daa9fa2c9ab71b207b2775bff76bdafa98c
+title: Attribute Residual Alignment
+status: retained_out_of_scope_expert_attributes
+paper_eligible: false
+exclusion_reason: owner_prohibits_CUB_312d_expert_attributes_2026-08-23
+paper_core_innovation: false
+question: seen图像训练的显式属性残差能否稳定补充TG-VPR/CCGR的描述语义并使H超过78
+source_attempts: [V2-TRY-098, V2-TRY-096, V2-TRY-099, V2-TRY-100]
+ablation_attempts: [V2-TRY-092, V2-TRY-097]
+module:
+  module_id: ARA
+  name: Attribute Residual Alignment
+  purpose: 用显式属性证据补充GPT描述原型遗漏的细粒度部位线索
+  inputs: [CLIP图像特征, CCGR类别原型, CUB标准312维类别属性]
+  output: 200类主语义logit与属性残差logit之和
+  formula: logits=logits_CCGR + beta * cosine(Norm(xW_ridge), attribute_c)
+  switches: {ridge: 0.01, max_beta: 20.0, sdm_enabled: false}
+  baseline_off_behavior: beta=0时严格回到CCGR父logits
+  parent_condition: TG-VPR + TST + NTR + CCGR
+  training: W_ridge由7057张seen图像闭式拟合；beta用seen CE训练20轮
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+primary_reporting: highest_seed_H_with_multiseed_range
+framework_diagram: framework_diagram.html
+decision: auxiliary_refinement_not_fourth_core_innovation
+novelty_claim: none

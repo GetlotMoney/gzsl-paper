@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-039
+idea_id: IDEA-073
+framework_id: FRAMEWORK-V2
+title: Class-Conditioned Conservative Sentence Routing
+base_commit: abd371fde89ca3cda1bf32181e7d26ce075a0a0a
+code_commit: d0484c4bc60f4b0dcab1e0ebb2e77dd925904530
+status: rejected_no_gain
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-039_ccsr/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: d0484c4bc60f4b0dcab1e0ebb2e77dd925904530
+    config_ref: experiments/v2/innovation/INNOVATION-039_ccsr/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-039_ccsr/RUN-001
+    status: completed

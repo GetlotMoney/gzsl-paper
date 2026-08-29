@@ -1,0 +1,32 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-003
+idea_id: IDEA-018
+evidence_refs: [PAPER-007, PAPER-008, V2-TRY-055, V2-TRY-057]
+framework_id: FRAMEWORK-V2
+base_commit: 42cd4457a65f89023ff342ba13679471d5db0942
+code_commits:
+  seed7: 5e2038ef963c0a55d7c53580bbb1cdf33aa77267
+  multiseed: dbe91806214e2526246a7aa4c44af3ba1c0f91b7
+title: Class-Conditioned Geometric Generator
+status: supported
+question: 类别条件文本几何生成能否在不使用true-unseen图像梯度时稳定改进NTR原型
+source_attempts: [V2-TRY-062, V2-TRY-063, V2-TRY-060, V2-TRY-064, V2-TRY-065]
+module:
+  module_id: CCGR
+  name: Class-Conditioned Geometric Generator
+  purpose: 在目标类别自己的四个文本切向方向中生成有界unseen原型残差
+  inputs: [NTR父原型, Value切向, local切向, unique切向, overall切向, 类别几何]
+  output: 类别条件unseen原型
+  formula: p_new=Norm(p_NTR + m_c * Sum_k(w_ck * d_ck))
+  switches: {pseudo_unseen_weight: 0.25, max_magnitude: 0.1}
+  baseline_off_behavior: magnitude=0时严格回到NTR父原型
+  parent_condition: TG-VPR + TST + NTR
+  training: 三折pseudo-unseen 32/32联合CE + 0.25 pseudo-unseen CE + 0.1 topology
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+primary_reporting: highest_seed_H_with_multiseed_range
+framework_diagram: framework_diagram.html
+decision: paper_core_innovation
+novelty_claim: target_class_four_text_tangent_generator
+not_claimed: [first_dynamic_semantic_prototype, first_dual_prototype, first_visual_augmented_prototype]

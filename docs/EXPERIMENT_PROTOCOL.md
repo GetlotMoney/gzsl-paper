@@ -50,25 +50,68 @@ Framework
 
 一个创新实验可以包含基线、主方法、多个参数、消融、多个 seed 和最终结果。不能把“一项创新实验”压缩成一个配置，也不能把每个参数值拆成新的创新编号。
 
+## 探索实验清单
+
+正式Experiment之前的快速尝试统一写入当前框架的`EXPERIMENT_QUEUE.csv`：
+
+```text
+一行 = 一个代码/配置条件 + 一个seed + 一次真实运行
+```
+
+快速尝试不创建实验目录，不写README、evidence、result或HTML图。每行必须绑定准确code commit、config、唯一改动、seed、U/S/H/ZS和仓库外输出URI。
+
+状态只使用`planned / running / completed / failed`；运行代码或配置改变时，服务器启动前仍需有准确Git commit。
+
+决策只使用：
+
+- `drop`：失败或无收益，保留一行后停止；
+- `keep`：有信号，继续少量尝试；
+- `promote`：值得正式验证，随后创建正式Experiment目录。
+
+只有`promote`候选进入下面的正式实验流程。
+
+## 框架固定目录
+
+每个正式框架必须始终提供四类实验入口：
+
+```text
+experiments/vX/
+├─ tune/INDEX.md
+├─ ablation/INDEX.md
+├─ innovation/INDEX.md
+└─ confirmation/INDEX.md
+```
+
+目录存在只表示分类入口存在，不代表已有实验。空目录的`INDEX.md`必须写明“当前无实验”和下一编号，不能伪造计划或结果。
+
 ## 实验目录
 
 ```text
 INNOVATION-001_example/
-├─ README.md
 ├─ EXPERIMENT.yaml
-├─ module_source.md
-├─ implementation.md
-├─ framework_diagram.md
 ├─ configs/
 │  ├─ RUN-001.yaml
 │  └─ RUN-002.yaml
 ├─ PARAMETER_MATRIX.csv
-├─ PARAMETER_MATRIX.md
-├─ evidence/
-│  ├─ RUN-001.md
-│  └─ RUN-002.md
 └─ result.md
 ```
+
+这四类文件构成普通实验的最小闭环。只有修改代码结构、模块、forward、loss、数据流或评估语义时，才增加`framework_diagram.html`。`PARAMETER_MATRIX.md`、逐RUN evidence页、README、implementation和module_source均为按需文件；现有历史文件保留，但不要求新实验复制这些层级。
+
+## 最短执行流程
+
+```text
+真实问题或证据
+→ 一张可证伪Idea卡
+→ EXPERIMENT_QUEUE.csv登记TRY
+→ 代码/配置commit
+→ 仓库外独立目录快速运行
+→ 回填TRY结果与drop/keep/promote
+→ promote后才建立正式Experiment
+→ 正式pre-run / run / post-run闭环
+```
+
+不为快速尝试增加目录、审核线程、状态机、专用控制器、重复冻结或额外收据。
 
 ## 参数矩阵
 
@@ -86,6 +129,14 @@ test_used_for_selection,log_uri,model_uri,decision
 - 改变模块公式、输入信息、forward、loss、seen/unseen 边界或评估语义：新建 Experiment。
 - 小规模参数选择可以留在 Innovation；模块成立后的系统性超参数搜索进入 Tune。
 
+## HTML 框架图规则
+
+- 每个 `FRAMEWORK-VX` 必须提供 `experiments/vX/framework_diagram.html`，并绑定该框架的准确 commit。
+- 任何改变 module、forward、loss、数据流、输入输出、seen/unseen 边界或评估语义的 Experiment，必须提供实验目录内的 `framework_diagram.html`，展示相对 base commit 的实际差异。
+- 参数、seed、epoch、纯文档和不改变计算语义的运行修复继续复用框架级 HTML 图，但必须在 `EXPERIMENT.yaml` 或 evidence 中链接该图并说明代码差异。
+- HTML 图至少包含：输入、关键模块、主要张量/数据流、训练 loss、最终 logits、U/S/H/ZS 出口、配置开关或固定参数、baseline-off 行为及协议边界。
+- 图必须是自包含 HTML，不依赖仓库外 CDN；修改后至少做一次浏览器打开检查。
+
 ## 推荐阶段
 
 1. `baseline`：同 commit、同数据和同评估口径的基线。
@@ -94,12 +145,21 @@ test_used_for_selection,log_uri,model_uri,decision
 4. `control`：module-off、shuffle、wrong-role 等机制控制。
 5. `repeat`：值得保留后再跑其他 seed。
 
-项目允许根据 official test U/S/H/ZS 选择参数、epoch 和模型。每次 RUN 必须标记：
+owner选择的论文主结果采用Chen-style公开代码对齐协议，每次RUN标记：
 
 ```yaml
-evaluation_protocol: test_selected_inductive_gzsl
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
+strict_blind_claim: false
 ```
 
-这不是 blind-test 证据，任何论文数字或对外比较都必须如实说明。
+默认代码对齐条件为batch 50、200名义epoch、`niters=ntrain*epochs//batch_size`、`report_interval=niters//epochs`、每步独立随机抽样、每个report interval评估official test并按完整模型H保存best。端到端RUN只允许整模型选模；分阶段嵌套test选择必须另建Experiment并显式披露。现有validation-first RUN保留为严格协议对照。
+
+V3快速候选可在独立探索Experiment中使用预注册动态筛选：最多150名义epoch，只在固定60/80/100/120/150轮边界依据累计best-H与U/S差停止。动态结果不得直接进入论文最终表；胜出累计条件和单模块移除必须重新固定200名义epoch。
+
+## 多seed成绩口径
+
+- 首个Chen-style主RUN固定使用TransZero CUB配置seed 5；追加seed必须全部报告并计算`mean / min / max / range`。
+- owner内部主成绩可引用最高seed，但必须同时列出全部seed与波动，不得隐藏失败seed。
+- 新论文核心创新原则上要求相对准确父条件`Delta H >= 0.20`个百分点；更小增益只作为辅助模块或观察。

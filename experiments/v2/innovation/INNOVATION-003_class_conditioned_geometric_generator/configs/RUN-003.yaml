@@ -1,0 +1,7 @@
+run_id: RUN-003
+source_attempt: V2-TRY-060
+seed: 7
+code_commit: 5e2038ef963c0a55d7c53580bbb1cdf33aa77267
+config_ref: config/tries/v2_try_060_ccgr_rescue2_seed7.yaml
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-060
+model_sha256: 05ce0b79da4c6f655d636f41d423c3be4ee468be8f5c6730365739897a7bd4bb

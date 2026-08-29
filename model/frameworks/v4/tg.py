@@ -1,0 +1,322 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+from model.frameworks.v2 import TGVPRH1FixedEqual
+
+
+class VariableClassTGVPR(TGVPRH1FixedEqual):
+    """保持H1参数身份，允许任意非空adapted class子集。"""
+
+    def __init__(
+        self,
+        sentence_embeds: torch.Tensor,
+        adapted_classes: torch.Tensor,
+        visual_centroids: torch.Tensor,
+        *,
+        dropout: float = 0.5,
+        inner_ratio: float = 0.35,
+        outer_ratio: float = 0.65,
+        temperature: float = 0.07,
+    ):
+        nn.Module.__init__(self)
+        if sentence_embeds.ndim != 3 or tuple(sentence_embeds.shape[1:]) != (8, 768):
+            raise ValueError("sentence_embeds必须是[class_count, 8, 768]。")
+        if not torch.isfinite(sentence_embeds).all():
+            raise ValueError("sentence_embeds包含NaN/Inf。")
+        classes = torch.as_tensor(adapted_classes).detach().cpu().long().sort().values
+        if classes.ndim != 1 or classes.numel() == 0 or classes.unique().numel() != classes.numel():
+            raise ValueError("adapted_classes必须是非空唯一类编号。")
+        class_count = int(sentence_embeds.shape[0])
+        if classes.min() < 0 or classes.max() >= class_count:
+            raise ValueError("adapted_classes必须位于全局类别轴范围内。")
+        centroids = F.normalize(torch.as_tensor(visual_centroids).detach().float(), dim=-1)
+        if tuple(centroids.shape) != (classes.numel(), 768):
+            raise ValueError("visual_centroids数量必须等于adapted_classes。")
+        if not 0.0 < float(inner_ratio) < 1.0:
+            raise ValueError("inner_ratio必须位于(0, 1)。")
+        if not 0.0 < float(outer_ratio) < 1.0:
+            raise ValueError("outer_ratio必须位于(0, 1)。")
+        if float(temperature) <= 0.0:
+            raise ValueError("temperature必须为正数。")
+
+        self.register_buffer(
+            "sentence_embeds",
+            F.normalize(sentence_embeds.detach().float(), dim=-1),
+            persistent=True,
+        )
+        self.register_buffer("adapted_classes", classes, persistent=True)
+        self.register_buffer("visual_centroids", centroids, persistent=True)
+        self.class_count = class_count
+        self.tg_value_projection = nn.Linear(768, 768)
+        self.tg_output_projection = nn.Linear(768, 768)
+        self.post_projection = nn.Linear(768, 768)
+        self.dropout = nn.Dropout(float(dropout))
+        self.layer_norm = nn.LayerNorm(768)
+        self.semantic_group_logits = nn.Parameter(torch.zeros(3))
+        self.logit_scale = nn.Parameter(torch.tensor(math.log(1.0 / float(temperature))))
+        self.inner_ratio = float(inner_ratio)
+        self.outer_ratio = float(outer_ratio)
+
+    def prototype_components(self) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        groups = F.normalize(self.transformed_groups(), dim=-1)
+        count = self.adapted_classes.numel()
+        weights = self.semantic_group_weights().unsqueeze(0).expand(count, -1)
+        base_vectors = self.candidate_base_vectors()
+        base_scale = base_vectors.new_ones((self.class_count,))
+        base_scale[self.adapted_classes] = 1.0 - self.outer_ratio
+        base_part = base_scale.unsqueeze(-1) * base_vectors
+        role_part = groups.new_zeros((self.class_count, 3, 768))
+        role_part[self.adapted_classes] = self.outer_ratio * weights.unsqueeze(-1) * groups
+        return base_part + role_part.sum(dim=1), base_part, role_part
+
+    def value_candidate(self, class_ids: torch.Tensor) -> torch.Tensor:
+        class_ids = class_ids.to(self.sentence_embeds.device).long()
+        source = self.semantic_group_vectors().index_select(0, class_ids)
+        batch, group_count, dim = source.shape
+        value = self.tg_value_projection(source)
+        value = value.view(batch, group_count, 1, dim).transpose(1, 2)
+        weights = self.semantic_group_weights().view(1, 1, 1, group_count).expand(
+            batch, 1, group_count, group_count
+        )
+        context = torch.einsum("bhqg,bhgd->bhqd", weights, value)
+        context = context.transpose(1, 2).contiguous().view(batch, group_count, dim)
+        context = self.tg_output_projection(context)
+        context = self.post_projection(context)
+        mixed = self.inner_ratio * context + (1.0 - self.inner_ratio) * source
+        transformed = F.normalize(self.layer_norm(2.0 * mixed), dim=-1)
+        role = (self.semantic_group_weights().view(1, 3, 1) * transformed).sum(dim=1)
+        base = self.base_vectors().index_select(0, class_ids)
+        return F.normalize(
+            (1.0 - self.outer_ratio) * base + self.outer_ratio * role,
+            dim=-1,
+        )
+
+
+class ELPTGate(nn.Module):
+    """用类别语义几何学习每类迁移强度。"""
+
+    def __init__(
+        self,
+        input_dim: int = 4,
+        max_alpha: float = 1.0,
+        initial_alpha: float = 0.1,
+    ):
+        super().__init__()
+        if not 0.0 < float(max_alpha) <= 1.0:
+            raise ValueError("max_alpha必须位于(0, 1]。")
+        if not 0.0 < float(initial_alpha) < float(max_alpha):
+            raise ValueError("initial_alpha必须位于(0, max_alpha)。")
+        if int(input_dim) not in (4, 8):
+            raise ValueError("ELPT gate input_dim只允许4或8。")
+        self.input_dim = int(input_dim)
+        self.max_alpha = float(max_alpha)
+        self.network = nn.Sequential(
+            nn.Linear(self.input_dim, 16),
+            nn.GELU(),
+            nn.Linear(16, 1),
+        )
+        nn.init.zeros_(self.network[-1].weight)
+        raw_initial = float(initial_alpha) / self.max_alpha
+        nn.init.constant_(
+            self.network[-1].bias,
+            math.log(raw_initial / (1.0 - raw_initial)),
+        )
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        return self.max_alpha * torch.sigmoid(self.network(features)).squeeze(-1)
+
+
+def fixed_class_folds(seenclasses: torch.Tensor) -> list[tuple[torch.Tensor, torch.Tensor]]:
+    classes = torch.as_tensor(seenclasses).detach().cpu().long().sort().values
+    if classes.numel() != 150 or classes.unique().numel() != 150:
+        raise ValueError("ELPT固定要求150个seen类。")
+    ranks = torch.arange(150)
+    folds = []
+    for fold_id in range(3):
+        pseudo_unseen = classes[ranks.remainder(3) == fold_id]
+        pseudo_seen = classes[ranks.remainder(3) != fold_id]
+        folds.append((pseudo_seen, pseudo_unseen))
+    return folds
+
+
+def semantic_pca_folds(
+    seenclasses: torch.Tensor, sentence_embeds: torch.Tensor
+) -> list[tuple[torch.Tensor, torch.Tensor]]:
+    """沿seen文本原型主方向形成三个连续50类困难簇。"""
+    classes = torch.as_tensor(seenclasses).detach().cpu().long().sort().values
+    if classes.numel() != 150 or classes.unique().numel() != 150:
+        raise ValueError("语义困难折固定要求150个seen类。")
+    semantics = F.normalize(
+        sentence_embeds.detach().cpu().float().mean(dim=1), dim=-1
+    ).index_select(0, classes)
+    centered = semantics - semantics.mean(dim=0, keepdim=True)
+    _, _, vh = torch.linalg.svd(centered, full_matrices=False)
+    direction = vh[0]
+    pivot = direction.abs().argmax()
+    if direction[pivot] < 0:
+        direction = -direction
+    order = torch.argsort(centered @ direction, stable=True)
+    folds = []
+    for fold_id in range(3):
+        mask = torch.zeros(150, dtype=torch.bool)
+        mask[order[fold_id * 50 : (fold_id + 1) * 50]] = True
+        folds.append((classes[~mask], classes[mask]))
+    return folds
+
+
+def semantic_balanced_class_folds(
+    classes: torch.Tensor,
+    sentence_embeds: torch.Tensor,
+    class_sample_counts: torch.Tensor,
+    fold_count: int = 3,
+) -> list[tuple[torch.Tensor, torch.Tensor]]:
+    """把语义邻近类别分散到各折，同时平衡类别数和训练图像数。"""
+    classes = torch.as_tensor(classes).detach().cpu().long().sort().values
+    counts = torch.as_tensor(class_sample_counts).detach().cpu().long()
+    if classes.ndim != 1 or classes.numel() < int(fold_count):
+        raise ValueError("语义平衡折要求类别数不少于fold_count。")
+    if classes.unique().numel() != classes.numel() or tuple(counts.shape) != (
+        classes.numel(),
+    ):
+        raise ValueError("语义平衡折类别必须唯一，样本计数必须逐类对齐。")
+    if int(fold_count) != 3 or bool((counts <= 0).any()):
+        raise ValueError("当前嵌套validation固定三折且每类必须有训练图像。")
+    if tuple(sentence_embeds.shape) != (200, 8, 768):
+        raise ValueError("语义平衡折要求[200,8,768]句子缓存。")
+
+    semantics = F.normalize(
+        sentence_embeds.detach().cpu().float().mean(dim=1), dim=-1
+    ).index_select(0, classes)
+    centered = semantics - semantics.mean(dim=0, keepdim=True)
+    _, _, vh = torch.linalg.svd(centered, full_matrices=False)
+    direction = vh[0]
+    pivot = direction.abs().argmax()
+    if direction[pivot] < 0:
+        direction = -direction
+    order = torch.argsort(centered @ direction, stable=True)
+
+    base_size, remainder = divmod(classes.numel(), int(fold_count))
+    capacities = [base_size + (1 if index < remainder else 0) for index in range(3)]
+    fold_positions: list[list[int]] = [[], [], []]
+    fold_image_counts = [0, 0, 0]
+    ordered_positions = order.tolist()
+    for start in range(0, len(ordered_positions), 3):
+        block = ordered_positions[start : start + 3]
+        block.sort(key=lambda position: (-int(counts[position]), int(classes[position])))
+        used_in_block: set[int] = set()
+        for position in block:
+            candidates = [
+                fold_id
+                for fold_id in range(3)
+                if len(fold_positions[fold_id]) < capacities[fold_id]
+                and fold_id not in used_in_block
+            ]
+            if not candidates:
+                candidates = [
+                    fold_id
+                    for fold_id in range(3)
+                    if len(fold_positions[fold_id]) < capacities[fold_id]
+                ]
+            fold_id = min(
+                candidates,
+                key=lambda index: (
+                    fold_image_counts[index],
+                    len(fold_positions[index]),
+                    index,
+                ),
+            )
+            fold_positions[fold_id].append(position)
+            fold_image_counts[fold_id] += int(counts[position])
+            used_in_block.add(fold_id)
+
+    folds = []
+    coverage = []
+    for positions in fold_positions:
+        pseudo_unseen = classes[torch.tensor(sorted(positions), dtype=torch.long)]
+        pseudo_seen = classes[~torch.isin(classes, pseudo_unseen)]
+        folds.append((pseudo_seen, pseudo_unseen))
+        coverage.append(pseudo_unseen)
+    joined = torch.cat(coverage)
+    if joined.unique().numel() != classes.numel() or not torch.equal(
+        joined.sort().values, classes
+    ):
+        raise RuntimeError("语义平衡三折必须互斥且完整覆盖开发训练类。")
+    return folds
+
+
+def class_fold_sha256(
+    folds: list[tuple[torch.Tensor, torch.Tensor]],
+) -> str:
+    manifest = [
+        [int(value) for value in pseudo_unseen.detach().cpu().sort().values]
+        for _, pseudo_unseen in folds
+    ]
+    serialized = json.dumps(manifest, separators=(",", ":"))
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+def gate_features(
+    base: torch.Tensor,
+    value: torch.Tensor,
+    support_base: torch.Tensor,
+    mode: str = "summary",
+) -> torch.Tensor:
+    base = F.normalize(base, dim=-1)
+    value = F.normalize(value, dim=-1)
+    support_base = F.normalize(support_base, dim=-1)
+    similarity = base @ support_base.T
+    top5 = similarity.topk(k=5, dim=1).values
+    cosine = (base * value).sum(dim=-1)
+    displacement = (value - base).norm(dim=-1)
+    if mode == "summary":
+        return torch.stack(
+            (cosine, displacement, top5.mean(dim=1), top5.max(dim=1).values),
+            dim=1,
+        )
+    if mode == "summary_std":
+        return torch.stack(
+            (
+                cosine,
+                displacement,
+                top5.mean(dim=1),
+                top5.max(dim=1).values,
+                top5.std(dim=1, unbiased=False),
+            ),
+            dim=1,
+        )
+    if mode == "top5_vector":
+        return torch.cat(
+            (cosine.unsqueeze(1), displacement.unsqueeze(1), top5.mean(dim=1, keepdim=True), top5),
+            dim=1,
+        )
+    raise ValueError("未知ELPT gate feature mode。")
+
+
+def blend_prototypes(base: torch.Tensor, value: torch.Tensor, alpha: torch.Tensor):
+    return F.normalize(
+        (1.0 - alpha.unsqueeze(-1)) * base + alpha.unsqueeze(-1) * value,
+        dim=-1,
+    )
+
+
+def topology_loss(base: torch.Tensor, adapted: torch.Tensor) -> torch.Tensor:
+    base = F.normalize(base, dim=-1)
+    adapted = F.normalize(adapted, dim=-1)
+    count = base.size(0)
+    off_diag = ~torch.eye(count, dtype=torch.bool, device=base.device)
+    x = (base @ base.T).detach()[off_diag]
+    y = (adapted @ adapted.T)[off_diag]
+    x = x - x.mean()
+    y = y - y.mean()
+    correlation = (x * y).sum() / (
+        torch.sqrt(x.square().sum() + 1e-8)
+        * torch.sqrt(y.square().sum() + 1e-8)
+    )
+    return 1.0 - correlation

@@ -1,0 +1,32 @@
+# FRAMEWORK-V4 Confirmation
+
+V4不复制V3结果文件；以下证据直接绑定原RUN、原代码提交、原配置和仓库外输出。
+
+| 数据集 | 原RUN | 条件 | U | S | H | ZS | 同checkpoint GTD增量H | 证据结论 |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| CUB | V3-TRY-041 / control V3-TRY-040 | matched scratch fixed150 | 79.624420 | 76.670682 | 78.119641 | 85.794950 | +1.470620 | GTD正增益；owner接纳的本地matched确认 |
+| AWA2 | V3-TRY-046 | scratch fixed150 | 97.553205 | 95.219404 | 96.372177 | 99.173242 | +0.000000 | 三数据集可运行；best点GTD为精确no-op边界 |
+| SUN | V3-TRY-047 | scratch fixed150 | 80.208325 | 67.558140 | 73.341746 | 92.499995 | +3.099005 | GTD正增益，服务器两轮审查通过 |
+
+## CUB证据
+
+- TG-only：`V3-TRY-040`，code=`4d46ba1ef8d1c53c0e7fd5c5623f3c56af6dc1b2`，config=`config/tries/v3_try_040_tg_scratch_fixed150.yaml`，H=`76.649020`。
+- TG+GTD：`V3-TRY-041`，同code与匹配初始化，config=`config/tries/v3_try_041_gtd_scratch_fixed150.yaml`，H=`78.119641`。
+- config SHA：TRY-040=`b3b04dd71f188acc903b0b0e722eeeb027a15b731a88dee73362f3ffb7d3b469`；TRY-041=`4a7c4f7385d97a4c0294868cda9f8180eba9c53a55da6f76b27da94b47cd7e2b`。
+- 输出：`D:/backup/Documents/ChatGPT/GZSL_Warehouse/tries/v3/gtd-scratch/V3-TRY-040`与`V3-TRY-041`。
+- 原始结果账本：`experiments/v3/GTD_SCRATCH_CONFIRM_REVIEW.md`与`experiments/v3/EXPERIMENT_QUEUE.csv`。
+
+## AWA2与SUN证据
+
+- 最终RUN code：`4013cca894b00933f6bfed0a125690c66e54cba1`；两轮结论：P0/P1/P2=`0/0/0`，第2轮通过。
+- AWA2：config=`config/tries/v3_try_046_gtd_awa2_scratch_fixed150.yaml`，config SHA=`44976e5e77a907112a88d295ee70296a2a22ef1c15c5b1f1d286249e1451a529`，asset=`7f0e1989635ca98d`。
+- SUN：config=`config/tries/v3_try_047_gtd_sun_scratch_fixed150.yaml`，config SHA=`75a4035f783e92ba2cc70c3e7a633791abb80f3844a4f7b29ce1d172b4935cf1`，asset=`bfe12cda3c37abdb`。
+- 输出：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v3/gtd-multidataset/V3-TRY-046`与`V3-TRY-047`。
+- 共享审查证据：`/data/lby/projects/cv_project/GZSL_Warehouse/reviews/v3/gtd-multidataset/4013cca894b00933f6bfed0a125690c66e54cba1/shared_evidence.json`。
+- 原始审查账本：`experiments/v3/GTD_MULTIDATASET_REVIEW.md`与`experiments/v3/EXPERIMENT_QUEUE.csv`。
+
+## 适用边界
+
+- 三数据集均验证同一TG+GTD代码路径、dataset-specific类别轴、U/S/H/ZS出口和theta-zero关闭路径。
+- “三数据集验证”不等于“三数据集均由GTD提高H”：AWA2是明确的零增益边界，必须保留。
+- 所有结果使用official test选择best-H，`test_used_for_selection=true`，不是blind-test。

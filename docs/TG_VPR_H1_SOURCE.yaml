@@ -1,0 +1,86 @@
+schema_version: gzsl-paper.module-source.v1
+module_id: INNOVATION-MODULE-1
+target_framework: FRAMEWORK-V2
+owner_promotion_decision: promote_as_independent_framework_v2_2026-08-22
+module_name: TG-VPR-H1
+migration_authorization: owner_explicit_request_2026-08-21
+migration_type: clean_code_and_config_snapshot_without_git_history
+source_repository: GetlotMoney/GTPJ
+source_local_branch: exp/v5/tune/tune-006-tg-vpr-h1-closeout
+source_result_commit: 0aa38ab46020690879c1de8b937f35fd6b607f22
+source_runtime_commits:
+  stage1: 4cf8baafdf9022c1e3b900a528d849fd831bc945
+  stage2: 4c5c0910b7b498ed6e4021bc76a9a7236a8ce15e
+target_code_commit: 4a063218989c6e193a7aa3c593bb4f0f8ecb7379
+source_files:
+  standalone_model:
+    path: experiments/v5/innovation/INNOVATION-024_tg_vpr_h1/tg_vpr_h1_model.py
+    sha256: 4b1c973b59bb4197667ea53c96da42214495db0aec178b0071a28f98ebc589b8
+  fixed_equal_adapter:
+    path: experiments/v5/ablation/ABLATION-014_tg_vpr_h1_components/ablation_model.py
+    sha256: 22b4c8bd2a99f5f2ee93f615cee1068e079980385ebad4d334f6dbae000fedc3
+  closeout_runner:
+    path: experiments/v5/tune/TUNE-006_tg_vpr_h1_closeout/train.py
+    sha256: a8053a2c02a35d4489b5cb6a939b92e4c94b868c18df2746c0aaa4b255759ce0
+  final_config:
+    path: experiments/v5/tune/TUNE-006_tg_vpr_h1_closeout/config_stage2.yaml
+    sha256: 981648d6d50deccf2bff8556c33ff2c5b68da74fa404d1f21ffc53bee2c4c9e6
+  final_result:
+    path: experiments/v5/tune/TUNE-006_tg_vpr_h1_closeout/result.md
+    sha256: 14ccb3add944faf9b94713193d2dec6aba30e87352abdab19b449e65fc21e757
+target_files:
+  module:
+    path: model/frameworks/v2/model.py
+    sha256: 77eea247c22ee12cd6d8583db2a9a19a006048f0fdc009eadab997fd67afa98c
+  runner:
+    path: model/frameworks/v2/train.py
+    sha256: af808a2264768ddd102e7616d159466dac0bdd05cb9ab34051a4cb4887db9402
+  config:
+    path: config/tg_vpr_h1.yaml
+    sha256: c6754432a299eedbba1279d5e938b61e23994c6041caa893955a6497642eca22
+  framework_document:
+    path: docs/TG_VPR_H1.md
+    sha256: 88bd5e4c3e631d5d65760688e1c649a12cdb948c0302bcde1a5ef4b127b9397e
+  test:
+    path: tests/frameworks/v2/test_tg_vpr_h1.py
+    sha256: 349138de5e8b3622449f18536381a5431beafa5027a7b6ac029048635e65673b
+  editable_diagram:
+    path: docs/TG_VPR_H1_framework_diagram.drawio
+    sha256: b96b9385c1767c7d86ba0a75726f0caa71af77aa6b2e0b2694845c50d11fbdc9
+  html_diagram:
+    path: experiments/v2/framework_diagram.html
+    sha256: 8dc3c3001f42cdbc0c557cb6e7cf2d65e7385992399375e98a0a402130d16cba
+migration_verification:
+  state_dict_keys: 13
+  strict_state_dict_load: pass
+  prototype_output: bitwise_equal
+  logits_output: bitwise_equal
+  topology_loss: bitwise_equal
+  drawio_validation: pass_zero_errors_zero_warnings
+  html_self_contained: true
+  html_static_validation: pass
+  html_browser_open_check: pass_zero_console_errors
+preserved_semantics:
+  - eight-role cache order and local/unique/overall mapping
+  - fixed one-third group weights
+  - one 768-dimensional Value path
+  - inner_ratio 0.35 and outer_ratio 0.65
+  - topology_weight 0.1
+  - seen-only gradient and Mean8 unseen fallback
+  - 200-class GZSL and 50-class ZS evaluation
+excluded:
+  - old GTPJ Git history and branches
+  - old experiment and idea identifiers
+  - old paper notes and research knowledge tree
+  - checkpoints, caches, data and raw logs
+target_status: owner_promoted_to_independent_framework_v2
+framework_v1_integration: not_applied
+framework_v2_status: baseline_completed_single_seed
+legacy_evidence_migration:
+  authorization: owner_explicit_2026-08-22
+  target_path: experiments/v2/evidence/legacy_h1
+  evidence_id: LEGACY-H1-EVIDENCE-001
+  copied_file_count: 21
+  file_manifest_aggregate_sha256: 75b2d47fe8ca64af240d4640ffaf401d94098c42e19459029bd2277e6557a483
+innovation_experiment_id: not_assigned
+innovation_id_reason: owner_promoted_source_module_directly_as_independent_v2

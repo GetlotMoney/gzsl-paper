@@ -1,0 +1,8 @@
+schema_version: gzsl-paper.clip-class-name-asset-derivation.v1
+dataset: CUB
+parent_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/69c9c6d82a755fe8/asset_manifest.json
+parent_manifest_sha256: 52c50c2f55250399bce360a218c30e70b66945953bec7e825e8dd8f20dddf91f
+role_texts: /data/lby/projects/cv_project/GZSL_Warehouse/assets/texts/CUB/text-v2-bd935b8a4ed42d59/role_texts.json
+role_texts_sha256: bd935b8a4ed42d59c3a39c3f30bb99552c717ef18dadbf3349422b1cef728985
+clip_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_checkpoints/ViT-L-14-336px.pt
+clip_checkpoint_sha256: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02

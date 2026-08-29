@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-074 R-SNPS</title></head>
+<body>
+<h1>R-SNPS：互惠加权语义近邻选择器</h1>
+<p><strong>Base commit：</strong>f96bea0bf7211dc09fba5cdb53b63eacadefe77a；<strong>RUN-001 code commit：</strong>b2148d8645f498f3f7549b87cbe4f4b440c9a45a；<strong>RUN-002 code commit：</strong>93bbc43c69994f9d5090bcef62f513f3a4ae5918。</p>
+<pre>每类文本top-5有向邻居
+├─ 双方互为top-5 → confidence=1.0
+├─ 仅一方top-5   → confidence=0.5
+└─ 非邻居        → confidence=0
+
+suffix同族强制confidence=1
+confidence同时缩放pair训练权重与推理logit修正
+12维中心化角色证据 → Linear(12,1) → 200-way U/S/H；50-way ZS</pre>
+<p>相对SNPS唯一变化：二值关系改为互惠置信度，保留top-5覆盖并减弱单向近邻噪声。训练仍只使用seen图像，unseen图像不进入梯度，official test按陈式协议用于选最高H。</p>
+</body></html>

@@ -1,0 +1,22 @@
+schema_version: gzsl-paper.ccgr.v3
+attempt_id: V2-TRY-062
+idea_id: IDEA-018
+framework_id: FRAMEWORK-V2
+base_config: config/tries/v2_unseen_transfer_seed5.yaml
+base_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/multiseed-proof/V2-BASE-SEED-5/model_best.pth
+base_checkpoint_sha256: 42a2e56c300389cea02a7456793532c22aea7e33982a2bef6d001bd2b3dac933
+ntr_gate_model: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-029/gate_model.pth
+ntr_gate_model_sha256: c51d00dc151da85d4e1cde007f86405b62288f9db94f6276836b55045e8f1288
+fold_checkpoint_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-029
+training_objective: pseudo_unseen_episode
+batch_half: 32
+pseudo_unseen_weight: 0.25
+seed: 5
+epochs: 20
+lr: 0.001
+weight_decay: 0.0001
+hidden_dim: 32
+max_magnitude: 0.1
+initial_magnitude: 0.02
+topology_weight: 0.1
+parent_metrics_percent: {U: 74.7810959815979, S: 78.39061617851257, H: 76.54332656899801, ZS: 81.4246654510498}

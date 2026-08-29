@@ -1,0 +1,22 @@
+schema_version: gzsl-paper.ntr.v1
+attempt_id: V2-TRY-052
+idea_id: IDEA-010
+framework_id: FRAMEWORK-V2
+base_config: config/tries/v2_base_seed9.yaml
+base_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/multiseed-proof/V2-BASE-SEED-9/model_best.pth
+base_checkpoint_sha256: c2c3ee5ce92e3be2de6851e8d1023abda18272b06449cee8b3081b198546c0e6
+seed: 9
+fold_count: 3
+fold_epochs: 50
+gate_epochs: 20
+gate_batch_half: 32
+gate_lr: 0.001
+gate_weight_decay: 0.0001
+topology_weight: 0.1
+fold_checkpoint_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-051
+gate_feature_mode: top5_vector
+gate_ensemble: false
+gate_initialization_ensemble: 1
+transport_mode: tangent
+gate_max_step: 1.5
+parent_metrics_percent: {U: 73.98385405540466, S: 79.6198308467865, H: 76.69844573111058, ZS: 81.19962811470032}

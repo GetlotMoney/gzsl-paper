@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-033 PBOR</title></head>
+<body>
+<h1>PBOR：父原型方向部分正交化</h1>
+<p><strong>Base commit：</strong>cfa84702531a3fefd4298caec115c3162efee9b6；<strong>RUN-001 code commit：</strong>1802dd56ca396a7839916a871dd1443883f375d9。</p>
+<h2>从OCLR精确起步</h2>
+<pre>q1 = class_name direction
+q2 = TG_parent direction after removing q1
+oclr_base = Claude - proj_q1(Claude)
+prototype(lambda) = Norm(oclr_base - lambda × proj_q2(Claude))
+lambda = tanh(raw_lambda)
+final_logits = SEBC_logits + fixed_OCLR_beta × image @ prototype(lambda).T</pre>
+<p>lambda=0严格复现OCLR；正值进一步去父方向，负值补回反方向。OCLR beta从SHA绑定best加载并冻结。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新official test选全局best。unseen图像不进入梯度；test_used_for_selection=true。Claude cache provenance未完整。</p>
+</body></html>

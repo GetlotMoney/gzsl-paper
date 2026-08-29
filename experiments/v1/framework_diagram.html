@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>FRAMEWORK-V1 HTML 框架图</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #152238;
+      --muted: #5b687a;
+      --line: #b8c4d4;
+      --paper: #f5f7fb;
+      --card: #ffffff;
+      --blue: #2864dc;
+      --blue-soft: #eaf1ff;
+      --violet: #7047c8;
+      --violet-soft: #f1ebff;
+      --green: #17835c;
+      --green-soft: #e8f7f1;
+      --orange: #b65a18;
+      --orange-soft: #fff0e5;
+      --shadow: 0 14px 35px rgba(34, 54, 86, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 8% 0%, rgba(40, 100, 220, 0.10), transparent 27rem),
+        radial-gradient(circle at 92% 10%, rgba(112, 71, 200, 0.10), transparent 24rem),
+        var(--paper);
+      color: var(--ink);
+      font-family: Inter, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.55;
+    }
+
+    main {
+      width: min(1420px, calc(100% - 40px));
+      margin: 32px auto 64px;
+    }
+
+    .hero, .section {
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(184, 196, 212, 0.75);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 34px 38px;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 28px;
+      align-items: end;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      max-width: 820px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .identity {
+      display: grid;
+      gap: 10px;
+    }
+
+    .identity-row {
+      display: grid;
+      grid-template-columns: 136px 1fr;
+      gap: 12px;
+      padding: 11px 13px;
+      border-radius: 12px;
+      background: #f8faff;
+      border: 1px solid #dce4ef;
+      font-size: 13px;
+    }
+
+    .identity-row strong { color: var(--muted); }
+    code { font-family: "Cascadia Code", Consolas, monospace; overflow-wrap: anywhere; }
+
+    .section { margin-top: 22px; padding: 28px; }
+    .section h2 { margin: 0 0 6px; font-size: 24px; letter-spacing: -0.02em; }
+    .section-note { margin: 0 0 22px; color: var(--muted); }
+
+    .flow-grid {
+      display: grid;
+      grid-template-columns: minmax(180px, 0.85fr) 48px minmax(220px, 1fr) 48px minmax(250px, 1.1fr) 48px minmax(220px, 1fr);
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .stack { display: grid; gap: 12px; }
+
+    .node {
+      min-height: 108px;
+      padding: 17px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--card);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .node h3 { margin: 0 0 6px; font-size: 17px; }
+    .node p { margin: 0; color: var(--muted); font-size: 13px; }
+    .node.blue { background: var(--blue-soft); border-color: #9db9ef; }
+    .node.violet { background: var(--violet-soft); border-color: #c2afe9; }
+    .node.green { background: var(--green-soft); border-color: #9acfb9; }
+    .node.orange { background: var(--orange-soft); border-color: #e5b18b; }
+
+    .arrow {
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      font-size: 31px;
+      font-weight: 800;
+    }
+
+    .formula {
+      margin-top: 16px;
+      padding: 17px 20px;
+      border-radius: 15px;
+      color: white;
+      background: linear-gradient(135deg, #214ea8, #7047c8);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .formula code { font-size: 18px; font-weight: 800; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .mini-card {
+      padding: 18px;
+      border: 1px solid #d7e0ec;
+      border-radius: 15px;
+      background: #fbfcff;
+    }
+
+    .mini-card h3 { margin: 0 0 7px; font-size: 16px; }
+    .mini-card p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .losses {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(110px, 1fr));
+      gap: 10px;
+    }
+
+    .pill {
+      padding: 13px 10px;
+      border-radius: 999px;
+      text-align: center;
+      background: #eef3fb;
+      border: 1px solid #ccd8e8;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 12px 13px; border-bottom: 1px solid #dce4ef; text-align: left; vertical-align: top; }
+    th { background: #f2f6fc; color: #3c4a5d; }
+
+    .warning {
+      margin-top: 16px;
+      padding: 15px 18px;
+      border-left: 5px solid var(--orange);
+      border-radius: 10px;
+      background: var(--orange-soft);
+      color: #6e3510;
+    }
+
+    footer { margin-top: 20px; color: var(--muted); font-size: 12px; text-align: center; }
+
+    @media (max-width: 1080px) {
+      .hero { grid-template-columns: 1fr; }
+      .flow-grid { grid-template-columns: 1fr; }
+      .arrow { transform: rotate(90deg); min-height: 32px; }
+      .cards { grid-template-columns: 1fr; }
+      .losses { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 620px) {
+      main { width: min(100% - 20px, 1420px); margin-top: 10px; }
+      .hero, .section { padding: 20px; border-radius: 16px; }
+      .identity-row { grid-template-columns: 1fr; gap: 3px; }
+      .losses { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media print {
+      body { background: white; }
+      main { width: 100%; margin: 0; }
+      .hero, .section { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">CUB Generalized Zero-Shot Learning</p>
+        <h1>FRAMEWORK-V1</h1>
+        <p class="subtitle">冻结 CLIP 图像特征，通过 seen 类文本增强、图像条件语义适配、局部 patch 几何编码与双向视觉—语义对齐，在 200 类联合空间输出 GZSL 分数。</p>
+      </div>
+      <div class="identity" aria-label="框架代码身份">
+        <div class="identity-row"><strong>冻结框架</strong><code>7d842e5c0e5554409eedb3097fea5130a848c9e4</code></div>
+        <div class="identity-row"><strong>基线运行代码</strong><code>f8dd7c72465686cfe4aea8a0f37f658e1176386a</code></div>
+        <div class="identity-row"><strong>运行差异</strong><span>仅修复类别校验的 CPU/CUDA device mismatch；计算图与评估语义不变</span></div>
+        <div class="identity-row"><strong>确认基线</strong><span>H = 74.2468%，best epoch = 36</span></div>
+        <div class="identity-row"><strong>评估协议</strong><code>test_selected_inductive_gzsl</code></div>
+      </div>
+    </header>
+
+    <section class="section" aria-labelledby="flow-title">
+      <h2 id="flow-title">推理与训练主干</h2>
+      <p class="section-note">两路输入分别形成全局分数和局部分数，最后使用固定加法融合。</p>
+      <div class="flow-grid">
+        <div class="stack">
+          <article class="node blue"><h3>冻结 CLIP 图像缓存</h3><p>CLS：[B, 768]<br>patch：[B, 576, 768]</p></article>
+          <article class="node violet"><h3>GPT-5.5 句子缓存</h3><p>200 类 × 7 句 × 768 维；unseen 文本允许使用</p></article>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="stack">
+          <article class="node blue"><h3>全局视觉路径</h3><p>CLS 归一化，形成图像级全局表征</p></article>
+          <article class="node violet"><h3>PSE 文本原型增强</h3><p>仅增强 seen 类多句原型；unseen 保持冻结原型</p></article>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="stack">
+          <article class="node green"><h3>ICSA 图像条件语义</h3><p>用 CLS 生成残差，只作用于 seen 类语义，比例 0.008</p></article>
+          <article class="node orange"><h3>FGVD 局部视觉编码</h3><p>频率评分选择 32 个 patch，并加入 24×24 网格几何关系</p></article>
+          <article class="node green"><h3>BVSA 双向对齐</h3><p>text→visual 与 visual→text 两路对齐，得到 local score</p></article>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="stack">
+          <article class="node blue"><h3>Global score</h3><p>归一化 CLS 与图像条件类别语义的相似度</p></article>
+          <article class="node violet"><h3>Local score</h3><p>BVSA 两个方向按 0.5 / 0.5 融合</p></article>
+          <article class="node green"><h3>200 类 logits</h3><p>训练时截取 150 seen 类；评估时保留完整 200 类</p></article>
+        </div>
+      </div>
+      <div class="formula">
+        <span>固定最终评分</span>
+        <code>S_final = S_global + 0.2 × S_local</code>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="loss-title">
+      <h2 id="loss-title">训练目标</h2>
+      <p class="section-note">训练梯度只来自 7,057 张 seen 图像；unseen 图像永远不参与反向传播。</p>
+      <div class="losses">
+        <div class="pill">CE 分类损失</div>
+        <div class="pill">Global/Local 一致性</div>
+        <div class="pill">语义拓扑 Pearson</div>
+        <div class="pill">BMDD 双向分布</div>
+        <div class="pill">SGMP Mask 预测</div>
+        <div class="pill">负语义 Margin</div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="eval-title">
+      <h2 id="eval-title">评估出口</h2>
+      <div class="cards">
+        <article class="mini-card"><h3>GZSL U / S / H</h3><p>seen 与 unseen 图像均在完整 200 类空间竞争，H 是 U 与 S 的调和平均。</p></article>
+        <article class="mini-card"><h3>ZS</h3><p>仅 unseen 图像在 50 个 unseen 类空间竞争。</p></article>
+        <article class="mini-card"><h3>模型选择</h3><p>official test H 用于选择参数、epoch 与最佳模型，必须记录 test_used_for_selection: true。</p></article>
+      </div>
+      <div class="warning"><strong>协议边界：</strong>这是图像监督上的 inductive GZSL，但不是 blind-test，也不是 test-free model selection。</div>
+    </section>
+
+    <section class="section" aria-labelledby="map-title">
+      <h2 id="map-title">代码定位</h2>
+      <table>
+        <thead><tr><th>代码位置</th><th>职责</th><th>关键出口</th></tr></thead>
+        <tbody>
+          <tr><td><code>model/frameworks/v1/model.py</code></td><td>PSE、ICSA、FGVD、BVSA、SGMP、融合与 loss</td><td><code>GTPJ.forward()</code> / <code>compute_loss()</code></td></tr>
+          <tr><td><code>train.py</code></td><td>加载冻结缓存、训练 50 epoch、按 H 保存最佳模型</td><td><code>metrics.json</code> / checkpoints</td></tr>
+          <tr><td><code>tools/cub_data.py</code></td><td>验证 CUB 标准 split、类别覆盖和 seen/unseen 边界</td><td>150 seen / 50 unseen</td></tr>
+          <tr><td><code>tools/evaluation.py</code></td><td>计算 U/S/H 与 ZS</td><td>200 类 GZSL / 50 类 ZS</td></tr>
+          <tr><td><code>config/v1.yaml</code></td><td>V1 固定超参数与三阶段学习率计划</td><td>20 + 20 + 10 epoch</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>gzsl-paper · FRAMEWORK-V1 · HTML diagram source of truth</footer>
+  </main>
+</body>
+</html>

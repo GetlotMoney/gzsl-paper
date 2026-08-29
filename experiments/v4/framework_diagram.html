@@ -1,0 +1,27 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FRAMEWORK-V4 · TG+GTD</title><style>
+:root{--ink:#17221f;--muted:#62706a;--line:#b8c6bf;--green:#e4f3eb;--green2:#1f7a55;--blue:#e7eefb;--blue2:#4267a9;--amber:#fff2d8;--amber2:#a66916;--red:#fff0ed;--red2:#b34d32}*{box-sizing:border-box}body{margin:0;background:#f4f2ec;color:var(--ink);font:15px/1.55 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1320px;margin:auto;padding:28px}h1{margin:0}.sub,.meta{color:var(--muted)}.meta{font-family:ui-monospace,monospace}.flow{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:24px 0}.box{background:white;border:1px solid var(--line);border-radius:14px;padding:13px;min-height:112px}.box strong{display:block;margin-bottom:7px}.tg{border:2px solid var(--green2);background:var(--green)}.gtd{border:2px solid var(--blue2);background:var(--blue)}.loss{border:2px solid var(--amber2);background:var(--amber)}.out{border:2px solid var(--red2);background:var(--red)}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px}.formula{font-family:"Cambria Math",serif;background:#f7f8f7;border-radius:8px;padding:8px;margin:7px 0}.results{width:100%;border-collapse:collapse;background:#fff;margin-top:20px}.results th,.results td{border:1px solid var(--line);padding:8px;text-align:left}.results th{background:#edf1ee}@media(max-width:900px){.flow,.cards{grid-template-columns:1fr}}
+</style></head><body><main>
+<h1>FRAMEWORK-V4 · TG+GTD</h1><p class="sub">Tri-Group Prototype Learning + Geodesic Target Distillation</p>
+<p class="meta">code semantics 4013cca894b00933f6bfed0a125690c66e54cba1 · formal identity framework/v4 = tag v4 · IDEA-146</p>
+<section class="flow">
+<div class="box"><strong>完整资产包</strong>全局图像CLS<br>八角色文本<br>标签与类别轴</div>
+<div class="box tg"><strong>TG三组原型</strong>local / unique / overall<br>seen视觉中心监督</div>
+<div class="box tg"><strong>TG父原型</strong>seen学习适配<br>true-unseen保持Mean8</div>
+<div class="box gtd"><strong>Seen三折Teacher</strong>伪unseen中心<br>CE + 0.1θ² oracle</div>
+<div class="box gtd"><strong>GTD Gate</strong>6维文本几何→16→1<br>目标detach，SmoothL1</div>
+<div class="box gtd"><strong>球面迁移</strong>只移动true-unseen<br>低于dead-zone精确回退TG</div>
+<div class="box out"><strong>统一出口</strong>全类别U/S/H<br>unseen-only ZS<br>整模型best-H</div>
+</section>
+<section class="cards">
+<article class="card"><strong>训练损失</strong><div class="formula">L = LCE(TG) + 0.1 Ltopology(TG) + LSmoothL1(Gate, detached oracle)</div><p>GTD接受TG生成的teacher目标，但不反向改变TG梯度。</p></article>
+<article class="card"><strong>部署原型</strong><div class="formula">pᵤ = Expₘₑₐₙ₈(rᵤ · θmax · dᵤ)</div><p>r低于1/32时复用精确TG父张量，保证可审计module-off。</p></article>
+<article class="card"><strong>评估边界</strong><p>只用trainval seen图像产生梯度；official test参与best-H选择；不作blind-test声明；类别数随CUB/AWA2/SUN动态变化。</p></article>
+</section>
+<table class="results"><thead><tr><th>Dataset</th><th>V4证据RUN</th><th>U / S / H / ZS</th><th>GTD同checkpoint ΔH</th><th>结论</th></tr></thead><tbody>
+<tr><td>CUB</td><td>V3-TRY-041</td><td>79.624 / 76.671 / 78.120 / 85.795</td><td>+1.471</td><td>正增益</td></tr>
+<tr><td>AWA2</td><td>V3-TRY-046</td><td>97.553 / 95.219 / 96.372 / 99.173</td><td>+0.000</td><td>精确no-op边界</td></tr>
+<tr><td>SUN</td><td>V3-TRY-047</td><td>80.208 / 67.558 / 73.342 / 92.500</td><td>+3.099</td><td>正增益</td></tr>
+</tbody></table>
+<p class="meta">asset bundle: canonical_visual_plus_role_text_v2；额外patch/layer/view字段按需读取，未读取字段不改变TG+GTD语义。</p>
+</main></body></html>

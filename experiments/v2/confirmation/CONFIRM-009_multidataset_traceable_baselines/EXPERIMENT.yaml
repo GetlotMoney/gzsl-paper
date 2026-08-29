@@ -1,0 +1,19 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-CONFIRM-009
+slug: multidataset_traceable_baselines
+kind: confirmation
+framework_id: FRAMEWORK-V2
+code_semantics_commit: b7e25c2758da896411236c2ea60662439a01244b
+asset_registry: config/paper_v2/ASSETS.yaml
+status: planned
+question: 在同一可追溯OpenAI CLIP设置下，class-name Pure CLIP和八角色Mean8在CUB/AWA2/SUN的正式起点是多少
+evaluation_protocol: single_official_evaluation_no_training
+test_used_for_selection: false
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+datasets: [CUB, AWA2, SUN]
+conditions:
+  B0_PURE_CLIP: image CLIP x "a photo of a {class name}"
+  B1_MEAN8: image CLIP x normalized mean of eight role descriptions
+framework_diagram: experiments/v2/confirmation/CONFIRM-009_multidataset_traceable_baselines/framework_diagram.html
+output_root: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-009_multidataset_traceable_baselines

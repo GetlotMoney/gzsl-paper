@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-032 BOCR</title></head>
+<body>
+<h1>BOCR：类名与GPT父原型二维正交残差</h1>
+<p><strong>Base commit：</strong>65bae6e19f2e054c6d0c7831ccc54be79ce557e2；<strong>RUN-001 code commit：</strong>aaa26eb94cd66cd9259dbeecc2497a8e7f4fc9a9。</p>
+<h2>二维Gram–Schmidt去重</h2>
+<pre>q1_c = Norm(class_name_c)
+q2_c = Norm(TG_parent_c - (TG_parent_c·q1_c)q1_c)
+unique_c = Norm(Claude_c - (Claude_c·q1_c)q1_c - (Claude_c·q2_c)q2_c)
+final_logits = SEBC_logits + beta × Norm(image_CLS) @ unique.T
+beta = 20 × tanh(raw_beta)</pre>
+<p>去除NCRA类名身份和TG-VPR结构化GPT语义两类已覆盖方向。raw_beta零初始化，关闭时严格复现SEBC。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新official test选全局best。unseen文本允许使用、unseen图像不进入梯度；test_used_for_selection=true。Claude cache provenance未完整。</p>
+</body></html>

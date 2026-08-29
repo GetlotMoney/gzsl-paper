@@ -1,0 +1,8 @@
+run_id: RUN-003
+source_attempt: V2-TRY-002
+seed: 7
+base_config: config/tg_vpr_h1.yaml
+base_checkpoint_sha256: 59397353a7db1b82df815a0faea1050c76b6f992ff3426a2bbb58d984f39595f
+transfer_strength: 0.1
+code_commit: 1a56fa2b0d8fc390e46e7e64535b962e44983813
+

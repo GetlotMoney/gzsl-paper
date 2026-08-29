@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-087 MHPS</title></head>
+<body>
+<h1>MHPS：匹配困难成对选择器</h1>
+<p><strong>Base commit：</strong>9bb13d82b348f4f3219ef2949af92b64435b4ed5；<strong>有效RERUN code commit：</strong>4d4655f4ec2487e3864455ac30e601cf00df9869。</p>
+<pre>稳定SNPS top-3关系内全部top2训练错误pair
+             +
+从正确top1 pair按margin升序选等量最困难样本
+             ↓
+标签严格1:1、每pair保持原soft-gate权重
+             ↓
+原12维线性selector与推理公式不变
+→ 200-way U/S/H；50-way ZS</pre>
+<p>相对逆频率加权，本方法不制造大权重，只通过确定性样本匹配消除93% top1标签不平衡。训练仅使用seen图像，official test按陈式协议选择最高H。</p>
+</body></html>

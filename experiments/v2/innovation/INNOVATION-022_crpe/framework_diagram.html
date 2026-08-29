@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-022 CRPE</title></head>
+<body>
+<h1>CRPE：类别语义可靠性patch缩放</h1>
+<p><strong>Base commit：</strong>f32b9fe2e083ade82a884dfce9fd09ec085ca33f；<strong>RUN-001 code commit：</strong>c81d3034580fc06c0dbfeaa554a77a3ae5e5c36f。</p>
+<h2>可靠性来源</h2>
+<pre>local_c = Norm(mean(first_6_sentences_c))
+residual_c = local_c - proj_class_name_c(local_c)
+strength_c = ||residual_c||
+reliability_c = clip((strength_c - seen_mean)/(2×seen_std), -1, 1)</pre>
+<p>reliability只由文本和150个seen类的统计中心/尺度产生；unseen类文本允许使用，unseen图像不参与。</p>
+<h2>推理与训练</h2>
+<pre>beta_c = fixed_CCPE_beta + delta × reliability_c
+final_logits_c = SEBC_logits_c + beta_c × top2_patch_score_c
+delta = 2 × tanh(raw_delta)</pre>
+<p>CCPE beta从SHA绑定的RUN-003加载并冻结，raw_delta零初始化，关闭时严格复现CCPE。只用7,057张seen图像、150类CE训练delta，共28,228次更新；每141次更新official test选全局best。</p>
+<h2>边界</h2><p>真实unseen patch不进入梯度；U/S/H为200类联合竞争，ZS为50类竞争；test_used_for_selection=true。遗留CLIP patch准确checkpoint provenance仍不完整。</p>
+</body></html>

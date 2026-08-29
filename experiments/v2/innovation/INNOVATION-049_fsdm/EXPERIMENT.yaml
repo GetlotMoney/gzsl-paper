@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-049
+idea_id: IDEA-083
+framework_id: FRAMEWORK-V2
+title: Full-Semantic Symmetric Diagonal Metric
+base_commit: 538d1dae225b17e362d640a07385d60956666e7f
+code_commit: 90194816040c929b32dcc81120918081daec8efb
+status: rejected_seen_metric_bias
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-049_fsdm/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 90194816040c929b32dcc81120918081daec8efb
+    config_ref: experiments/v2/innovation/INNOVATION-049_fsdm/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-049_fsdm/RUN-001
+    status: completed_failed_parent_only

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-080 TR-RDSS</title></head>
+<body>
+<h1>TR-RDSS：信赖域角色分歧尺度选择器</h1>
+<p><strong>Base commit：</strong>bbd476ab3b88387cce96339d79b477189f2bad80；<strong>RUN-001 code commit：</strong>45f05ec5a796e9a6dc33e85368babb070e48bf6e；<strong>RUN-002 code commit：</strong>f29acf517d85ba5b74352e8472257d456edff7e1。</p>
+<pre>SNPS top-3 12维selector → 初始化前12维与bias
+raw role std             → 第13维初始权重0
+
+13维联合pair CE
++ 0.1 × [mean((w₁₂-w_parent)²) + (b-b_parent)²]
+→ 旧权重可协调但受信赖域约束
+→ 200-way U/S/H；50-way ZS</pre>
+<p>这是完全冻结与从零联合训练之间的中间方案。初始态必须精确复现SNPS，训练仍只使用seen图像，official test按陈式协议选择最高H。</p>
+</body></html>

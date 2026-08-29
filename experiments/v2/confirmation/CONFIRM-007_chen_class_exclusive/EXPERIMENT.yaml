@@ -1,0 +1,37 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-CONFIRM-007
+slug: chen_class_exclusive
+kind: confirmation
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+framework_diagram: experiments/v2/confirmation/CONFIRM-007_chen_class_exclusive/framework_diagram.html
+base_commit: 74767050b1fa21eff2ca89e88e379d3aaa1bc30c
+code_commit: 8f3d69b1a2b94243c9d43123f631635b36b25fd3
+research_question: 三个真正只见100类的fold TG父模型能否训练共享迁移与CCGR，把无专家Chen-style H推到77.023以上？
+status: closed_best_H_75_849154
+evaluation_protocol: chen_shiming_code_aligned_class_exclusive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+training_strategy: full_tg_plus_three_class_exclusive_fold_parents
+selection_scope: inference_model_whole_run_only
+nested_official_test_selection: false
+server:
+  ssh_host: lab4090
+  gpu: 1
+  output_root: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-007_chen_class_exclusive
+runs:
+  - run_id: RUN-001
+    condition: no_expert_true_class_exclusive
+    code_commit: 8f3d69b1a2b94243c9d43123f631635b36b25fd3
+    seed: 5
+    config_ref: experiments/v2/confirmation/CONFIRM-007_chen_class_exclusive/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-007_chen_class_exclusive/RUN-001
+    status: completed
+  - run_id: RUN-002
+    condition: no_expert_true_class_exclusive_transport_1.5
+    code_commit: 631c0897eafdc9facac7d97807e77faed982b7e5
+    seed: 5
+    config_ref: experiments/v2/confirmation/CONFIRM-007_chen_class_exclusive/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-007_chen_class_exclusive/RUN-002
+    status: completed

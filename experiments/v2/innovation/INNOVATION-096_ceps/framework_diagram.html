@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-096 CEPS</title><style>body{font-family:system-ui;margin:32px;background:#f7f9fc;color:#172033}.box{background:#fff;border:1px solid #b9c4d6;border-radius:12px;padding:16px;margin:12px}.arrow{text-align:center;font-size:24px}.tag{font-weight:700;color:#3156a3}code{background:#eef2f8;padding:2px 5px}</style></head><body>
+<h1>CEPS 证据一致性分阶段训练</h1>
+<div class="box"><span class="tag">代码身份</span>：pre-run commit待回填；base <code>028ba13caa3316c5d2c1361ef6417defb4b1926f</code></div>
+<div class="box"><span class="tag">阶段一</span>：加载训练所得SNPS top-3 selector；输入仅包含CUB seen训练图像和文本证据。</div><div class="arrow">↓</div>
+<div class="box"><span class="tag">双视图证据</span>：同一pair生成完整12维证据，以及循环屏蔽一个非margin维度的证据。</div><div class="arrow">↓</div>
+<div class="box"><span class="tag">loss</span>：masked pair CE + <code>0.1 × MSE(masked correction, full correction)</code>；只更新selector。</div><div class="arrow">↓</div>
+<div class="box"><span class="tag">推理</span>：只用完整12维证据输出200类联合logits；U/S/H在200类竞争，ZS在50 unseen类竞争。每141更新按official test H选择best，<code>test_used_for_selection=true</code>。</div>
+<div class="box"><span class="tag">边界</span>：true unseen图像不进入梯度；关闭新增一致性loss即退回S-EDPS训练语义。</div>
+</body></html>

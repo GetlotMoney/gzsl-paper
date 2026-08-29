@@ -1,0 +1,8 @@
+run_id: RUN-001
+source_attempt: V2-TRY-003
+seed: 5
+base_config: config/tries/v2_unseen_transfer_seed5.yaml
+base_checkpoint_sha256: 42a2e56c300389cea02a7456793532c22aea7e33982a2bef6d001bd2b3dac933
+transfer_strength: 0.1
+code_commit: 1a56fa2b0d8fc390e46e7e64535b962e44983813
+

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-090 APS</title></head>
+<body>
+<h1>APS：反对称成对选择器</h1>
+<p><strong>Base commit：</strong>372b8ed729081703a556742433e8f807a176ce66；<strong>RUN-001 code commit：</strong>e2bec9ae6d2ba8b94d95333a9de607c0db4b62ab。</p>
+<pre>每个原pair (top1, top2, features, target)
+新增镜像 (top2, top1, -features, 1-target)
+→ 样本数翻倍、标签严格对称
+
+selector bias固定0
+gate使用abs(margin)
+→ correction(swap pair) = swap(correction(original))
+→ 200-way U/S/H；50-way ZS</pre>
+<p>镜像增强强制模型不依赖父排序方向，只学习证据的反对称关系。训练仅使用seen图像，official test按陈式协议选择最高H。</p>
+</body></html>

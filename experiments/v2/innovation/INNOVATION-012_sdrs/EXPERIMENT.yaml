@@ -1,0 +1,23 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-012
+idea_id: IDEA-046
+framework_id: FRAMEWORK-V2
+title: Semantic-Disagreement Residual Scaling
+base_commit: 994ad823c425ed237a2956c1aa7057202a1e9673
+code_commit: af3f46b6ac344634e79b6c08e0f332831c546096
+status: supported_auxiliary_marginal
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-012_sdrs/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 4645ae475cd6908034ab067989a5c5324dd794f9
+    config_ref: experiments/v2/innovation/INNOVATION-012_sdrs/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-012_sdrs/RUN-001
+    status: completed
+  - run_id: RUN-002
+    code_commit: af3f46b6ac344634e79b6c08e0f332831c546096
+    config_ref: experiments/v2/innovation/INNOVATION-012_sdrs/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-012_sdrs/RUN-002
+    status: completed

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>V2-INNOVATION-002 · TST</title>
+  <style>
+    body{margin:0;background:#f4f1ea;color:#17221f;font:15px/1.55 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1120px;margin:32px auto;padding:0 24px}h1{font-size:30px;margin:0 0 6px}.meta{color:#52615c;font-family:ui-monospace,monospace}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:30px 0}.box{background:#fff;border:1px solid #cbd5cf;border-radius:14px;padding:16px;box-shadow:0 8px 24px #263b3020}.box strong{display:block;color:#176b4d;margin-bottom:8px}.changed{border:2px solid #d06b32;background:#fff8f1}.arrow{text-align:center;color:#b45725;font-size:24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}code{word-break:break-all}.tag{display:inline-block;background:#e5f1eb;padding:3px 8px;border-radius:999px;margin-right:6px}
+    @media(max-width:850px){.flow,.grid{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+  </style>
+</head>
+<body><main>
+  <h1>TST · Tangent Semantic Transport</h1>
+  <div class="meta">Experiment V2-INNOVATION-002 · base 3dc078c0d52bf358bf24a26e48346c97de9e99ca · code 0b919b14f052ec5e3f99378383e94053a2cf45ae / b9cfb5bd0139ca85de42c4445f9b045977c19fa3</div>
+  <p><span class="tag">supported</span><span class="tag">test_selected_inductive_gzsl</span><span class="tag">test_used_for_selection=true</span></p>
+  <section class="flow">
+    <div class="box"><strong>1 · 冻结输入</strong>CLIP CLS `[B,768]`<br>八角色语义 `[200,8,768]`</div>
+    <div class="box"><strong>2 · TG-VPR父路径</strong>seen训练Value路径<br>输出Mean8与Value候选原型</div>
+    <div class="box changed"><strong>3 · TST新增</strong>4维类别几何 → 4-16-1 gate → β<br>切向量 `v-(v·p)p`</div>
+    <div class="box changed"><strong>4 · 原型出口</strong>`Norm(p_mean + β·tangent)`<br>β=0严格回到父条件</div>
+    <div class="box"><strong>5 · 指标出口</strong>200类联合logits → U/S/H<br>50 unseen logits → ZS</div>
+  </section>
+  <div class="grid">
+    <section class="box"><strong>训练流</strong>150个seen类按排序索引mod 3拆为三折。每折100类图像训练H1，50类只作为pseudo-unseen训练gate；损失为150类联合CE + `0.1×topology`。true-unseen图像不加载、不进入梯度。</section>
+    <section class="box"><strong>评估边界</strong>训练结束后才加载official test-seen/test-unseen。U/S/H在200类空间竞争，ZS在50类unseen空间竞争；official test参与模型判断，明确不是blind-test。</section>
+    <section class="box"><strong>相对base变化</strong>只把unseen原型的凸混合替换为单位球面切空间迁移，并新增类别级步长gate。TG-VPR、CLIP缓存、类别划分和评估语义均保持不变。</section>
+    <section class="box"><strong>输出与证据</strong>每个RUN输出`training.log / metrics.json / gate_model.pth / data_fingerprints.json`到仓库外独立目录；四seed H mean=`76.866245%`。</section>
+  </div>
+</main></body></html>

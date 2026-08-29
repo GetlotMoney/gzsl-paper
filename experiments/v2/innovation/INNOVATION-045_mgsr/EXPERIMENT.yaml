@@ -1,0 +1,23 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-045
+idea_id: IDEA-079
+framework_id: FRAMEWORK-V2
+title: Multi-Geometry Sentence Routing
+base_commit: 4e4734b0f0885d9cccfd7f99488653b4b3bd0419
+code_commit: 7e5911f29a03faa0d7b663210d9d5ea47b5bf676
+status: retained_saturated_signal_rescue_1_failed
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-045_mgsr/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 7e5911f29a03faa0d7b663210d9d5ea47b5bf676
+    config_ref: experiments/v2/innovation/INNOVATION-045_mgsr/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-045_mgsr/RUN-001
+    status: completed_retained_saturated_signal
+  - run_id: RUN-002
+    code_commit: 3052dcd457f6878ce4577d72565946d8131cd056
+    config_ref: experiments/v2/innovation/INNOVATION-045_mgsr/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-045_mgsr/RUN-002
+    status: completed_below_run_001_saturated

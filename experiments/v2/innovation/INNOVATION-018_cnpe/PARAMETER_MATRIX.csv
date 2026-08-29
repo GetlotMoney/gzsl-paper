@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,learned_beta,test_used_for_selection,output_uri,decision
+RUN-001,ea80ee2f8351b68e4b06d172b012b5b1dc61fea1,experiments/v2/innovation/INNOVATION-018_cnpe/configs/RUN-001.yaml,5ea1161005d35e1b13df57929accf99f0a7d296e94f39c6ef056ca548b531db2,5,completed,75.874960,79.415172,77.604713,83.086050,8178,0.222452,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-018_cnpe/RUN-001,drop_below_ccpe_keep_complementary_signal

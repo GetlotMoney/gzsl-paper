@@ -22,7 +22,9 @@ _DEFAULT_CACHE_DIR = Path(__file__).resolve().parents[1] / "data" / "cache"
 
 
 def test_cache_paths(cache_dir=_DEFAULT_CACHE_DIR):
-    root = Path(cache_dir).resolve()
+    # 保留仓库内逻辑挂载路径；resolve()会在Windows上展开Junction，
+    # 使运行契约错误地把G盘物理目标当成代码入口身份。
+    root = Path(cache_dir).absolute()
     return {name: root / filename for name, filename in _CACHE_FILES.items()}
 
 

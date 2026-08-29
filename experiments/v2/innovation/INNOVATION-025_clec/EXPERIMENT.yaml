@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-025
+idea_id: IDEA-059
+framework_id: FRAMEWORK-V2
+title: Cross-LLM Local Evidence Composition
+base_commit: 6f45cd92d502220a1a667d5ce0982e449da86e15
+code_commit: 542df999a06266921fcfea9b018b7df8b28bf779
+status: rejected_not_complementary
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-025_clec/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 542df999a06266921fcfea9b018b7df8b28bf779
+    config_ref: experiments/v2/innovation/INNOVATION-025_clec/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-025_clec/RUN-001
+    status: completed

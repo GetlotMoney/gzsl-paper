@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-095 S-EDPS</title>
+<style>body{font-family:system-ui;margin:32px;color:#172033;background:#f7f9fc}.box{background:white;border:1px solid #b9c4d6;border-radius:12px;padding:16px;margin:12px 0}.arrow{text-align:center;font-size:24px}.tag{color:#3156a3;font-weight:700}code{background:#eef2f8;padding:2px 5px}</style></head>
+<body><h1>S-EDPS 分阶段训练图</h1>
+<div class="box"><span class="tag">代码身份</span>：<code>e7571cbe1099b8ea5facd01d99c5a5da0e92363e</code>；base commit <code>08df694bfb1ba520f5bcff24174ffbb6bacf0f1e</code></div>
+<div class="box"><span class="tag">输入</span>：CUB 7,057张seen训练特征；SNPS top-3阶段一checkpoint；Claude、merge、类名和8角色文本缓存。</div>
+<div class="arrow">↓</div>
+<div class="box"><span class="tag">阶段一（已完成父模型）</span>：SNPS用12维pair证据学习top1/top2零和修正。加载其训练所得selector权重，不加载任何unseen图像参与梯度。</div>
+<div class="arrow">↓</div>
+<div class="box"><span class="tag">阶段二（本实验）</span>：每个batch循环屏蔽一个非margin证据维，使用seen pair CE继续训练全部12维selector；batch=50，Adam，28,228次更新。</div>
+<div class="arrow">↓</div>
+<div class="box"><span class="tag">推理与出口</span>：恢复完整12维证据，输出200类联合logits；U/S/H在200类竞争，ZS在50 unseen类竞争。每141次更新评估official test并按H保存best，<code>test_used_for_selection=true</code>。</div>
+<div class="box"><span class="tag">关闭行为</span>：阶段二训练前的初始化严格等于SNPS top-3父模型；若阶段二无提升，best保持父权重。</div>
+</body></html>

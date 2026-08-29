@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-078 RDSS</title></head>
+<body>
+<h1>RDSS：角色分歧尺度选择器</h1>
+<p><strong>Base commit：</strong>0dce83c9b8530402b89efb594f69761f66d2d3fa；<strong>RUN-001 code commit：</strong>372d26f25a95f3197f9b7ee9021a2b925cce59d0；<strong>RUN-002 code commit：</strong>376c347a514198fdfc7f3917642f9a525a1840e5。</p>
+<pre>八角色原始top1-top2差值
+├─ 中心化并除标准差 → 8维角色方向
+└─ 归一化前std      → 第13维角色分歧尺度
+
+[margin, Claude, merge, 类名, 8维方向, raw std]
+→ 稳定SNPS union top-3门控
+→ Linear(13,1) pair修正
+→ 200-way U/S/H；50-way ZS</pre>
+<p>第13维恢复中心化过程中被丢弃的置信尺度，使选择器区分“角色一致”与“角色强冲突”的样本。训练仍只使用seen图像，unseen图像不进入梯度。</p>
+</body></html>

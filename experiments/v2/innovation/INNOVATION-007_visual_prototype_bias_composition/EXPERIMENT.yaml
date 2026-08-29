@@ -1,0 +1,37 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-007
+idea_id: IDEA-037
+evidence_refs: [PAPER-002, PAPER-003, V2-INNOVATION-005, V2-INNOVATION-006, V2-TRY-118]
+framework_id: FRAMEWORK-V2
+base_commit: 3ca778fbc09808c564f7c0d86ceb2b4f6fa9e0d8
+code_commits:
+  initial: ff4affe1433259c81fe28138b33d2bef517a638f
+  interior_gamma: 01470a4f0e0f450a95fc0c70c743d8cad76b9e8e
+  multiseed: 7c65bced976d8aa4b61d1199c94f198378d8a9bf
+title: Visual Prototype and Episodic Bias Composition
+status: retained_out_of_scope_expert_attributes
+paper_eligible: false
+exclusion_reason: owner_prohibits_CUB_312d_expert_attributes_2026-08-23
+paper_core_innovation: false
+question: 属性视觉原型的类内判别增益与episodic偏置校准能否互补并稳定把H推到80左右
+source_attempts: [V2-TRY-125, V2-TRY-121, V2-TRY-126, V2-TRY-127]
+component_ablation_attempts: [V2-TRY-104, V2-TRY-118, V2-TRY-114]
+tune_attempts: [V2-TRY-130]
+module:
+  module_id: VEBC
+  name: VPA + Episodic Bias Calibration
+  purpose: VPA提高属性驱动的unseen类内判别，EBC恢复seen/unseen联合竞争平衡
+  inputs: [CCGR主原型, CRA属性logits, 属性生成视觉原型logits, seen类别掩码]
+  output: CRA+VPA融合logits及seen扣减gamma后的最终logits
+  formula: logits=logits_CRA+beta_v*cos(x,p_attr_visual)-gamma*I[c in seen]
+  switches: {forward_ridge: 0.01, reverse_ridge: 0.01, max_gamma: 0.30}
+  baseline_off_behavior: beta_v=0关闭VPA；gamma=0关闭EBC；两者关闭回到CRA
+  parent_condition: TG-VPR + TST + NTR + CCGR + CRA
+  training: VPA beta用seen CE；EBC在重建正反ridge的三折pseudo-unseen episode中训练gamma
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+primary_reporting: highest_seed_H_with_multiseed_range
+framework_diagram: framework_diagram.html
+decision: auxiliary_composition_not_fourth_core_innovation
+novelty_claim: none

@@ -1,0 +1,58 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-CONFIRM-012
+slug: canonical_class_names
+kind: confirmation
+framework_id: FRAMEWORK-V2
+base_commit: d0b3d6943b8f1ed5555df2dc48f0b0743ad12538
+code_semantics_commit: 2fc5312647b55e13e36e2b30d16479d713c8bbe4
+execution_commit: 2fc5312647b55e13e36e2b30d16479d713c8bbe4
+status: completed
+question: 使用与冻结text-v2八角色句子完全相同的自然类名前缀重新编码后，三数据集Pure CLIP公平基线是多少
+evaluation_protocol: chen_shiming_code_aligned_multidataset_test_selected_gzsl
+test_used_for_selection: false
+test_used_for_hyperparameter_selection: false
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+training_strategy: no_training
+selection_scope: whole_run_whole_model_only
+nested_official_test_selection: false
+conditions:
+  - CUB_B0_CANONICAL_CLASS_NAME
+  - AWA2_B0_CANONICAL_CLASS_NAME
+  - SUN_B0_CANONICAL_CLASS_NAME
+assets:
+  CUB:
+    asset_id: 4aee52e1a1360969
+    parent_text_v2_asset_id: 69c9c6d82a755fe8
+    manifest_sha256: d734d69a40e946577e9dfdb9ffad2f764be6f89b29ef571fb183081afa5c8084
+  AWA2:
+    asset_id: b72e978b7fc42fa0
+    parent_text_v2_asset_id: 7f0e1989635ca98d
+    manifest_sha256: 5f4d286362750b04543ea30eee37b705cccea9711183baf82447995eeabfd1ef
+  SUN:
+    asset_id: 5e9c8308ebc5b075
+    parent_text_v2_asset_id: bfe12cda3c37abdb
+    manifest_sha256: 71601a83d42e8d647bdd6ae90dd3f60d4f549bf34a3376a05114c9ad9fb5fab5
+single_variable_change: class_name_embeds.pt and class_names.json only; image tensors labels and role_sentence_embeds are hardlinked unchanged
+failed_runtime_note: 首次CUB/AWA2配置使用未注册condition_id而回退到Mean8路径；产物保留但不计为B0，修正后使用新输出目录重跑
+comparison_source: experiments/v2/confirmation/CONFIRM-010_text_v2_recovery/PARAMETER_MATRIX.csv
+framework_diagram: experiments/v2/framework_diagram.html
+output_root: /data/lby/projects/cv_project/GZSL_Warehouse/final/v2/CONFIRM-012_canonical_class_names
+completed_at: 2026-08-26
+outcomes:
+  CUB:
+    B0_H: 65.37329955248795
+    existing_B1_H: 68.71274407420844
+    existing_M3_H: 76.37676633546641
+    M3_delta_H_vs_B0: 11.003466782978464
+  AWA2:
+    B0_H: 93.0186198238174
+    existing_B1_H: 95.26219958146154
+    existing_M3_H: 96.31662740209087
+    M3_delta_H_vs_B0: 3.29800757827347
+  SUN:
+    B0_H: 60.47123412522581
+    existing_B1_H: 63.47160826331073
+    existing_M3_H: 71.18099844372958
+    M3_delta_H_vs_B0: 10.709764318503765
+decision: canonical class-name B0 supersedes the noncanonical B0 only for fair text-v2 delta calculations; existing B1 and M3 absolute results remain unchanged

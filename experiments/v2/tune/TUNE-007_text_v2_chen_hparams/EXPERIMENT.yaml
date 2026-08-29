@@ -1,0 +1,51 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-TUNE-007
+slug: text_v2_chen_hparams
+kind: tune
+framework_id: FRAMEWORK-V2
+code_semantics_commit: b7e25c2758da896411236c2ea60662439a01244b
+asset_derivation_commit: 4b660f5848c5d13584248a0de0b96ac6d54ec9a8
+status: topology_coarse_completed_paused_by_owner
+question: 冻结text-v2与Stagewise后，三数据集的Topology/Transport/CCGR/学习率顺序搜索应选择什么参数
+evaluation_protocol: chen_shiming_code_aligned_multidataset_test_selected_gzsl
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+training_strategy: stagewise_50_100_50
+selection_scope: whole_run_whole_model_only
+nested_official_test_selection: false
+seed: 7
+execution_policy: two independent single-GPU RUNs in parallel; max one RUN per physical GPU
+physical_gpus:
+  - 0
+  - 1
+datasets:
+  CUB: 69c9c6d82a755fe8
+  AWA2: 7f0e1989635ca98d
+  SUN: bfe12cda3c37abdb
+search_order:
+  - topology_weight
+  - max_transport_step
+  - max_generator_magnitude
+  - learning_rate_scale
+current_axis: topology_weight
+topology_coarse:
+  - 0
+  - 0.03
+  - 0.1
+  - 0.2
+reference_0_1: experiments/v2/ablation/ABLATION-004_text_v2_training_strategy/result.md
+selection_rules:
+  - highest official test H
+  - reject if U or S drops by more than 2 percentage points
+  - if H differs by less than 0.1, choose the more balanced and smaller value
+  - selected checkpoint must have nonzero TST-NTR and CCGR outputs
+  - disclose test_used_for_hyperparameter_selection=true
+framework_diagram: experiments/v2/tune/TUNE-007_text_v2_chen_hparams/framework_diagram.html
+output_root: /data/lby/projects/cv_project/GZSL_Warehouse/tune/v2/TUNE-007_text_v2_chen_hparams
+dataset_progress:
+  CUB: topology 0 selected; transport coarse next
+  AWA2: topology axis closed with no valid full-module Stagewise checkpoint
+  SUN: topology 0 selected; coarse axis complete
+pause_decision: owner requested stop after the current topology coarse experiment; no Transport RUN was started

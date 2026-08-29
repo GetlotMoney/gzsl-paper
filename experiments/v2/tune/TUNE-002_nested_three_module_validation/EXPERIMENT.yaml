@@ -1,0 +1,59 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-TUNE-002
+slug: nested_three_module_validation
+kind: tune
+framework_id: FRAMEWORK-V2
+framework_ref: v2
+base_commit: 2a5611e629facf51f78b6cf4a8f029b4afff19ac
+code_commit: d9876ddeb573440877bfd8957fd541dfbb8e0e73
+status: closed_no_outer_validation_gain
+research_question: 内层仅在外层100个训练类中进行语义平衡三折，能否提高TG-VPR、TST-NTR与CCGR联合模型在外层50个类别不相交validation类上的泛化？
+evaluation_protocol: xlsa17_class_disjoint_gzsl_validation
+validation_used_for_selection: true
+test_used_for_selection: false
+official_test_loaded: false
+validation_images_used_for_gradient: false
+inner_pseudo_unseen_images_used_for_gradient: true
+historical_test_informed_architecture: true
+final_test_eligible: false
+framework_diagram: experiments/v2/tune/TUNE-002_nested_three_module_validation/framework_diagram.html
+split:
+  outer_fit_images: 3724
+  outer_train_classes: 100
+  outer_validation_seen_images: 978
+  outer_validation_unseen_images: 2355
+  outer_validation_unseen_classes: 50
+  inner_fold_sizes: [34, 33, 33]
+  inner_fold_fit_image_counts: [1264, 1229, 1231]
+  inner_fold_sha256: d8ed7bb33165f3320cdce7473144cb24d4b672cd9fd951710ad586ad314813b9
+runs:
+  - run_id: RUN-001
+    code_commit: ac647fb06b2fc786f05545ee148d3b68869e502d
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-001
+    status: failed_runtime_support_class_guard
+  - run_id: RUN-001-RERUN
+    code_commit: c99a585c0864a0133814b706db2053a6ad6a60f4
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-001-RERUN
+    status: completed_below_outer_baseline
+  - run_id: RUN-002
+    code_commit: 1aa276ec5dd017552a7e127cb2f607df8aa66340
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-002
+    status: completed_h_gain_unseen_drop
+  - run_id: RUN-003
+    code_commit: 22bf3cad8f18acd8195d554f197dbd8b4e51b3c2
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-003
+    status: completed_h_gain_unseen_still_below
+  - run_id: RUN-004
+    code_commit: d9876ddeb573440877bfd8957fd541dfbb8e0e73
+    seed: 7
+    config_ref: experiments/v2/tune/TUNE-002_nested_three_module_validation/configs/RUN-004.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/validation/v2/TUNE-002_nested_three_module_validation/RUN-004
+    status: completed_near_tie_below_baseline

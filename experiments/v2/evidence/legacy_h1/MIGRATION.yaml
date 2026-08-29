@@ -1,0 +1,36 @@
+schema_version: gzsl-paper.legacy-evidence.v1
+evidence_id: LEGACY-H1-EVIDENCE-001
+target_framework: FRAMEWORK-V2
+target_idea: IDEA-001
+authorization: owner_explicit_2026-08-22
+migration_mode: byte_exact_lightweight_evidence_snapshot
+source_experiments:
+  - legacy_ref: V5-INNOVATION-024
+    target_dir: innovation_024
+  - legacy_ref: V5-ABLATION-014
+    target_dir: ablation_014
+  - legacy_ref: V5-TUNE-005
+    target_dir: tune_005
+  - legacy_ref: V5-TUNE-006
+    target_dir: tune_006
+copied_file_count: 21
+file_manifest: FILE_MANIFEST.csv
+file_manifest_aggregate_sha256: 75b2d47fe8ca64af240d4640ffaf401d94098c42e19459029bd2277e6557a483
+included:
+  - experiment identities
+  - frozen configs
+  - parameter matrices
+  - result summaries
+  - quality checks
+  - artifact hash index
+excluded:
+  - old training scripts and model copies
+  - checkpoints and caches
+  - raw logs
+  - old idea tree and paper notes
+  - unrelated experiments
+evidence_boundary:
+  test_used_for_selection: true
+  formal_evidence: false
+  not_confirmation_evidence: true
+  blind_test: false

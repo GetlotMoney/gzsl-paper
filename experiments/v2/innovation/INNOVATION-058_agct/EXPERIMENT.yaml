@@ -1,0 +1,46 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-058
+idea_id: IDEA-092
+framework_id: FRAMEWORK-V2
+title: Ambiguity-Gated Cross-LLM Tie-Breaker
+base_commit: 45394ae01e29a929d4179d469b7bbe3abede07c6
+code_commit: 0087de74602639bb8e95fbf63ebf7f9d20cd59eb
+status: supported_precision_two_seed_axis_closed
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-058_agct/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 0087de74602639bb8e95fbf63ebf7f9d20cd59eb
+    config_ref: experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-058_agct/RUN-001
+    status: completed_weak_positive
+  - run_id: RUN-002
+    code_commit: 18d9d9aa964f51d5ccd109c8a5731673238256bd
+    config_ref: experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-058_agct/RUN-002
+    status: completed_positive
+  - run_id: RUN-003
+    code_commit: 7d37ff2e369bbce98fd8406e968d2003ba406062
+    config_ref: experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-058_agct/RUN-003
+    status: completed_failed_parent_only
+  - run_id: RUN-004
+    code_commit: ab23201c259feb8b3a0920cb44e72dc6c5176771
+    config_ref: experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-004.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-058_agct/RUN-004
+    status: completed_positive
+  - run_id: RUN-005
+    code_commit: 34ca5d40051a57356ea46097be4d48e1314a0ff3
+    config_ref: experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-005.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-058_agct/RUN-005
+    status: completed_positive
+  - run_id: RUN-006
+    code_commit: 0ca4cc1003b45c208b256ef0be9832612079e5b5
+    config_ref: experiments/v2/innovation/INNOVATION-058_agct/configs/RUN-006.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-058_agct/RUN-006
+    status: completed_equal_best
+    attempt_no: RESCUE-3
+    attempt_no: RESCUE-2
+    attempt_no: RESCUE-1

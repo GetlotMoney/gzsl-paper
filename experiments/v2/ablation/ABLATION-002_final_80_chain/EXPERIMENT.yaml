@@ -1,0 +1,26 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-ABLATION-002
+framework_id: FRAMEWORK-V2
+title: Final 80+ Method Chain Ablation
+question: 三项核心创新与统一辅助语义证据头逐层加入时分别产生多少真实增益
+status: retained_out_of_scope_expert_attributes_and_test_selection
+paper_eligible: false
+exclusion_reason: auxiliary_chain_uses_CUB_312d_expert_attributes_and_adaptive_official_test_selection
+data_seed: 7
+module_training_seed: 17
+paper_core_innovations: [TG-VPR, TST, CCGR]
+auxiliary_semantic_head: [CRA, VPA, JBEC, CNRA]
+conditions:
+  - {id: C0, name: TG-VPR, source: V2-CONFIRM-001/RUN-001, code_commit: 3dc078c0d52bf358bf24a26e48346c97de9e99ca}
+  - {id: C1, name: TG-VPR+TST, source: V2-TRY-015, code_commit: 0b919b14f052ec5e3f99378383e94053a2cf45ae}
+  - {id: C2, name: +NTR, source: V2-TRY-028, code_commit: 42cd4457a65f89023ff342ba13679471d5db0942}
+  - {id: C3, name: +CCGR tuned, source: V2-TRY-078, code_commit: 12e8c99bb377e9b31ba7621575c2d9de498027fd}
+  - {id: C4, name: +CRA forward attributes, source: V2-TRY-104, code_commit: c20f734cf910325ade95f2a8ef25c353c57f56fb}
+  - {id: C5, name: +VPA reverse visual prototypes, source: V2-TRY-118, code_commit: 4b3b2d4cedc599165d03018917ed768291cacc69}
+  - {id: C6, name: +VEBC episodic balance, source: V2-TRY-121, code_commit: 01470a4f0e0f450a95fc0c70c743d8cad76b9e8e}
+  - {id: C7, name: +JBEC joint scalar training, source: V2-TRY-131, code_commit: df3eaab8bb373e6d6773bdda00adf25803b95df3}
+  - {id: C8, name: +CNRA class-name identity, source: V2-TRY-138, code_commit: bb0e66e3364fae56aef61663541fc2f891a727c5}
+evaluation_protocol: test_selected_inductive_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: framework_diagram.html

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-048 RSDM</title></head>
+<body>
+<h1>RSDM：残差分支对称对角度量</h1>
+<p><strong>Base commit：</strong>47f473a57db4ae34752e23e631f5a0d7b9d99b84；<strong>RUN code commit：</strong>bcdcc8f7036db04f81733de5af753652a51566af。</p>
+<pre>冻结父logits
+SDCR残差：image ─┐
+                 ├─ 同一个有界正对角权重w ─ 归一化 ─ cosine×beta
+SDCR原型：text  ─┘
+最终logits = 父logits + 度量后的SDCR残差logits
+seen CE只训练768维共享w</pre>
+<p>w初始化全1并中心化log权重，严格复现SDCR；不使用专家属性。该机制复用本仓库IDEA-028的对称度量原则，不作新的原创claim。</p>
+<p>训练固定batch 50、28,228次更新、每141次official test，整次RUN按完整模型H保存一个best。unseen图像不进入梯度；test_used_for_selection=true；strict_blind_claim=false。</p>
+</body></html>

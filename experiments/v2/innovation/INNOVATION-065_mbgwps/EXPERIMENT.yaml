@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-065
+idea_id: IDEA-099
+framework_id: FRAMEWORK-V2
+title: Mildly Balanced Gate-Weighted Pair Selector
+base_commit: 02232cd41bf9ac8ea07bff0d7209ea2d44a27cd4
+code_commit: 82249db5971cbaac036ed2546d5acff829312c0b
+status: rejected_mild_balance_still_overcorrects
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-065_mbgwps/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: 82249db5971cbaac036ed2546d5acff829312c0b
+    config_ref: experiments/v2/innovation/INNOVATION-065_mbgwps/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-065_mbgwps/RUN-001
+    status: completed_failed_parent_only

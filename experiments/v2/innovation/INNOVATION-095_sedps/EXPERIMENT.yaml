@@ -1,0 +1,33 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-INNOVATION-095
+idea_id: IDEA-128
+framework_id: FRAMEWORK-V2
+title: Staged Evidence-Dropout Pair Selector
+base_commit: 08df694bfb1ba520f5bcff24174ffbb6bacf0f1e
+code_commit: e7571cbe1099b8ea5facd01d99c5a5da0e92363e
+status: supported_two_seed_stagewise
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+framework_diagram: experiments/v2/innovation/INNOVATION-095_sedps/framework_diagram.html
+runs:
+  - run_id: RUN-001
+    code_commit: e7571cbe1099b8ea5facd01d99c5a5da0e92363e
+    config_ref: experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-001.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-001
+    status: completed_positive
+  - run_id: RUN-002
+    code_commit: 63295e0a40fbcfa9e42098e0485e5b1def9a2888
+    config_ref: experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-002.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-002
+    status: completed_parent_only
+  - run_id: RUN-003
+    code_commit: 5f7afff4dca6d588d212b4e151dd5d3268054353
+    config_ref: experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-003.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-003
+    status: completed_positive_rescue1
+  - run_id: RUN-004
+    code_commit: 6e9cebc4831d3f1c178da05e977e6c8068107fa4
+    config_ref: experiments/v2/innovation/INNOVATION-095_sedps/configs/RUN-004.yaml
+    output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-095_sedps/RUN-004
+    status: completed_positive_rescue1

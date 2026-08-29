@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>V2-TUNE-001 标准validation双路线</title>
+  <style>
+    body{margin:0;background:#f4f5f2;color:#17221f;font:15px/1.55 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1200px;margin:30px auto;padding:0 22px}
+    .meta{font-family:ui-monospace,monospace;color:#5b6662}.flow{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:26px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .box{background:white;border:1px solid #ccd6d0;border-radius:14px;padding:15px;box-shadow:0 8px 20px #263b3015}.box strong{display:block;color:#176b4d;margin-bottom:6px}.expert{border:2px solid #b76832;background:#fff8f1}.tag{display:inline-block;background:#e1eee7;border-radius:99px;padding:3px 8px;margin:8px 4px 0 0}@media(max-width:900px){.flow,.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body><main>
+  <h1>标准类别不相交Validation · 无专家 / 专家双路线</h1>
+  <div class="meta">V2-TUNE-001 · run code d2245a2e43b2b01bbb1ee9354c905dce3c3ae4e5 · official test not loaded</div>
+  <span class="tag">no-expert H_val 76.472964</span><span class="tag">expert H_val 77.517761</span><span class="tag">expert delta +1.044797</span>
+  <section class="flow">
+    <div class="box"><strong>1 · 开发梯度</strong>train_loc 100类<br>3724 fit图像<br>每轮各出现一次</div>
+    <div class="box"><strong>2 · 无专家语义</strong>类别名/GPT八角色文本<br>不读取312维属性</div>
+    <div class="box"><strong>3 · 共享主干</strong>TG-VPR → TST/NTR → CCGR<br>CLIP 768缓存</div>
+    <div class="box expert"><strong>4 · 专家条件新增</strong>312维CUB属性<br>零初始化切向残差</div>
+    <div class="box"><strong>5 · Validation</strong>978 val-seen图像<br>2355 val-unseen图像<br>150类联合竞争</div>
+    <div class="box"><strong>6 · 选择出口</strong>只按H_val选择epoch<br>记录U/S/H/ZS<br>不产生test分数</div>
+  </section>
+  <section class="grid">
+    <div class="box"><strong>数据边界</strong>val-seen和val-unseen图像只进入无梯度评估。split文件不包含`test_seen_loc/test_unseen_loc`，开发配置也没有official test缓存路径。</div>
+    <div class="box"><strong>对照公平性</strong>RUN-001与RUN-002使用相同CLIP图像缓存、随机种子、训练图像顺序、loss和学习率；唯一差异是RUN-002增加312维专家属性残差。</div>
+    <div class="box"><strong>当前限制</strong>遗留768维CLIP缓存来源不完整，因此本实验只用于validation结构搜索，`final_test_eligible=false`；官方CUB原图和可追溯CLIP缓存正在准备。</div>
+    <div class="box"><strong>最终阶段</strong>只有验证选定并完成可追溯特征重建后，才允许在trainval_loc 150类/7057图像上重训；本TUNE实验永不加载official test。</div>
+  </section>
+</main></body></html>

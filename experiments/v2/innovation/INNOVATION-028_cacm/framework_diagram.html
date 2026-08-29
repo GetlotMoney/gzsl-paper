@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-028 CACM</title></head>
+<body>
+<h1>CACM：类别自适应跨LLM混合</h1>
+<p><strong>Base commit：</strong>5928b6976d50d435007ec2683c911620763c1696；<strong>RUN-001 code commit：</strong>d8b5b63c5ef04ffcb9132298e90840a13d3585f9。</p>
+<h2>类别条件权重</h2>
+<pre>agreement_c = standardized cos(Claude_text_c, merge_text_c)
+w_c = sigmoid(bias + slope × agreement_c)
+final_logits_c = SEBC_logits_c
+               + w_c × beta_claude × claude_logits_c
+               + (1-w_c) × beta_merge × merge_logits_c</pre>
+<p>bias/slope零初始化，全部类别初始w=0.5；只训练两个共享参数，端点beta固定。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新official test选全局best。unseen文本允许使用、unseen图像不进入梯度；test_used_for_selection=true。文本cache provenance未完整。</p>
+</body></html>

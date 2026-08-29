@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-024 CLRE</title></head>
+<body>
+<h1>CLRE：跨LLM描述残差证据</h1>
+<p><strong>Base commit：</strong>3c1cb0b6d2e12788132bdb10337362016c6ed0ad；<strong>RUN-001 code commit：</strong>bb885f84cdcb20bf9869468a10845203ff95074d。</p>
+<h2>父路径与独立输入</h2><p>冻结TG-VPR/TST/CCGR → NCRA → SDRS → SEBC，输出[B,200]父logits。新增输入为SHA绑定的Claude描述CLIP原型[200,768]；它不替换GPT父语义。</p>
+<h2>公式</h2>
+<pre>claude_logits = Norm(image_CLS) @ Norm(claude_text).T
+final_logits = SEBC_logits + beta × claude_logits
+beta = 20 × tanh(raw_beta)</pre>
+<p>raw_beta零初始化，关闭时严格复现SEBC。只训练beta，其余模型全部冻结。</p>
+<h2>训练与边界</h2><p>7,057张seen图像、150类CE、28,228次随机更新，每141次更新official test选一个全局best。unseen文本允许使用，unseen图像不进入梯度；test_used_for_selection=true。Claude cache精确生成prompt/模型来源尚不完整，因此text_cache_provenance_complete=false。</p>
+</body></html>

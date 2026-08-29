@@ -1,0 +1,8 @@
+run_id: RUN-001
+source_attempt: V2-TRY-016
+seed: 5
+code_commit: b9cfb5bd0139ca85de42c4445f9b045977c19fa3
+config_ref: config/tries/v2_try_016_tst_seed5.yaml
+base_checkpoint_sha256: 42a2e56c300389cea02a7456793532c22aea7e33982a2bef6d001bd2b3dac933
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v2/V2-TRY-016
+gate_model_sha256: bc2e9e691771de1c77d5c8d608f7ea701d3574b2d9859535b62ae3b0eb8ae42b

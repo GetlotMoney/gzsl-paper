@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-076 PDRS</title></head>
+<body>
+<h1>PDRS：类别对判别角色选择器</h1>
+<p><strong>Base commit：</strong>ceb348d504d3f1676729f1a93b9ea746f82b6d85；<strong>RUN-001 code commit：</strong>c72610a3ea5258f74aba7afc412a97625984c463。</p>
+<pre>当前top1/top2类别对
+→ 分别比较八个角色文本原型的余弦距离
+→ 八个距离归一化为均值1的pair-specific权重
+
+图像八角色中心化差值 × pair-specific角色权重
+→ 与margin/Claude/merge/类名差拼成12维
+→ 稳定SNPS union top-3关系门控
+→ Linear(12,1) pair修正
+→ 200-way U/S/H；50-way ZS</pre>
+<p>该结构让不同类别对自动关注不同角色，例如颜色相近但喙不同的pair会提高喙角色证据。只使用文本计算pair权重，真实unseen图像不进入训练梯度。</p>
+</body></html>

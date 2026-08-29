@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-038 CASR</title></head>
+<body>
+<h1>CASR：保守自适应句子路由</h1>
+<p><strong>Base commit：</strong>bb5a6a8b5318a29c9fbef445859f6be391d6dc8f；<strong>RUN-001 code commit：</strong>0940f33ad2d81b7040c536830b4a968c1411ebef；<strong>RUN-002 code commit：</strong>c05c48117fdd15d2346be5928ecf09241d6e9619；<strong>RUN-003 code commit：</strong>cba46825c4a010dc9952815b18e7d3e7068b4d7a。</p>
+<h2>模型</h2><p>模型与AOSR相同：固定OESR beta，训练8个softmax句子权重，类名正交化后形成残差原型。</p>
+<h2>保守loss</h2>
+<pre>loss = CE(seen_logits, label) + 0.1 × KL(sentence_weights || uniform)</pre>
+<p>KL只防止句子被直接删除，不要求保持等权。使用OESR seed7父权重与随机链。</p>
+<h2>边界</h2><p>7,057张seen图像、28,228次更新，每141次official test选全局best。unseen图像不进入梯度；test_used_for_selection=true。</p>
+</body></html>

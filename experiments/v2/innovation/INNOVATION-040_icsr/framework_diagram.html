@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-040 ICSR</title></head>
+<body>
+<h1>ICSR：图像条件保守句子路由</h1>
+<p><strong>Base commit：</strong>943554e302f5a5338daa596e6fe666eaa580f6a8；<strong>RUN-001 code commit：</strong>84d417ed05ecb13980793b26717786b4ab99cb1f。</p>
+<h2>零初始化动态路由</h2>
+<pre>residual_b = 0.5 × tanh(MLP(Norm(image_CLS_b)))
+w_br = softmax(log(CASR_weight_r) + residual_br)
+prototype_bc = orthogonalize(sum_r w_br sentence_cr, class_name_c)
+final_logits = SEBC_logits + fixed_beta × image @ prototype</pre>
+<p>MLP为768→32→8，末层全零；初始严格复现CASR。只训练门控。</p>
+<h2>loss与评估</h2>
+<pre>loss = seen CE + 0.01 × KL(w_b || CASR_weights)</pre>
+<p>动态[B,C,768]张量按128图像分块评估。训练7,057张seen图像、28,228次更新，每141次official test选全局best；unseen图像不进入梯度，test_used_for_selection=true。</p>
+</body></html>

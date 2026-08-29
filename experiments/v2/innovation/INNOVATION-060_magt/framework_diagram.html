@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>V2-INNOVATION-060 MAGT</title></head>
+<body>
+<h1>MAGT：多源歧义门控二选一</h1>
+<p><strong>Base commit：</strong>99a36a2edec690f322e45f2bfd61e71b5ed49c31；<strong>RUN code commit：</strong>fa851e7c2fd80e17bea9863b9c05bbff7d20440b。</p>
+<pre>固定AGCT 25分位gate（同族低margin top2）
+      ├─ beta_C × centered Claude top2
+      └─ beta_M × centered merge top2
+最终只改top2相对次序，top2均值与其他198类不变</pre>
+<p>两个beta从0开始并由seen CE联合训练；关闭时严格复现SDCR。gate不再调参。</p>
+<p>真实unseen图像不进入梯度；训练固定28,228次更新，每141次official test，按完整模型H保存best。</p>
+</body></html>

@@ -1,0 +1,2 @@
+run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,selected_iteration,absolute_beta,gap_beta,test_used_for_selection,output_uri,decision
+RUN-001,9bd95701982d5406dc0d26847325310c5c59eeb9,experiments/v2/innovation/INNOVATION-020_pcme/configs/RUN-001.yaml,2695efa86cf370eb8916b958d125a94d3657ca74cf74c5cc43192e8de466a535,5,completed,76.119131,79.278153,77.666533,83.168101,-1,9.177013,0.0,true,/data/lby/projects/cv_project/GZSL_Warehouse/innovation/v2/INNOVATION-020_pcme/RUN-001,drop_no_gain

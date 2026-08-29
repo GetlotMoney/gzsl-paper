@@ -1,0 +1,32 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V2-TUNE-005
+slug: seen_only_text_assets
+kind: tune
+framework_id: FRAMEWORK-V2
+code_semantics_commit: 1114231cb1728e85f657a98bd361322de7dde5b7
+parent_asset_registry: config/paper_v2/ASSETS.yaml
+status: completed_text_v1_diagnostic
+question: 三数据集text-v1为何系统性低于Pure CLIP，以及什么seen-only文本版本可在不读取official test时冻结为text-v2
+selection_protocol: seen_only_text_visual_alignment
+official_test_loaded: false
+seen_images_only: true
+unseen_images_used: false
+diagnostic_no_model: true
+metrics:
+  - corresponding class cosine
+  - hardest-negative margin and positive-margin rate
+  - visual-to-text and text-to-visual class retrieval
+  - within-class eight-role pairwise cosine and variance
+text_v1_assets:
+  CUB: f61a4af0d7644477
+  AWA2: 803b2f38aae164e5
+  SUN: baaea1e1bfdc31e4
+cub_old_text_boundary: diagnostic only because old metadata lacks exact CLIP checkpoint SHA and implementation commit
+framework_diagram: experiments/v2/tune/TUNE-005_seen_only_text_assets/framework_diagram.html
+output_root: /data/lby/projects/cv_project/GZSL_Warehouse/diagnostics/v2/TUNE-005_seen_only_text_assets
+text_v2_gate: select only with seen-image alignment; official test cannot participate
+text_v1_retention: keep all prior assets and results without overwrite
+execution_commit: 7f717f5e8dec782b1c41adfcef45ce5796a29980
+completed_at: 2026-08-25
+decision: reject all three text-v1 assets for final paper use and generate CLIP-oriented text-v2
+next_step: encode and select CLIP-oriented text-v2 with the same seen-only diagnostics
