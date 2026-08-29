@@ -78,7 +78,7 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 | [`IDEA-163`](ideas/IDEA-163_tri_state_evidence_predicate_set.md) | 三态视觉证据谓词集 | rejected before GZSL training | 五项最小证伪门槛全部失败 | `exp/v4/innovation/innovation-003-tri-state-evidence-set` |
 | [`IDEA-164`](ideas/IDEA-164_observable_signed_evidence.md) | 候选无关可观察性＋固定参考有符号证据 | rejected at Gate 1 | `o`退化高常数、signed-d迁移与双因果删除均失败 | `exp/v4/innovation/innovation-004-observable-signed-evidence` |
 | [`IDEA-165`](ideas/IDEA-165_constrained_evidence_graph_search.md) | 共享概念证据图＋容量约束精确搜索 | rejected after two rescues | capacity1/2均-0.2pp，2×2区域0pp | `exp/v4/innovation/innovation-005-constrained-evidence-graph` |
-| [`IDEA-166`](ideas/IDEA-166_text_conditioned_visual_distribution.md) | 文本条件低秩视觉分布 | owner已批准主条件＋2次补救 | 待运行 | 待从`52088f69`创建独立分支 |
+| [`IDEA-166`](ideas/IDEA-166_text_conditioned_visual_distribution.md) | 文本条件低秩视觉分布 | rejected after main＋2 rescues | LOO信号成立，但三条件均比Point低约2.66pp、净纠正-57 | `exp/v4/innovation/innovation-006-text-conditioned-distribution` |
 | [`IDEA-167`](ideas/IDEA-167_conditional_information_evidence.md) | 条件信息增益最小充分证据 | revised before run；未执行 | 过宽Gate被拆分，永久保留历史 | 无运行分支 |
 | [`IDEA-168`](ideas/IDEA-168_concept_specific_region_interaction.md) | 共享文本概念的跨区域非加性交互 | rejected at Gate 0 | 四项概念特异性门全失败；符号稳定但不优于对照 | `exp/v4/innovation/innovation-008-concept-region-interaction` |
 | [`IDEA-169`](ideas/IDEA-169_contrastive_concept_interaction.md) | 固定Attention的同角色概念对比交互 | rejected at Gate 0 | 仅60对/13类；覆盖与三项效应门失败 | `exp/v4/innovation/innovation-009-contrastive-concept-interaction` |
