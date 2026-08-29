@@ -23,4 +23,9 @@ stage_1:
 stage_2:
   method: combine_non_conflicting_stage_1_winners
   condition: constant_tg_learning_rate_3e-4_plus_max_transport_step_3
-  status: prepared
+  status: completed_not_selected
+final_selection:
+  run_id: RUN-008
+  parameter: {max_transport_step: 3.0}
+  metrics: {U: 79.701638, S: 76.709896, H: 78.177155, ZS: 85.803193}
+  delta_H_vs_reference: 0.057514
