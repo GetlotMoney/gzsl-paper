@@ -45,16 +45,17 @@
 - [ ] 在当前框架`experiments/vX/EXPERIMENT_QUEUE.csv`新增一行`planned` TRY。
 - [ ] TRY绑定准确config、唯一改动、seed、code commit和仓库外output URI。
 - [ ] 本地相关测试和服务器相关测试通过，工作树clean后才能启动。
-- [ ] 第一轮独立Agent已完成对抗审查；P0/P1已全部修复并有直接测试。
-- [ ] 第二轮由另一独立Agent审查准确post-fix commit并明确“无P0/P1，第2轮通过”；此后代码未再变化。
-- [ ] 当前Experiment记录两轮reviewed commit、发现、修复和最终结论；不能用机器测试替代Agent审查。
+- [ ] 两名独立Agent同时审查同一个冻结commit，并在交流前各自完成完整P0/P1/P2初始清单。
+- [ ] 两名Agent相互交换一次完整清单，并各自回复一次补充、异议和最终判断。
+- [ ] 双方最终均明确`P0=0 / P1=0，双Agent交叉审查通过`；此后代码未再变化。
+- [ ] 当前Experiment记录双方Agent、同一reviewed commit、双方初始清单、一次交叉交流、修复和最终双签；不能用机器测试替代Agent审查。
 - [ ] 审核前共享证据已准备：准确diff、相关测试、本地完整测试、资产/config校验、服务器临时micro-batch；Agent不重复整仓测试或全量SHA。
-- [ ] 共享证据齐全且无缺陷时两轮力争10分钟完成；时长不凌驾于完整性，超过10分钟汇报剩余项并继续审完。
+- [ ] 共享证据齐全且无缺陷时，独立检查、一次交叉交流和最终双签力争10分钟完成；时长不凌驾于完整性，超过10分钟汇报剩余项并继续审完。
 - [ ] 冻结一个commit并建立审查矩阵；多个只读Agent并行覆盖公式/训练/评估/资产/GPU/checkpoint，发现首个问题后仍完成各自分工。
 - [ ] 等全部Agent汇合后一次性去重P0/P1/P2，只做一个集中修复补丁；禁止边审边改和逐bug重复全流程。
 - [ ] 修复后多Agent并行复核同一最终diff；签字绑定最终RUN commit、审查路径tree hash、config SHA、资产manifest SHA和环境/GPU fingerprint，未变化证据直接复用。
 - [ ] 每个不同objective/forward/loss路径至少一次真实GPU micro-batch；相同路径不跨GPU重复，第二GPU只验证设备及特有差异；共享闭环覆盖梯度、ZS、动态停止、best和checkpoint。
-- [ ] 纯配置免两轮仅限已审schema内且不启用新计算/评估路径；纯队列、结果和文档在签字身份不变时只走contract。
+- [ ] 纯配置免双Agent重审仅限已审schema内且不启用新计算/评估路径；纯队列、结果和文档在签字身份不变时只走contract。
 - [ ] 生成后资产在生成代码、config和父身份不变时只做manifest/SHA/shape/dtype/count contract；身份变化则重新审核受影响范围。
 - [ ] 不自动push GitHub，不移动正式framework分支或Tag。
 
@@ -99,7 +100,7 @@ U/S/H/ZS和1点门槛已预注册？
 batch50真实smoke和显存已验证？
 config、commit、资产SHA、output URI齐全？
 测试通过且本地/服务器clean？
-两轮独立Agent已审查同一最终代码身份，且第二轮明确无P0/P1？
+两名独立Agent已审查同一最终代码身份、相互交流一次，且双方最终明确P0/P1均为0？
 ```
 
 任一项为“否”，不得启动训练。

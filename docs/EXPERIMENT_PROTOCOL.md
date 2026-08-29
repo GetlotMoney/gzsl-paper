@@ -20,20 +20,21 @@
 - 候选失败后冻结该候选分支，不从它继续开发下一模块。下一候选必须先由owner确认准确父commit，再从该commit创建新的`exp/vX/<kind>/<module>`分支；旧失败分支只供复现和追溯。
 - 候选被owner接纳后，先进入`main`的已接纳状态，再固定新的`framework/vY`与Tag `vY`；正式引用一经创建不移动。
 
-## 代码两轮Agent对抗门槛
+## 一轮双Agent交叉审查门槛
 
-- 修改module、forward、loss、数据/资产生成、训练器或评估语义的Experiment，pre-run冻结前必须完成两轮不同Agent的独立只读对抗审查。
-- 第一轮发现的P0/P1必须全部修复并通过直接相关测试；第二轮绑定准确post-fix commit、clean工作树和真实服务器资产重新审查。
-- 只有第二轮明确“无P0/P1，第2轮通过”才允许服务器smoke或训练。签字绑定最终RUN commit、审查声明路径tree hash、config SHA、资产manifest SHA和环境/GPU fingerprint；其中任一语义身份变化即失效。若第二轮发现P0/P1，全部Agent先完成分工和清单，再集中修复并由新的独立Agent审查新commit。
-- 审查记录至少绑定review round、reviewed commit、发现、修复commit、测试和结论；机器测试、同一Agent自审或聊天口头确认不能替代两轮审查。
-- 两轮审核覆盖任何会改变计算或评估语义的代码和配置。已审schema内、未启用新forward/loss/objective/评估路径的参数值配置，以及纯队列、结果和文档，只走确定性contract；生成后资产走manifest/SHA/shape/dtype/count校验。
+- 修改module、forward、loss、数据/资产生成、训练器或评估语义的Experiment，pre-run冻结前必须完成一轮双Agent独立只读交叉审查。
+- 两名Agent同时审查同一个冻结commit；交流前各自完成独立检查和完整`P0/P1/P2`初始清单，不得提前共享结论。
+- 双方完成后相互交换一次完整清单，并各自回复一次补充、异议和最终结论。交叉交流完成后不再串行重复第二轮全量审核。
+- 只有双方最终都明确`P0=0 / P1=0`并写出“双Agent交叉审查通过”才允许服务器smoke或训练。签字绑定最终RUN commit、审查声明路径tree hash、config SHA、资产manifest SHA和环境/GPU fingerprint；其中任一语义身份变化即失效。
+- 若任一方发现P0/P1，双方仍须完成各自范围和一次交叉交流，主Agent汇总后制作一个集中修复批次；新commit重新执行一轮完整双Agent交叉审查，旧签字失效。
+- 审查记录至少绑定双方Agent、同一reviewed commit、双方初始清单、一次交叉交流、修复commit、测试和最终双签；机器测试、单Agent自审或聊天口头确认不能替代双Agent审查。
+- 双Agent审查覆盖任何会改变计算或评估语义的代码和配置。已审schema内、未启用新forward/loss/objective/评估路径的参数值配置，以及纯队列、结果和文档，只走确定性contract；生成后资产走manifest/SHA/shape/dtype/count校验。
 - 审核前先生成一次共享证据：准确diff、相关测试、本地完整测试、资产/config校验和服务器临时micro-batch。两名Agent复用该证据，禁止重复整仓测试和全量文件哈希。
-- 审核正确性和完整性优先。共享证据齐全且无P0/P1时，两轮完整审核力争10分钟完成，但这不是强制截止线，禁止为了时长跳过检查或降低标准。
-- 超过10分钟必须立即汇报剩余项和原因并继续审完；`证据不足`阻止运行，发现P0/P1时先完成全部并行分工并汇总完整清单，再集中修复和复核。
-- Round 2可在仓库外临时目录重放micro-batch，但不得写正式资产或RUN。P0/P1修复后旧签字失效，以新代码身份重新开始完整审核。
-- Round 2允许与Round 1并行预读同一冻结commit以节省时间，但只能在Round 1无P0/P1后签字；Round 1失败时签字资格作废，Agent仍须完成分工并提交完整问题清单。
+- 审核正确性和完整性优先。共享证据齐全且无P0/P1时，独立检查、一次交叉交流和最终双签力争10分钟完成，但这不是强制截止线，禁止为了时长跳过检查或降低标准。
+- 超过10分钟必须立即汇报剩余项和原因并继续审完；`证据不足`阻止运行，发现P0/P1时先完成双方全部范围和交叉交流，再集中修复和复核。
+- 任一Agent可在仓库外临时目录重放micro-batch，但不得写正式资产或RUN。P0/P1修复后以新代码身份重新开始完整的一轮双Agent审查。
 - 冻结commit后先建立审查矩阵，多Agent并行覆盖静态语义、真实GPU、资产/评估和checkpoint；各Agent必须审完分工，不能发现一个问题就提前退出。
-- 所有Agent完成后设置汇合点，主Agent去重完整P0/P1/P2清单；每个审核周期只提交一个集中修复批次。若复核发现新P0/P1，完成该周期全范围检查后再进入下一批。
+- 两名Agent完成独立清单与一次交叉交流后设置汇合点，主Agent去重完整P0/P1/P2清单；每个审核周期只提交一个集中修复批次。若复核发现新P0/P1，完成该周期全范围检查与交叉交流后再进入下一批。
 - 共享证据按最终commit、审查声明路径tree hash、config SHA、资产manifest SHA和环境/GPU fingerprint复用；未变化的完整测试、父指标和大资产预载不得重复执行。
 - 每个不同objective/forward/loss路径至少跑一次真实GPU micro-batch；相同路径不跨GPU重复，第二GPU只验证设备及特有差异。共享闭环同时覆盖梯度、ZS、动态停止、best选择和checkpoint roundtrip。
 
