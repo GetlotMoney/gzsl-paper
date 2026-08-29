@@ -15,6 +15,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import yaml
+import PIL
 from PIL import Image
 
 from tools.gzsl_data import load_xlsa_split, resolve_xlsa_image_path
@@ -339,8 +340,10 @@ def build_causal_cache(
     class_queries, role_queries, count, seed, patch_side, mode, device,
 ):
     rows = select_rows(labels, classes, count, seed)
-    rng = np.random.default_rng(seed + 1)
-    originals, selected, randoms, target_classes, target_roles = [], [], [], [], []
+    originals, selected_o, selected_d, randoms = [], [], [], []
+    target_classes, target_roles = [], []
+    selected_o_indices, selected_d_indices, random_indices = [], [], []
+    overlap_o, overlap_d = [], []
     parity = []
     for index, train_row in enumerate(rows):
         class_id = int(labels[train_row])
@@ -359,40 +362,67 @@ def build_causal_cache(
             role_ids=torch.tensor([role], device=device),
             attention=True,
         )
-        selected_index = int(attention[0, :, 0].argmax())
-        random_index = int(rng.integers(0, 576))
-        attempts = 0
-        while regions_overlap(random_index, selected_index, patch_side):
-            random_index = int(rng.integers(0, 576))
-            attempts += 1
-            if attempts > 100:
-                raise RuntimeError("无法采样与证据区域不重叠的随机区域。")
+        selected_o_index = int(attention[0, :, 0].argmax())
+        d_query = class_queries[class_id, role : role + 1].to(device)
+        _, d_attention = reader.evidence(raw_patches, d_query, attention=True)
+        selected_d_index = int(d_attention[0, :, 0].argmax())
+        sample_rng = np.random.default_rng(seed + int(train_row) * 1009 + role * 9176)
+        random_index = int(sample_rng.integers(0, 576))
         variants = torch.stack(
             (
-                intervene(image, selected_index, patch_side, mode),
+                intervene(image, selected_o_index, patch_side, mode),
+                intervene(image, selected_d_index, patch_side, mode),
                 intervene(image, random_index, patch_side, mode),
             )
         ).to(device)
         masked = encode_final_patches(clip_model, variants)
         originals.append(raw_patches[0].cpu().half())
-        selected.append(masked[0].cpu().half())
-        randoms.append(masked[1].cpu().half())
+        selected_o.append(masked[0].cpu().half())
+        selected_d.append(masked[1].cpu().half())
+        randoms.append(masked[2].cpu().half())
         target_classes.append(class_id)
         target_roles.append(role)
+        selected_o_indices.append(selected_o_index)
+        selected_d_indices.append(selected_d_index)
+        random_indices.append(random_index)
+        overlap_o.append(regions_overlap(selected_o_index, random_index, patch_side))
+        overlap_d.append(regions_overlap(selected_d_index, random_index, patch_side))
     return {
         "rows": rows.astype(np.int64),
         "original": torch.stack(originals),
-        "selected": torch.stack(selected),
+        "selected_o": torch.stack(selected_o),
+        "selected_d": torch.stack(selected_d),
         "random": torch.stack(randoms),
         "classes": np.asarray(target_classes, dtype=np.int64),
         "roles": np.asarray(target_roles, dtype=np.int64),
+        "selected_o_indices": np.asarray(selected_o_indices, dtype=np.int64),
+        "selected_d_indices": np.asarray(selected_d_indices, dtype=np.int64),
+        "random_indices": np.asarray(random_indices, dtype=np.int64),
+        "random_overlap_o_fraction": float(np.mean(overlap_o)),
+        "random_overlap_d_fraction": float(np.mean(overlap_d)),
         "mean_patch_cosine": float(np.mean(parity)),
         "minimum_image_mean_patch_cosine": float(np.min(parity)),
     }
 
 
 def sampling_sha256(cache) -> str:
-    payload = np.stack((cache["rows"], cache["classes"], cache["roles"]), axis=1)
+    payload = np.stack(
+        (cache["rows"], cache["classes"], cache["roles"], cache["random_indices"]),
+        axis=1,
+    )
+    return hashlib.sha256(payload.astype(np.int64).tobytes()).hexdigest()
+
+
+def intervention_trace_sha256(cache) -> str:
+    payload = np.stack(
+        (
+            cache["rows"],
+            cache["selected_o_indices"],
+            cache["selected_d_indices"],
+            cache["random_indices"],
+        ),
+        axis=1,
+    )
     return hashlib.sha256(payload.astype(np.int64).tobytes()).hexdigest()
 
 
@@ -419,8 +449,12 @@ def causal_loss(reader, cache, indices, class_queries, role_queries, margin, dev
             reader, cache["original"][index:index+1].to(device), class_id, role,
             class_queries, role_queries,
         )
-        selected_o, selected_d = one_variables(
-            reader, cache["selected"][index:index+1].to(device), class_id, role,
+        selected_o, _ = one_variables(
+            reader, cache["selected_o"][index:index+1].to(device), class_id, role,
+            class_queries, role_queries,
+        )
+        _, selected_d_own = one_variables(
+            reader, cache["selected_d"][index:index+1].to(device), class_id, role,
             class_queries, role_queries,
         )
         random_o, random_d = one_variables(
@@ -429,7 +463,7 @@ def causal_loss(reader, cache, indices, class_queries, role_queries, margin, dev
         )
         selected_drop_o = original_o - selected_o
         random_drop_o = original_o - random_o
-        selected_drop_d = original_d - selected_d
+        selected_drop_d = original_d - selected_d_own
         random_drop_d = original_d - random_d
         losses.extend(
             (
@@ -530,6 +564,7 @@ def pairwise_accuracy(
         "visible_role_coverage": visible_total / (len(rows) * ROLE_COUNT),
         "observability_mean": float(observability_values.mean()),
         "observability_std": float(observability_values.std()),
+        "observability_per_role_std": observability_values.std(axis=0).tolist(),
         "observability_minimum": float(observability_values.min()),
         "observability_maximum": float(observability_values.max()),
     }
@@ -547,8 +582,12 @@ def evaluate_causal(reader, cache, class_queries, role_queries, minimum_drop, de
             reader, cache["original"][index:index+1].to(device), class_id, role,
             class_queries, role_queries,
         )
-        selected_o, selected_d = one_variables(
-            reader, cache["selected"][index:index+1].to(device), class_id, role,
+        selected_o, _ = one_variables(
+            reader, cache["selected_o"][index:index+1].to(device), class_id, role,
+            class_queries, role_queries,
+        )
+        _, selected_d_own = one_variables(
+            reader, cache["selected_d"][index:index+1].to(device), class_id, role,
             class_queries, role_queries,
         )
         random_o, random_d = one_variables(
@@ -557,7 +596,7 @@ def evaluate_causal(reader, cache, class_queries, role_queries, minimum_drop, de
         )
         selected_drop_o = float(original_o - selected_o)
         random_drop_o = float(original_o - random_o)
-        selected_drop_d = float(original_d - selected_d)
+        selected_drop_d = float(original_d - selected_d_own)
         random_drop_d = float(original_d - random_d)
         observability_better.append(
             selected_drop_o >= minimum_drop and selected_drop_o > random_drop_o
@@ -585,9 +624,27 @@ def evaluate_causal(reader, cache, class_queries, role_queries, minimum_drop, de
 
 
 def environment(device):
+    import clip
+    import clip.model as clip_model_module
+
+    properties = torch.cuda.get_device_properties(device)
+    driver_getter = getattr(torch._C, "_cuda_getDriverVersion", None)
     return {
-        "python": platform.python_version(), "torch": torch.__version__, "cuda": torch.version.cuda,
-        "device": str(device), "gpu_name": torch.cuda.get_device_name(device),
+        "python": platform.python_version(),
+        "torch": torch.__version__,
+        "numpy": np.__version__,
+        "pillow": PIL.__version__,
+        "cuda": torch.version.cuda,
+        "cuda_driver": driver_getter() if driver_getter is not None else None,
+        "device": str(device),
+        "gpu_name": properties.name,
+        "gpu_total_memory": int(properties.total_memory),
+        "gpu_compute_capability": [int(properties.major), int(properties.minor)],
+        "gpu_multiprocessor_count": int(properties.multi_processor_count),
+        "gpu_uuid": str(getattr(properties, "uuid", "unavailable")),
+        "clip_version": getattr(clip, "__version__", "unavailable"),
+        "clip_model_source": str(Path(clip_model_module.__file__)),
+        "clip_model_source_sha256": sha256_file(Path(clip_model_module.__file__)),
     }
 
 
@@ -699,11 +756,17 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
         "pairwise_accuracy": pairwise,
         "causal_train_identity": {
             "sampling_sha256": sampling_sha256(causal_train),
+            "intervention_trace_sha256": intervention_trace_sha256(causal_train),
+            "random_overlap_o_fraction": causal_train["random_overlap_o_fraction"],
+            "random_overlap_d_fraction": causal_train["random_overlap_d_fraction"],
             "mean_patch_cosine": causal_train["mean_patch_cosine"],
             "minimum_image_mean_patch_cosine": causal_train["minimum_image_mean_patch_cosine"],
         },
         "causal_eval_identity": {
             "sampling_sha256": sampling_sha256(causal_eval),
+            "intervention_trace_sha256": intervention_trace_sha256(causal_eval),
+            "random_overlap_o_fraction": causal_eval["random_overlap_o_fraction"],
+            "random_overlap_d_fraction": causal_eval["random_overlap_d_fraction"],
             "mean_patch_cosine": causal_eval["mean_patch_cosine"],
             "minimum_image_mean_patch_cosine": causal_eval["minimum_image_mean_patch_cosine"],
         },
@@ -750,12 +813,20 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
             or not isinstance(checkpoint.get("model_state_dict"), dict)
         ):
             raise ValueError("checkpoint内部身份与结果JSON不一致。")
+        probe = SharedEvidenceReader(int(config["rank"]))
+        probe.load_state_dict(checkpoint["model_state_dict"], strict=True)
     if Path(real["checkpoint_path"]).resolve() == Path(shuffled["checkpoint_path"]).resolve():
         raise ValueError("real/shuffled不得复用同一checkpoint。")
     if real["train_classes"] != shuffled["train_classes"] or real["evaluation_classes"] != shuffled["evaluation_classes"] or real["asset_identity"] != shuffled["asset_identity"]:
         raise ValueError("real/shuffled split或资产身份错误。")
-    if real["environment"] != shuffled["environment"]:
-        raise ValueError("real/shuffled环境/GPU身份不一致。")
+    comparable_environment = set(real["environment"]) - {"device", "gpu_uuid"}
+    if comparable_environment != set(shuffled["environment"]) - {"device", "gpu_uuid"}:
+        raise ValueError("real/shuffled环境字段不一致。")
+    if any(
+        real["environment"][key] != shuffled["environment"][key]
+        for key in comparable_environment
+    ):
+        raise ValueError("real/shuffled软件或GPU型号身份不一致。")
     for stage in ("causal_train_identity", "causal_eval_identity"):
         if real[stage]["sampling_sha256"] != shuffled[stage]["sampling_sha256"]:
             raise ValueError("real/shuffled采样行或角色轨迹不一致。")
@@ -767,7 +838,9 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
         >= float(config["pairwise_gate"]),
         "visible_role_coverage": real["pairwise_accuracy"]["visible_role_coverage"]
         >= float(config["coverage_gate"]),
-        "observability_noncollapsed": real["pairwise_accuracy"]["observability_std"]
+        "observability_noncollapsed": min(
+            real["pairwise_accuracy"]["observability_per_role_std"]
+        )
         >= float(config["observability_std_gate"]),
         "observability_causal": real["causal_eval"]["observability_selected_positive_and_greater_fraction"]
         >= float(config["observability_causal_gate"]),

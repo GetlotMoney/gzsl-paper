@@ -9,9 +9,11 @@ from tools.diagnose_observable_signed_evidence import (
     fixed_reference_d,
     region_bounds,
     regions_overlap,
+    sampling_sha256,
     shuffled_query_bank,
     state_loss,
     state_probabilities,
+    intervention_trace_sha256,
 )
 
 
@@ -97,6 +99,24 @@ def test_region_is_fixed_area_and_inside_336_pixels():
         assert right - left == 56
 
 
-def test_random_intervention_regions_can_be_required_not_to_overlap():
+def test_region_overlap_detection_is_explicit_for_audit_output():
     assert regions_overlap(0, 1, patch_side=4)
     assert not regions_overlap(0, 24 * 12 + 12, patch_side=4)
+
+
+def test_sampling_identity_binds_random_but_allows_text_dependent_selected_regions():
+    cache = {
+        "rows": np.asarray([1, 2]),
+        "classes": np.asarray([3, 4]),
+        "roles": np.asarray([0, 1]),
+        "random_indices": np.asarray([10, 20]),
+        "selected_o_indices": np.asarray([30, 40]),
+        "selected_d_indices": np.asarray([50, 60]),
+    }
+    changed_selected = {key: value.copy() for key, value in cache.items()}
+    changed_selected["selected_o_indices"][0] = 31
+    assert sampling_sha256(cache) == sampling_sha256(changed_selected)
+    assert intervention_trace_sha256(cache) != intervention_trace_sha256(changed_selected)
+    changed_random = {key: value.copy() for key, value in cache.items()}
+    changed_random["random_indices"][0] = 11
+    assert sampling_sha256(cache) != sampling_sha256(changed_random)
