@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from model.innovations.train_gtd_tst import load_config
+from model.innovations.train_gtd_tst import load_config, validate_tune_run_identity
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +28,25 @@ def test_tune_schema_rejects_out_of_range_parameter(tmp_path):
     path.write_text(yaml.safe_dump(source), encoding="utf-8")
     with pytest.raises(ValueError, match="GTD共享训练参数"):
         load_config(path)
+
+
+def test_tune_schema_rejects_unregistered_combination(tmp_path):
+    source = yaml.safe_load((CONFIG_ROOT / "RUN-001.yaml").read_text(encoding="utf-8"))
+    source["gate_learning_rate"] = 3e-5
+    path = tmp_path / "unregistered.yaml"
+    path.write_text(yaml.safe_dump(source), encoding="utf-8")
+    with pytest.raises(ValueError, match="运行身份"):
+        load_config(path)
+
+
+def test_tune_launch_binds_config_sha_and_output_name():
+    path = CONFIG_ROOT / "RUN-001.yaml"
+    config, digest = load_config(path)
+    validate_tune_run_identity(config, digest, digest, Path("/outside/RUN-001"))
+    with pytest.raises(ValueError, match="expected-config-sha"):
+        validate_tune_run_identity(config, digest, "0" * 64, Path("/outside/RUN-001"))
+    with pytest.raises(ValueError, match="output-dir"):
+        validate_tune_run_identity(config, digest, digest, Path("/outside/wrong"))
 
 
 def test_legacy_fixed_contract_is_unchanged():

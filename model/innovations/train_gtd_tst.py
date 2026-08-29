@@ -33,6 +33,33 @@ SCHEMA = "gzsl-paper.v3-gtd-tst-train.v1"
 SCRATCH_SCHEMA = "gzsl-paper.v3-gtd-scratch-confirm.v1"
 MULTIDATASET_SCHEMA = "gzsl-paper.v3-gtd-multidataset.v1"
 TUNE_SCHEMA = "gzsl-paper.v4-tg-gtd-tune.v1"
+TUNE_BASE_PARAMETERS = {
+    "tg_learning_rate": 1e-4,
+    "gate_learning_rate": 1e-4,
+    "tg_min_learning_rate": 1e-4,
+    "gate_min_learning_rate": 1e-5,
+    "gate_warmup_epochs": 5,
+    "weight_decay": 1e-4,
+    "topology_weight": 0.1,
+    "gate_loss_weight": 1.0,
+    "max_transport_step": 1.5,
+}
+TUNE_RUNS = {
+    "TUNE-002-RUN-001": ({"gate_loss_weight": 0.5}, "cuda:0"),
+    "TUNE-002-RUN-002": ({"gate_loss_weight": 2.0}, "cuda:1"),
+    "TUNE-002-RUN-003": ({"gate_learning_rate": 3e-5}, "cuda:0"),
+    "TUNE-002-RUN-004": ({"gate_learning_rate": 3e-4}, "cuda:1"),
+    "TUNE-002-RUN-005": (
+        {"tg_learning_rate": 3e-5, "tg_min_learning_rate": 3e-5},
+        "cuda:0",
+    ),
+    "TUNE-002-RUN-006": (
+        {"tg_learning_rate": 3e-4, "tg_min_learning_rate": 3e-4},
+        "cuda:1",
+    ),
+    "TUNE-002-RUN-007": ({"max_transport_step": 0.75}, "cuda:0"),
+    "TUNE-002-RUN-008": ({"max_transport_step": 3.0}, "cuda:1"),
+}
 DATASET_SPECS = {
     "CUB": {
         "train_count": 7057,
@@ -171,8 +198,8 @@ def load_config(path: Path) -> tuple[dict, str]:
             or not 0.0 < float(config["tg_min_learning_rate"])
             <= float(config["tg_learning_rate"])
             or not 0.0 < float(config["gate_min_learning_rate"])
-            <= float(config["gate_learning_rate"])
-            or not 0 <= int(config["gate_warmup_epochs"]) <= 20
+            < float(config["gate_learning_rate"])
+            or not 1 <= int(config["gate_warmup_epochs"]) <= 20
             or not 0.0 <= float(config["weight_decay"]) <= 1e-2
             or not 0.0 <= float(config["topology_weight"]) <= 1.0
             or not 0.0 <= float(config["gate_loss_weight"]) <= 10.0
@@ -189,13 +216,22 @@ def load_config(path: Path) -> tuple[dict, str]:
     if shared_invalid:
         raise ValueError("GTD共享训练参数、预算或披露边界错误。")
     if is_tune:
+        identity = TUNE_RUNS.get(str(config["experiment_id"]))
+        expected_parameters = dict(TUNE_BASE_PARAMETERS)
+        if identity is not None:
+            expected_parameters.update(identity[0])
         invalid = (
             config["dataset"] != "CUB"
-            or not str(config["experiment_id"]).startswith("TUNE-002-RUN-")
+            or identity is None
+            or config["device"] != (identity[1] if identity else None)
             or config["condition_id"] != "TG_PLUS_GTD_TUNE_FIXED150"
             or config["tg_checkpoint"] is not None
             or config["tg_checkpoint_sha256"] is not None
             or config["parent_metrics_percent"] is not None
+            or any(
+                float(config[key]) != float(value)
+                for key, value in expected_parameters.items()
+            )
         )
     elif config["schema_version"] == SCHEMA:
         invalid = (
@@ -804,6 +840,21 @@ def next_teacher_refresh_after(
     return next((value for value in refresh_updates if value > int(update)), None)
 
 
+def validate_tune_run_identity(
+    config: dict,
+    config_sha: str,
+    expected_config_sha: str | None,
+    output_dir: Path,
+) -> None:
+    if config["schema_version"] != TUNE_SCHEMA:
+        return
+    expected_output_name = str(config["experiment_id"]).removeprefix("TUNE-002-")
+    if expected_config_sha != config_sha:
+        raise ValueError("V4 tune expected-config-sha与实际配置不一致。")
+    if output_dir.name != expected_output_name:
+        raise ValueError("V4 tune output-dir末级必须与登记RUN一致。")
+
+
 def restore_rng_states(checkpoint: dict, generator: torch.Generator) -> None:
     generator.set_state(checkpoint["batch_generator_state"])
     torch.set_rng_state(checkpoint["cpu_rng_state"])
@@ -818,12 +869,14 @@ def run(
     output_dir: Path,
     expected_commit: str,
     resume_from: Path | None = None,
+    expected_config_sha: str | None = None,
 ) -> dict:
     require_clean_code_tree()
     code_commit = current_code_commit()
     if code_commit != expected_commit:
         raise ValueError("GTD expected-commit与当前干净HEAD不一致。")
     config, config_sha = load_config(config_path)
+    validate_tune_run_identity(config, config_sha, expected_config_sha, output_dir)
     spec = DATASET_SPECS[config["dataset"]]
     train_count = int(spec["train_count"])
     seen_count = int(spec["seen_count"])
@@ -1231,9 +1284,16 @@ def main():
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--expected-commit", required=True)
+    parser.add_argument("--expected-config-sha")
     parser.add_argument("--resume-from", type=Path)
     args = parser.parse_args()
-    run(args.config, args.output_dir, args.expected_commit, args.resume_from)
+    run(
+        args.config,
+        args.output_dir,
+        args.expected_commit,
+        args.resume_from,
+        args.expected_config_sha,
+    )
 
 
 if __name__ == "__main__":
