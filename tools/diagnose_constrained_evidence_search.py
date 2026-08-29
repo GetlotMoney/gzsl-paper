@@ -16,9 +16,15 @@ import torch
 import torch.nn.functional as F
 import yaml
 from PIL import Image
+from scipy.optimize import linear_sum_assignment
 
 from tools.diagnose_intermediate_patch_concepts import roc_auc
-from tools.diagnose_learnable_concept_readout import SharedConceptReadout, setup
+from tools.diagnose_learnable_concept_readout import (
+    SharedConceptReadout,
+    auc_values,
+    probe_scores,
+    setup,
+)
 from tools.gzsl_data import load_xlsa_split, resolve_xlsa_image_path
 from tools.run_contract import current_code_commit, require_clean_code_tree
 from tools.runtime import sha256_file
@@ -37,7 +43,9 @@ def load_config(path: Path) -> dict:
         "reader_batch_size", "reader_learning_rate", "reader_weight_decay",
         "evaluation_image_count", "deletion_count", "hard_concept_minimum",
         "duplicate_rate_gate", "accuracy_gain_gate", "net_correction_gate",
-        "deletion_gate", "top_r_equivalence_tolerance", "transition_gate",
+        "deletion_gate", "assignment_identity_gate", "patch_identity_gate",
+        "top_r_equivalence_tolerance",
+        "solver_ms_gate", "eligible_indices",
         "unseen_images_used", "human_annotations_used",
     }
     actual = set(config) if isinstance(config, dict) else set()
@@ -273,19 +281,58 @@ def exact_assignment(role_edges: np.ndarray, capacity: int, *, top_r: bool = Tru
     return float(dp[best]), paths[best], transitions
 
 
+def fast_assignment(role_edges: np.ndarray, capacity: int):
+    """Exact optional bipartite assignment; bitmask DP remains the audit oracle."""
+    role_count, node_count = role_edges.shape
+    if role_count == 0:
+        return 0.0, {}, 0
+    top_count = min(role_count, node_count)
+    candidates = sorted(
+        set(
+            int(value)
+            for role in range(role_count)
+            for value in np.argpartition(role_edges[role], -top_count)[-top_count:]
+        )
+    )
+    duplicated = [node for node in candidates for _ in range(capacity)]
+    weights = np.zeros((role_count, len(duplicated) + role_count), dtype=np.float64)
+    for column, node in enumerate(duplicated):
+        weights[:, column] = np.maximum(role_edges[:, node], 0.0)
+    rows, columns = linear_sum_assignment(weights, maximize=True)
+    assignment = {}
+    score = 0.0
+    for role, column in zip(rows.tolist(), columns.tolist()):
+        if column < len(duplicated) and weights[role, column] > 0:
+            assignment[int(role)] = int(duplicated[column])
+            score += float(weights[role, column])
+    return score, assignment, int(weights.size)
+
+
 def score_one_class(edges, nodes, mode):
     if not nodes:
-        return 0.0, {}, 0, 0.0, {}
+        return 0.0, {}, 0, 0.0, {}, 0.0, 0.0
     role_edges = np.stack([edges[concept] for _, concept in nodes])
     if mode == "region_capacity1":
         role_edges = pool_regions(role_edges)
         capacity = 1
     else:
         capacity = 1 if mode == "patch_capacity1" else 2
+    started = time.perf_counter()
     independent_score, independent_path = independent_assignment(role_edges)
-    dp_score, dp_path, transitions = exact_assignment(role_edges, capacity, top_r=True)
+    independent_seconds = time.perf_counter() - started
+    started = time.perf_counter()
+    dp_score, dp_path, transitions = fast_assignment(role_edges, capacity)
+    solver_seconds = time.perf_counter() - started
     denominator = len(nodes)
-    return dp_score / denominator, dp_path, transitions, independent_score / denominator, independent_path
+    return (
+        dp_score / denominator,
+        dp_path,
+        transitions,
+        independent_score / denominator,
+        independent_path,
+        independent_seconds,
+        solver_seconds,
+    )
 
 
 def duplicate_assignment(path: dict):
@@ -310,6 +357,8 @@ def evaluate_solvers(edges, labels, class_ids, mapping, modes):
         dp_predictions, independent_predictions = [], []
         duplicates = []
         transition_values = []
+        independent_seconds = 0.0
+        solver_only_seconds = 0.0
         true_paths = []
         started = time.perf_counter()
         for image_index, image_edges in enumerate(edges):
@@ -317,7 +366,15 @@ def evaluate_solvers(edges, labels, class_ids, mapping, modes):
             class_paths = {}
             independent_paths = {}
             for class_id in class_ids:
-                dp_score, dp_path, transitions, independent_score, independent_path = score_one_class(
+                (
+                    dp_score,
+                    dp_path,
+                    transitions,
+                    independent_score,
+                    independent_path,
+                    independent_time,
+                    solver_time,
+                ) = score_one_class(
                     image_edges, mapping[int(class_id)], mode
                 )
                 dp_scores.append(dp_score)
@@ -325,6 +382,8 @@ def evaluate_solvers(edges, labels, class_ids, mapping, modes):
                 class_paths[int(class_id)] = dp_path
                 independent_paths[int(class_id)] = independent_path
                 transition_values.append(transitions)
+                independent_seconds += independent_time
+                solver_only_seconds += solver_time
             dp_predictions.append(int(class_ids[int(np.argmax(dp_scores))]))
             independent_predictions.append(int(class_ids[int(np.argmax(independent_scores))]))
             true_class = int(labels[image_index])
@@ -347,6 +406,9 @@ def evaluate_solvers(edges, labels, class_ids, mapping, modes):
             "duplicate_rate": float(np.mean(duplicates)),
             "maximum_transitions_per_class": int(max(transition_values, default=0)),
             "solver_seconds": elapsed,
+            "independent_seconds": independent_seconds,
+            "assignment_seconds": solver_only_seconds,
+            "assignment_ms_per_class": 1000.0 * solver_only_seconds / max(len(edges) * len(class_ids), 1),
             "dp_predictions": dp_predictions,
             "independent_predictions": independent_predictions,
             "true_paths": true_paths,
@@ -378,7 +440,7 @@ def decision_pre_gates(result, config):
         and result["accuracy_gain_percentage_points"] >= float(config["accuracy_gain_gate"])
         and result["net_correction"] >= int(config["net_correction_gate"])
         and result["corrected"] > result["damaged"]
-        and result["maximum_transitions_per_class"] <= int(config["transition_gate"])
+        and result["assignment_ms_per_class"] <= float(config["solver_ms_gate"])
     )
 
 
@@ -412,10 +474,11 @@ def mask_assignment(image: torch.Tensor, nodes, mode: str):
     return output
 
 
-def random_nodes(count: int, mode: str, seed: int):
+def random_nodes(count: int, mode: str, seed: int, forbidden=()):
     node_count = 144 if mode == "region_capacity1" else 576
     rng = np.random.default_rng(seed)
-    return rng.choice(node_count, size=count, replace=False).tolist()
+    available = np.asarray(sorted(set(range(node_count)) - set(map(int, forbidden))))
+    return rng.choice(available, size=count, replace=False).tolist()
 
 
 def true_class_score(image_edges, nodes, mode):
@@ -425,11 +488,15 @@ def true_class_score(image_edges, nodes, mode):
 @torch.no_grad()
 def deletion_test(
     *, mode, reader, concept_queries, thresholds, mapping, evaluation_rows, labels,
-    patch_array, split, source, clip_model, preprocess, device, count, seed,
+    cached_paths, patch_array, split, source, clip_model, preprocess, device, count, seed,
 ):
+    path_by_row = {
+        int(row): path for row, path in zip(evaluation_rows.tolist(), cached_paths)
+    }
     candidates = evaluation_rows.copy()
     np.random.default_rng(seed).shuffle(candidates)
     selected_better = []
+    assignment_matches = []
     parity = []
     examples = []
     for train_row in candidates:
@@ -450,12 +517,17 @@ def deletion_test(
         parity.append(float(F.cosine_similarity(raw, cached.float(), dim=-1).mean()))
         edge = adapted_patch_scores(reader, raw, concept_queries.to(device))[0].cpu().numpy()
         edge = edge - thresholds[:, None]
-        original_score, assignment = true_class_score(edge, nodes, mode)
-        assigned_nodes = list(assignment.values())
+        original_score, raw_assignment = true_class_score(edge, nodes, mode)
+        cached_assignment = path_by_row[int(train_row)]
+        assigned_nodes = list(cached_assignment.values())
         if not assigned_nodes:
             continue
+        assignment_match = cached_assignment == raw_assignment
         random_assignment = random_nodes(
-            len(set(assigned_nodes)), mode, seed + int(train_row) * 1009
+            len(set(assigned_nodes)),
+            mode,
+            seed + int(train_row) * 1009,
+            forbidden=assigned_nodes,
         )
         variants = torch.stack(
             (
@@ -471,12 +543,14 @@ def deletion_test(
         selected_drop = original_score - selected_score
         random_drop = original_score - random_score
         selected_better.append(selected_drop > 0 and selected_drop > random_drop)
+        assignment_matches.append(assignment_match)
         if len(examples) < 20:
             examples.append(
                 {
                     "train_row": int(train_row),
                     "class_id": class_id,
                     "assigned_nodes": assigned_nodes,
+                    "cached_raw_assignment_match": assignment_match,
                     "random_nodes": random_assignment,
                     "selected_drop": selected_drop,
                     "random_drop": random_drop,
@@ -487,6 +561,7 @@ def deletion_test(
     return {
         "count": count,
         "selected_drop_greater_fraction": float(np.mean(selected_better)),
+        "cached_raw_assignment_match_fraction": float(np.mean(assignment_matches)),
         "mean_patch_cosine": float(np.mean(parity)),
         "minimum_image_mean_patch_cosine": float(np.min(parity)),
         "examples": examples,
@@ -510,6 +585,15 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
         seed=int(config["seed"]),
     )
     values = setup(args, device)
+    expected_indices = [int(value) for value in config["eligible_indices"]]
+    if values["eligible_indices"] != expected_indices or len(values["clusters"]) != 27:
+        raise ValueError("IDEA-165没有复现冻结的27概念轴。")
+    for class_id in range(200):
+        seen_roles = [role for role, members in values["clusters"] if class_id in members]
+        if len(seen_roles) != len(set(seen_roles)):
+            raise ValueError("同一类别同一role被多个概念簇重复覆盖。")
+    if len(values["train_classes"]) != 100 or len(values["evaluation_classes"]) != 50:
+        raise ValueError("IDEA-165没有复现100/50类别轴。")
     patches = np.load(config["final_patches"], mmap_mode="r")
     reader, training = train_reader(values, patches, config, device, shuffled)
     concepts = values["concepts"].to(device)
@@ -518,9 +602,22 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
     train_targets = values["targets"][values["train_rows"]]
     evaluation_targets = values["targets"][values["evaluation_rows"]]
     thresholds = calibrate_thresholds(train_max, train_targets)
-    evaluation_auc = concept_auc(evaluation_max, evaluation_targets)
+    reader_logits = probe_scores(
+        reader,
+        patches,
+        values["evaluation_rows"],
+        concepts,
+        device,
+        16,
+    )
+    reader_auc = auc_values(evaluation_targets, reader_logits)
+    edge_auc = concept_auc(evaluation_max, evaluation_targets)
     output.parent.mkdir(parents=True, exist_ok=True)
     checkpoint_path = output.with_suffix(".pth")
+    concept_axis = [
+        {"role": int(role), "members": list(map(int, members))}
+        for role, members in values["clusters"]
+    ]
     torch.save(
         {
             "model_state_dict": reader.state_dict(),
@@ -528,6 +625,9 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
             "code_commit": expected_commit,
             "config_sha256": config_sha,
             "asset_identity": asset_identity,
+            "eligible_indices": expected_indices,
+            "concept_axis": concept_axis,
+            "thresholds": thresholds.tolist(),
         },
         checkpoint_path,
     )
@@ -541,7 +641,11 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
         "train_classes": values["train_classes"],
         "evaluation_classes": values["evaluation_classes"],
         "eligible_concept_count": len(values["eligible_indices"]),
-        "concept_auc": metric_summary(evaluation_auc),
+        "eligible_indices": expected_indices,
+        "concept_axis": concept_axis,
+        "thresholds": thresholds.tolist(),
+        "reader_concept_auc": metric_summary(reader_auc),
+        "edge_max_concept_auc": metric_summary(edge_auc),
         "checkpoint_path": str(checkpoint_path),
         "checkpoint_sha256": sha256_file(checkpoint_path),
         "unseen_images_used": False,
@@ -559,6 +663,12 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
             int(config["seed"]) + 500,
         )
         evaluation_rows = evaluation_rows[np.isin(labels[evaluation_rows], eligible_classes)]
+        if (
+            len(evaluation_rows) != int(config["evaluation_image_count"])
+            or len(np.unique(evaluation_rows)) != len(evaluation_rows)
+            or any(len(mapping[int(labels[row])]) < int(config["hard_concept_minimum"]) for row in evaluation_rows)
+        ):
+            raise ValueError("IDEA-165固定500张唯一、真类至少2概念的评估合同失败。")
         edge_values = compute_edges(reader, patches, evaluation_rows, concepts, thresholds, device)
         modes = ("patch_capacity1", "patch_capacity2", "region_capacity1")
         solver_results = evaluate_solvers(
@@ -576,8 +686,7 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
         )
         deletions = {}
         prepass_modes = [
-            mode
-            for mode in modes
+            mode for mode in modes
             if decision_pre_gates(solver_results[mode], config)
             and equivalence["maximum_abs"] <= float(config["top_r_equivalence_tolerance"])
         ]
@@ -601,6 +710,7 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
                     thresholds=thresholds,
                     mapping=mapping,
                     evaluation_rows=evaluation_rows,
+                    cached_paths=solver_results[mode]["true_paths"],
                     labels=labels,
                     patch_array=patches,
                     split=split,
@@ -611,6 +721,14 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
                     count=int(config["deletion_count"]),
                     seed=int(config["seed"]) + 700,
                 )
+                row = deletions[mode]
+                if (
+                    row["selected_drop_greater_fraction"] >= float(config["deletion_gate"])
+                    and row["cached_raw_assignment_match_fraction"] >= float(config["assignment_identity_gate"])
+                    and min(row["mean_patch_cosine"], row["minimum_image_mean_patch_cosine"])
+                    >= float(config["patch_identity_gate"])
+                ):
+                    break
         serialized = {}
         for mode, values_mode in solver_results.items():
             serialized[mode] = {
@@ -627,7 +745,6 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
                 "evaluation_rows": evaluation_rows.tolist(),
                 "solver_results": serialized,
                 "top_r_equivalence": equivalence,
-                "thresholds": thresholds.tolist(),
             }
         )
     output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -654,6 +771,9 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
             or payload.get("code_commit") != expected_commit
             or payload.get("config_sha256") != config_sha
             or payload.get("asset_identity") != result["asset_identity"]
+            or payload.get("eligible_indices") != result["eligible_indices"]
+            or payload.get("concept_axis") != result["concept_axis"]
+            or payload.get("thresholds") != result["thresholds"]
         ):
             raise ValueError("IDEA-165 checkpoint内部身份错误。")
         probe = SharedConceptReadout(rank=int(config["reader_rank"]))
@@ -664,6 +784,8 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
         real["asset_identity"] != shuffled["asset_identity"]
         or real["train_classes"] != shuffled["train_classes"]
         or real["evaluation_classes"] != shuffled["evaluation_classes"]
+        or real["eligible_indices"] != shuffled["eligible_indices"]
+        or real["concept_axis"] != shuffled["concept_axis"]
     ):
         raise ValueError("real/shuffled资产或100/50 split不一致。")
     comparable_environment = set(real["environment"]) - {"gpu_uuid"}
@@ -673,8 +795,8 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
     ):
         raise ValueError("real/shuffled环境或GPU型号不一致。")
     reader_gate = (
-        real["concept_auc"]["median_auc"] >= 0.65
-        and shuffled["concept_auc"]["median_auc"] <= 0.55
+        real["reader_concept_auc"]["median_auc"] >= 0.65
+        and shuffled["reader_concept_auc"]["median_auc"] <= 0.55
     )
     solver_decisions = {}
     ordered = ("patch_capacity1", "patch_capacity2", "region_capacity1")
@@ -689,6 +811,13 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
             and row["deletion"] is not None
             and row["deletion"]["selected_drop_greater_fraction"]
             >= float(config["deletion_gate"])
+            and row["deletion"]["cached_raw_assignment_match_fraction"]
+            >= float(config["assignment_identity_gate"])
+            and min(
+                row["deletion"]["mean_patch_cosine"],
+                row["deletion"]["minimum_image_mean_patch_cosine"],
+            )
+            >= float(config["patch_identity_gate"])
         )
         solver_decisions[mode] = "pass" if passed else "fail"
         if passed and winner is None:

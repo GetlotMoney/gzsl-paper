@@ -5,6 +5,7 @@ import numpy as np
 from tools.diagnose_constrained_evidence_search import (
     duplicate_assignment,
     exact_assignment,
+    fast_assignment,
     independent_assignment,
     pool_regions,
 )
@@ -42,6 +43,8 @@ def test_top_r_is_exact_for_six_role_capacity_one_and_two():
             top_score, _, _ = exact_assignment(edges, capacity=capacity, top_r=True)
             full_score, _, _ = exact_assignment(edges, capacity=capacity, top_r=False)
             assert np.isclose(top_score, full_score)
+            fast_score, _, _ = fast_assignment(edges, capacity=capacity)
+            assert np.isclose(fast_score, full_score)
 
 
 def test_region_pooling_is_two_by_two_mean():
