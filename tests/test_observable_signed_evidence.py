@@ -5,10 +5,11 @@ import torch
 
 from tools.diagnose_observable_signed_evidence import (
     SharedEvidenceReader,
-    detached_observability_loss,
     derangement,
     fixed_reference_d,
     region_bounds,
+    shuffled_query_bank,
+    state_loss,
     state_probabilities,
 )
 
@@ -39,6 +40,16 @@ def test_fixed_reference_is_invariant_to_class_axis_permutation():
     assert torch.allclose(original, restored, atol=1e-6)
 
 
+def test_fixed_reference_is_stable_and_keeps_candidate_gradient_at_large_gap():
+    scores = torch.zeros(1, 200, 6, requires_grad=True)
+    with torch.no_grad():
+        scores[0, 0, 0] = 100.0
+    signed = fixed_reference_d(scores)
+    assert torch.allclose(signed[0, 0, 0], torch.tensor(100.0), atol=1e-5)
+    signed[0, 0, 0].backward()
+    assert torch.allclose(scores.grad[0, 0, 0], torch.tensor(1.0), atol=1e-6)
+
+
 def test_derangement_has_no_fixed_class():
     values = np.arange(100)
     output = derangement(values, seed=7)
@@ -47,12 +58,33 @@ def test_derangement_has_no_fixed_class():
 
 
 def test_classification_loss_cannot_change_observability():
-    role_losses = torch.tensor([1.0, 2.0], requires_grad=True)
-    observability = torch.tensor([0.2, 0.8], requires_grad=True)
-    loss = detached_observability_loss(role_losses, observability)
+    reader = SharedEvidenceReader(rank=8)
+    patches = torch.randn(2, 4, 768)
+    class_queries = torch.randn(200, 6, 768)
+    role_queries = torch.nn.functional.normalize(class_queries.mean(dim=0), dim=-1)
+    before = reader.observability(patches, role_queries).detach().clone()
+    loss = state_loss(
+        reader,
+        patches,
+        0,
+        class_queries,
+        role_queries,
+        np.arange(100),
+        0.20,
+    )
+    optimizer = torch.optim.SGD(reader.parameters(), lr=0.1)
+    optimizer.zero_grad()
     loss.backward()
-    assert observability.grad is None
-    assert role_losses.grad is not None
+    optimizer.step()
+    after = reader.observability(patches, role_queries).detach()
+    assert torch.equal(before, after)
+
+
+def test_shuffled_query_control_changes_every_text_slot():
+    queries = torch.randn(200, 6, 768)
+    shuffled, _ = shuffled_query_bank(queries, seed=7)
+    equal = torch.isclose(queries, shuffled).all(dim=-1)
+    assert not bool(equal.any())
 
 
 def test_region_is_fixed_area_and_inside_336_pixels():

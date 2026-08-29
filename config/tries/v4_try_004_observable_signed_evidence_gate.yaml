@@ -31,8 +31,13 @@ causal_weight: 1.0
 region_patch_side: 4
 evaluation_batch_size: 4
 hard_negative_count: 4
+signed_temperature: 1.0
+observability_threshold: 0.50
 pairwise_gate: 0.65
-causal_gate: 0.70
+coverage_gate: 0.30
+observability_causal_gate: 0.70
+signed_causal_gate: 0.70
+patch_identity_gate: 0.99
 reference_invariance_tolerance: 0.000001
 unseen_images_used: false
 human_annotations_used: false

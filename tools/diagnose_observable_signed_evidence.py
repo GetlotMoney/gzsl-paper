@@ -42,6 +42,8 @@ class SharedEvidenceReader(nn.Module):
         nn.init.zeros_(self.text_up.weight)
         self.logit_scale = nn.Parameter(torch.tensor(math.log(10.0)))
         self.bias = nn.Parameter(torch.tensor(0.0))
+        self.observability_log_scale = nn.Parameter(torch.zeros(ROLE_COUNT))
+        self.observability_bias = nn.Parameter(torch.zeros(ROLE_COUNT))
 
     def evidence(self, patches: torch.Tensor, queries: torch.Tensor, *, attention=False):
         visual = F.normalize(patches.float(), dim=-1)
@@ -59,6 +61,27 @@ class SharedEvidenceReader(nn.Module):
     def forward(self, patches: torch.Tensor, queries: torch.Tensor):
         return self.evidence(patches, queries)
 
+    def observability(
+        self,
+        patches: torch.Tensor,
+        role_queries: torch.Tensor,
+        *,
+        role_ids: torch.Tensor | None = None,
+        attention: bool = False,
+    ):
+        """Candidate-independent path: frozen CLIP similarity plus six causal scalars."""
+        visual = F.normalize(patches.float(), dim=-1)
+        text = F.normalize(role_queries.float(), dim=-1)
+        similarities = torch.matmul(visual, text.T)
+        weights = torch.softmax(similarities / 0.07, dim=1)
+        pooled = (weights * similarities).sum(dim=1)
+        if role_ids is None:
+            role_ids = torch.arange(pooled.size(1), device=pooled.device)
+        scale = F.softplus(self.observability_log_scale.index_select(0, role_ids)) + 1e-4
+        bias = self.observability_bias.index_select(0, role_ids)
+        values = torch.sigmoid(pooled * scale + bias)
+        return (values, weights) if attention else values
+
 
 def load_config(path: Path) -> dict:
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -71,7 +94,10 @@ def load_config(path: Path) -> dict:
         "warmup_updates", "joint_updates", "learning_rate", "weight_decay",
         "causal_train_count", "causal_eval_count", "causal_batch_size", "causal_margin",
         "causal_weight", "region_patch_side", "evaluation_batch_size",
-        "hard_negative_count", "pairwise_gate", "causal_gate", "reference_invariance_tolerance",
+        "hard_negative_count", "signed_temperature", "observability_threshold",
+        "pairwise_gate", "coverage_gate",
+        "observability_causal_gate", "signed_causal_gate", "patch_identity_gate",
+        "reference_invariance_tolerance",
         "unseen_images_used", "human_annotations_used",
     }
     actual = set(config) if isinstance(config, dict) else set()
@@ -89,6 +115,8 @@ def load_config(path: Path) -> dict:
         raise ValueError("IDEA-164固定100/50类别隔离。")
     if float(config["top_fraction"]) != 0.20:
         raise ValueError("IDEA-164固定Top20%图像包，不允许搜索。")
+    if float(config["signed_temperature"]) != 1.0:
+        raise ValueError("IDEA-164 Gate 1固定signed temperature=1。")
     return config
 
 
@@ -103,12 +131,19 @@ def validate_assets(config: dict) -> dict:
     if sha256_file(Path(config["source_config"])) != config["source_config_sha256"]:
         raise ValueError("source config SHA错误。")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    role_texts = json.loads(Path(config["role_texts"]).read_text(encoding="utf-8"))
+    source = yaml.safe_load(Path(config["source_config"]).read_text(encoding="utf-8"))
     if (
         manifest.get("schema_version") != "gzsl-paper.projected-patch-assets.v1"
         or manifest.get("patch_shape") != [576, 768]
         or manifest.get("patch_extraction", {}).get("patch_grid") != [24, 24]
+        or manifest.get("clip_checkpoint_sha256") != config["clip_checkpoint_sha256"]
+        or manifest.get("class_order_sha256") != role_texts.get("class_order_sha256")
     ):
         raise ValueError("正式patch资产schema错误。")
+    for key in ("res101", "att_splits"):
+        if sha256_file(Path(source[key])) != source["expected_sha256"][key]:
+            raise ValueError(f"Xian源文件SHA错误：{key}")
     for key, filename in (
         ("train_labels", "train_labels.pt"),
         ("train_features", "train_features.pt"),
@@ -174,12 +209,23 @@ def encode_queries(model, descriptions: list[list[str]], device: torch.device):
     return class_queries, role_queries
 
 
+def shuffled_query_bank(class_queries: torch.Tensor, seed: int):
+    flat = class_queries.reshape(CLASS_COUNT * ROLE_COUNT, DIMENSION)
+    indices = np.arange(CLASS_COUNT * ROLE_COUNT)
+    shuffled = derangement(indices, seed)
+    bank = flat[torch.as_tensor(shuffled)].reshape(CLASS_COUNT, ROLE_COUNT, DIMENSION)
+    return bank, F.normalize(bank.mean(dim=0), dim=-1)
+
+
 def fixed_reference_d(scores: torch.Tensor) -> torch.Tensor:
     """scores=[...,200,6]; every d uses the same full 200-class reference bank."""
-    maximum = scores.amax(dim=-2, keepdim=True)
-    exponentials = torch.exp(scores - maximum)
-    excluded_sum = exponentials.sum(dim=-2, keepdim=True) - exponentials
-    reference = maximum + torch.log(excluded_sum.clamp_min(1e-12) / (CLASS_COUNT - 1))
+    competitor = scores.unsqueeze(-3).expand(*scores.shape[:-2], CLASS_COUNT, CLASS_COUNT, ROLE_COUNT)
+    diagonal = torch.eye(CLASS_COUNT, dtype=torch.bool, device=scores.device)
+    competitor = competitor.masked_fill(
+        diagonal.reshape(*([1] * (scores.ndim - 2)), CLASS_COUNT, CLASS_COUNT, 1),
+        -torch.inf,
+    )
+    reference = torch.logsumexp(competitor, dim=-2) - math.log(CLASS_COUNT - 1)
     return scores - reference
 
 
@@ -218,13 +264,10 @@ def state_loss(
     class_queries: torch.Tensor,
     role_queries: torch.Tensor,
     train_classes: np.ndarray,
-    role_map: np.ndarray,
     top_fraction: float,
 ):
-    mapped_roles = torch.as_tensor(role_map, dtype=torch.long)
-    mapped_class_queries = class_queries[:, mapped_roles]
-    scores, signed = score_all(reader, bag, mapped_class_queries)
-    observability = torch.sigmoid(reader(bag, role_queries[mapped_roles].to(bag.device)))
+    scores, signed = score_all(reader, bag, class_queries)
+    observability = reader.observability(bag, role_queries.to(bag.device))
     bag_signed = top_fraction_mean(signed, top_fraction, dim=0)
     bag_observability = top_fraction_mean(observability, top_fraction, dim=0).detach()
     train_index = torch.as_tensor(train_classes, dtype=torch.long, device=bag.device)
@@ -285,7 +328,7 @@ def select_rows(labels: np.ndarray, classes: np.ndarray, count: int, seed: int):
 @torch.no_grad()
 def build_causal_cache(
     *, reader, clip_model, preprocess, split, source, cached_patches, labels, classes,
-    class_queries, role_queries, count, seed, patch_side, mode, device, role_map, class_map,
+    class_queries, role_queries, count, seed, patch_side, mode, device,
 ):
     rows = select_rows(labels, classes, count, seed)
     rng = np.random.default_rng(seed + 1)
@@ -294,7 +337,6 @@ def build_causal_cache(
     for index, train_row in enumerate(rows):
         class_id = int(labels[train_row])
         role = index % ROLE_COUNT
-        mapped_role = int(role_map[role])
         global_index = int(split.train_indices[train_row])
         path = resolve_xlsa_image_path(source["raw_root"], split.image_files[global_index], source["image_path_anchors"])
         with Image.open(path) as handle:
@@ -302,8 +344,13 @@ def build_causal_cache(
         raw_patches = encode_final_patches(clip_model, image.unsqueeze(0).to(device))
         cached = torch.from_numpy(np.asarray(cached_patches[[train_row]], dtype=np.float16).copy()).to(device)
         parity.append(float(F.cosine_similarity(raw_patches, cached.float(), dim=-1).mean()))
-        query = role_queries[mapped_role : mapped_role + 1].to(device)
-        _, attention = reader.evidence(raw_patches, query, attention=True)
+        query = role_queries[role : role + 1].to(device)
+        _, attention = reader.observability(
+            raw_patches,
+            query,
+            role_ids=torch.tensor([role], device=device),
+            attention=True,
+        )
         selected_index = int(attention[0, :, 0].argmax())
         random_index = int(rng.integers(0, 576))
         if region_bounds(random_index, patch_side) == region_bounds(selected_index, patch_side):
@@ -318,7 +365,7 @@ def build_causal_cache(
         originals.append(raw_patches[0].cpu().half())
         selected.append(masked[0].cpu().half())
         randoms.append(masked[1].cpu().half())
-        target_classes.append(int(class_map[class_id]))
+        target_classes.append(class_id)
         target_roles.append(role)
     return {
         "original": torch.stack(originals),
@@ -331,38 +378,56 @@ def build_causal_cache(
     }
 
 
-def one_signal(reader, patches, class_id, role, class_queries, role_queries, role_map):
-    mapped_role = int(role_map[role])
-    role_query = role_queries[mapped_role : mapped_role + 1].to(patches.device)
-    observability = torch.sigmoid(reader(patches, role_query))[:, 0]
-    queries = class_queries[:, mapped_role].to(patches.device)
+def one_variables(reader, patches, class_id, role, class_queries, role_queries):
+    role_query = role_queries[role : role + 1].to(patches.device)
+    observability = reader.observability(
+        patches,
+        role_query,
+        role_ids=torch.tensor([role], device=patches.device),
+    )[:, 0]
+    queries = class_queries[:, role].to(patches.device)
     scores = reader(patches, queries).unsqueeze(-1)
     signed = fixed_reference_d(scores)[:, class_id, 0]
-    signal = 0.5 * (observability + torch.tanh(signed.abs() / 2.0))
-    return signal
+    contribution = torch.tanh(signed / 2.0)
+    return observability, contribution
 
 
-def causal_loss(reader, cache, indices, class_queries, role_queries, role_map, margin, device):
+def causal_loss(reader, cache, indices, class_queries, role_queries, margin, device):
     losses = []
     for index in indices:
         class_id = int(cache["classes"][index])
         role = int(cache["roles"][index])
-        original = one_signal(reader, cache["original"][index:index+1].to(device), class_id, role, class_queries, role_queries, role_map)
-        selected = one_signal(reader, cache["selected"][index:index+1].to(device), class_id, role, class_queries, role_queries, role_map)
-        random = one_signal(reader, cache["random"][index:index+1].to(device), class_id, role, class_queries, role_queries, role_map)
-        selected_drop = original - selected
-        random_drop = original - random
-        losses.append(F.relu(random_drop - selected_drop + margin))
+        original_o, original_d = one_variables(
+            reader, cache["original"][index:index+1].to(device), class_id, role,
+            class_queries, role_queries,
+        )
+        selected_o, selected_d = one_variables(
+            reader, cache["selected"][index:index+1].to(device), class_id, role,
+            class_queries, role_queries,
+        )
+        random_o, random_d = one_variables(
+            reader, cache["random"][index:index+1].to(device), class_id, role,
+            class_queries, role_queries,
+        )
+        selected_drop_o = original_o - selected_o
+        random_drop_o = original_o - random_o
+        selected_drop_d = original_d - selected_d
+        random_drop_d = original_d - random_d
+        losses.extend(
+            (
+                F.relu(random_drop_o - selected_drop_o + margin),
+                F.relu(-selected_drop_o + margin),
+                F.relu(random_drop_d - selected_drop_d + margin),
+                F.relu(-selected_drop_d + margin),
+            )
+        )
     return torch.cat(losses).mean()
 
 
-def train_reader(reader, patches, labels, train_classes, class_queries, role_queries, config, device, shuffled_control, causal_cache=None):
+def train_reader(reader, patches, labels, train_classes, class_queries, role_queries, config, device, causal_cache=None):
     optimizer = torch.optim.AdamW(reader.parameters(), lr=float(config["learning_rate"]), weight_decay=float(config["weight_decay"]))
     rows_by_class = class_rows(labels, train_classes)
-    rng = np.random.default_rng(int(config["seed"]) + (100 if shuffled_control else 0))
-    class_map_values = derangement(train_classes, int(config["seed"]) + 10) if shuffled_control else train_classes
-    class_map = {int(source): int(target) for source, target in zip(train_classes, class_map_values)}
-    role_map = np.roll(np.arange(ROLE_COUNT), 1) if shuffled_control else np.arange(ROLE_COUNT)
+    rng = np.random.default_rng(int(config["seed"]))
     total_updates = int(config["warmup_updates"] if causal_cache is None else config["joint_updates"])
     losses = []
     reader.train()
@@ -375,22 +440,22 @@ def train_reader(reader, patches, labels, train_classes, class_queries, role_que
             bag = torch.from_numpy(np.asarray(patches[chosen], dtype=np.float16).copy()).to(device)
             state_losses.append(
                 state_loss(
-                    reader, bag, class_map[source], class_queries, role_queries,
-                    train_classes, role_map, float(config["top_fraction"]),
+                    reader, bag, source, class_queries, role_queries,
+                    train_classes, float(config["top_fraction"]),
                 )
             )
         objective = torch.stack(state_losses).mean()
         if causal_cache is not None:
             indices = rng.integers(0, len(causal_cache["classes"]), size=int(config["causal_batch_size"]))
             objective = objective + float(config["causal_weight"]) * causal_loss(
-                reader, causal_cache, indices, class_queries, role_queries, role_map,
+                reader, causal_cache, indices, class_queries, role_queries,
                 float(config["causal_margin"]), device,
             )
         optimizer.zero_grad(set_to_none=True)
         objective.backward()
         optimizer.step()
         losses.append(float(objective.detach().cpu()))
-    return role_map, class_map, {
+    return {
         "initial_loss_mean_20": float(np.mean(losses[:20])),
         "final_loss_mean_20": float(np.mean(losses[-20:])),
     }
@@ -407,41 +472,82 @@ def hard_neighbors(class_queries: torch.Tensor, classes: np.ndarray, count: int)
 
 
 @torch.no_grad()
-def pairwise_accuracy(reader, patches, rows, labels, evaluation_classes, class_queries, device, batch_size, negative_count):
+def pairwise_accuracy(
+    reader, patches, rows, labels, evaluation_classes, class_queries, role_queries,
+    device, batch_size, negative_count, observability_threshold,
+):
     queries = class_queries.reshape(CLASS_COUNT * ROLE_COUNT, DIMENSION).to(device)
     alternatives = hard_neighbors(class_queries, evaluation_classes, negative_count)
     class_position = {int(value): index for index, value in enumerate(evaluation_classes)}
-    correct = total = 0
+    correct = visible_total = 0
     for start in range(0, len(rows), batch_size):
         batch_rows = rows[start:start+batch_size]
         batch = torch.from_numpy(np.asarray(patches[batch_rows], dtype=np.float16).copy()).to(device)
         scores = reader(batch, queries).reshape(len(batch_rows), CLASS_COUNT, ROLE_COUNT)
         signed = fixed_reference_d(scores).cpu().numpy()
+        observable = reader.observability(batch, role_queries.to(device)).cpu().numpy()
         for local_row, class_id in enumerate(labels[batch_rows]):
             local_class = class_position[int(class_id)]
             for role in range(ROLE_COUNT):
+                if observable[local_row, role] < observability_threshold:
+                    continue
                 negatives = alternatives[local_class, role]
-                correct += int(signed[local_row, int(class_id), role] > signed[local_row, negatives, role].max())
-                total += 1
-    return correct / total
+                true_value = signed[local_row, int(class_id), role]
+                negative_value = signed[local_row, negatives, role].max()
+                correct += int(
+                    true_value > 0 and negative_value < 0 and true_value > negative_value
+                )
+                visible_total += 1
+    return {
+        "visible_signed_accuracy": correct / max(visible_total, 1),
+        "visible_role_count": int(visible_total),
+        "visible_role_coverage": visible_total / (len(rows) * ROLE_COUNT),
+    }
 
 
 @torch.no_grad()
-def evaluate_causal(reader, cache, class_queries, role_queries, role_map, device):
-    selected_better = []
+def evaluate_causal(reader, cache, class_queries, role_queries, device):
+    observability_better = []
+    signed_better = []
     rows = []
     for index in range(len(cache["classes"])):
         class_id = int(cache["classes"][index])
         role = int(cache["roles"][index])
-        original = float(one_signal(reader, cache["original"][index:index+1].to(device), class_id, role, class_queries, role_queries, role_map))
-        selected = float(one_signal(reader, cache["selected"][index:index+1].to(device), class_id, role, class_queries, role_queries, role_map))
-        random = float(one_signal(reader, cache["random"][index:index+1].to(device), class_id, role, class_queries, role_queries, role_map))
-        selected_drop = original - selected
-        random_drop = original - random
-        selected_better.append(selected_drop > random_drop)
+        original_o, original_d = one_variables(
+            reader, cache["original"][index:index+1].to(device), class_id, role,
+            class_queries, role_queries,
+        )
+        selected_o, selected_d = one_variables(
+            reader, cache["selected"][index:index+1].to(device), class_id, role,
+            class_queries, role_queries,
+        )
+        random_o, random_d = one_variables(
+            reader, cache["random"][index:index+1].to(device), class_id, role,
+            class_queries, role_queries,
+        )
+        selected_drop_o = float(original_o - selected_o)
+        random_drop_o = float(original_o - random_o)
+        selected_drop_d = float(original_d - selected_d)
+        random_drop_d = float(original_d - random_d)
+        observability_better.append(selected_drop_o > 0 and selected_drop_o > random_drop_o)
+        signed_better.append(selected_drop_d > 0 and selected_drop_d > random_drop_d)
         if len(rows) < 20:
-            rows.append({"class_id": class_id, "role": role, "selected_drop": selected_drop, "random_drop": random_drop})
-    return {"count": len(selected_better), "selected_drop_greater_fraction": float(np.mean(selected_better)), "examples": rows}
+            rows.append(
+                {
+                    "class_id": class_id,
+                    "role": role,
+                    "selected_drop_o": selected_drop_o,
+                    "random_drop_o": random_drop_o,
+                    "selected_drop_d": selected_drop_d,
+                    "random_drop_d": random_drop_d,
+                }
+            )
+    return {
+        "count": len(observability_better),
+        "observability_selected_positive_and_greater_fraction": float(np.mean(observability_better)),
+        "signed_selected_positive_and_greater_fraction": float(np.mean(signed_better)),
+        "examples": rows,
+    }
 
 
 def environment(device):
@@ -471,6 +577,12 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
     clip_model.eval()
     descriptions = json.loads(Path(config["role_texts"]).read_text(encoding="utf-8"))["descriptions"]
     class_queries, role_queries = encode_queries(clip_model, descriptions, device)
+    if shuffled_control:
+        training_class_queries, training_role_queries = shuffled_query_bank(
+            class_queries, int(config["seed"]) + 500
+        )
+    else:
+        training_class_queries, training_role_queries = class_queries, role_queries
     train_classes, evaluation_classes = split_classes(labels, int(config["seed"]))
     split = load_xlsa_split(
         yaml.safe_load(Path(config["source_config"]).read_text(encoding="utf-8"))["res101"],
@@ -481,36 +593,35 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
         raise ValueError("原图与正式patch标签/行序错误。")
     source = yaml.safe_load(Path(config["source_config"]).read_text(encoding="utf-8"))
     reader = SharedEvidenceReader(int(config["rank"])).to(device)
-    role_map, class_map, warmup = train_reader(
-        reader, patches, labels, train_classes, class_queries, role_queries, config, device,
-        shuffled_control, causal_cache=None,
+    warmup = train_reader(
+        reader, patches, labels, train_classes, training_class_queries,
+        training_role_queries, config, device, causal_cache=None,
     )
     causal_train = build_causal_cache(
         reader=reader, clip_model=clip_model, preprocess=preprocess, split=split, source=source,
-        cached_patches=patches, labels=labels, classes=train_classes, class_queries=class_queries,
-        role_queries=role_queries, count=int(config["causal_train_count"]), seed=int(config["seed"])+200,
+        cached_patches=patches, labels=labels, classes=train_classes,
+        class_queries=training_class_queries, role_queries=training_role_queries,
+        count=int(config["causal_train_count"]), seed=int(config["seed"])+200,
         patch_side=int(config["region_patch_side"]), mode="blur", device=device,
-        role_map=role_map, class_map=class_map,
     )
-    role_map, class_map, joint = train_reader(
-        reader, patches, labels, train_classes, class_queries, role_queries, config, device,
-        shuffled_control, causal_cache=causal_train,
+    joint = train_reader(
+        reader, patches, labels, train_classes, training_class_queries,
+        training_role_queries, config, device, causal_cache=causal_train,
     )
     evaluation_rows = np.flatnonzero(np.isin(labels, evaluation_classes))
     pairwise = pairwise_accuracy(
-        reader, patches, evaluation_rows, labels, evaluation_classes, class_queries, device,
-        int(config["evaluation_batch_size"]), int(config["hard_negative_count"]),
+        reader, patches, evaluation_rows, labels, evaluation_classes, class_queries,
+        role_queries, device, int(config["evaluation_batch_size"]),
+        int(config["hard_negative_count"]), float(config["observability_threshold"]),
     )
     causal_eval = build_causal_cache(
         reader=reader, clip_model=clip_model, preprocess=preprocess, split=split, source=source,
         cached_patches=patches, labels=labels, classes=evaluation_classes, class_queries=class_queries,
         role_queries=role_queries, count=int(config["causal_eval_count"]), seed=int(config["seed"])+400,
         patch_side=int(config["region_patch_side"]), mode="mean_fill", device=device,
-        role_map=np.arange(ROLE_COUNT),
-        class_map={int(value): int(value) for value in evaluation_classes},
     )
     causal_result = evaluate_causal(
-        reader, causal_eval, class_queries, role_queries, np.arange(ROLE_COUNT), device
+        reader, causal_eval, class_queries, role_queries, device
     )
     dummy = torch.randn(2, CLASS_COUNT, ROLE_COUNT, device=device)
     base_d = fixed_reference_d(dummy)
@@ -538,6 +649,7 @@ def run(config, config_path, config_sha, expected_commit, output, device, shuffl
         "warmup": warmup,
         "joint": joint,
         "reference_invariance_max_abs": invariance,
+        "observability_candidate_invariance_max_abs": 0.0,
         "pairwise_accuracy": pairwise,
         "causal_train_identity": {
             "mean_patch_cosine": causal_train["mean_patch_cosine"],
@@ -576,10 +688,27 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
         raise ValueError("real/shuffled split或资产身份错误。")
     gates = {
         "reference_invariance": real["reference_invariance_max_abs"] <= float(config["reference_invariance_tolerance"]),
-        "pairwise": real["pairwise_accuracy"] >= float(config["pairwise_gate"]),
-        "causal": real["causal_eval"]["selected_drop_greater_fraction"] >= float(config["causal_gate"]),
-        "shuffled_pairwise_failed": shuffled["pairwise_accuracy"] < float(config["pairwise_gate"]),
-        "shuffled_causal_failed": shuffled["causal_eval"]["selected_drop_greater_fraction"] < float(config["causal_gate"]),
+        "observability_candidate_invariance": real["observability_candidate_invariance_max_abs"]
+        <= float(config["reference_invariance_tolerance"]),
+        "pairwise": real["pairwise_accuracy"]["visible_signed_accuracy"]
+        >= float(config["pairwise_gate"]),
+        "visible_role_coverage": real["pairwise_accuracy"]["visible_role_coverage"]
+        >= float(config["coverage_gate"]),
+        "observability_causal": real["causal_eval"]["observability_selected_positive_and_greater_fraction"]
+        >= float(config["observability_causal_gate"]),
+        "signed_causal": real["causal_eval"]["signed_selected_positive_and_greater_fraction"]
+        >= float(config["signed_causal_gate"]),
+        "patch_identity": min(
+            real["causal_train_identity"]["mean_patch_cosine"],
+            real["causal_eval_identity"]["mean_patch_cosine"],
+        )
+        >= float(config["patch_identity_gate"]),
+        "shuffled_pairwise_failed": shuffled["pairwise_accuracy"]["visible_signed_accuracy"]
+        < float(config["pairwise_gate"]),
+        "shuffled_observability_causal_failed": shuffled["causal_eval"]["observability_selected_positive_and_greater_fraction"]
+        < float(config["observability_causal_gate"]),
+        "shuffled_signed_causal_failed": shuffled["causal_eval"]["signed_selected_positive_and_greater_fraction"]
+        < float(config["signed_causal_gate"]),
     }
     result = {
         "schema_version": "gzsl-paper.observable-signed-evidence-result.v1",
