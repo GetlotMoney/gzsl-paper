@@ -117,6 +117,18 @@ def test_content_aware_inpainting_replaces_only_mask_from_outside_context():
         assert float(result[:, mask].abs().max()) < 1.0
 
 
+def test_harmonic_initialization_explicitly_covers_every_mask_pixel():
+    image = torch.zeros(3, 336, 336)
+    image[0] += 1.0
+    image[1] += 2.0
+    image[2] += 3.0
+    windows = [(2, 3)]
+    mask = window_pixel_mask(image, windows)
+    result = harmonic_inpaint(image, windows, iterations=0)
+    assert result[:, mask].shape == (3, int(mask.sum()))
+    assert torch.equal(result[:, mask], torch.tensor([[1.0], [2.0], [3.0]]).expand(-1, int(mask.sum())))
+
+
 def test_boundary_reflect_handles_image_edge_without_reusing_masked_content():
     image = torch.zeros(3, 336, 336)
     windows = [(0, 0)]

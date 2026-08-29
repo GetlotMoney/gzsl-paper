@@ -588,7 +588,8 @@ def harmonic_inpaint(
     if not boundary.any():
         raise ValueError("调和补全窗口没有可用边界。")
     output = image.clone()
-    output[:, mask] = image[:, boundary].mean(dim=1, keepdim=True)
+    fill = image[:, boundary].mean(dim=1, keepdim=True)
+    output[:, mask] = fill.expand(-1, int(mask.sum().item()))
     fixed = image
     for _ in range(int(iterations)):
         padded = F.pad(output.unsqueeze(0), (1, 1, 1, 1), mode="replicate")[0]
