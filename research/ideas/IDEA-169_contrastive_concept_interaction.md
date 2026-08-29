@@ -35,4 +35,3 @@ frontier_shift: unknown。
 downstream_effects: Gate通过后才允许设计交互感知分类；Gate失败不进入主模型。
 failure_boundary: 竞争概念只来自同角色共享文本簇，不使用人工属性、部位、框或unseen图像梯度。补救1失败后不在本卡调参；owner已授权的补救2必须另建Idea并只改变干预真实性，使用内容感知补全替代mean-fill/blur。
 owner_decision: 2026-08-29 owner在IDEA-168失败后明确要求“开始补救”，批准先执行概念对比差分补救；若失败再自动进入一次内容感知补全补救。
-

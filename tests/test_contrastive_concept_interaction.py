@@ -215,4 +215,3 @@ def test_environment_comparison_ignores_only_gpu_uuid():
     wrong = {"torch": "3", "gpu_name": "4090", "gpu_uuid": "B"}
     assert comparable_environment(left) == comparable_environment(right)
     assert comparable_environment(left) != comparable_environment(wrong)
-
