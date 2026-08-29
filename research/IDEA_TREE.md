@@ -192,3 +192,16 @@ V2-H-PLUS-3PP
 - 失败节点保留在树中，不删除、不重编号，也不事后修改成功门槛。
 
 当前创新1闭环：`PAPER-001 → IDEA-001 → legacy H1 evidence → FRAMEWORK-V2 → V2-CONFIRM-001`。owner已授权直接迁移H1旧实验，IDEA-001现标记为`supported / paper_core_innovation`。
+
+## FRAMEWORK-V4续接研究
+
+本实验分支保留上述V2/V3完整历史，并从owner确认的`FRAMEWORK-V4 @ 52088f69d7ac4e574e7b63c28b21ac0da7789933`独立分叉。
+
+| Idea | 状态 | 作用 |
+|---|---|---|
+| [`IDEA-160`](ideas/IDEA-160_full_resolution_concept_grounding.md) | rejected | 576-patch裸余弦失败 |
+| [`IDEA-161`](ideas/IDEA-161_intermediate_patch_concept_signal.md) | revised | 中间层裸读取失败 |
+| [`IDEA-162`](ideas/IDEA-162_learnable_concept_readout_probe.md) | supported signal only | 共享概念边权可学习迁移 |
+| [`IDEA-163`](ideas/IDEA-163_tri_state_evidence_predicate_set.md) | rejected | 离散三态失败 |
+| [`IDEA-164`](ideas/IDEA-164_observable_signed_evidence.md) | rejected | 连续可观察性与signed证据失败 |
+| [`IDEA-165`](ideas/IDEA-165_constrained_evidence_graph_search.md) | owner-approved three attempts | 固定共享边权上的容量约束精确搜索 |
