@@ -192,3 +192,13 @@ V2-H-PLUS-3PP
 - 失败节点保留在树中，不删除、不重编号，也不事后修改成功门槛。
 
 当前创新1闭环：`PAPER-001 → IDEA-001 → legacy H1 evidence → FRAMEWORK-V2 → V2-CONFIRM-001`。owner已授权直接迁移H1旧实验，IDEA-001现标记为`supported / paper_core_innovation`。
+
+## FRAMEWORK-V4续接研究
+
+本实验分支保留上述V2/V3完整历史，并从owner确认的`FRAMEWORK-V4 @ 52088f69d7ac4e574e7b63c28b21ac0da7789933`独立分叉。
+
+| Idea | 状态 | 作用 |
+|---|---|---|
+| [`IDEA-160`](ideas/IDEA-160_full_resolution_concept_grounding.md) | rejected | 576-patch直接概念落地未过门槛 |
+| [`IDEA-161`](ideas/IDEA-161_intermediate_patch_concept_signal.md) | revised | 只否定中间层裸余弦读取，不否定信息存在 |
+| [`IDEA-162`](ideas/IDEA-162_learnable_concept_readout_probe.md) | supported signal only | class-disjoint探针证明概念信号可学习迁移 |
