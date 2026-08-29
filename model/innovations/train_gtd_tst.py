@@ -67,6 +67,29 @@ TUNE_RUNS = {
         },
         "cuda:0",
     ),
+    "TUNE-002-RUN-010": (
+        {"tg_learning_rate": 5e-4, "tg_min_learning_rate": 5e-4},
+        "cuda:0",
+    ),
+    "TUNE-002-RUN-011": (
+        {"tg_learning_rate": 7e-4, "tg_min_learning_rate": 7e-4},
+        "cuda:1",
+    ),
+    "TUNE-002-RUN-012": (
+        {"tg_learning_rate": 1e-3, "tg_min_learning_rate": 1e-3},
+        "cuda:0",
+    ),
+    "TUNE-002-RUN-013": ({"max_transport_step": 2.25}, "cuda:1"),
+    "TUNE-002-RUN-014": ({"max_transport_step": 4.0}, "cuda:0"),
+    "TUNE-002-RUN-015": ({"topology_weight": 0.0}, "cuda:1"),
+    "TUNE-002-RUN-016": ({"topology_weight": 0.03}, "cuda:0"),
+    "TUNE-002-RUN-017": ({"topology_weight": 0.3}, "cuda:1"),
+    "TUNE-002-RUN-018": ({"gate_loss_weight": 0.2}, "cuda:0"),
+    "TUNE-002-RUN-019": ({"gate_loss_weight": 0.75}, "cuda:1"),
+    "TUNE-002-RUN-020": ({"gate_warmup_epochs": 1}, "cuda:0"),
+    "TUNE-002-RUN-021": ({"gate_warmup_epochs": 10}, "cuda:1"),
+    "TUNE-002-RUN-022": ({"weight_decay": 0.0}, "cuda:0"),
+    "TUNE-002-RUN-023": ({"weight_decay": 1e-3}, "cuda:1"),
 }
 DATASET_SPECS = {
     "CUB": {

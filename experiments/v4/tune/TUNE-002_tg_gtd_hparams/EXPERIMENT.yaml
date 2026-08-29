@@ -29,3 +29,8 @@ final_selection:
   parameter: {max_transport_step: 3.0}
   metrics: {U: 79.701638, S: 76.709896, H: 78.177155, ZS: 85.803193}
   delta_H_vs_reference: 0.057514
+stage_3:
+  method: remaining_numeric_axes_and_finer_tg_lr
+  axes: [constant_tg_learning_rate, max_transport_step, topology_weight, gate_loss_weight, gate_warmup_epochs, weight_decay]
+  run_ids: [RUN-010, RUN-011, RUN-012, RUN-013, RUN-014, RUN-015, RUN-016, RUN-017, RUN-018, RUN-019, RUN-020, RUN-021, RUN-022, RUN-023]
+  status: prepared
