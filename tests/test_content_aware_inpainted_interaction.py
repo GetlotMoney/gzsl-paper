@@ -15,6 +15,7 @@ from tools.diagnose_content_aware_inpainted_interaction import (
     hierarchical_bootstrap,
     interaction_eta,
     magnitude_excess,
+    pair_variants,
     random_pair_like,
     select_nonoverlap_pair,
     validate_assets,
@@ -123,6 +124,22 @@ def test_boundary_reflect_handles_image_edge_without_reusing_masked_content():
     image[:, mask] = 999.0
     result = boundary_reflect_inpaint(image, windows)
     assert float(result[:, mask].abs().max()) == 0.0
+
+
+@pytest.mark.parametrize("mode", ["harmonic_inpaint_64", "boundary_reflect_inpaint"])
+@pytest.mark.parametrize("windows", [[(1, 1), (1, 5)], [(1, 1), (14, 16)]])
+def test_pair_variants_reuse_one_replacement_for_exact_composition(mode, windows):
+    image = torch.arange(3 * 336 * 336, dtype=torch.float32).reshape(3, 336, 336) / 1000.0
+    pair = {"windows": windows}
+    variant_a, variant_b, variant_union = pair_variants(image, pair, mode, 64, 4)
+    mask_a = window_pixel_mask(image, [windows[0]])
+    mask_b = window_pixel_mask(image, [windows[1]])
+    expected = image.clone()
+    expected[:, mask_a] = variant_a[:, mask_a]
+    expected[:, mask_b] = variant_b[:, mask_b]
+    assert torch.equal(variant_union, expected)
+    assert torch.equal(variant_union[:, mask_a], variant_a[:, mask_a])
+    assert torch.equal(variant_union[:, mask_b], variant_b[:, mask_b])
 
 
 def test_hierarchical_bootstrap_is_deterministic_and_class_balanced():

@@ -660,10 +660,26 @@ def content_aware_inpaint(image, windows, *, mode, iterations, window_patch_side
 
 def pair_variants(image, pair, mode, iterations, window_patch_side):
     left, right = pair["windows"]
+    replacement = content_aware_inpaint(
+        image,
+        [left, right],
+        mode=mode,
+        iterations=iterations,
+        window_patch_side=window_patch_side,
+    )
+
+    def apply_shared_replacement(selected_windows):
+        mask = window_pixel_mask(
+            image, selected_windows, window_patch_side=window_patch_side
+        )
+        output = image.clone()
+        output[:, mask] = replacement[:, mask]
+        return output
+
     return [
-        content_aware_inpaint(image, [left], mode=mode, iterations=iterations, window_patch_side=window_patch_side),
-        content_aware_inpaint(image, [right], mode=mode, iterations=iterations, window_patch_side=window_patch_side),
-        content_aware_inpaint(image, [left, right], mode=mode, iterations=iterations, window_patch_side=window_patch_side),
+        apply_shared_replacement([left]),
+        apply_shared_replacement([right]),
+        apply_shared_replacement([left, right]),
     ]
 
 
