@@ -2,7 +2,7 @@
 
 idea_id: IDEA-169
 source_type: IDEA-168_result + owner_rescue + first_principles
-status: proposed_owner_approved_for_rescue1
+status: rejected
 problem_category: visual_grounding
 mechanism_tags: [input_intervention, contrastive_concept_margin, nuisance_cancellation, non_additive_interaction]
 base_framework: FRAMEWORK-V4
@@ -26,7 +26,7 @@ principle_difference: 公共视觉损伤在同空间、同角色概念差分中�
 non_equivalence_test: 若只给所有同角色概念加入相同扰动项，对比margin及其eta必须保持不变；真实500图上目标区域的`abs(eta_margin)`还必须超过困难和随机区域对。
 minimal_viability: Reader复现、至少100个合格概念区域对覆盖25类、四项概念特异性效应门与跨扰动稳定门全部通过；只记proof_of_path，不直接进入正式H训练。
 current_advantage: none；IDEA-168只证明符号稳定，四项概念特异性门全部失败。
-performance_status: rescue1_pending；正式V4 H=78.119641，本Gate不报告H/U/S/ZS。
+performance_status: rejected_at_gate0；正式V4 H=78.119641，本Gate未报告H/U/S/ZS。
 problem_family: 公共图像损伤掩盖细粒度概念相对证据的局部或跨区域依赖。
 shared_bottleneck: 绝对概念响应混合通用前景、角色部位和具体概念变化。
 reusable_capability: 若成立，可提供对通用视觉损伤不敏感的概念相对干预读出。
@@ -35,3 +35,13 @@ frontier_shift: unknown。
 downstream_effects: Gate通过后才允许设计交互感知分类；Gate失败不进入主模型。
 failure_boundary: 竞争概念只来自同角色共享文本簇，不使用人工属性、部位、框或unseen图像梯度。补救1失败后不在本卡调参；owner已授权的补救2必须另建Idea并只改变干预真实性，使用内容感知补全替代mean-fill/blur。
 owner_decision: 2026-08-29 owner在IDEA-168失败后明确要求“开始补救”，批准先执行概念对比差分补救；若失败再自动进入一次内容感知补全补救。
+
+## 2026-08-29 补救1真实结果
+
+- RUN commit=`35ff1436a0b84864919b847a6e111b3e5ff7b976`，config SHA=`0053f6439170cd2f829c850964ede7adf5e44572f213e96f1e73b31cb9941a06`；固定500图与IDEA-168逐值一致。
+- Reader中位AUC=`0.785477`。851个过阈值真类概念候选中，747个无法形成至少2个合法同角色近邻；最终只有60对、54张图、13类，未过100对/25类覆盖门。
+- mean-fill相对hard/random的magnitude excess为`0.107107`（95% CI `[-0.097527,0.346713]`）/`-0.214612`（`[-1.047845,0.570730]`），均失败。
+- local-blur相对hard为`0.349197`（95% CI `[0.087718,0.680337]`，通过），相对random为`0.380113`（`[-0.144499,0.833612]`，失败）。四项中仅一项通过。
+- 跨扰动符号稳定通过，但覆盖门与三项概念特异性门失败。决策=`rejected_at_gate0 / gate_fail_stop_direction`；不放宽近邻数、频率、余弦、窗口或统计门。
+- 输出：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/prequeue/IDEA-169-contrastive-concept-interaction-seed7/result.json@sha256:c65945303a484548d18b97c76936f0d33d7dc9937a2d33ab47e0a9f1a6cc2b1a`。
+- 审查：专项`12 passed`、整仓`549 passed, 3 subtests passed`；Round1与Round2均`P0=0/P1=0`，真实GPU micro通过。
