@@ -648,6 +648,19 @@ def environment(device):
     }
 
 
+def minimum_patch_identity(*results: dict) -> float:
+    values = []
+    for result in results:
+        for stage in ("causal_train_identity", "causal_eval_identity"):
+            values.extend(
+                (
+                    result[stage]["mean_patch_cosine"],
+                    result[stage]["minimum_image_mean_patch_cosine"],
+                )
+            )
+    return float(min(values))
+
+
 def run(config, config_path, config_sha, expected_commit, output, device, shuffled_control):
     import clip
 
@@ -846,12 +859,7 @@ def merge(config, config_path, config_sha, expected_commit, real_path, shuffled_
         >= float(config["observability_causal_gate"]),
         "signed_causal": real["causal_eval"]["signed_selected_positive_and_greater_fraction"]
         >= float(config["signed_causal_gate"]),
-        "patch_identity": min(
-            real["causal_train_identity"]["mean_patch_cosine"],
-            real["causal_train_identity"]["minimum_image_mean_patch_cosine"],
-            real["causal_eval_identity"]["mean_patch_cosine"],
-            real["causal_eval_identity"]["minimum_image_mean_patch_cosine"],
-        )
+        "patch_identity": minimum_patch_identity(real, shuffled)
         >= float(config["patch_identity_gate"]),
         "shuffled_pairwise_failed": shuffled["pairwise_accuracy"]["unmasked_signed_accuracy"]
         < float(config["pairwise_gate"]),

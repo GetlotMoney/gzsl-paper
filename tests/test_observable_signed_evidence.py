@@ -14,6 +14,7 @@ from tools.diagnose_observable_signed_evidence import (
     state_loss,
     state_probabilities,
     intervention_trace_sha256,
+    minimum_patch_identity,
 )
 
 
@@ -120,3 +121,21 @@ def test_sampling_identity_binds_random_but_allows_text_dependent_selected_regio
     changed_random = {key: value.copy() for key, value in cache.items()}
     changed_random["random_indices"][0] = 11
     assert sampling_sha256(cache) != sampling_sha256(changed_random)
+
+
+def test_patch_identity_gate_uses_real_and_shuffled_train_and_eval_paths():
+    def result(train_mean, train_minimum, eval_mean, eval_minimum):
+        return {
+            "causal_train_identity": {
+                "mean_patch_cosine": train_mean,
+                "minimum_image_mean_patch_cosine": train_minimum,
+            },
+            "causal_eval_identity": {
+                "mean_patch_cosine": eval_mean,
+                "minimum_image_mean_patch_cosine": eval_minimum,
+            },
+        }
+
+    real = result(1.0, 0.999, 0.998, 0.997)
+    shuffled = result(0.996, 0.995, 0.994, 0.80)
+    assert minimum_patch_identity(real, shuffled) == 0.80
