@@ -2,7 +2,7 @@
 
 idea_id: IDEA-164
 source_type: experiment_result + first_principles + owner_hypothesis + nearest_work_boundary
-status: proposed_owner_approved_for_gate1
+status: rejected
 problem_category: visual_grounding
 mechanism_tags: [candidate_independent_observability, signed_evidence, fixed_reference_bank, causal_intervention, class_disjoint_transfer]
 base_framework: FRAMEWORK-V4
@@ -11,8 +11,8 @@ reuse_refs:
   - IDEA-162
   - IDEA-163
 problem: IDEA-162证明共享概念信号可学习迁移，但IDEA-163把每个类角色强行离散为support/refute/unobserved后，困难反例、Mean8纠错、安全性和删除解释全部失败。根因包括unknown仍由候选比较间接决定、有符号证据没有固定参考、可见性与分类目标不可辨识、attention没有因果锚点。
-hypothesis: 只用一个跨类别共享Reader学习两个连续变量即可保留三态逻辑：类别无关角色可观察性`o_r(x)`与固定200类同角色文本参考下的有符号相对证据`d_c,r(x)`。若`o`只接受离线真实干预监督且在分类损失中stop-gradient，`d`使用固定参考而非随100/50候选集合变化，则`e=o*tanh(d/2)`应能在class-disjoint类别上区分可见支持、可见反驳和未观察，并给出可删除验证的区域。
-core_change: 前六角色文本继续作为命题查询；所有200类同角色文本的固定LogMeanExp构成相对证据参考，`d_c,r=(s_c,r-LogMeanExp_j≠c s_j,r)/T_r`。每个角色的200类文本均值形成类别无关查询`q_bar_r`，同一Reader输出`o_r=sigmoid(R(P,q_bar_r))`。分类目标使用`stop_gradient(o)`，不可通过降低可见性逃避错误；干预目标用原图区域模糊与同面积随机区域的完整`d/o`下降差训练可见性和证据区域。三态概率由`P(U)=1-o`、`P(S)=o*sigmoid(d)`、`P(R)=o*sigmoid(-d)`唯一确定，贡献固定为`e=o*tanh(d/2)`。
+hypothesis: 只用一个跨类别共享Reader表达两个连续变量即可保留三态逻辑：类别无关角色可观察性`o_r(x)`与固定200类同角色文本参考下的有符号相对证据`d_c,r(x)`。为使分类梯度在结构上不能改变`o`，同一Reader的可观察性路径固定使用无trainable-adapter的冻结CLIP patch/text相似度，只保留每角色一个因果校准scale/bias；类别证据路径使用共享rank-64 adapter。若`d`使用固定参考而非随100/50候选集合变化，则`e=o*tanh(d/2)`应能在class-disjoint类别上区分可见支持、可见反驳和未观察，并给出可删除验证的区域。
+core_change: 前六角色文本继续作为命题查询；所有200类同角色文本的固定、数值稳定leave-one-out LogMeanExp构成相对证据参考，`d_c,r=s_c,r-LogMeanExp_j≠c s_j,r`，Gate 1预注册`T_r=1`且不可搜索。每个角色的200类文本均值形成类别无关查询`q_bar_r`；同一Reader的冻结基底路径输出`o_r`并只允许6组因果校准标量更新，类别证据adapter不参与`o`。分类目标仍显式`stop_gradient(o)`；干预目标分别要求原图到证据区域干预的`o`下降和真类有符号`tanh(d/2)`下降均为正、且分别大于随机区域。三态概率由`P(U)=1-o`、`P(S)=o*sigmoid(d)`、`P(R)=o*sigmoid(-d)`唯一确定。
 old_signal_or_primitive: IDEA-163使用候选与4个动态近邻离散判定三态，unknown/refute依赖局部候选集合，attention只有事后删除评估。
 new_signal_or_primitive: 候选无关的连续可观察性、固定200类参考下的连续有符号证据，以及真实输入干预提供的因果监督；类别由六个连续证据状态而非单点原型或离散阈值状态表示。
 paradigm_shift: GZSL从单点兼容度改写为“类别无关地判断角色是否被观察，再以固定语义参考判断观察结果对每个类别命题的正负证据”；未知由观测过程产生，支持/反驳由固定比较基准产生。
@@ -22,7 +22,7 @@ closest_paradigm_work:
   - CREST使用attribute定位与Evidential Deep Learning表达不确定性；本Idea不使用人工attributes或独立证据Head，而以候选无关`o`和固定参考`d`生成严格归一的三态概率。
   - Counterfactual ZSL通过生成样本级反事实做seen/unseen一致性判断；本Idea的干预只用于学习/验证角色证据区域，不生成unseen视觉样本。
   - IDEA-163已经证明动态近邻离散三态和事后attention删除不成立，IDEA-164不能复用其运行代码或把失败公式改名。
-minimal_falsification: Gate 1只使用CUB formal-seen图像，seed 7固定100类Reader训练、50类完全隔离评估，true-unseen图像不读取。一个rank-64共享Reader先以固定Top20%类别图像包证据竞争建立`s`；分类损失使用`stop_gradient(o)`。从100类中固定250张图、每图轮换一个角色，用Reader声称的Top区域产生局部模糊和随机同面积干预缓存，再以`L_state+L_causal`完成固定总更新；50类中的另250张图使用不同的均值填充干预只评估。Gate 1同时要求：(1)类别无关`o_r`不接收候选类别输入，代码反例证明候选顺序/数量变化时逐值不变；(2)固定200类参考的`d`在50类真实命题对同角色困难命题pairwise accuracy≥65%；(3)在250张class-disjoint图像上，删除Reader证据区域造成的完整`o`或`|d|`下降大于随机区域的比例≥70%。任一失败立即reject，不进入Gate 2，不调整层、prompt、Top-K、rank、Top20%或干预区域大小。
+minimal_falsification: Gate 1只使用CUB formal-seen图像，seed 7固定100类图像与标签用于Reader训练、50类图像与标签完全不进入梯度；与标准ZSL一致，全部200类冻结文本允许作为固定语义参考并参与可导证据标尺，必须明确披露为`all_class_text_reference_used_for_gradient=true`。一个rank-64共享Reader先以固定Top20%类别图像包证据竞争建立`s`；模型级反例必须证明一次纯分类更新后同图`o`逐值不变。从100类中固定250张图、每图轮换一个角色，分别用`q_bar_r` attention选择`o`区域、用真类`q_c,r` attention选择signed-d区域；随机同面积区域只由row+role哈希决定，在real/shuffled完全一致，若与证据区域重叠只会保守降低通过率。训练使用局部模糊，50类中的另250张图使用均值填充只评估。Gate 1要求：(1)候选无关`o_r`与固定200类`d`对候选轴排列逐值不变，在线原图/缓存patch逐图平均余弦均≥0.99；(2)只在`o≥0.5`的角色上，真命题`d>0`、4个困难命题最强值`<0`且真值更大的五选一准确率≥65%，可见角色覆盖≥30%，并且六个角色各自在class-disjoint图像维度上的标准差都≥0.02；(3)在250张class-disjoint图像上，删除各自声称区域造成的`o`下降至少0.01且优于随机的比例≥70%，signed-d下降至少0.01且优于随机的比例也≥70%。打乱对照固定相同rows/roles/random区域轨迹，只把全部1200个文本槽做无固定点错配；其signed-d失败按不经`o`筛选的全角色准确率判断。任一失败立即reject。
 paper_level_claim: Gate 1、后续100/50净纠错及正式TG+GTD联合训练均成立后，才能窄化声称“用文本角色的候选无关可观察性与固定参考有符号证据，把GZSL点原型兼容度转化为连续证据状态更新”；`L_final=L_TG+GTD+beta*E`只能称为证据logit更新，在完成概率校准前不得称严格贝叶斯后验或声称首次。
 evidence_refs:
   - research/ideas/IDEA-162_learnable_concept_readout_probe.md
@@ -30,5 +30,38 @@ evidence_refs:
   - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/prequeue/IDEA-162-learnable-concept-readout-seed7/result.json@sha256:4f73cbbd0308b9e96af1342df2f45bb2f89ed0ffb8ec1bf6001e835101b574af
   - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/prequeue/IDEA-163-tristate-predicate-seed7/result.json@sha256:3373601ac0736936d193136895c29178d58619ad585a7590d38f03c9db4bfc91
 success_condition: Gate 1三项必须同时通过且打乱角色文本对照不得通过任一主门槛；通过只允许进入Gate 2，不等于范式、H或论文claim成立。
-failure_condition: `o`受候选类别影响、`d`不满足固定200类参考、class-disjoint pairwise<65%、第二种干预删除优势<70%、打乱对照通过任一门槛或数据身份不完整，均立即置为rejected并停止当前公式。
+failure_condition: `o`受候选类别或类别证据adapter影响、`o`标准差<0.02、`d`不满足稳定固定200类参考、可见角色覆盖<30%、class-disjoint signed pairwise<65%、第二种干预下`o`或signed-d任一删除优势<70%或下降幅度<0.01、打乱对照通过任一内容门槛、real/shuffled采样/环境不匹配或patch同源平均余弦<0.99，均立即置为rejected并停止当前公式。
 owner_decision: 2026-08-29 owner回复“行，开始尝试”，批准IDEA-164从FRAMEWORK-V4准确父commit独立分叉并只执行Gate 1。
+
+## 2026-08-29 Gate 1结果
+
+- 分支：`exp/v4/innovation/innovation-004-observable-signed-evidence`
+- 最终运行commit：`7272938a05e9b673e55fbeac267c2e58889ca452`
+- config SHA：`9974fc36675107d7c059a66c6d2675c88b275651cf6f534a58b86dbfac3793b3`
+- 输出：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/prequeue/IDEA-164-observable-signed-evidence-seed7/result.json`
+- result SHA：`ea1c5ef8d0847987fe9fa72dbb8e93d030ca0303388f5ba0e1a04e3050db0bc7`
+- 边界：100类图像与标签进入Reader梯度；50类图像与标签只评估；全部200类冻结文本作为可导固定语义参考；true-unseen图像未读取。
+
+| Gate 1条件 | 要求 | 真实结果 | 判定 |
+|---|---:|---:|---|
+| 固定200类参考轴不变性 | max abs≤1e-6 | 4.77e-7 | pass |
+| 类别无关`o`不变性 | max abs≤1e-6 | 5.96e-8 | pass |
+| 可见角色覆盖 | ≥30% | 100% | pass但无效饱和 |
+| 可见且符号正确的同角色五选一准确率 | ≥65% | 7.42% | fail |
+| 六角色最小跨图像`o`标准差 | ≥0.02 | 0.00102 | fail |
+| `o`区域mean-fill下降≥0.01且优于随机 | ≥70% | 0.00% | fail |
+| signed-d自身区域下降≥0.01且优于随机 | ≥70% | 25.60% | fail |
+| real/shuffled train/eval patch同源8值最小值 | ≥0.99 | ≥0.999247 | pass |
+
+- `o`对所有图像几乎恒定在约0.53–0.58，六个角色各自跨图像标准差只有约0.0010–0.0012；100%覆盖不是“所有角色都可见”，而是可观察性退化为高常数，unknown原语没有形成。
+- 对`q_bar_r` attention区域做第二种mean-fill干预后，`o`没有一个样本满足正下降0.01并优于随机；多数样本遮挡后`o`反而微升，说明角色平均文本不能充当可靠可见性传感器。
+- 固定200类参考在代数上成立，但真命题`d>0`、困难命题`d<0`且真值更高的准确率仅7.42%；连续有符号证据没有迁移到50个隔离类别。
+- class-specific signed-d区域的因果删除仅25.60%，低于70%且低于打乱对照的37.20%；Reader attention不能解释为命题因果证据。
+- 打乱1200文本槽的对照按合同失败，real/shuffled的rows/classes/roles/random轨迹、环境、checkpoint和patch同源身份均匹配；失败不是控制条件或资产错配造成。
+- 最终决策：`gate1_fail / rejected`。不进入Gate 2，不接入TG+GTD，不运行U/S/H，不调整prompt、层、rank、Top20%、干预面积、阈值或额外loss继续补救该公式。
+
+## 审核记录
+
+- 预冻结commit `2956041`经双Agent Round 1发现数值稳定性、`o`参数耦合、因果复合作弊、shuffle轨迹和资产门等阻断问题；之后按冻结周期集中修复并多次以新Agent复核。
+- 最终冻结commit `7272938`：专项`11 passed`；完整`548 passed, 2 warnings, 3 subtests passed`。
+- 最终两名全新Agent均确认`P0=0 / P1=0`并明确“第2轮通过”；仅保留非阻断P2：因果门只要求selected相对random严格更大而没有额外优势margin，以及单测对八个patch parity槽的回归覆盖可继续扩充。
