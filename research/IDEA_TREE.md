@@ -80,7 +80,7 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 | [`IDEA-165`](ideas/IDEA-165_constrained_evidence_graph_search.md) | 共享概念证据图＋容量约束精确搜索 | rejected after two rescues | capacity1/2均-0.2pp，2×2区域0pp | `exp/v4/innovation/innovation-005-constrained-evidence-graph` |
 | [`IDEA-166`](ideas/IDEA-166_text_conditioned_visual_distribution.md) | 文本条件低秩视觉分布 | owner已批准主条件＋2次补救 | 待运行 | 待从`52088f69`创建独立分支 |
 | [`IDEA-167`](ideas/IDEA-167_conditional_information_evidence.md) | 条件信息增益最小充分证据 | revised before run；未执行 | 过宽Gate被拆分，永久保留历史 | 无运行分支 |
-| [`IDEA-168`](ideas/IDEA-168_concept_specific_region_interaction.md) | 共享文本概念的跨区域非加性交互 | owner已批准最小Gate 0；proof-of-path待验证 | 待运行 | `exp/v4/innovation/innovation-008-concept-region-interaction` |
+| [`IDEA-168`](ideas/IDEA-168_concept_specific_region_interaction.md) | 共享文本概念的跨区域非加性交互 | rejected at Gate 0 | 四项概念特异性门全失败；符号稳定但不优于对照 | `exp/v4/innovation/innovation-008-concept-region-interaction` |
 
 准确数字、commit、配置和输出URI见 [`experiments/v4/EXPERIMENT_QUEUE.csv`](../experiments/v4/EXPERIMENT_QUEUE.csv)。
 

@@ -2,7 +2,7 @@
 
 idea_id: IDEA-168
 source_type: experiment_result + first_principles + owner_hypothesis + nearest_work_boundary
-status: proposed_owner_approved_for_gate0
+status: rejected
 problem_category: visual_grounding
 mechanism_tags: [input_intervention, concept_specificity, non_additive_interaction, class_disjoint_transfer]
 base_framework: FRAMEWORK-V4
@@ -27,7 +27,7 @@ principle_difference: 旧路径假设区域贡献可静态独立读取；新路�
 non_equivalence_test: 在控制区域面积、位置、Attention强度和概念频率后，目标概念区域对的`abs(eta)`仍应显著大于Attention匹配无关概念对与随机匹配对，并在两种扰动下稳定；若差异消失，则新路径只是静态Attention依赖、通用鸟体损伤或扰动伪影。
 minimal_viability: 500张class-disjoint图像、两类对照、两种扰动和两层bootstrap下，`magnitude_excess`达到预注册统计门；这只证明`proof_of_path`，不证明分类优势，也不把正负号直接命名为协同或冗余事实。
 current_advantage: none；目前只有IDEA-162的共享概念可读性和IDEA-165容量约束失败作为前置证据，尚未证明accuracy、speed_or_cost或generality优势。
-performance_status: proof_of_path_pending；正式V4 H=78.119641，Gate 0不训练TG+GTD也不报告新H。
+performance_status: rejected_at_gate0；正式V4 H=78.119641，Gate 0未训练TG+GTD且未报告新H。
 problem_family: 多区域共同表达一个细粒度概念；是否覆盖其他数据集或任务尚未验证。
 shared_bottleneck: 静态局部打分无法区分独立证据、通用前景损伤与真正的跨区域条件交互。
 reusable_capability: 若成立，可提供概念特异的区域交互测量；分类复用价值待Gate 1验证。
@@ -36,3 +36,16 @@ frontier_shift: unknown；Gate 0只检验新信号是否存在。
 downstream_effects: 只有Gate 1证明任务优势后，才考虑交互感知分类或证据搜索；Gate 0不预建这些模块。
 failure_boundary: Attention峰值只表示Reader依赖候选，不等于真实部位定位；均值填充和局部模糊只支持“扰动稳健性”，不等于真实因果删除。Gate 0失败后不调窗口尺度、概念数、阈值、扰动类型或组合枚举，不实现超图、DP、保留充分性和分类融合。
 owner_decision: 2026-08-29 owner在确认最小问题与方案后回复“开始吧”，批准IDEA-168通过范式候选的Gate 0准入并从FRAMEWORK-V4准确父commit独立执行；Gate 0通过前仅记录为proof_of_path，不登记为已成立Innovation。
+
+## 2026-08-29 Gate 0真实结果
+
+- 冻结RUN commit：`92ec80a9a6220c797d64ff5457f9c3038d5c68ce`；父commit：`52088f69d7ac4e574e7b63c28b21ac0da7789933`；config SHA：`8006277083a6710d3b6b4510b82065de2eb45672b3a699144e5f20ddd5c6a643`。
+- 数据边界：Reader只用100个pseudo-seen类图像训练；固定50个pseudo-unseen类各10张、共500张图只评估；正式unseen图像未使用；全部200类文本参与共享概念构造。
+- Reader复现通过：pseudo-unseen中位AUC=`0.785477`，27个概念中24个AUC≥0.60。
+- 形成136个合格区域对，覆盖120张图、26个类别；raw/cache patch余弦均值=`0.999915`、最小=`0.999380`。
+- `mean_fill`相对hard/random的`magnitude_excess`分别为`-0.000555`（95% CI `[-0.222270,0.222464]`）与`-0.052237`（`[-0.869979,0.685480]`）。
+- `local_blur`相对hard/random分别为`0.202818`（95% CI `[-0.009883,0.438766]`）与`0.305282`（`[-0.173981,0.792563]`）。四个区间均未满足下界>0，四项概念特异性硬门全部失败。
+- 跨扰动符号稳定性通过：点估计=`0.869658`，95% CI `[0.729038,0.967521]`；mean-fill/local-blur的负交互比例分别为`99.26%/92.65%`。这只能说明扰动响应方向稳定，不能证明目标概念区域对比对照更特殊。
+- 决策：`rejected_at_gate0 / gate_fail_stop_direction`。不调窗口、阈值、概念数、扰动或对照，不实现超图、DP、分类融合，也不报告H/U/S/ZS。
+- 输出：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/prequeue/IDEA-168-concept-region-interaction-seed7/result.json@sha256:4aad826407f6d898ca2fe1edbce8ef26dc22ccc210038a318d90d6dd8b813387`。
+- 审查：初始冻结commit `9804cbd4`发现并集中修复动态Attention假交互、资产SHA、困难对照频率和双卡环境四项P1；`984208b2`真实micro发现cuBLAS确定性入口P1；最终`92ec80a9`专项`10 passed`、整仓`547 passed, 3 subtests passed`，最终独立审查`P0=0 / P1=0，第2轮通过`。
