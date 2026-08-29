@@ -79,6 +79,7 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 | [`IDEA-164`](ideas/IDEA-164_observable_signed_evidence.md) | 候选无关可观察性＋固定参考有符号证据 | rejected at Gate 1 | `o`退化高常数、signed-d迁移与双因果删除均失败 | `exp/v4/innovation/innovation-004-observable-signed-evidence` |
 | [`IDEA-165`](ideas/IDEA-165_constrained_evidence_graph_search.md) | 共享概念证据图＋容量约束精确搜索 | rejected after two rescues | capacity1/2均-0.2pp，2×2区域0pp | `exp/v4/innovation/innovation-005-constrained-evidence-graph` |
 | [`IDEA-166`](ideas/IDEA-166_text_conditioned_visual_distribution.md) | 文本条件低秩视觉分布 | owner已批准主条件＋2次补救 | 待运行 | 待从`52088f69`创建独立分支 |
+| [`IDEA-167`](ideas/IDEA-167_conditional_information_evidence.md) | 条件信息增益最小充分证据 | owner已批准Gate 0 | 待运行 | 待从`52088f69`创建独立分支 |
 
 准确数字、commit、配置和输出URI见 [`experiments/v4/EXPERIMENT_QUEUE.csv`](../experiments/v4/EXPERIMENT_QUEUE.csv)。
 
