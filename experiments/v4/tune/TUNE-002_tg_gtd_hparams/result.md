@@ -1,6 +1,6 @@
 # TUNE-002 TG+GTD参数上限
 
-状态：Stage 1/2/3完成；Stage 4 RUN-024至RUN-032已准备，目标H≥79。
+状态：已完成；RUN-030达到H≥79。
 
 固定参考：V3-TRY-041，`U/S/H/ZS=79.624420/76.670682/78.119641/85.794950`。
 
@@ -43,3 +43,15 @@ RUN-009未超过RUN-008，说明两个单轴增益不叠加。最终选择RUN-00
 - RUN-023同checkpoint GTD-off H=`76.139556`，Full-minus-Off H=`+2.757103`。
 
 当前距离H=79还差`0.103341`。Stage 4围绕weight decay细搜，并尝试与topology/max-step胜出值组合。
+
+## Stage 4与最终选择
+
+RUN-030组合`weight_decay=1e-3`与`topology_weight=0.3`，达到：
+
+`U/S/H/ZS=76.164645/82.205832/79.070015/86.955839`，best update=`14241`。
+
+同checkpoint GTD-off为`U/S/H/ZS=71.433824/81.571132/76.166656/86.146760`，Full-minus-Off H=`+2.903360`。
+
+RUN-032额外加入`max_transport_step=2.25`后得到完全相同的U/S/H/ZS，但增加了无收益参数，因此按最小充分条件选择RUN-030。
+
+相对原始V3-TRY-041的H=`78.119641`，最终提升为`+0.950374`。RUN-030已验证`history_length=152`、`target_refresh_count=150`、`stop_reason=completed_fixed_150`、准确code/config/asset身份与完整checkpoint/历史文件。
