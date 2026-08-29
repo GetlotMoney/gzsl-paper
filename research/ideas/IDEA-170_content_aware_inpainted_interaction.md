@@ -2,7 +2,7 @@
 
 idea_id: IDEA-170
 source_type: IDEA-168_result + IDEA-169_result + owner_rescue + first_principles
-status: proposed_owner_approved_for_rescue2
+status: rejected
 problem_category: visual_grounding
 mechanism_tags: [input_intervention, deterministic_inpainting, perturbation_realism, non_additive_interaction]
 base_framework: FRAMEWORK-V4
@@ -26,7 +26,7 @@ principle_difference: 被删除区域的替代内容由当前图像上下文决�
 non_equivalence_test: 同一目标、困难和随机窗口必须使用相同补全算法；若目标区域的交互优势在两种内容补全下均不超过对照，则扰动真实性不能救回该方向。
 minimal_viability: 同500图至少100对/25类、四效应门、跨补全稳定门和patch同源全部通过；只记proof_of_path。
 current_advantage: none；IDEA-168四项效应门全失败，IDEA-169覆盖门与三项效应门失败。
-performance_status: rescue2_pending；本Gate不报告H/U/S/ZS。
+performance_status: rejected_at_gate0；本Gate未报告H/U/S/ZS。
 problem_family: 人工遮挡伪影掩盖细粒度局部或跨区域概念证据。
 shared_bottleneck: 干预图像偏离冻结CLIP的自然输入分布。
 reusable_capability: 若成立，可提供无需外部补全模型的上下文条件干预。
@@ -35,3 +35,13 @@ frontier_shift: unknown。
 downstream_effects: 通过后才允许任务级分类验证；失败后转离视觉干预方向。
 failure_boundary: 调和与反射补全仍不等于真实生成式反事实；不允许调迭代数、窗口、阈值或统计门。失败后不再进行第三次补救。
 owner_decision: 2026-08-29 owner批准两次自动补救；IDEA-169失败后自动进入本次最终补救。
+
+## 2026-08-30 补救2真实结果
+
+- RUN commit=`911a78c084dd60417136e805a595c1733d45de47`，config SHA=`332874e5f0c17ed7b2d1c2769299b9a7ec69fe9bd8aa153e0908689dd1cdd1d8`；固定500图及136对/120图/26类与IDEA-168一致。
+- harmonic相对hard的magnitude excess=`0.060971`，95% CI `[-0.178089,0.289818]`、标准化效应`0.1377`，失败；相对random=`0.633296`，CI `[0.209871,1.090049]`，通过。
+- boundary-reflect相对hard=`-0.000564`，CI `[-0.210788,0.199486]`，失败；相对random=`0.640580`，CI `[0.262497,1.035293]`，通过。
+- 跨补全符号稳定通过。结果说明高Attention区域比随机区域重要，但目标概念区域并不优于Attention匹配的无关概念区域，不能证明概念特异跨区域依赖。
+- 决策=`rejected_at_gate0 / gate_fail_stop_direction`。两次补救用尽，不进行第三次补救，不实现超图/DP/分类融合。
+- 输出：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/prequeue/IDEA-170-content-aware-inpainted-interaction-seed7/result.json@sha256:a4a64e7918c108e506834841f6cf21d68f4e24260961a60e8f8008200ad37661`。
+- 审查：最终专项`16 passed`、整仓`552 passed, 3 subtests passed`；修复shared replacement组合与CUDA广播后，新的独立Agent最终`P0=0/P1=0，第2轮通过`。
