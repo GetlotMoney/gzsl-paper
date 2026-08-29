@@ -84,6 +84,7 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 | [`IDEA-169`](ideas/IDEA-169_contrastive_concept_interaction.md) | 固定Attention的同角色概念对比交互 | rejected at Gate 0 | 仅60对/13类；覆盖与三项效应门失败 | `exp/v4/innovation/innovation-009-contrastive-concept-interaction` |
 | [`IDEA-170`](ideas/IDEA-170_content_aware_inpainted_interaction.md) | 内容感知补全的跨区域交互 | rejected at Gate 0 | 两种补全均胜随机、均不胜困难对照；方向关闭 | `exp/v4/innovation/innovation-010-content-aware-inpainted-interaction` |
 | [`IDEA-171`](ideas/IDEA-171_hypothesis_conditioned_visual_completion.md) | HCVC：候选条件视觉补全 | 双Agent范式准入通过；proof-of-path未运行 | 无；Gate 0合同已冻结 | 无；未创建实现或实验分支 |
+| [`IDEA-172`](ideas/IDEA-172_text_difference_active_evidence_acquisition.md) | 文本差异主动高清取证 | rejected at proof gate | Oracle+14pp，但真实行动-0.2pp、净纠正-1 | `exp/v4/diagnostic/diagnostic-001-active-evidence-acquisition` |
 
 准确数字、commit、配置和输出URI见 [`experiments/v4/EXPERIMENT_QUEUE.csv`](../experiments/v4/EXPERIMENT_QUEUE.csv)。
 
