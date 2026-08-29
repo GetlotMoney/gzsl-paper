@@ -2,7 +2,7 @@
 
 idea_id: IDEA-167
 source_type: experiment_result + first_principles + owner_hypothesis + nearest_work_boundary
-status: proposed_owner_approved_for_gate0
+status: revised
 problem_category: visual_grounding
 mechanism_tags: [conditional_information_gain, shared_evidence, synergy, redundancy, minimal_sufficient_subset]
 base_framework: FRAMEWORK-V4
@@ -30,3 +30,10 @@ current_advantage: IDEA-162提供可迁移共享概念Reader；IDEA-165的35%重
 performance_status: pre-run；尚无IDEA-167结果，正式V4 H=78.119641，H≥80只在超图Gate成立后验证。
 failure_boundary: Gate 0失败后不实现集合覆盖、子模优化、分支限界或超图网络；不得靠搜索阈值、区域数、解释大小或融合权重补救。
 owner_decision: 2026-08-29 owner明确“开始尝试”，并授权失败后自动处理、无需逐次批准。
+
+## 2026-08-29 运行前修订
+
+- 本Idea没有运行、没有结果，也没有进入实现。
+- 原Gate同时混入共享、协同、冗余和最小充分集合，无法在失败时定位是哪条假设不成立；固定36区与保留90%图像也会引入过强的人为表示和分布外干预。
+- owner将当前问题收窄为“class-disjoint图像中是否存在概念特异的跨区域非加性交互”。该修改改变了核心可证伪假设，因此不覆盖本卡，另立`IDEA-168`。
+- 本卡永久保留为`revised`历史；禁止按这里的五项联合硬门、固定36区或最小充分集合继续运行。
