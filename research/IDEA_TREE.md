@@ -21,7 +21,7 @@
 |---|---|---|
 | `semantic_representation` | 类别语义和原型如何形成更有结构的表示 | [`IDEA-001 / TG-VPR-H1`](ideas/IDEA-001_tg_vpr_h1.md) |
 | `cross_class_transfer` | seen知识如何可靠迁移到unseen原型 | [`IDEA-005 / TST`](ideas/IDEA-005_tst.md)、[`IDEA-146 / GTD-TST`](ideas/IDEA-146_gtd_tst.md) |
-| `visual_grounding` | 实例级局部视觉证据能否支持或反驳类别语义 | [`IDEA-133`](ideas/IDEA-133_visual_evidence_learning.md)、[`IDEA-158 / GAVE`](ideas/IDEA-158_gave.md)、[`IDEA-159 / RGT`](ideas/IDEA-159_rgt.md) |
+| `visual_grounding` | 实例级局部视觉证据能否支持或反驳类别语义 | [`IDEA-133`](ideas/IDEA-133_visual_evidence_learning.md)、[`IDEA-158 / GAVE`](ideas/IDEA-158_gave.md)、[`IDEA-159 / RGT`](ideas/IDEA-159_rgt.md)、[`IDEA-160 / full-resolution concept grounding`](ideas/IDEA-160_full_resolution_concept_grounding.md)、[`IDEA-161 / intermediate-patch concept signal`](ideas/IDEA-161_intermediate_patch_concept_signal.md)、[`IDEA-162 / learnable concept readout probe`](ideas/IDEA-162_learnable_concept_readout_probe.md)、[`IDEA-163 / tri-state evidence predicate set`](ideas/IDEA-163_tri_state_evidence_predicate_set.md)、[`IDEA-164 / observable signed evidence`](ideas/IDEA-164_observable_signed_evidence.md)、[`IDEA-165 / constrained evidence graph search`](ideas/IDEA-165_constrained_evidence_graph_search.md)、[`IDEA-167 / conditional information evidence`](ideas/IDEA-167_conditional_information_evidence.md)、[`IDEA-168 / concept-specific region interaction`](ideas/IDEA-168_concept_specific_region_interaction.md) |
 | `class_competition` | 细粒度候选和seen/unseen联合竞争如何避免错误修正 | 当前无已晋级V4 Idea；相关V2历史按需检索 |
 | `learning_generalization` | 训练目标与选择规则如何迁移到未见类别 | 当前无已晋级V4 Idea；相关V2历史按需检索 |
 | `reliability_robustness` | 如何识别不可靠证据并保持关闭路径 | GAVE、RGT包含该机制标签，但主类别仍为`visual_grounding` |
@@ -72,6 +72,15 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 |---|---|---|---|---|
 | [`IDEA-158`](ideas/IDEA-158_gave.md) | GAVE | weak signal only，未晋级 | V4-TRY-001 | `exp/v4/innovation/innovation-001-gave` |
 | [`IDEA-159`](ideas/IDEA-159_rgt.md) | RGT | rejected before training | V4-TRY-002 | `exp/v4/innovation/innovation-002-rgt` |
+| [`IDEA-160`](ideas/IDEA-160_full_resolution_concept_grounding.md) | 576-patch概念落地oracle | rejected before queue | 无；pre-queue最小证伪 | 无；未创建创新分支 |
+| [`IDEA-161`](ideas/IDEA-161_intermediate_patch_concept_signal.md) | 中间层576-token直接读取oracle | revised：只否定裸余弦读取 | 无；pre-queue双卡1000图诊断 | 无；未创建创新分支 |
+| [`IDEA-162`](ideas/IDEA-162_learnable_concept_readout_probe.md) | 自然prompt＋共享学习型读取探针 | supported signal only，待owner范式准入 | 无；pre-queue三步诊断 | 无；未创建创新分支 |
+| [`IDEA-163`](ideas/IDEA-163_tri_state_evidence_predicate_set.md) | 三态视觉证据谓词集 | rejected before GZSL training | 五项最小证伪门槛全部失败 | `exp/v4/innovation/innovation-003-tri-state-evidence-set` |
+| [`IDEA-164`](ideas/IDEA-164_observable_signed_evidence.md) | 候选无关可观察性＋固定参考有符号证据 | rejected at Gate 1 | `o`退化高常数、signed-d迁移与双因果删除均失败 | `exp/v4/innovation/innovation-004-observable-signed-evidence` |
+| [`IDEA-165`](ideas/IDEA-165_constrained_evidence_graph_search.md) | 共享概念证据图＋容量约束精确搜索 | rejected after two rescues | capacity1/2均-0.2pp，2×2区域0pp | `exp/v4/innovation/innovation-005-constrained-evidence-graph` |
+| [`IDEA-166`](ideas/IDEA-166_text_conditioned_visual_distribution.md) | 文本条件低秩视觉分布 | owner已批准主条件＋2次补救 | 待运行 | 待从`52088f69`创建独立分支 |
+| [`IDEA-167`](ideas/IDEA-167_conditional_information_evidence.md) | 条件信息增益最小充分证据 | revised before run；未执行 | 过宽Gate被拆分，永久保留历史 | 无运行分支 |
+| [`IDEA-168`](ideas/IDEA-168_concept_specific_region_interaction.md) | 共享文本概念的跨区域非加性交互 | owner已批准最小Gate 0；proof-of-path待验证 | 待运行 | `exp/v4/innovation/innovation-008-concept-region-interaction` |
 
 准确数字、commit、配置和输出URI见 [`experiments/v4/EXPERIMENT_QUEUE.csv`](../experiments/v4/EXPERIMENT_QUEUE.csv)。
 
