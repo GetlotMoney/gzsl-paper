@@ -202,3 +202,4 @@ V2-H-PLUS-3PP
 | [`IDEA-160`](ideas/IDEA-160_full_resolution_concept_grounding.md) | rejected | 576-patch直接概念落地未过门槛 |
 | [`IDEA-161`](ideas/IDEA-161_intermediate_patch_concept_signal.md) | revised | 只否定中间层裸余弦读取，不否定信息存在 |
 | [`IDEA-162`](ideas/IDEA-162_learnable_concept_readout_probe.md) | supported signal only | class-disjoint探针证明概念信号可学习迁移 |
+| [`IDEA-163`](ideas/IDEA-163_tri_state_evidence_predicate_set.md) | owner-approved minimal falsification | 支持/反驳/未观察三态谓词集合 |
