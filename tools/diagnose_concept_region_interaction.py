@@ -45,11 +45,12 @@ def load_config(path: Path) -> dict:
         "train_labels", "final_patches", "seed", "reader_rank", "reader_updates",
         "reader_batch_size", "reader_learning_rate", "reader_weight_decay",
         "reader_auc_gate", "evaluation_image_count", "max_concepts_per_image",
-        "token_grid_side", "window_patch_side", "hard_attention_log_distance_max",
+        "shard_count", "token_grid_side", "window_patch_side", "primary_readout",
+        "hard_attention_log_distance_max", "hard_frequency_log_distance_max",
         "blur_kernel_size", "blur_sigma", "minimum_interaction_pairs",
         "minimum_interaction_classes", "bootstrap_replicates",
         "standardized_effect_gate", "patch_identity_gate", "eligible_indices",
-        "formal_unseen_images_used", "human_annotations_used",
+        "formal_unseen_images_used", "all_200_class_texts_used", "human_annotations_used",
     }
     actual = set(config) if isinstance(config, dict) else set()
     if actual != required:
@@ -61,11 +62,14 @@ def load_config(path: Path) -> dict:
         or config["idea_id"] != "IDEA-168"
         or config["dataset"] != "CUB"
         or config["formal_unseen_images_used"] is not False
+        or config["all_200_class_texts_used"] is not True
         or config["human_annotations_used"] is not False
     ):
         raise ValueError("IDEA-168配置身份或数据边界错误。")
     if int(config["token_grid_side"]) != 24 or int(config["window_patch_side"]) != 4:
         raise ValueError("IDEA-168固定使用24x24 token与4x4-patch窗口。")
+    if int(config["shard_count"]) != 2 or config["primary_readout"] != "fixed_original_attention":
+        raise ValueError("IDEA-168固定双卡与原图Attention线性读出。")
     if int(config["blur_kernel_size"]) % 2 != 1:
         raise ValueError("局部模糊kernel必须为奇数。")
     return config
@@ -80,8 +84,8 @@ def validate_assets(config: dict) -> dict:
     if sha256_file(Path(config["source_config"])) != config["source_config_sha256"]:
         raise ValueError("source config SHA错误。")
     checkpoint_path = Path(config["clip_checkpoint"])
-    if not checkpoint_path.is_file():
-        raise FileNotFoundError(f"缺少冻结CLIP checkpoint：{checkpoint_path}")
+    if sha256_file(checkpoint_path) != config["clip_checkpoint_sha256"]:
+        raise ValueError("冻结CLIP checkpoint SHA错误。")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if (
         manifest.get("schema_version") != "gzsl-paper.projected-patch-assets.v1"
@@ -94,6 +98,8 @@ def validate_assets(config: dict) -> dict:
         expected_path = manifest_path.parent / filename
         if actual_path.resolve() != expected_path.resolve() or not actual_path.is_file():
             raise ValueError(f"{key}没有绑定manifest目录。")
+        if sha256_file(actual_path) != manifest.get("outputs_sha256", {}).get(filename):
+            raise ValueError(f"{key}内容SHA与manifest不一致。")
     return {
         "manifest": str(manifest_path),
         "manifest_sha256": config["visual_asset_manifest_sha256"],
@@ -442,6 +448,27 @@ def magnitude_excess(target_eta: float, control_eta: float) -> float:
     return float(abs(target_eta) - abs(control_eta))
 
 
+def fixed_attention_evidence(similarities: torch.Tensor, original_attention: torch.Tensor) -> torch.Tensor:
+    if similarities.ndim != 2 or original_attention.ndim != 1:
+        raise ValueError("固定Attention读出要求similarities=[batch,patch]、attention=[patch]。")
+    if similarities.size(1) != original_attention.numel():
+        raise ValueError("固定Attention读出的patch轴不一致。")
+    return (similarities * original_attention.unsqueeze(0)).sum(dim=1)
+
+
+@torch.no_grad()
+def fixed_attention_logits(
+    reader: SharedConceptReadout,
+    patches: torch.Tensor,
+    concepts: torch.Tensor,
+    concept_index: int,
+    original_attention: torch.Tensor,
+) -> torch.Tensor:
+    _, similarities, _ = reader.details(patches, concepts)
+    evidence = fixed_attention_evidence(similarities[:, int(concept_index), :], original_attention)
+    return reader.logit_scale.exp().clamp(max=100.0) * evidence + reader.bias
+
+
 def _edge_flags(pair, grid_side: int, window_side: int):
     return sorted(window_edge_type(window, grid_side, window_side) for window in pair["windows"])
 
@@ -449,6 +476,7 @@ def _edge_flags(pair, grid_side: int, window_side: int):
 def choose_hard_control(
     *, target_pair, target_concept: int, class_id: int, attentions: np.ndarray,
     clusters, grid_side: int, window_side: int, maximum_log_distance: float,
+    maximum_frequency_log_distance: float,
 ):
     target_role, target_members = clusters[target_concept]
     target_strength = sorted(target_pair["masses"], reverse=True)
@@ -461,21 +489,33 @@ def choose_hard_control(
         pair = select_nonoverlap_pair(attentions[concept_index], grid_side, window_side)
         if pair is None or _edge_flags(pair, grid_side, window_side) != target_edges:
             continue
-        strength = sorted(pair["masses"], reverse=True)
+        target_attention_masses = [
+            window_mass(attentions[target_concept], window, grid_side, window_side)
+            for window in pair["windows"]
+        ]
+        strength = sorted(target_attention_masses, reverse=True)
         log_distance = max(abs(math.log((left + 1e-12) / (right + 1e-12))) for left, right in zip(strength, target_strength))
-        frequency_distance = abs(len(members) - target_frequency) / max(target_frequency, 1)
-        score = log_distance + 0.20 * frequency_distance
-        candidates.append((score, log_distance, concept_index, pair))
+        frequency_log_distance = abs(math.log(max(len(members), 1) / max(target_frequency, 1)))
+        if log_distance > maximum_log_distance or frequency_log_distance > maximum_frequency_log_distance:
+            continue
+        score = log_distance + 0.20 * frequency_log_distance
+        candidates.append(
+            (score, log_distance, frequency_log_distance, concept_index, pair, target_attention_masses)
+        )
     if not candidates:
         return None
-    score, log_distance, concept_index, pair = min(candidates, key=lambda row: (row[0], row[2]))
-    if log_distance > maximum_log_distance:
-        return None
+    score, log_distance, frequency_log_distance, concept_index, pair, target_attention_masses = min(
+        candidates, key=lambda row: (row[0], row[3])
+    )
     return {
         "concept_index": int(concept_index),
         "windows": pair["windows"],
-        "masses": pair["masses"],
+        "proposal_concept_attention_masses": pair["masses"],
+        "target_concept_attention_masses": target_attention_masses,
         "attention_log_distance": float(log_distance),
+        "frequency_log_distance": float(frequency_log_distance),
+        "target_frequency": int(target_frequency),
+        "control_frequency": int(len(clusters[concept_index][1])),
         "match_score": float(score),
     }
 
@@ -558,6 +598,7 @@ def prepare(args, config: dict, device: torch.device):
     asset_identity = validate_assets(config)
     torch.manual_seed(int(config["seed"]))
     np.random.seed(int(config["seed"]))
+    torch.use_deterministic_algorithms(True)
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.backends.cudnn.deterministic = True
 
@@ -593,6 +634,7 @@ def prepare(args, config: dict, device: torch.device):
         "train_classes": values["train_classes"],
         "evaluation_classes": values["evaluation_classes"],
         "selected_rows": torch.from_numpy(selected_rows),
+        "selected_labels": torch.from_numpy(values["labels"][selected_rows].astype(np.int64)),
         "code_commit": args.expected_commit,
         "config_sha256": args.expected_config_sha,
         "asset_identity": asset_identity,
@@ -610,12 +652,20 @@ def prepare(args, config: dict, device: torch.device):
         "reader_gate_pass": float(np.median(aucs)) >= float(config["reader_auc_gate"]),
         "train_classes": values["train_classes"],
         "evaluation_classes": values["evaluation_classes"],
+        "eligible_indices": list(map(int, config["eligible_indices"])),
+        "concept_axis": [
+            {"role": int(role), "members": list(map(int, members))}
+            for role, members in values["clusters"]
+        ],
+        "thresholds": thresholds.tolist(),
         "selected_rows": selected_rows.tolist(),
+        "selected_labels": values["labels"][selected_rows].astype(int).tolist(),
         "selected_image_count": int(len(selected_rows)),
         "checkpoint_path": str(checkpoint),
         "checkpoint_sha256": sha256_file(checkpoint),
         "formal_unseen_images_used": False,
         "pseudo_unseen_images_used_for_gradient": False,
+        "all_200_class_texts_used": True,
         "human_annotations_used": False,
     }
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -632,6 +682,20 @@ def load_prepared(path: Path, expected_commit: str, expected_config_sha: str):
     payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
     if payload.get("code_commit") != expected_commit or payload.get("config_sha256") != expected_config_sha:
         raise ValueError("IDEA-168 checkpoint内部身份错误。")
+    concept_axis = [
+        {"role": int(role), "members": list(map(int, members))}
+        for role, members in payload["clusters"]
+    ]
+    if (
+        payload.get("asset_identity") != result.get("asset_identity")
+        or payload.get("train_classes") != result.get("train_classes")
+        or payload.get("evaluation_classes") != result.get("evaluation_classes")
+        or payload["selected_rows"].tolist() != result.get("selected_rows")
+        or payload["selected_labels"].tolist() != result.get("selected_labels")
+        or payload["thresholds"].tolist() != result.get("thresholds")
+        or concept_axis != result.get("concept_axis")
+    ):
+        raise ValueError("IDEA-168 prepared JSON与checkpoint语义身份不一致。")
     return result, payload
 
 
@@ -639,8 +703,17 @@ def load_prepared(path: Path, expected_commit: str, expected_config_sha: str):
 def intervene(args, config: dict, device: torch.device):
     _prepare_identity(args, config)
     prepared, payload = load_prepared(args.prepared, args.expected_commit, args.expected_config_sha)
+    if validate_assets(config) != prepared["asset_identity"]:
+        raise ValueError("intervene阶段资产身份与prepare不一致。")
     if not prepared["reader_gate_pass"]:
         raise RuntimeError("共享Reader没有复现，禁止执行交互Gate。")
+    if int(args.shard_count) != int(config["shard_count"]) or not 0 <= int(args.shard_index) < int(args.shard_count):
+        raise ValueError("IDEA-168必须恰好使用配置声明的两个shard。")
+    torch.manual_seed(int(config["seed"]))
+    np.random.seed(int(config["seed"]))
+    torch.use_deterministic_algorithms(True)
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.deterministic = True
 
     import clip
 
@@ -701,6 +774,7 @@ def intervene(args, config: dict, device: torch.device):
                 grid_side=grid_side,
                 window_side=window_side,
                 maximum_log_distance=float(config["hard_attention_log_distance_max"]),
+                maximum_frequency_log_distance=float(config["hard_frequency_log_distance_max"]),
             )
             random_pair = random_pair_like(
                 target_pair,
@@ -721,9 +795,19 @@ def intervene(args, config: dict, device: torch.device):
                 "target_attention_masses": list(map(float, target_pair["masses"])),
                 "hard_concept_index": int(hard_pair["concept_index"]),
                 "hard_windows": [list(window) for window in hard_pair["windows"]],
-                "hard_attention_masses": list(map(float, hard_pair["masses"])),
+                "hard_proposal_concept_attention_masses": list(map(float, hard_pair["proposal_concept_attention_masses"])),
+                "hard_target_concept_attention_masses": list(map(float, hard_pair["target_concept_attention_masses"])),
                 "hard_attention_log_distance": float(hard_pair["attention_log_distance"]),
+                "hard_frequency_log_distance": float(hard_pair["frequency_log_distance"]),
+                "target_concept_frequency": int(hard_pair["target_frequency"]),
+                "hard_concept_frequency": int(hard_pair["control_frequency"]),
+                "hard_target_window_overlap": any(
+                    windows_overlap(target_window, hard_window, window_side)
+                    for target_window in target_pair["windows"]
+                    for hard_window in hard_pair["windows"]
+                ),
                 "random_windows": [list(window) for window in random_pair["windows"]],
+                "primary_readout": "fixed_original_attention",
                 "perturbations": {},
             }
             pairs = {"target": target_pair, "hard": hard_pair, "random": random_pair}
@@ -732,15 +816,28 @@ def intervene(args, config: dict, device: torch.device):
                 for pair_name in ("target", "hard", "random"):
                     variants.extend(pair_variants(image, pairs[pair_name], mode, blurred, window_side))
                 perturbed_patches = encode_final_patches(clip_model, torch.stack(variants))
-                perturbed_logits = reader(perturbed_patches, concepts)[:, concept_index].cpu().numpy()
+                fixed_logits = fixed_attention_logits(
+                    reader,
+                    perturbed_patches,
+                    concepts,
+                    concept_index,
+                    attentions[0, concept_index].detach(),
+                ).cpu().numpy()
+                dynamic_logits = reader(perturbed_patches, concepts)[:, concept_index].cpu().numpy()
                 row = {}
                 for pair_position, pair_name in enumerate(("target", "hard", "random")):
-                    score_a, score_b, score_union = map(float, perturbed_logits[pair_position * 3:(pair_position + 1) * 3])
+                    score_a, score_b, score_union = map(float, fixed_logits[pair_position * 3:(pair_position + 1) * 3])
+                    dynamic_a, dynamic_b, dynamic_union = map(
+                        float, dynamic_logits[pair_position * 3:(pair_position + 1) * 3]
+                    )
                     row[pair_name] = {
                         "score_a": score_a,
                         "score_b": score_b,
                         "score_union": score_union,
                         "eta": interaction_eta(float(logits_np[concept_index]), score_a, score_b, score_union),
+                        "dynamic_attention_eta_diagnostic": interaction_eta(
+                            float(logits_np[concept_index]), dynamic_a, dynamic_b, dynamic_union
+                        ),
                     }
                 row["hard_magnitude_excess"] = magnitude_excess(row["target"]["eta"], row["hard"]["eta"])
                 row["random_magnitude_excess"] = magnitude_excess(row["target"]["eta"], row["random"]["eta"])
@@ -772,6 +869,7 @@ def intervene(args, config: dict, device: torch.device):
         "records": records,
         "formal_unseen_images_used": False,
         "pseudo_unseen_images_used_for_gradient": False,
+        "all_200_class_texts_used": True,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -793,11 +891,13 @@ def hierarchical_bootstrap(values, class_ids, image_ids, replicates: int, seed: 
     class_images = defaultdict(list)
     for image_id, class_id in image_class.items():
         class_images[class_id].append(image_id)
+    for class_id in class_images:
+        class_images[class_id] = sorted(class_images[class_id])
     classes = np.asarray(sorted(class_images), dtype=np.int64)
     class_means = [np.mean([per_image[image_id] for image_id in class_images[int(class_id)]]) for class_id in classes]
     point = float(np.mean(class_means))
-    image_level = np.asarray(list(per_image.values()), dtype=np.float64)
-    scale = float(image_level.std(ddof=1)) if len(image_level) > 1 else 0.0
+    class_means_array = np.asarray(class_means, dtype=np.float64)
+    scale = float(class_means_array.std(ddof=1)) if len(class_means_array) > 1 else 0.0
     standardized = point / max(scale, 1e-12)
     rng = np.random.default_rng(seed)
     draws = np.empty(int(replicates), dtype=np.float64)
@@ -820,11 +920,21 @@ def hierarchical_bootstrap(values, class_ids, image_ids, replicates: int, seed: 
     }
 
 
+def comparable_environment(value: dict) -> dict:
+    return {key: item for key, item in value.items() if key != "gpu_uuid"}
+
+
 def merge(args, config: dict):
     _prepare_identity(args, config)
     prepared, _ = load_prepared(args.prepared, args.expected_commit, args.expected_config_sha)
     shards = [json.loads(path.read_text(encoding="utf-8")) for path in args.shards]
+    if len(shards) != int(config["shard_count"]):
+        raise ValueError("IDEA-168 merge必须恰好接收两个shard。")
     expected_rows = sorted(map(int, prepared["selected_rows"]))
+    expected_label_by_row = {
+        int(row): int(label)
+        for row, label in zip(prepared["selected_rows"], prepared["selected_labels"])
+    }
     delivered_rows = sorted(row for shard in shards for row in shard["image_rows"])
     if delivered_rows != expected_rows or len(delivered_rows) != len(set(delivered_rows)):
         raise ValueError("双卡shard没有唯一、完整覆盖固定500图。")
@@ -832,12 +942,41 @@ def merge(args, config: dict):
         raise ValueError("shard编号不完整。")
     for shard, path in zip(shards, args.shards):
         if (
-            shard.get("code_commit") != args.expected_commit
+            shard.get("schema_version") != "gzsl-paper.concept-region-interaction-shard.v1"
+            or shard.get("idea_id") != "IDEA-168"
+            or shard.get("code_commit") != args.expected_commit
             or shard.get("config_sha256") != args.expected_config_sha
             or shard.get("prepared_sha256") != sha256_file(args.prepared)
-            or int(shard.get("shard_count", -1)) != len(shards)
+            or int(shard.get("shard_count", -1)) != int(config["shard_count"])
+            or shard.get("formal_unseen_images_used") is not False
+            or shard.get("pseudo_unseen_images_used_for_gradient") is not False
+            or shard.get("all_200_class_texts_used") is not True
         ):
             raise ValueError(f"shard身份错误：{path}")
+        shard_rows = list(map(int, shard["image_rows"]))
+        summary_rows = [int(row["train_row"]) for row in shard.get("image_summaries", [])]
+        if (
+            sorted(summary_rows) != sorted(shard_rows)
+            or len(summary_rows) != len(set(summary_rows))
+            or any(int(row["class_id"]) != expected_label_by_row.get(int(row["train_row"])) for row in shard.get("image_summaries", []))
+        ):
+            raise ValueError(f"shard summary没有唯一覆盖本片图像：{path}")
+        seen_record_keys = set()
+        shard_row_set = set(shard_rows)
+        for record in shard.get("records", []):
+            row = int(record["train_row"])
+            key = (row, int(record["concept_index"]))
+            if (
+                row not in shard_row_set
+                or int(record["class_id"]) != expected_label_by_row.get(row)
+                or key in seen_record_keys
+                or record.get("primary_readout") != "fixed_original_attention"
+            ):
+                raise ValueError(f"shard record归属或读出口径错误：{path}")
+            seen_record_keys.add(key)
+    expected_environment = comparable_environment(prepared["environment"])
+    if any(comparable_environment(shard["environment"]) != expected_environment for shard in shards):
+        raise ValueError("prepare与双卡shard的环境/GPU型号不一致。")
     records = [record for shard in shards for record in shard["records"]]
     summaries = [row for shard in shards for row in shard["image_summaries"]]
     class_ids = np.asarray([record["class_id"] for record in records], dtype=np.int64)
@@ -845,7 +984,11 @@ def merge(args, config: dict):
     enough_pairs = len(records) >= int(config["minimum_interaction_pairs"])
     enough_classes = len(np.unique(class_ids)) >= int(config["minimum_interaction_classes"]) if records else False
     parity = np.asarray([row["patch_cosine"] for row in summaries], dtype=np.float64)
-    patch_identity_pass = bool(len(parity) == len(expected_rows) and float(parity.min()) >= float(config["patch_identity_gate"]))
+    patch_identity_pass = bool(
+        len(parity) == len(expected_rows)
+        and len(parity) > 0
+        and float(parity.min()) >= float(config["patch_identity_gate"])
+    )
 
     statistics = {}
     effect_conditions = {}
@@ -917,8 +1060,8 @@ def merge(args, config: dict):
         "interaction_class_count": int(len(np.unique(class_ids))) if records else 0,
         "images_with_interactions": int(len(set(image_ids.tolist()))) if records else 0,
         "patch_identity": {
-            "mean": float(parity.mean()),
-            "minimum": float(parity.min()),
+            "mean": float(parity.mean()) if len(parity) else None,
+            "minimum": float(parity.min()) if len(parity) else None,
             "gate": float(config["patch_identity_gate"]),
         },
         "magnitude_excess_statistics": statistics,
@@ -926,6 +1069,7 @@ def merge(args, config: dict):
         "sign_interpretation_candidates_only": sign_report,
         "formal_unseen_images_used": False,
         "pseudo_unseen_images_used_for_gradient": False,
+        "all_200_class_texts_used": True,
         "reports_H_U_S_ZS": False,
         "interpretation_boundary": "eta<0仅为互补候选，eta>0仅为冗余候选；输入扰动不等于真实因果删除。",
         "shard_sha256": {str(path): sha256_file(path) for path in args.shards},
