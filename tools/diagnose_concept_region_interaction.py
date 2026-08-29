@@ -5,10 +5,14 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import platform
 import re
 from collections import defaultdict
 from pathlib import Path
+
+CUBLAS_WORKSPACE_CONFIG = ":4096:8"
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = CUBLAS_WORKSPACE_CONFIG
 
 import numpy as np
 import torch
@@ -46,6 +50,7 @@ def load_config(path: Path) -> dict:
         "reader_batch_size", "reader_learning_rate", "reader_weight_decay",
         "reader_auc_gate", "evaluation_image_count", "max_concepts_per_image",
         "shard_count", "token_grid_side", "window_patch_side", "primary_readout",
+        "cublas_workspace_config",
         "hard_attention_log_distance_max", "hard_frequency_log_distance_max",
         "blur_kernel_size", "blur_sigma", "minimum_interaction_pairs",
         "minimum_interaction_classes", "bootstrap_replicates",
@@ -70,6 +75,8 @@ def load_config(path: Path) -> dict:
         raise ValueError("IDEA-168固定使用24x24 token与4x4-patch窗口。")
     if int(config["shard_count"]) != 2 or config["primary_readout"] != "fixed_original_attention":
         raise ValueError("IDEA-168固定双卡与原图Attention线性读出。")
+    if config["cublas_workspace_config"] != CUBLAS_WORKSPACE_CONFIG:
+        raise ValueError("IDEA-168固定cuBLAS确定性工作区为:4096:8。")
     if int(config["blur_kernel_size"]) % 2 != 1:
         raise ValueError("局部模糊kernel必须为奇数。")
     return config
@@ -121,6 +128,7 @@ def environment(device: torch.device) -> dict:
         "gpu_total_memory": int(properties.total_memory),
         "gpu_compute_capability": [int(properties.major), int(properties.minor)],
         "gpu_uuid": str(getattr(properties, "uuid", "unavailable")),
+        "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
     }
 
 
@@ -674,7 +682,16 @@ def prepare(args, config: dict, device: torch.device):
 
 def load_prepared(path: Path, expected_commit: str, expected_config_sha: str):
     result = json.loads(path.read_text(encoding="utf-8"))
-    if result.get("code_commit") != expected_commit or result.get("config_sha256") != expected_config_sha:
+    if (
+        result.get("schema_version") != "gzsl-paper.concept-region-interaction-prepared.v1"
+        or result.get("idea_id") != "IDEA-168"
+        or result.get("code_commit") != expected_commit
+        or result.get("config_sha256") != expected_config_sha
+        or result.get("formal_unseen_images_used") is not False
+        or result.get("pseudo_unseen_images_used_for_gradient") is not False
+        or result.get("all_200_class_texts_used") is not True
+        or result.get("human_annotations_used") is not False
+    ):
         raise ValueError("IDEA-168 prepared结果身份错误。")
     checkpoint = Path(result["checkpoint_path"])
     if sha256_file(checkpoint) != result["checkpoint_sha256"]:
@@ -1072,6 +1089,10 @@ def merge(args, config: dict):
         "all_200_class_texts_used": True,
         "reports_H_U_S_ZS": False,
         "interpretation_boundary": "eta<0仅为互补候选，eta>0仅为冗余候选；输入扰动不等于真实因果删除。",
+        "perturbation_semantics": {
+            "mean_fill": "CLIP归一化空间的0，即CLIP全局通道均值颜色；不等同真实删除。",
+            "local_blur": "只用全图高斯模糊值替换固定窗口；不等同生成式补全。",
+        },
         "shard_sha256": {str(path): sha256_file(path) for path in args.shards},
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

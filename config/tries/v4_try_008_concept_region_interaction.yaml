@@ -24,6 +24,7 @@ shard_count: 2
 token_grid_side: 24
 window_patch_side: 4
 primary_readout: fixed_original_attention
+cublas_workspace_config: ":4096:8"
 hard_attention_log_distance_max: 0.75
 hard_frequency_log_distance_max: 0.6931471805599453
 blur_kernel_size: 13

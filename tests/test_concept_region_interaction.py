@@ -1,10 +1,12 @@
 import json
+import os
 
 import numpy as np
 import pytest
 import torch
 
 from tools.diagnose_concept_region_interaction import (
+    CUBLAS_WORKSPACE_CONFIG,
     choose_hard_control,
     comparable_environment,
     fixed_attention_evidence,
@@ -24,6 +26,7 @@ from tools.runtime import sha256_file
 
 
 def test_window_from_peak_uses_fixed_four_patch_window_at_edges():
+    assert os.environ["CUBLAS_WORKSPACE_CONFIG"] == CUBLAS_WORKSPACE_CONFIG == ":4096:8"
     assert window_from_peak(0) == (0, 0)
     assert window_from_peak(23) == (0, 20)
     assert window_from_peak(23 * 24) == (20, 0)
