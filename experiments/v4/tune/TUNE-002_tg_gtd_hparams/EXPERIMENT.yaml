@@ -39,3 +39,8 @@ current_best:
   parameter: {weight_decay: 0.001}
   metrics: {U: 77.765429, S: 80.061287, H: 78.896659, ZS: 86.858141}
   delta_H_vs_reference: 0.777018
+stage_4:
+  method: weight_decay_refinement_and_winner_combinations
+  run_ids: [RUN-024, RUN-025, RUN-026, RUN-027, RUN-028, RUN-029, RUN-030, RUN-031, RUN-032]
+  target_H: 79.0
+  status: prepared

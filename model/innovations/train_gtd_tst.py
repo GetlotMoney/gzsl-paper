@@ -90,6 +90,28 @@ TUNE_RUNS = {
     "TUNE-002-RUN-021": ({"gate_warmup_epochs": 10}, "cuda:1"),
     "TUNE-002-RUN-022": ({"weight_decay": 0.0}, "cuda:0"),
     "TUNE-002-RUN-023": ({"weight_decay": 1e-3}, "cuda:1"),
+    "TUNE-002-RUN-024": ({"weight_decay": 5e-4}, "cuda:0"),
+    "TUNE-002-RUN-025": ({"weight_decay": 7.5e-4}, "cuda:1"),
+    "TUNE-002-RUN-026": ({"weight_decay": 1.25e-3}, "cuda:0"),
+    "TUNE-002-RUN-027": ({"weight_decay": 1.5e-3}, "cuda:1"),
+    "TUNE-002-RUN-028": ({"weight_decay": 2e-3}, "cuda:0"),
+    "TUNE-002-RUN-029": ({"weight_decay": 3e-3}, "cuda:1"),
+    "TUNE-002-RUN-030": (
+        {"weight_decay": 1e-3, "topology_weight": 0.3},
+        "cuda:0",
+    ),
+    "TUNE-002-RUN-031": (
+        {"weight_decay": 1e-3, "max_transport_step": 2.25},
+        "cuda:1",
+    ),
+    "TUNE-002-RUN-032": (
+        {
+            "weight_decay": 1e-3,
+            "topology_weight": 0.3,
+            "max_transport_step": 2.25,
+        },
+        "cuda:0",
+    ),
 }
 DATASET_SPECS = {
     "CUB": {
