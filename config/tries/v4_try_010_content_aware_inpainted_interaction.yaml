@@ -43,4 +43,3 @@ eligible_indices: [0, 1, 2, 3, 4, 5, 8, 9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 2
 formal_unseen_images_used: false
 all_200_class_texts_used: true
 human_annotations_used: false
-

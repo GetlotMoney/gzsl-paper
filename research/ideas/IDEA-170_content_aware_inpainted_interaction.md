@@ -35,5 +35,3 @@ frontier_shift: unknown。
 downstream_effects: 通过后才允许任务级分类验证；失败后转离视觉干预方向。
 failure_boundary: 调和与反射补全仍不等于真实生成式反事实；不允许调迭代数、窗口、阈值或统计门。失败后不再进行第三次补救。
 owner_decision: 2026-08-29 owner批准两次自动补救；IDEA-169失败后自动进入本次最终补救。
-
-
