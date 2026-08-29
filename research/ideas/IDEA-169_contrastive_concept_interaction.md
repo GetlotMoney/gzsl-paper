@@ -10,7 +10,7 @@ base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
 reuse_refs: [IDEA-162, IDEA-168]
 problem: IDEA-168发现跨扰动交互符号稳定，但目标区域对的交互绝对值不优于困难或随机区域对。原始目标概念logit同时携带通用鸟体、角色部位和具体概念三类变化，通用图像损伤可能淹没真正的概念特异交互。
 hypothesis: 在固定原图目标Attention的同一空间读出下，用“目标概念相似度减去同角色相似竞争概念均值”的对比margin替代裸目标logit，可以消除通用鸟体与角色级损伤；若跨区域依赖属于具体文本概念，目标区域对的`abs(eta_margin)`应稳定超过困难与随机对照。
-core_change: 对每个目标概念，预先从同角色、当前类别不属于其成员、概念频率在2倍以内的候选中，按文本查询余弦选择最多3个最近竞争概念。所有概念共用目标概念的原图固定Attention，定义`margin=sum_p w_target(p)*(sim_target(p)-mean_k sim_competitor_k(p))`。A、B、A并B每次完整重跑CLIP，但不重新计算主读出Attention；以margin计算非加性交互。动态Attention与裸目标logit只旁报。
+core_change: 对每个目标概念，预先从同角色、当前类别不属于其成员、概念频率在2倍以内的候选中，按共享Reader适配后的文本查询余弦选择最多3个最近竞争概念。所有概念共用目标概念的原图固定Attention，定义`margin=sum_p w_target(p)*(sim_target(p)-mean_k sim_competitor_k(p))`。A、B、A并B每次完整重跑CLIP，但不重新计算主读出Attention；以margin计算非加性交互。动态Attention与裸目标logit只旁报。
 old_signal_or_primitive: IDEA-168直接在目标概念裸logit上测区域交互，无法扣除对所有同角色概念共同发生的通用视觉损伤。
 new_signal_or_primitive: 同一空间权重下的目标概念—同角色竞争概念差分交互，用差分中的差分隔离具体概念信号。
 paradigm_shift: 继承IDEA-168的输入干预新信号，但把被干预的学习对象从绝对概念响应收窄为概念间相对证据；本卡是已拒绝Gate的测量补救，不把它单独包装成已成立Innovation。
