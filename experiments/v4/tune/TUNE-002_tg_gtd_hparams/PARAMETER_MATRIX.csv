@@ -1,0 +1,11 @@
+run_id,axis,value,seed,status,U,S,H,ZS,best_update,output_uri,decision
+REFERENCE,V3-TRY-041,baseline,7,external_reference,79.624420,76.670682,78.119641,85.794950,80,D:/backup/Documents/ChatGPT/GZSL_Warehouse/tries/v3/gtd-scratch/V3-TRY-041,baseline
+RUN-001,gate_loss_weight,0.5,7,pending,,,,,,/data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-001,
+RUN-002,gate_loss_weight,2.0,7,pending,,,,,,/data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-002,
+RUN-003,gate_learning_rate,3.0e-5,7,pending,,,,,,/data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-003,
+RUN-004,gate_learning_rate,3.0e-4,7,pending,,,,,,/data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-004,
+RUN-005,tg_learning_rate,3.0e-5,7,pending,,,,,,/data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-005,
+RUN-006,tg_learning_rate,3.0e-4,7,pending,,,,,,/data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-006,
+RUN-007,max_transport_step,0.75,7,pending,,,,,,/data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-007,
+RUN-008,max_transport_step,3.0,7,pending,,,,,,/data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-008,
+

@@ -1,0 +1,26 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: TUNE-002
+framework_id: FRAMEWORK-V4
+kind: tune
+title: TG+GTD fixed-150 official-test-selected parameter search
+research_question: 在不改变TG+GTD公式、数据或评估语义时，现有数值参数能把CUB最高H提高多少？
+base_ref: framework/v4
+base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
+reference_run: V3-TRY-041
+reference_metrics: {U: 79.624420, S: 76.670682, H: 78.119641, ZS: 85.794950}
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+budget:
+  nominal_epochs: 150
+  updates: 21171
+  seed: 7
+stage_1:
+  method: one_factor_at_a_time
+  axes: [gate_loss_weight, gate_learning_rate, tg_learning_rate, max_transport_step]
+  selection: highest_official_test_H_with_same_checkpoint_U_S_ZS
+stage_2:
+  method: combine_non_conflicting_stage_1_winners
+  status: pending_stage_1
+

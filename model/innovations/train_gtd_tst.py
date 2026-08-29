@@ -32,6 +32,7 @@ from tools.runtime import sha256_file
 SCHEMA = "gzsl-paper.v3-gtd-tst-train.v1"
 SCRATCH_SCHEMA = "gzsl-paper.v3-gtd-scratch-confirm.v1"
 MULTIDATASET_SCHEMA = "gzsl-paper.v3-gtd-multidataset.v1"
+TUNE_SCHEMA = "gzsl-paper.v4-tg-gtd-tune.v1"
 DATASET_SPECS = {
     "CUB": {
         "train_count": 7057,
@@ -142,21 +143,17 @@ def load_config(path: Path) -> tuple[dict, str]:
         if spec is not None
         else -1
     )
+    is_tune = config["schema_version"] == TUNE_SCHEMA
     shared_invalid = (
-        config["framework_id"] != "FRAMEWORK-V3-EXPLORATION"
-        or spec is None
+        spec is None
         or int(config["random_seed"]) != 7
         or int(config["batch_size"]) != BATCH_SIZE
         or int(config["nominal_epochs"]) != NOMINAL_EPOCHS
         or int(config["total_updates"]) != expected_updates
         or int(config["eval_interval_steps"]) != expected_interval
-        or int(config["gate_warmup_epochs"]) != 5
-        or float(config["weight_decay"]) != 1e-4
-        or float(config["topology_weight"]) != 0.1
         or int(config["hidden_dim"]) != 16
         or int(config["grid_points"]) != 33
         or float(config["theta_penalty"]) != 0.1
-        or float(config["max_transport_step"]) != 1.5
         or config["early_stopping_enabled"] is not False
         or float(config["required_delta_h"]) != 1.0
         or float(config["max_us_gap"]) != 8.0
@@ -166,9 +163,41 @@ def load_config(path: Path) -> tuple[dict, str]:
         or config["unseen_images_used_for_gradient"] is not False
         or config["strict_blind_claim"] is not False
     )
+    if is_tune:
+        shared_invalid = shared_invalid or (
+            config["framework_id"] != "FRAMEWORK-V4"
+            or not 1e-5 <= float(config["tg_learning_rate"]) <= 1e-3
+            or not 1e-5 <= float(config["gate_learning_rate"]) <= 1e-3
+            or not 0.0 < float(config["tg_min_learning_rate"])
+            <= float(config["tg_learning_rate"])
+            or not 0.0 < float(config["gate_min_learning_rate"])
+            <= float(config["gate_learning_rate"])
+            or not 0 <= int(config["gate_warmup_epochs"]) <= 20
+            or not 0.0 <= float(config["weight_decay"]) <= 1e-2
+            or not 0.0 <= float(config["topology_weight"]) <= 1.0
+            or not 0.0 <= float(config["gate_loss_weight"]) <= 10.0
+            or not 0.25 <= float(config["max_transport_step"]) <= 4.0
+        )
+    else:
+        shared_invalid = shared_invalid or (
+            config["framework_id"] != "FRAMEWORK-V3-EXPLORATION"
+            or int(config["gate_warmup_epochs"]) != 5
+            or float(config["weight_decay"]) != 1e-4
+            or float(config["topology_weight"]) != 0.1
+            or float(config["max_transport_step"]) != 1.5
+        )
     if shared_invalid:
         raise ValueError("GTD共享训练参数、预算或披露边界错误。")
-    if config["schema_version"] == SCHEMA:
+    if is_tune:
+        invalid = (
+            config["dataset"] != "CUB"
+            or not str(config["experiment_id"]).startswith("TUNE-002-RUN-")
+            or config["condition_id"] != "TG_PLUS_GTD_TUNE_FIXED150"
+            or config["tg_checkpoint"] is not None
+            or config["tg_checkpoint_sha256"] is not None
+            or config["parent_metrics_percent"] is not None
+        )
+    elif config["schema_version"] == SCHEMA:
         invalid = (
             config["dataset"] != "CUB"
             or config["experiment_id"] != "V3-TRY-022"
