@@ -6,11 +6,11 @@ import torch
 from tools.diagnose_tristate_predicates import (
     PredicateReader,
     correction_metrics,
-    evidence_scores,
     nearest_same_role,
+    predicate_contribution,
+    shuffled_failure_gates,
     shuffled_query_map,
     split_classes,
-    visibility_thresholds,
 )
 
 
@@ -34,6 +34,7 @@ def test_split_and_shuffled_map_are_deterministic_and_disjoint():
     mapping = shuffled_query_map(train_a, seed=7, enabled=True)
     assert set(mapping) == set(train_a.tolist())
     assert set(mapping.values()) == set(train_a.tolist())
+    assert all(source != target for source, target in mapping.items())
 
 
 def test_nearest_same_role_never_returns_the_query_class():
@@ -45,20 +46,18 @@ def test_nearest_same_role_never_returns_the_query_class():
         assert class_id not in neighbors[local]
 
 
-def test_visibility_and_correction_contracts():
-    train_scores = np.asarray(
-        [
-            [[0.9, 0.2], [0.1, 0.3]],
-            [[0.8, 0.1], [0.2, 0.4]],
-        ],
-        dtype=np.float32,
-    )
-    thresholds = visibility_thresholds(train_scores, 0.10)
-    evidence, visible = evidence_scores(train_scores, thresholds)
-    assert evidence.shape == (2, 2)
-    assert visible.shape == (2, 2)
+def test_fixed_one_vs_k_tristate_does_not_depend_on_total_candidate_count():
+    assert predicate_contribution(torch.tensor([0.8, 0.3]), 0.5) == (1, 0.5)
+    assert predicate_contribution(torch.tensor([0.8, 0.3, 0.2, 0.1]), 0.5) == (1, 0.5)
+    state, contribution = predicate_contribution(torch.tensor([0.2, 0.9, 0.1]), 0.5)
+    assert state == -1 and contribution < 0
+    assert predicate_contribution(torch.tensor([0.2, 0.3, 0.1]), 0.5) == (0, 0.0)
+
+
+def test_all_unknown_evidence_never_damages_a_correct_parent_by_argmax_tie():
+    evidence = np.zeros((2, 2), dtype=np.float32)
     labels = np.asarray([0, 1])
-    parent = np.asarray([1, 1])
+    parent = labels.copy()
     true_local = np.asarray([0, 1])
     metrics = correction_metrics(
         evidence,
@@ -68,5 +67,25 @@ def test_visibility_and_correction_contracts():
         true_local,
         np.asarray([True, True]),
     )
-    assert metrics["eligible_parent_error_count"] == 1
-    assert 0.0 <= metrics["error_pair_true_preferred_fraction"] <= 1.0
+    assert metrics["eligible_parent_error_count"] == 0
+    assert metrics["correct_sample_evidence_reversal_fraction"] == 0.0
+
+
+def test_shuffled_control_must_fail_every_main_non_deletion_gate():
+    config = {
+        "pairwise_accuracy_gate": 0.65,
+        "error_correction_gate": 0.60,
+        "correct_damage_gate": 0.10,
+    }
+    shuffled = {
+        "pairwise_hard_negative_accuracy": 0.70,
+        "mean8_and_evidence": {
+            "error_pair_true_preferred_fraction": 0.50,
+            "correct_sample_evidence_reversal_fraction": 0.20,
+        },
+    }
+    gates = shuffled_failure_gates(shuffled, config)
+    assert gates["shuffled_pairwise_failed"] is False
+    assert gates["shuffled_error_correction_failed"] is True
+    assert gates["shuffled_correct_damage_failed"] is True
+    assert not all(gates.values())
