@@ -75,5 +75,5 @@ principle_difference: 旧路径假设局部证据条件独立；新路径把证�
 non_equivalence_test: 在同一冻结边权上，只有存在重复patch竞争时约束匹配才与独立聚合不同；必须观察到≥10%重复率且产生真实净纠正，不能靠重训Reader或融合权重解释差异。
 minimal_viability: 固定27概念Reader复现、500张唯一class-disjoint图、50类全竞争、Top-6与全图精确等价、至少一个solver满足准确率/净纠正/删除/复杂度全门。
 current_advantage: IDEA-162已提供可迁移共享概念信号；IDEA-165只检验全局求解，不再次发明边权、可见性或三态Head。
-performance_status: pre-run，尚无IDEA-165数值；正式V4父H=78.119641，最终目标H≥80仅在Gate成立后验证。
+performance_status: `reader_gate=true / gate_fail / rejected`；capacity-1、capacity-2与2×2区域三种预注册solver均已完成并失败，结果见本卡“2026-08-29 三条件结果”。
 failure_boundary: 三种预注册solver均失败后，证据图容量约束方向用尽，不增加新容量、区域尺度、OT、A*、Top-K或融合残差。
