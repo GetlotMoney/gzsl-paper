@@ -21,7 +21,7 @@
 |---|---|---|
 | `semantic_representation` | 类别语义和原型如何形成更有结构的表示 | [`IDEA-001 / TG-VPR-H1`](ideas/IDEA-001_tg_vpr_h1.md) |
 | `cross_class_transfer` | seen知识如何可靠迁移到unseen原型 | [`IDEA-005 / TST`](ideas/IDEA-005_tst.md)、[`IDEA-146 / GTD-TST`](ideas/IDEA-146_gtd_tst.md) |
-| `visual_grounding` | 实例级局部视觉证据能否支持或反驳类别语义 | [`IDEA-133`](ideas/IDEA-133_visual_evidence_learning.md)、[`IDEA-158 / GAVE`](ideas/IDEA-158_gave.md)、[`IDEA-159 / RGT`](ideas/IDEA-159_rgt.md) |
+| `visual_grounding` | 实例级局部视觉证据能否支持或反驳类别语义 | [`IDEA-133`](ideas/IDEA-133_visual_evidence_learning.md)、[`IDEA-158 / GAVE`](ideas/IDEA-158_gave.md)、[`IDEA-159 / RGT`](ideas/IDEA-159_rgt.md)、[`IDEA-160 / full-resolution concept grounding`](ideas/IDEA-160_full_resolution_concept_grounding.md)、[`IDEA-161 / intermediate-patch concept signal`](ideas/IDEA-161_intermediate_patch_concept_signal.md)、[`IDEA-162 / learnable concept readout probe`](ideas/IDEA-162_learnable_concept_readout_probe.md) |
 | `class_competition` | 细粒度候选和seen/unseen联合竞争如何避免错误修正 | 当前无已晋级V4 Idea；相关V2历史按需检索 |
 | `learning_generalization` | 训练目标与选择规则如何迁移到未见类别 | 当前无已晋级V4 Idea；相关V2历史按需检索 |
 | `reliability_robustness` | 如何识别不可靠证据并保持关闭路径 | GAVE、RGT包含该机制标签，但主类别仍为`visual_grounding` |
@@ -72,6 +72,9 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 |---|---|---|---|---|
 | [`IDEA-158`](ideas/IDEA-158_gave.md) | GAVE | weak signal only，未晋级 | V4-TRY-001 | `exp/v4/innovation/innovation-001-gave` |
 | [`IDEA-159`](ideas/IDEA-159_rgt.md) | RGT | rejected before training | V4-TRY-002 | `exp/v4/innovation/innovation-002-rgt` |
+| [`IDEA-160`](ideas/IDEA-160_full_resolution_concept_grounding.md) | 576-patch概念落地oracle | rejected before queue | 无；pre-queue最小证伪 | 无；未创建创新分支 |
+| [`IDEA-161`](ideas/IDEA-161_intermediate_patch_concept_signal.md) | 中间层576-token直接读取oracle | revised：只否定裸余弦读取 | 无；pre-queue双卡1000图诊断 | 无；未创建创新分支 |
+| [`IDEA-162`](ideas/IDEA-162_learnable_concept_readout_probe.md) | 自然prompt＋共享学习型读取探针 | supported signal only，待owner范式准入 | 无；pre-queue三步诊断 | 无；未创建创新分支 |
 
 准确数字、commit、配置和输出URI见 [`experiments/v4/EXPERIMENT_QUEUE.csv`](../experiments/v4/EXPERIMENT_QUEUE.csv)。
 
