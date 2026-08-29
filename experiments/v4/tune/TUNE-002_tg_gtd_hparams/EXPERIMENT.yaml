@@ -33,4 +33,9 @@ stage_3:
   method: remaining_numeric_axes_and_finer_tg_lr
   axes: [constant_tg_learning_rate, max_transport_step, topology_weight, gate_loss_weight, gate_warmup_epochs, weight_decay]
   run_ids: [RUN-010, RUN-011, RUN-012, RUN-013, RUN-014, RUN-015, RUN-016, RUN-017, RUN-018, RUN-019, RUN-020, RUN-021, RUN-022, RUN-023]
-  status: prepared
+  status: completed
+current_best:
+  run_id: RUN-023
+  parameter: {weight_decay: 0.001}
+  metrics: {U: 77.765429, S: 80.061287, H: 78.896659, ZS: 86.858141}
+  delta_H_vs_reference: 0.777018
