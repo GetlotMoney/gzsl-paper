@@ -32,4 +32,3 @@ evidence_refs:
 success_condition: Gate 1三项必须同时通过且打乱角色文本对照不得通过任一主门槛；通过只允许进入Gate 2，不等于范式、H或论文claim成立。
 failure_condition: `o`受候选类别影响、`d`不满足固定200类参考、class-disjoint pairwise<65%、第二种干预删除优势<70%、打乱对照通过任一门槛或数据身份不完整，均立即置为rejected并停止当前公式。
 owner_decision: 2026-08-29 owner回复“行，开始尝试”，批准IDEA-164从FRAMEWORK-V4准确父commit独立分叉并只执行Gate 1。
-

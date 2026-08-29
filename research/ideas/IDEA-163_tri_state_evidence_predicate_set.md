@@ -66,4 +66,3 @@ owner_decision: 2026-08-29 owner回复“开始”，批准IDEA-162作为support
 - 预冻结commit `81164e78a4ca0b4e3a1286a9969997b0fd2fd034` Round 1：两名独立Agent合计发现阻断P1，集中修复候选数污染、删除账本、打乱门槛、all-unknown、三态语义及资产/merge身份。
 - post-fix commit `befbe22b7b86313f212cb779d8342fb8a4500501`：专项`6 passed`；完整`543 passed, 2 warnings, 3 subtests passed`。
 - Round 2：两名新的独立Agent均报告`P0=0 / P1=0 / P2=2`并明确“第2轮通过”。P2为反例身份随固定50类集合变化、merge未反读制品内部元数据；不影响本次固定协议失败结论。
-
