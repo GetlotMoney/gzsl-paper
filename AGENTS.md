@@ -14,6 +14,7 @@
 - 每个新分支必须保留此前全部`experiments/v1/`至`experiments/vX-1/`账本作为只读历史；不得因切换版本删除、移动、复制、重编号或改写旧版本账本。
 - 当前版本的新TRY只写入`experiments/vX/EXPERIMENT_QUEUE.csv`；跨版本证据直接引用原路径、原RUN和原commit，不复制成当前版本结果。
 - 失败候选分支只保留代码与实验留痕，不作为下一候选的代码基线；继续寻找同版本新模块时，必须由owner确认准确父commit，并从该commit新建独立`exp/vX/<kind>/<module>`分支，禁止在失败候选代码上继续堆叠。
+- “准确父commit”指新候选要比较和继承的最后一个已接纳、可复现代码身份，不是Git时间线上最近的commit，也不是上一个失败TRY的commit。只有前一候选经owner明确接纳后，它的接纳commit才可以成为下一候选父条件；否则各候选必须从owner确认的同一正式父条件独立分叉。
 - 不创建 `framework/vX-template-vN` 或 `model/vX-template-vN`。
 - 每个实验由 owner 明确指定准确 base ref/commit；实验归属版本不自动决定代码起点。
 - 实验分支使用 `exp/vX/<kind>/<id>-<slug>`；临时实现分支使用 `codex/<slug>`。
@@ -49,6 +50,9 @@
 
 - 新研究知识从本仓库重新建立；不迁移、不隐式复用旧 GTPJ 的论文笔记、idea tree、研究结论或编号。
 - 论文、证据、idea 与实验之间的最小闭环以 `research/README.md` 为唯一规则入口。
+- `research/ideas/`是跨版本持续积累、可反复检索和引用的Idea总库；`proposed / testing / supported / revised / rejected`全部永久保留。提出、实施、运行、补救、跨数据集确认或得到新证据后，都必须持续回填同一Idea卡和`research/IDEA_TREE.md`，不得只写TRY而遗漏Idea。
+- 每张新Idea卡必须先按“解决什么问题”填写一个`problem_category`、一个具体`problem`和可选`mechanism_tags`；`IDEA_TREE.md`按问题类别维护轻量索引，不能只按版本或编号堆放。
+- 同一核心问题、假设和唯一改动未变时，一个Idea可关联多个TRY、RUN、seed、参数和数据集确认；公式、输入、学习信号、表示原语或核心可证伪假设发生变化时必须创建新`IDEA-xxx`并引用旧Idea。旧编号不复用，`rejected`历史不得改写成新的`proposed`。
 - 外部论文需要重新核对原文并记录来源；旧聊天、旧笔记和 Agent 记忆不能直接作为证据。
 - 正式创新实验必须绑定一个本仓库 `idea_id`，并引用支撑该假设的 `evidence_refs`。
 - 创新证据不强制来自论文；可以来自论文、正式实验结果、代码观察、指标异常、第一性原理分析或明确记录的owner假设。

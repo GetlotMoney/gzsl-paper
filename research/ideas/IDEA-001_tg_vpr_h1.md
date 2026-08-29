@@ -4,6 +4,8 @@
 idea_id: IDEA-001
 status: supported
 source_type: paper
+problem_category: semantic_representation
+mechanism_tags: [role_grouping, prototype_reparameterization, topology_preservation]
 evidence_refs:
   - PAPER-001
   - PAPER-004

@@ -4,7 +4,7 @@
 
 本目录只解决一个问题：让每个新实验都能追溯到明确证据来源和一个可证伪的研究假设，并让实验结果反过来更新该假设。证据来源可以是论文，也可以是本地实验、代码观察、指标异常、第一性原理分析或owner明确提出的假设。
 
-owner已选择`FRAMEWORK-V2`作为论文主框架。当前研究目标是在相同数据、划分和`test_selected_inductive_gzsl`评估口径下，使H从V2正式单seed基线`74.023182%`提高到至少`77.023182%`，即提高`3.00`个百分点。
+owner已选择`FRAMEWORK-V4 / TG+GTD`作为当前正式研究父框架；V2的数值目标和结果继续保留在V2历史账本中，不再作为新候选的默认代码起点。新Idea必须记录owner确认的准确父commit，并在对应实验协议下与该父条件直接比较。
 
 论文方法目标是从证据和真实实验中筛选出 `3` 个相互关联、能够共同构成完整方法的核心创新点。数量是筛选目标，不是造模块指标；证据不足或实验不成立时不得为了凑满三个而降低标准。
 
@@ -15,6 +15,35 @@ owner已选择`FRAMEWORK-V2`作为论文主框架。当前研究目标是在相�
 ```
 
 新模块从准备到判定必须逐项执行[`docs/MODULE_WORKFLOW_CHECKLIST.md`](../docs/MODULE_WORKFLOW_CHECKLIST.md)。准备研究的模块登记在`IDEA_TREE.md`和对应Idea卡；具备代码与配置、准备真实运行时再写入当前框架的`EXPERIMENT_QUEUE.csv`。
+
+## Idea总库与持续记录
+
+[`research/ideas/`](ideas/)是整个项目跨版本共用的Idea总库，不是某一版实验的临时目录。所有`proposed / testing / supported / revised / rejected`卡片都永久保留，以便后续检索、组合、排除重复路线和引用历史证据。
+
+Idea必须随研究过程持续回填，而不是创建后停止维护。至少在以下时点更新Idea卡及[`IDEA_TREE.md`](IDEA_TREE.md)：提出假设、确定父条件、登记TRY、代码冻结、真实运行结束、补救或跨数据集确认完成、状态或解释发生变化。TRY队列记录“一次运行”，Idea卡记录“这个创意为什么存在、如何演化以及证据最终说明了什么”，两者不能互相替代。
+
+复用遵循以下边界：
+
+- 核心问题、假设和唯一改动不变时，同一Idea可以关联多个TRY、RUN、seed、参数条件和数据集确认；
+- 旧Idea的机制、结果和失败原因可以作为新Idea的`evidence_refs`或`reuse_refs`；
+- 公式、输入、学习信号、表示原语或核心可证伪假设改变时，必须建立新编号并引用旧Idea；
+- `rejected`卡片不能删除或改回`proposed`来覆盖历史。新父框架使原方向出现新假设时，建立新Idea并说明相对旧Idea改变了什么。
+
+## 按问题分类
+
+分类回答“它主要解决什么问题”，不是按网络部件命名。每张新Idea只选一个主类别，交叉机制写入可选`mechanism_tags`：
+
+| `problem_category` | 主要问题 |
+|---|---|
+| `semantic_representation` | 类别文本、属性或原型本身表达不足 |
+| `cross_class_transfer` | seen知识如何可靠迁移到unseen类别 |
+| `visual_grounding` | 图像的全局、局部或patch证据如何与类别语义对齐 |
+| `class_competition` | 细粒度候选混淆、200类竞争以及seen/unseen偏置 |
+| `learning_generalization` | 训练信号、目标、采样或验证选择如何迁移到未见类别 |
+| `reliability_robustness` | 噪声、不确定性、稳定性、拒绝或失效保护 |
+| `evaluation_diagnostic` | 评估、资产、缓存、复杂度或诊断合同；默认不作为论文创新 |
+
+新类别只有在现有类别无法表达真实问题时才增加；不得为单个模块随意发明近义类别。历史Idea不机械猜测重写，在被检索、复用或继续实验时补齐分类；当前正式主线和活跃候选先在`IDEA_TREE.md`建立初步分类。
 
 本仓库从空白研究知识层开始。旧 GTPJ 的论文笔记、idea tree、研究结论和编号不迁移、不引用，也不能通过聊天记忆隐式恢复。需要使用同一篇论文时，必须重新核对原文并在本仓库重新登记。
 
@@ -74,8 +103,12 @@ PDF 原件、批量图片和大体积解析缓存不进入 Git。
 ```yaml
 idea_id: IDEA-xxx
 source_type: paper | local_observation | experiment_result | code_analysis | first_principles | owner_hypothesis
+problem_category: semantic_representation | cross_class_transfer | visual_grounding | class_competition | learning_generalization | reliability_robustness | evaluation_diagnostic
+mechanism_tags: [<可选的机制标签>]
 evidence_refs:
   - <至少一个可追溯来源>
+reuse_refs:
+  - <可选的旧Idea、RUN或机制来源>
 base_commit: <准确commit>
 problem: <真实问题>
 hypothesis: <可证伪假设>
@@ -88,6 +121,8 @@ status: proposed | testing | supported | revised | rejected
 实验和结果路径发生后再补；Idea完成后先进入当前框架的`EXPERIMENT_QUEUE.csv`，只有`promote`候选才建立正式Experiment。论文角色、命名候选和与其他创新的接口只在进入最终三创新组合时补，不作为Idea开工门槛。
 
 证据不足时可以保存为 `proposed`，但不能直接宣称创新成立。
+
+这里的`base_commit`不是“最近一次提交”。它是该Idea要继承并作为比较基准的最后一个已接纳、可复现代码身份。前一候选失败时，新Idea仍从原已接纳父条件独立分叉；只有前一候选被owner接纳后，它的接纳commit才可以成为下一Idea的父条件。
 
 ## 三创新组合与命名
 

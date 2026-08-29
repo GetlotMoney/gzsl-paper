@@ -4,6 +4,8 @@
 - origin_framework：`FRAMEWORK-V3-EXPLORATION`
 - tested_in：`V3-TRY-022 / V3-TRY-040 / V3-TRY-041 / V3-TRY-046 / V3-TRY-047`
 - promoted_to：`FRAMEWORK-V4`
+- problem_category：`cross_class_transfer`
+- mechanism_tags：`[geodesic_transport, target_distillation, unseen_prototype]`
 - source_type：`code_analysis + experiment_result + first_principles + owner_hypothesis`
 - 父条件：`V3-TRY-002 / TG-only / U/S/H/ZS=78.407878/74.983871/76.657659/86.146760`
 - 准确base commit：`cd30797a5eab3aa6ed28bd04df0b17f413730063`

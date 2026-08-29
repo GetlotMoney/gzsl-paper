@@ -3,8 +3,14 @@
 idea_id: IDEA-159
 source_type: experiment_result + first_principles + nearest_work_boundary
 status: rejected_before_training
+problem_category: visual_grounding
+mechanism_tags: [patch_refutation, transport_attenuation, no_op_guard]
 base_framework: FRAMEWORK-V4
 base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
+source_branch: exp/v4/innovation/innovation-002-rgt
+implementation_commit: 5b10d7ca6385c9fa0192d74d0f48c0a5c83e3449
+diagnostic_commit: 5b10d7ca6385c9fa0192d74d0f48c0a5c83e3449
+result_commit: ba2d7be9f0e744a3e62a76fde775a7f694cf4889
 problem: GTD使用文本几何和seen teacher为每个true-unseen类别确定固定迁移角θ，但没有实例级视觉否决机制；直接使用patch重排logits的CLPR系列为负，GAVE方向验证仅带来+0.027340H与净纠正+1，说明局部视觉不适合取代全局CLS做正向分类。
 hypothesis: patch负向证据虽然不足以直接分类，却可能识别“当前实例不支持某个候选的GTD迁移”；仅用反驳比例衰减该候选已有θ、且绝不生成新方向或直接修改非候选logit，可减少错误unseen迁移造成的竞争而保留GTD已验证的正向收益。
 core_change: 对V4 Top-5候选，用前六local与unique定位patch，分别汇总patch对GTD切向的正支持和负反驳；只有负证据强于正证据时生成refutation ratio。实例角度θ(x)=θ×(1-α×ratio)，α∈[0,1]；seen类θ=0、overall角色、非Top-5类别和GTD方向均不可改变。α=0逐值复现V4。

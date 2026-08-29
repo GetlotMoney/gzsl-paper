@@ -3,8 +3,14 @@
 idea_id: IDEA-158
 source_type: first_principles + code_analysis + nearest_work_boundary
 status: revised_weak_signal_only_not_promoted
+problem_category: visual_grounding
+mechanism_tags: [patch_evidence, geodesic_direction, candidate_reranking]
 base_framework: FRAMEWORK-V4
 base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
+source_branch: exp/v4/innovation/innovation-001-gave
+implementation_commit: 2e8babaa1bec3a013dd786be03898dc53b195353
+diagnostic_commit: 9d89b4789876fafdc08a659e5cffe4d083db8d0b
+result_commit: 138ddcdca019156b8a713d7d555335d3a2c1a15d
 problem: V4的TG与GTD只依据全局CLS、角色文本和seen视觉中心学习类别原型；真正测试图像的局部patch没有验证某个候选类别的Mean8→Value语义移动方向是否在该实例中可见。直接patch-text Top-K、局部视图路由和Top-2角色差比较均不能回答“当前视觉证据是否支持V4的语义迁移方向”。
 hypothesis: 对V4 Top-5候选，以前六个局部角色和unique只负责定位patch，再测量这些patch与候选Mean8→Value球面切向的一致性；真实类别应比困难竞争类获得更强的多角色方向覆盖，因此该证据可在不使用overall patch query、不移动原型且不引入类别专属参数的前提下纠正细粒度混淆。
 core_change: 新增GAVE候选残差。角色文本选择局部位置，视觉分数来自patch对V4测地切向的方向支持；取七个local+unique角色中最强三个的均值，并在Top-5候选内中心化为零和残差。overall角色完全不参与patch查询，留给后续整体条件创新；强度为零时逐值复现V4。

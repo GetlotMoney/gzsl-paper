@@ -55,7 +55,7 @@ conda run -n dvsr_gpu python train.py `
 - 独立训练入口：`python -m model.frameworks.v2.train`
 - 冻结配置：`config/tg_vpr_h1.yaml`
 - 来源身份：`INNOVATION-MODULE-1`
-- 历史三数据集候选训练器：`python -m model.candidates.v2.trainers.paper_v2`（不是正式Framework入口）
+- 历史三数据集候选训练器只保留在对应实验commit的原路径`model/train_paper_v2.py`，不属于当前`main`正式入口。
 
 ## FRAMEWORK-V4 入口
 

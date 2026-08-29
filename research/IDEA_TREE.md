@@ -13,6 +13,22 @@
 - Experiment：值得详细验证后建立的正式目录。
 - Framework：owner接纳并冻结的正式代码身份，对应 `model/frameworks/vX/`、`framework/vX`与Tag `vX`。
 
+## 按问题分类的初步索引
+
+这里先索引正式主线和当前仍有直接复用价值的关键Idea；V2完整历史继续由对应Idea卡、V2队列和旧树保存。历史Idea在被重新检索或继续实验时补分类，不根据文件名机械猜测。
+
+| 问题类别 | 要解决的问题 | 当前关键Idea |
+|---|---|---|
+| `semantic_representation` | 类别语义和原型如何形成更有结构的表示 | [`IDEA-001 / TG-VPR-H1`](ideas/IDEA-001_tg_vpr_h1.md) |
+| `cross_class_transfer` | seen知识如何可靠迁移到unseen原型 | [`IDEA-005 / TST`](ideas/IDEA-005_tst.md)、[`IDEA-146 / GTD-TST`](ideas/IDEA-146_gtd_tst.md) |
+| `visual_grounding` | 实例级局部视觉证据能否支持或反驳类别语义 | [`IDEA-133`](ideas/IDEA-133_visual_evidence_learning.md)、[`IDEA-158 / GAVE`](ideas/IDEA-158_gave.md)、[`IDEA-159 / RGT`](ideas/IDEA-159_rgt.md) |
+| `class_competition` | 细粒度候选和seen/unseen联合竞争如何避免错误修正 | 当前无已晋级V4 Idea；相关V2历史按需检索 |
+| `learning_generalization` | 训练目标与选择规则如何迁移到未见类别 | 当前无已晋级V4 Idea；相关V2历史按需检索 |
+| `reliability_robustness` | 如何识别不可靠证据并保持关闭路径 | GAVE、RGT包含该机制标签，但主类别仍为`visual_grounding` |
+| `evaluation_diagnostic` | 资产、缓存、评估和诊断合同是否可信 | 作为诊断证据记录，不包装为论文创新 |
+
+每张新Idea仍保存在`research/ideas/IDEA-xxx_<slug>.md`；本表只做检索入口，不复制公式、结果或状态事实。
+
 ## FRAMEWORK-V1
 
 - 状态：历史正式框架。
@@ -28,7 +44,7 @@
 - 历史论文候选：[`IDEA-005`](ideas/IDEA-005_tst.md)，状态`supported`，不等同于V4的GTD。
 - 代码：[`model/frameworks/v2/`](../model/frameworks/v2/)。
 - 214条快速尝试与正式Experiment：[`experiments/v2/`](../experiments/v2/)。
-- 未接纳代码：[`model/candidates/v2/`](../model/candidates/v2/)。
+- 未接纳代码只保留在对应实验分支与准确commit，不进入`main`。
 
 V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留在 [`experiments/v2/EXPERIMENT_QUEUE.csv`](../experiments/v2/EXPERIMENT_QUEUE.csv) 和对应Idea卡中。
 
@@ -52,10 +68,10 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 - 代码：[`model/frameworks/v4/`](../model/frameworks/v4/)。
 - 当前问题：利用实例级局部视觉证据改善细粒度竞争，同时不破坏seen准确率与GTD关闭路径。
 
-| Idea | 模块 | 状态 | TRY | 代码 |
+| Idea | 模块 | 状态 | TRY | 源分支 |
 |---|---|---|---|---|
-| [`IDEA-158`](ideas/IDEA-158_gave.md) | GAVE | weak signal only，未晋级 | V4-TRY-001 | [`idea_158_gave`](../model/candidates/v4/idea_158_gave/) |
-| [`IDEA-159`](ideas/IDEA-159_rgt.md) | RGT | rejected before training | V4-TRY-002 | [`idea_159_rgt`](../model/candidates/v4/idea_159_rgt/) |
+| [`IDEA-158`](ideas/IDEA-158_gave.md) | GAVE | weak signal only，未晋级 | V4-TRY-001 | `exp/v4/innovation/innovation-001-gave` |
+| [`IDEA-159`](ideas/IDEA-159_rgt.md) | RGT | rejected before training | V4-TRY-002 | `exp/v4/innovation/innovation-002-rgt` |
 
 准确数字、commit、配置和输出URI见 [`experiments/v4/EXPERIMENT_QUEUE.csv`](../experiments/v4/EXPERIMENT_QUEUE.csv)。
 
