@@ -12,9 +12,9 @@ CONFIG_ROOT = ROOT / "experiments/v4/tune/TUNE-002_tg_gtd_hparams/configs"
 
 def test_stage1_tune_configs_are_accepted():
     configs = [load_config(path)[0] for path in sorted(CONFIG_ROOT.glob("RUN-*.yaml"))]
-    assert len(configs) == 8
+    assert len(configs) == 9
     assert {config["experiment_id"] for config in configs} == {
-        f"TUNE-002-RUN-{index:03d}" for index in range(1, 9)
+        f"TUNE-002-RUN-{index:03d}" for index in range(1, 10)
     }
     assert all(config["framework_id"] == "FRAMEWORK-V4" for config in configs)
     assert all(config["test_used_for_selection"] is True for config in configs)

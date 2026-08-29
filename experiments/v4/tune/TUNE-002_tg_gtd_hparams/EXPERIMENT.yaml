@@ -22,5 +22,5 @@ stage_1:
   selection: highest_official_test_H_with_same_checkpoint_U_S_ZS
 stage_2:
   method: combine_non_conflicting_stage_1_winners
-  status: pending_stage_1
-
+  condition: constant_tg_learning_rate_3e-4_plus_max_transport_step_3
+  status: prepared

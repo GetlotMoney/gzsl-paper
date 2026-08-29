@@ -59,6 +59,14 @@ TUNE_RUNS = {
     ),
     "TUNE-002-RUN-007": ({"max_transport_step": 0.75}, "cuda:0"),
     "TUNE-002-RUN-008": ({"max_transport_step": 3.0}, "cuda:1"),
+    "TUNE-002-RUN-009": (
+        {
+            "tg_learning_rate": 3e-4,
+            "tg_min_learning_rate": 3e-4,
+            "max_transport_step": 3.0,
+        },
+        "cuda:0",
+    ),
 }
 DATASET_SPECS = {
     "CUB": {
