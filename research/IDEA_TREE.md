@@ -77,7 +77,7 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 | [`IDEA-162`](ideas/IDEA-162_learnable_concept_readout_probe.md) | 自然prompt＋共享学习型读取探针 | supported signal only，待owner范式准入 | 无；pre-queue三步诊断 | 无；未创建创新分支 |
 | [`IDEA-163`](ideas/IDEA-163_tri_state_evidence_predicate_set.md) | 三态视觉证据谓词集 | rejected before GZSL training | 五项最小证伪门槛全部失败 | `exp/v4/innovation/innovation-003-tri-state-evidence-set` |
 | [`IDEA-164`](ideas/IDEA-164_observable_signed_evidence.md) | 候选无关可观察性＋固定参考有符号证据 | rejected at Gate 1 | `o`退化高常数、signed-d迁移与双因果删除均失败 | `exp/v4/innovation/innovation-004-observable-signed-evidence` |
-| [`IDEA-165`](ideas/IDEA-165_constrained_evidence_graph_search.md) | 共享概念证据图＋容量约束精确搜索 | owner已批准主条件＋2次补救 | 待运行 | 待从`52088f69`创建独立分支 |
+| [`IDEA-165`](ideas/IDEA-165_constrained_evidence_graph_search.md) | 共享概念证据图＋容量约束精确搜索 | rejected after two rescues | capacity1/2均-0.2pp，2×2区域0pp | `exp/v4/innovation/innovation-005-constrained-evidence-graph` |
 
 准确数字、commit、配置和输出URI见 [`experiments/v4/EXPERIMENT_QUEUE.csv`](../experiments/v4/EXPERIMENT_QUEUE.csv)。
 
