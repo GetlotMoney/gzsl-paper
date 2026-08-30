@@ -1,0 +1,18 @@
+experiment_id: V4-TRY-020
+title: Formal one-stage TG+GTD+PECV fixed-200 validation
+idea_id: IDEA-182
+evidence_refs:
+  - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/prequeue/IDEA-182-pecv-gate-seed7/metrics.json
+base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
+conditions:
+  - V4-TRY-020-FULL: TG+GTD+PECV, pecv_loss_weight=1
+  - V4-TRY-020-PARENT: matching TG+GTD Parent, pecv_loss_weight=0
+training: all modules initialize in the same run and train synchronously from update 1
+budget: 200 nominal epochs, 28228 updates, 202 official-test evaluations
+selection: maximum H over official test history
+success_condition:
+  full_minus_matching_parent_H: 1.0
+  same_checkpoint_full_minus_off_H: 1.0
+  max_U_S_gap: 8.0
+  target_H: 80.0
+status: pre_run

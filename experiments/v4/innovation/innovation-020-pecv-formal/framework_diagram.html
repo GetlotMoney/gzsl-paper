@@ -1,0 +1,7 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>PECV Formal</title>
+<style>body{font:16px system-ui;margin:36px;color:#192331}.row{display:flex;gap:16px;align-items:center;margin:22px 0}.box{padding:15px;border:2px solid #5276ad;border-radius:12px;max-width:245px}.new{border-color:#d76b32;background:#fff6ef}.arrow{font-size:25px}.note{background:#f3f5f7;padding:14px;border-radius:10px}</style></head><body>
+<h1>TG + GTD + PECV 一段式正式训练</h1><p>准确父提交：<code>52088f69...</code>；正式RUN commit待审核后冻结。</p>
+<div class="row"><div class="box">8角色文本 + 冻结CLIP图像特征</div><span class="arrow">→</span><div class="box">TG：建立200类文本原型</div><span class="arrow">→</span><div class="box">GTD：只迁移50个unseen原型</div><span class="arrow">→</span><div class="box">200类Parent logits与Top-5</div></div>
+<div class="row"><div class="box new">PECV：图像 × 两候选角色差异<br>反对称纠错</div><span class="arrow">→</span><div class="box new">Top-5十个候选对零和聚合</div><span class="arrow">→</span><div class="box">Full U/S/H/ZS</div></div>
+<div class="note"><b>Loss：</b>seen CE + 0.1 topology + GTD Smooth-L1 + PECV Top-5 listwise CE。<br><b>训练：</b>所有模块同seed随机初始化，从update 1同步更新；warmup只改变LR。<br><b>控制：</b>双卡匹配Parent（PECV loss=0）与Full；Full最佳checkpoint再关闭PECV得到同checkpoint Off。<br><b>边界：</b>训练梯度仅来自7057张seen图像；official test只用于每141步选择最佳H。</div>
+</body></html>

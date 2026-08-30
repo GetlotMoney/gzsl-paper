@@ -1,0 +1,4 @@
+condition,tg_checkpoint,gtd_checkpoint,pecv_checkpoint,pecv_loss_weight,nominal_epochs,total_updates,selection
+FULL,null,null,null,1.0,200,28228,best_official_H
+PARENT,null,null,null,0.0,200,28228,best_official_H
+SAME_CHECKPOINT_OFF,FULL_best,FULL_best,disabled_at_eval,0.0,0,0,FULL_best_checkpoint

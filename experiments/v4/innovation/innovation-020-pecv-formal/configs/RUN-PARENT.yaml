@@ -1,0 +1,3 @@
+config_ref: ../../../../../config/tries/v4_try_020_pecv_parent_fixed200.yaml
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/pecv-formal/V4-TRY-020-PARENT
+run_commit: PENDING_PRE_RUN_COMMIT
