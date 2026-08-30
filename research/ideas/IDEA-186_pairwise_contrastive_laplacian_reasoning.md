@@ -2,7 +2,7 @@
 idea_id: IDEA-186
 name: Pairwise Contrastive Laplacian Reasoning
 short_name: PCLR
-status: drop_no_rerun
+status: owner_reopened_local_rescue_pending_audit
 base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
 parent_run: TUNE-002-RUN-030
 parent_H: 79.070015
@@ -92,3 +92,21 @@ pair selector、角色残差或GTD prototype transport的重复；同时把新�
   投入并淘汰方法，无研究价值再跑150轮。
 - 防复发：以后任何模块Off评估直接复用现有`evaluate/_predict`的prototype normalize
   语义，并先做seen/unseen/ZS逐预测parity回归；不能只检查U/S/H。
+
+## Owner重新授权的唯一局部救援
+
+Owner于2026-08-31重新授权一次机制级救援，不改关系文本、reader、Laplacian资产或
+Parent训练协议。只读诊断先否定了seen/unseen分别中心化（最高`H=79.089677`）和锁定
+Parent组判断（最高`H=79.158583`）；随后确认全438边对每图传播无关关系噪声。
+
+唯一救援固定为：在完整200类Parent logits上取停止梯度的Top-20，仅保留两个端点都在
+Top-20内的关系边，其余边差置零后继续使用原固定Laplacian map；最终校正固定乘
+`1.25`。旧checkpoint只读诊断得到`U/S/H/ZS=75.991195/83.133650/79.402125/
+87.683898`，相对RUN-030为`+0.332110 H`、相对同checkpoint Off为`+0.500212 H`，
+仍距`80.070015`差`0.667890`。该数字使用official test选择Top-K和scale，只作为启动
+一次救援的乐观诊断，不能作为正式结果。
+
+救援代码身份为`d5f59aa2dd60ff903dd0f84bedc887be046d09b5`，config SHA为
+`06563e1725037bbecea0416fc5f5cba03790206673f23bf561c292a86960a347`。新增forward和
+beta loss语义必须先完成同一冻结身份的双Agent对抗审核、真实GPU micro和Off完整parity，
+通过后才允许唯一direct-official 150轮Full；未过原`+1 H`门则永久关闭PCLR家族。
