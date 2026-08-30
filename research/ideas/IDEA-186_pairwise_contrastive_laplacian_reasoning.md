@@ -1,0 +1,78 @@
+---
+idea_id: IDEA-186
+name: Pairwise Contrastive Laplacian Reasoning
+short_name: PCLR
+status: idea_review_passed_asset_freezing
+base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
+parent_run: TUNE-002-RUN-030
+parent_H: 79.070015
+experiment: V4-TRY-023
+human_annotations_used: false
+expert_attributes_used: false
+llm_world_knowledge_used: true
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+---
+
+# IDEA-186：Pairwise Contrastive Laplacian Reasoning（PCLR）
+
+## 唯一研究问题
+
+TG+GTD把类别分别建成点原型，但CUB错误通常发生在视觉相近类别之间。单类别描述会
+重复“small bird、brown wings”等共有内容，模型缺少“相对哪个近邻，什么差异才重要”
+的监督。PCLR不再增加一个独立类别原型，而把类别关系图上的有向差异句当作边证据，
+再用固定Laplacian逆问题把边证据还原为全部200类的相对支持势能。
+
+## 准确父条件和资产边界
+
+- Parent：`TUNE-002-RUN-030`，`U/S/H/ZS=76.164645/82.205832/79.070015/86.955839`，
+  best update=`14241`。
+- 视觉、八角色文本和split只绑定Parent dynamic-v3 manifest SHA
+  `3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6`。
+- 图只由200个冻结display class name的官方OpenAI CLIP类名向量构造：模板
+  `a photo of a {class}`，每类top-3，取无向union后固定438边；seen诱导图最小度为1。
+- 每条边生成两个方向句：`A rather than B`与`B rather than A`，共876句。只允许
+  可见形态，不允许栖息地、行为、地理、专家属性、部位标注、框或分割。
+- 明确披露`llm_world_knowledge_used=true`与`human_annotations_used=false`。关系句是
+  冻结外部语义，official test图像和标签不参与图、句子或CLIP编码。
+
+## 固定Full方法
+
+共享reader为`z=normalize(x+W2 GELU(W1 x))`，hidden=`64`。`W1`使用独立seed
+`18601` Xavier初始化、bias为0；`W2`权重和bias全0，因此初始化严格等于冻结CLS。
+对seen类训练图像，仅在两个端点均为seen且与真类相连的边上做双向关系二分类，按图
+平均incident-edge loss，避免类别度数改变样本权重。
+
+固定有向incidence矩阵`B[e,a]=+1,B[e,b]=-1`。每图边差`r_e=s(a>b)-s(b>a)`，
+以`M=(B^T B+I)^-1 B^T`得到节点势能`d0=M r`；逐图中心化后固定缩放为
+`d=0.5*d0/max(||d0||∞,0.5)`。最终
+`logit_full=logit_TG+GTD + beta*stopgrad(std(logit_TG+GTD))*d`，其中
+`beta=0.25*sigmoid(rho)`且初值0.05。std始终在完整200类轴计算，ZS只在最后截取
+unseen列，保证同一图在GZSL/ZS下使用同一校正。
+
+Parent严格保留RUN-030原CE、topology和GTD gate loss。reader只接收关系loss；beta
+只接收`CE(stopgrad(parent logits)+beta*stopgrad(std*d), seen_label)`。辅助Adam复用
+gate的`1e-4→1e-5` warmup/cosine，weight decay为0。所有条件固定150 nominal epoch、
+21171 updates、batch50、每141步official test评估并选择整模型最高H。
+
+## 成立、失败与关闭条件
+
+通过需best `H>=80.070015`，且相对RUN-030和同checkpoint PCLR-Off均至少`+1.0 H`；
+`|U-S|<8`、ZS下降不超过0.5、net correction至少20。PCLR-Off完整历史必须逐更新
+复现RUN-030，尤其`H=79.070015 @ update=14241`；否则是工程身份失败，不得解释为
+方法涨跌。
+
+Full未过门只允许预注册一次无重训边界救援：同checkpoint把potential cap从0.5改为
+1.0，且仅当`0<delta_H<1`、方向诊断成立、ZS与gap安全时触发。mapping shuffle、
+generic difference和NoProjection仅在Full过门后运行。此前成对logit选择、角色差值、
+图高通和prototype transport都不能直接提供“冻结有向差异文本→共享视觉读取→全图一致
+势能”这一闭环，但pairwise description、图Laplacian和差异描述均有先例；正式论文
+claim前仍须重新核对最近工作，当前不得称范式级或首次。
+
+## Idea双Agent准入结论
+
+本Idea已在实现前完成两名Agent独立质疑与一次直接交叉：确认它不是既有Top-K重排、
+pair selector、角色残差或GTD prototype transport的重复；同时把新颖性收窄到上述完整
+接口，删除“范式级”表述。结论只允许冻结资产并进入代码实现，不代表代码审核通过、
+实验有效或论文新颖性已经成立。新增forward/loss/资产入口仍须对准确最终commit完成
+一轮双Agent代码对抗审核。

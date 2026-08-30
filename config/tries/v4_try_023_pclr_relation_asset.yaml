@@ -1,0 +1,15 @@
+schema_version: gzsl-paper.pclr-relation-asset-config.v1
+dataset: CUB
+request: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/PCLR_relation_sources_v1/pclr_edge_request.json
+request_sha256: d0f1e685a29c291941921d47eb2e4e9e6a3056710dfdea3033f5bbfeb170ef08
+shards:
+  - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/PCLR_relation_sources_v1/pclr_relations_shard0.json
+    sha256: d9cfb247ed7470274646dfd98ed181d7fdb2f997b77106b1c86e5fc067c2f934
+  - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/PCLR_relation_sources_v1/pclr_relations_shard1.json
+    sha256: ca8c74a396738669df304102f8ec599b60fbb5ad8facd58fa133a8799ddee56a
+  - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/PCLR_relation_sources_v1/pclr_relations_shard2.json
+    sha256: c1d7b072c2fe083ca05320b94b4c363d44d7f81dd4d3760a48b9db0942b165aa
+parent_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v3/CUB_openai_vitl14_336_dynamic_v3_v1/asset_manifest.json
+parent_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+clip_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_checkpoints/ViT-L-14-336px.pt
+clip_checkpoint_sha256: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02
