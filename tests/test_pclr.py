@@ -12,6 +12,10 @@ import torch.nn.functional as F
 
 from model.innovations.gtd_tst import GTDTSTModel
 from model.innovations.pclr import PCLRModel
+from model.innovations.evaluate_pclr_inference_tuned import (
+    load_inference_config,
+    tuned_inference_logits,
+)
 from model.innovations.train_gtd_tst import (
     evaluation_updates,
     load_config,
@@ -413,6 +417,44 @@ class PCLRTest(unittest.TestCase):
             )
         )
         self.assertEqual(model.pclr_diagnostics(self.images)["seen_logit_gamma"], 0.525)
+
+    def test_r3_inference_config_and_three_paths_are_explicit(self):
+        config, digest = load_inference_config(
+            Path("config/tries/v4_try_023_r3_pclr_inference_tune.yaml")
+        )
+        self.assertEqual(config["candidate_top_k"], 17)
+        self.assertEqual(config["ridge_lambda"], 0.3)
+        self.assertEqual(config["inference_relation_temperature"], 0.2)
+        self.assertEqual(config["correction_scale"], 6.95)
+        self.assertEqual(config["seen_logit_gamma"], 0.575)
+        self.assertTrue(config["nested_official_test_selection"])
+        self.assertEqual(len(digest), 64)
+        model = self._local_model(
+            candidate_top_k=15,
+            correction_scale=2.38,
+            ridge_lambda=0.03,
+            seen_logit_gamma=0.525,
+        ).eval()
+        raw, calibrated, full, active = tuned_inference_logits(
+            model,
+            self.images,
+            candidate_top_k=17,
+            ridge_lambda=0.3,
+            potential_cap=0.5,
+            inference_relation_temperature=0.2,
+            correction_scale=6.95,
+            seen_logit_gamma=0.575,
+        )
+        self.assertTrue(torch.equal(raw, model.deployed_parent_logits(self.images)))
+        expected = raw.clone()
+        expected[:, model.seen_classes] -= 0.575
+        self.assertTrue(torch.equal(calibrated, expected))
+        self.assertTrue(torch.equal(full[:, model.unseen_classes], (
+            full.index_select(1, model.unseen_classes)
+        )))
+        self.assertTrue(torch.isfinite(full).all())
+        self.assertGreaterEqual(active, 0.0)
+        self.assertLessEqual(active, 1.0)
 
 
 if __name__ == "__main__":
