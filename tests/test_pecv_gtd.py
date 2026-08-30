@@ -8,7 +8,12 @@ from model.innovations.pecv_gtd import (
     corrected_topk_scores,
     stable_topk_ids,
 )
-from model.innovations.train_pecv_gtd import ThreeGroupSchedule, load_config
+from model.innovations.train_pecv_gtd import (
+    ThreeGroupSchedule,
+    load_config,
+    pecv_training_scores_without_rng_advance,
+    update_batch_trajectory_sha,
+)
 
 
 def test_zero_initialization_is_exact_module_off():
@@ -79,3 +84,31 @@ def test_three_group_schedule_preserves_tg_and_warms_new_modules():
     assert schedule.multipliers(schedule.warmup_updates) == [1.0, 1.0, 1.0]
     final = schedule.multipliers(28228)
     assert final == [1.0, 0.1, 0.1]
+
+
+def test_extra_pecv_training_forward_does_not_advance_parent_rng():
+    class FakeModel:
+        def training_candidate_scores(self, images, labels, seen, enabled):
+            assert enabled is True
+            return torch.rand(3), torch.arange(3)
+
+    torch.manual_seed(17)
+    before = torch.get_rng_state().clone()
+    pecv_training_scores_without_rng_advance(
+        FakeModel(), torch.zeros(1), torch.zeros(1), torch.zeros(1), torch.device("cpu")
+    )
+    assert torch.equal(torch.get_rng_state(), before)
+
+
+def test_batch_trajectory_hash_is_resumable_and_order_sensitive():
+    initial = "0" * 64
+    first = update_batch_trajectory_sha(initial, 1, torch.tensor([4, 1, 3]))
+    resumed = update_batch_trajectory_sha(first, 2, torch.tensor([2, 0, 5]))
+    repeated = update_batch_trajectory_sha(
+        update_batch_trajectory_sha(initial, 1, torch.tensor([4, 1, 3])),
+        2,
+        torch.tensor([2, 0, 5]),
+    )
+    changed = update_batch_trajectory_sha(first, 2, torch.tensor([0, 2, 5]))
+    assert resumed == repeated
+    assert resumed != changed

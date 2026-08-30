@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import math
 import platform
@@ -171,6 +172,39 @@ def build_model(config: dict, tensors: dict[str, torch.Tensor], device: torch.de
         "grid_points": config["gtd_grid_points"],
     }
     return PECVGTDModel(build_gtd_model(gtd_config, tensors, device)).to(device)
+
+
+def update_batch_trajectory_sha(
+    previous_sha256: str,
+    update: int,
+    indices: torch.Tensor,
+) -> str:
+    """Extend a resumable hash chain over the exact main-batch trajectory."""
+    if len(previous_sha256) != 64 or indices.ndim != 1:
+        raise ValueError("PECV batch trajectory chain input is invalid.")
+    values = indices.detach().cpu().long().contiguous()
+    digest = hashlib.sha256()
+    digest.update(bytes.fromhex(previous_sha256))
+    digest.update(int(update).to_bytes(8, byteorder="little", signed=False))
+    digest.update(values.numpy().tobytes())
+    return digest.hexdigest()
+
+
+def pecv_training_scores_without_rng_advance(
+    model: PECVGTDModel,
+    images: torch.Tensor,
+    labels: torch.Tensor,
+    seen_classes: torch.Tensor,
+    device: torch.device,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Run the extra PECV branch without perturbing the matched Parent RNG stream."""
+    devices = []
+    if device.type == "cuda":
+        devices = [device.index if device.index is not None else torch.cuda.current_device()]
+    with torch.random.fork_rng(devices=devices, enabled=True):
+        return model.training_candidate_scores(
+            images, labels, seen_classes, enabled=True
+        )
 
 
 class ThreeGroupSchedule:
@@ -368,6 +402,7 @@ def run(
     expected_commit: str,
     expected_config_sha: str,
     resume_from: Path | None = None,
+    expected_resume_sha: str | None = None,
 ) -> dict:
     require_clean_code_tree()
     code_commit = current_code_commit()
@@ -376,6 +411,17 @@ def run(
     config, config_sha = load_config(config_path)
     if config_sha != expected_config_sha:
         raise ValueError("PECV formal expected config SHA mismatch.")
+    if resume_from is None:
+        if expected_resume_sha is not None:
+            raise ValueError("PECV fresh run must not declare an expected resume SHA.")
+    else:
+        if (
+            expected_resume_sha is None
+            or len(expected_resume_sha) != 64
+            or not resume_from.is_file()
+            or sha256_file(resume_from) != expected_resume_sha
+        ):
+            raise ValueError("PECV resume checkpoint path or frozen SHA mismatch.")
     device = torch.device(config["device"])
     if device.type != "cuda" or not torch.cuda.is_available():
         raise RuntimeError("PECV formal training requires CUDA.")
@@ -398,7 +444,8 @@ def run(
         )
         print(
             f"PECV RUN={config['experiment_id']} commit={code_commit} "
-            f"config_sha={config_sha} loaded_training_checkpoints=[]"
+            f"config_sha={config_sha} loaded_training_checkpoints=[] "
+            f"resume_checkpoint={str(resume_from) if resume_from else 'none'}"
         )
         model = build_model(config, tensors, device)
         pecv_enabled = float(config["pecv_loss_weight"]) > 0.0
@@ -468,6 +515,7 @@ def run(
             best_update = 0
             best_zs = {"ZS": float(initial["ZS"]), "update": 0, "metrics": copy.deepcopy(initial)}
             start_update = 1
+            batch_trajectory_sha = "0" * 64
         else:
             checkpoint = torch.load(resume_from, map_location="cpu", weights_only=True)
             if (
@@ -489,6 +537,9 @@ def run(
             best_state = checkpoint["best_model_state_dict"]
             best_update = int(checkpoint["best_update"])
             best_zs = checkpoint["best_zs_observation"]
+            batch_trajectory_sha = checkpoint["batch_trajectory_sha256"]
+            if not isinstance(batch_trajectory_sha, str) or len(batch_trajectory_sha) != 64:
+                raise ValueError("PECV resume checkpoint lacks the batch trajectory chain.")
             expected_refresh = next_teacher_refresh_after(int(checkpoint["update"]), refresh_updates)
             if (
                 next_refresh != expected_refresh
@@ -520,6 +571,9 @@ def run(
             model.train()
             scheduler.set_for_update(update)
             rows_cpu = torch.randperm(TRAIN_COUNT, generator=batch_generator)[:BATCH_SIZE]
+            batch_trajectory_sha = update_batch_trajectory_sha(
+                batch_trajectory_sha, update, rows_cpu
+            )
             rows = rows_cpu.to(device)
             images = train_features.index_select(0, rows)
             labels_global = train_labels.index_select(0, rows)
@@ -532,8 +586,8 @@ def run(
             raw_ratio = model.backbone.gate.raw_ratio(package["features"])
             gtd_loss = F.smooth_l1_loss(raw_ratio, package["target_ratio"])
             if pecv_enabled:
-                pecv_scores, _ = model.training_candidate_scores(
-                    images, labels_global, seen_device, enabled=True
+                pecv_scores, _ = pecv_training_scores_without_rng_advance(
+                    model, images, labels_global, seen_device, device
                 )
                 pecv_loss = F.cross_entropy(
                     pecv_scores, torch.zeros(BATCH_SIZE, dtype=torch.long, device=device)
@@ -618,6 +672,7 @@ def run(
                 "cuda_rng_state_all": torch.cuda.get_rng_state_all(),
                 "history": history,
                 "reproducibility": reproducibility,
+                "batch_trajectory_sha256": batch_trajectory_sha,
             }
             atomic_torch_save(output_dir / "checkpoint_last.pth", checkpoint)
 
@@ -630,6 +685,21 @@ def run(
         for name in ("U", "S", "H", "ZS"):
             if abs(float(recomputed_best[name]) - float(best_metrics[name])) > 1e-8:
                 raise ValueError("PECV best checkpoint does not reproduce selected metrics.")
+            if abs(
+                float(recomputed_best["module_off_metrics"][name])
+                - float(best_metrics["module_off_metrics"][name])
+            ) > 1e-8:
+                raise ValueError("PECV best checkpoint does not reproduce same-checkpoint Off.")
+            if abs(
+                float(recomputed_best["full_minus_off_delta"][name])
+                - float(best_metrics["full_minus_off_delta"][name])
+            ) > 1e-8:
+                raise ValueError("PECV best checkpoint does not reproduce Full-Off delta.")
+        if (
+            recomputed_best["pecv_transitions_vs_same_checkpoint_off"]
+            != best_metrics["pecv_transitions_vs_same_checkpoint_off"]
+        ):
+            raise ValueError("PECV best checkpoint does not reproduce correction transitions.")
         atomic_torch_save(
             output_dir / "model_best.pth",
             {
@@ -656,9 +726,17 @@ def run(
             "config_sha256": config_sha,
             "initialization_mode": "all_modules_same_run_seed7_update1",
             "loaded_training_checkpoints": (
-                [] if resume_from is None else [str(resume_from.resolve())]
+                []
             ),
             "resume_used": resume_from is not None,
+            "resume_checkpoint": (
+                None
+                if resume_from is None
+                else {
+                    "path": str(resume_from.resolve()),
+                    "sha256": expected_resume_sha,
+                }
+            ),
             "pecv_enabled": pecv_enabled,
             "initial_states": initial_states,
             "best_metrics": best_metrics,
@@ -671,6 +749,7 @@ def run(
             "history_length": len(history),
             "target_refresh_count": len(teacher_history),
             "total_updates": TOTAL_UPDATES,
+            "batch_trajectory_sha256": batch_trajectory_sha,
             "eval_interval_steps": EVAL_INTERVAL,
             "test_used_for_selection": True,
             "unseen_images_used_for_gradient": False,
@@ -684,6 +763,7 @@ def run(
             "teacher_refresh_history_sha256": sha256_file(
                 output_dir / "teacher_refresh_history.json"
             ),
+            "best_same_checkpoint_recompute_verified": True,
             "reproducibility": reproducibility,
             "environment": {
                 "python": platform.python_version(),
@@ -710,6 +790,7 @@ def main() -> None:
     parser.add_argument("--expected-commit", required=True)
     parser.add_argument("--expected-config-sha", required=True)
     parser.add_argument("--resume-from", type=Path)
+    parser.add_argument("--expected-resume-sha")
     args = parser.parse_args()
     run(
         args.config,
@@ -717,6 +798,7 @@ def main() -> None:
         args.expected_commit,
         args.expected_config_sha,
         args.resume_from,
+        args.expected_resume_sha,
     )
 
 

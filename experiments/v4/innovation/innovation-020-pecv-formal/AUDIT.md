@@ -18,4 +18,26 @@
 - 运行：配置/资产SHA、checkpoint恢复、202评估点、200 teacher refresh、完成态。
 - 输出：Full/Parent同源、initial state、loaded checkpoint、metrics/history/checkpoint合同。
 
-审查对象commit、双方独立发现、直接交叉质询、集中修复和最终共同结论将在代码冻结后回填。
+## 初审与直接交叉质询
+
+- 初审提交：`cf427f0f02df5124a6d76e2f5d28ca9f61897b8b`。
+- Agent A/B先独立完成全矩阵，再直接交换完整清单并逐项质询互认。
+- 去重结论：`P0=0`，`P1=4组`。
+
+1. Full额外PECV forward消耗TG dropout RNG，导致下一update起与Parent随机轨迹分叉。
+2. same-RUN resume错误写入`loaded_training_checkpoints`且未冻结resume输入SHA。
+3. 没有可续的主batch trajectory SHA，无法确认双RUN主batch完全一致。
+4. 最终best只复算Full U/S/H/ZS，没有复算同checkpoint Off、delta和转移计数。
+
+双方共同结论：初审身份不得micro或签字，先做一次集中修复。
+
+## 集中修复
+
+- 用`torch.random.fork_rng`隔离额外PECV训练forward，恢复后续Parent RNG流。
+- `loaded_training_checkpoints`只描述初始化checkpoint并恒为`[]`；resume单列冻结path/SHA。
+- 对每个update的50个主batch索引建立可恢复SHA256链，checkpoint与metrics均保存。
+- 最佳状态严格复算Full、同checkpoint Off、四项delta和三split转移计数。
+
+## Post-fix复核
+
+待原Agent A/B对准确post-fix提交并行复核与直接互认；双方共同报告`P0=0/P1=0`前不得启动服务器micro。
