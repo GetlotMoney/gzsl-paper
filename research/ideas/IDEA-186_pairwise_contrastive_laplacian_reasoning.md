@@ -2,7 +2,7 @@
 idea_id: IDEA-186
 name: Pairwise Contrastive Laplacian Reasoning
 short_name: PCLR
-status: owner_reopened_final_tuned_rescue_pending_audit
+status: hold_near_target_gate_failed
 base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
 parent_run: TUNE-002-RUN-030
 parent_H: 79.070015
@@ -166,3 +166,31 @@ R2正式RUN签字身份：代码`b0a756dd624e883eb50d19a2455ba06bdc73f118` + 审
 manifest SHA `0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4` +
 environment/GPU fingerprint SHA
 `8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59`。
+
+## R2正式结果
+
+R2完整完成fixed-150的`21171` updates、`152`个评估点和`150`次teacher refresh。
+best update=`13818`：
+
+`U/S/H/ZS=79.565275/80.288148/79.925077/87.938917`。
+
+- 相对RUN-030 Parent：`+0.855062 H`，距`80.070015`差`0.144938`。
+- 同checkpoint Raw Off `H=78.901913`，R2为`+1.023164 H`。
+- 同gamma Calibrated Off `H=78.539576`，R2为`+1.385500 H`。
+- `|U-S|=0.722873`；seen/unseen净纠错`-24/+100`，合计`+76`；ZS安全门通过。
+- 三个辅助门均通过，但总H/Parent增益没有达到预注册`+1 H`，程序正式decision为
+  `drop_pclr_full_gate_failed`，不得写成已过门创新。
+- 独立best-ZS为`88.112366 @ update=18612`，不与best-H拼接。
+- Raw Off 152点`U/S/H/ZS`与RUN-030逐点完全一致，工程身份有效。
+- metrics/model/evaluation history SHA依次为
+  `3d64bd36e48304b025044b109c579001279400ccec075fc1246496c4f28e8578`、
+  `16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab`、
+  `b7a4e8dc29ee985914bd9c511576db9f2288884045cdb28e8d0f8dd66ab0e910`。
+
+对R2 best再次精扫scale=`2.1..2.7`与gamma=`0.49..0.56`后，最高仍为
+`H=79.925072`（scale约`2.38`、gamma约`0.522`），说明当前固定checkpoint已经处于
+离散参数平台，继续细调K/ridge/scale/gamma没有证据补足剩余`0.145 H`。
+
+Owner明确不希望直接放弃，因此状态保留为`hold_near_target_gate_failed`：这是当前强候选和
+后续新机制的父证据，但不是已接纳创新。下一步若继续，必须提出能提升图像/关系判别本身的
+新Experiment，不能再把同一checkpoint参数扫描包装成补救。
