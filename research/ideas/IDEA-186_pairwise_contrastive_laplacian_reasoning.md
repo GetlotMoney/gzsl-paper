@@ -226,3 +226,10 @@ AWA2/SUN图请求资产已提前生成到仓库外。AWA2 Top-3/Top-4/Top-5=`117
 Top-3/Top-4/Top-5=`1633/2180/2729`边；集合manifest SHA为
 `4c4491b60bac96ff28555c17cb314baba7fdf5ef2083151499c1696175659dce`。当前资产只包含
 准确类别轴、同CLIP类名embedding、关系描述请求与SHA，不包含伪造的正式关系描述。
+
+R3正式签字身份：评估代码`38af1e77dc7fa30b35866e78317b4634a00b9430` + 审查声明tree
+`e5b73176e3202513e389bf9b225aa4d0ffe7a538` + config SHA
+`8528b715c9bc6fcf1f21c4e9da0212cd9efab550efe2c038f24844d7a69766a3` + source model
+SHA `16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab` +
+environment/GPU fingerprint SHA
+`8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59`。
