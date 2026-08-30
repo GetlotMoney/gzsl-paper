@@ -159,3 +159,10 @@ Owner只授权这一组进入最终R2，不再搜索更多网格。R2代码commi
 official Full/Calibrated-Off评估中应用，不进入seen-only beta loss；Raw Off继续与
 RUN-030的152点逐点硬校验。R2仍须同时达到原`H>=80.070015`、相对Parent和Raw Off
 至少`+1 H`、gap/ZS/net门，否则最终关闭。
+
+R2正式RUN签字身份：代码`b0a756dd624e883eb50d19a2455ba06bdc73f118` + 审查声明tree
+`3f07990b8f9c86f543fe4beebb1693f7107b0cf6` + config SHA
+`0861877ae3e4725e29aff547d45e0b6d56a186179309acb5493c5906b803fd49` + relation
+manifest SHA `0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4` +
+environment/GPU fingerprint SHA
+`8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59`。
