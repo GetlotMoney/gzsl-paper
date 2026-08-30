@@ -99,15 +99,24 @@ class PCLRTest(unittest.TestCase):
         for parameter in self.model.parameters():
             parameter.grad = None
 
-    def _local_model(self) -> PCLRModel:
+    def _local_model(
+        self,
+        *,
+        candidate_top_k: int = 20,
+        correction_scale: float = 1.25,
+        ridge_lambda: float = 1.0,
+        seen_logit_gamma: float = 0.0,
+    ) -> PCLRModel:
         parent, seen, relations, edges = _fixture()
         return PCLRModel(
             parent,
             seen,
             relations,
             edges,
-            candidate_top_k=20,
-            correction_scale=1.25,
+            candidate_top_k=candidate_top_k,
+            correction_scale=correction_scale,
+            ridge_lambda=ridge_lambda,
+            seen_logit_gamma=seen_logit_gamma,
         )
 
     def test_constructor_matches_parent_rng_and_reader_initialization_is_fixed(self):
@@ -345,6 +354,65 @@ class PCLRTest(unittest.TestCase):
             1.25 * diagnostics["beta"],
         )
         self.assertEqual(diagnostics["effective_beta_max"], 0.3125)
+
+    def test_tuned_local_config_and_calibrated_off_are_explicit(self):
+        config, digest = load_config(
+            Path("config/tries/v4_try_023_r2_tuned_local_pclr.yaml")
+        )
+        self.assertEqual(config["experiment_id"], "V4-TRY-023-R2")
+        self.assertEqual(config["candidate_top_k"], 15)
+        self.assertEqual(config["ridge_lambda"], 0.03)
+        self.assertEqual(config["correction_scale"], 2.38)
+        self.assertEqual(config["seen_logit_gamma"], 0.525)
+        validate_tune_run_identity(
+            config, digest, digest, Path("V4-TRY-023-R2")
+        )
+        model = self._local_model(
+            candidate_top_k=15,
+            correction_scale=2.38,
+            ridge_lambda=0.03,
+            seen_logit_gamma=0.525,
+        ).eval()
+        raw = model.pclr_logits(self.images, enabled=False)
+        calibrated = model.pclr_logits(
+            self.images, enabled=False, calibrated=True
+        )
+        expected = raw.clone()
+        expected[:, model.seen_classes] -= 0.525
+        self.assertTrue(torch.equal(calibrated, expected))
+        zs = torch.arange(150, 200)
+        self.assertTrue(
+            torch.equal(
+                model.pclr_logits(
+                    self.images, zs, enabled=False, calibrated=True
+                ),
+                raw.index_select(1, zs),
+            )
+        )
+
+    def test_tuned_local_beta_loss_does_not_train_on_test_selected_gamma(self):
+        model = self._local_model(
+            candidate_top_k=15,
+            correction_scale=2.38,
+            ridge_lambda=0.03,
+            seen_logit_gamma=0.525,
+        ).eval()
+        parent = model.deployed_parent_logits(self.images).detach()
+        potential = model.potentials(self.images, parent).detach()
+        expected_logits = (
+            parent
+            + 2.38
+            * model.beta()
+            * parent.std(dim=1, unbiased=False, keepdim=True)
+            * potential
+        )
+        self.assertTrue(
+            torch.equal(
+                model.beta_loss(self.images, self.targets),
+                F.cross_entropy(expected_logits, self.targets),
+            )
+        )
+        self.assertEqual(model.pclr_diagnostics(self.images)["seen_logit_gamma"], 0.525)
 
 
 if __name__ == "__main__":

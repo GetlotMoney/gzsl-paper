@@ -47,6 +47,7 @@ class PCLRModel(GTDTSTModel):
         initial_beta: float = 0.05,
         candidate_top_k: int | None = None,
         correction_scale: float = 1.0,
+        seen_logit_gamma: float = 0.0,
     ) -> None:
         # The inherited GTD gate must consume exactly the same RNG draws as the
         # RUN-030 parent.  Only PCLR's extra reader is made RNG-neutral below.
@@ -66,8 +67,8 @@ class PCLRModel(GTDTSTModel):
             raise ValueError("PCLR首轮固定reader seed=18601。")
         if float(temperature) != 0.07:
             raise ValueError("PCLR首轮固定关系温度0.07。")
-        if float(ridge_lambda) != 1.0:
-            raise ValueError("PCLR首轮固定ridge_lambda=1.0。")
+        if not math.isfinite(float(ridge_lambda)) or float(ridge_lambda) <= 0.0:
+            raise ValueError("PCLR ridge_lambda必须为有限正数。")
         if float(potential_cap) <= 0.0:
             raise ValueError("PCLR potential_cap必须为正数。")
         if float(max_beta) != 0.25 or not 0.0 < float(initial_beta) < float(max_beta):
@@ -76,6 +77,8 @@ class PCLRModel(GTDTSTModel):
             raise ValueError("Local-PCLR candidate_top_k必须位于[2,class_count)内。")
         if not math.isfinite(float(correction_scale)) or float(correction_scale) <= 0.0:
             raise ValueError("PCLR correction_scale必须为有限正数。")
+        if not math.isfinite(float(seen_logit_gamma)) or float(seen_logit_gamma) < 0.0:
+            raise ValueError("PCLR seen_logit_gamma必须为有限非负数。")
 
         relations = torch.as_tensor(relation_embeddings).detach().cpu().float().clone()
         edges = torch.as_tensor(edge_index).detach().cpu().long().clone()
@@ -113,6 +116,7 @@ class PCLRModel(GTDTSTModel):
             None if candidate_top_k is None else int(candidate_top_k)
         )
         self.correction_scale = float(correction_scale)
+        self.seen_logit_gamma = float(seen_logit_gamma)
 
         # nn.Linear constructors consume the global CPU generator even though
         # both layers are immediately overwritten.  Restore only these extra
@@ -298,11 +302,21 @@ class PCLRModel(GTDTSTModel):
             raise ValueError("PCLR class_ids必须是合法且无重复的一维全局类别ID。")
         return ids.to(device)
 
+    def apply_seen_calibration(self, full_logits: torch.Tensor) -> torch.Tensor:
+        """Subtract the fixed tuned gamma on the full 200-class axis."""
+        if self.seen_logit_gamma == 0.0:
+            return full_logits
+        calibrated = full_logits.clone()
+        seen = self.seen_classes.to(calibrated.device)
+        calibrated[:, seen] = calibrated[:, seen] - self.seen_logit_gamma
+        return calibrated
+
     def pclr_logits(
         self,
         image_features: torch.Tensor,
         class_ids: torch.Tensor | None = None,
         enabled: bool = True,
+        calibrated: bool = False,
     ) -> torch.Tensor:
         """Return full PCLR logits, slicing the class axis only at the end."""
         if not enabled:
@@ -310,13 +324,19 @@ class PCLRModel(GTDTSTModel):
             # the reporting deviation by matching the canonical normalized-
             # prototype evaluation used by RUN-030.
             if self.candidate_top_k is None:
+                if calibrated:
+                    raise ValueError("Legacy PCLR不支持独立calibrated Off入口。")
                 return super().logits(image_features, class_ids)
             parent_full = self.deployed_parent_logits(image_features)
+            if calibrated:
+                parent_full = self.apply_seen_calibration(parent_full)
             if class_ids is None:
                 return parent_full
             ids = self._validated_class_ids(class_ids, parent_full.device)
             return parent_full.index_select(1, ids)
 
+        if calibrated:
+            raise ValueError("PCLR Full入口不接受重复calibrated标记。")
         parent_full = (
             super().logits(image_features, None)
             if self.candidate_top_k is None
@@ -333,7 +353,7 @@ class PCLRModel(GTDTSTModel):
             * parent_std
             * self.potentials(image_features, parent_full).detach()
         )
-        full = parent_full + correction
+        full = self.apply_seen_calibration(parent_full + correction)
         if class_ids is not None:
             ids = self._validated_class_ids(class_ids, full.device)
             full = full.index_select(1, ids)
@@ -433,6 +453,7 @@ class PCLRModel(GTDTSTModel):
             "potential_signed_mean_abs": float(potential.mean(dim=1).abs().max()),
             "candidate_top_k": float(self.candidate_top_k or self.class_count),
             "correction_scale": self.correction_scale,
+            "seen_logit_gamma": self.seen_logit_gamma,
         }
         if parent_logits is not None:
             output["active_edge_rate"] = float(

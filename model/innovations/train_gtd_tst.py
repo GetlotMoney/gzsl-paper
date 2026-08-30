@@ -35,7 +35,9 @@ MULTIDATASET_SCHEMA = "gzsl-paper.v3-gtd-multidataset.v1"
 TUNE_SCHEMA = "gzsl-paper.v4-tg-gtd-tune.v1"
 PCLR_SCHEMA = "gzsl-paper.v4-pclr-train.v1"
 LOCAL_PCLR_SCHEMA = "gzsl-paper.v4-local-pclr-train.v1"
-PCLR_SCHEMAS = {PCLR_SCHEMA, LOCAL_PCLR_SCHEMA}
+TUNED_LOCAL_PCLR_SCHEMA = "gzsl-paper.v4-tuned-local-pclr-train.v1"
+LOCAL_PCLR_SCHEMAS = {LOCAL_PCLR_SCHEMA, TUNED_LOCAL_PCLR_SCHEMA}
+PCLR_SCHEMAS = {PCLR_SCHEMA, *LOCAL_PCLR_SCHEMAS}
 PCLR_PARENT_RUN_ID = "TUNE-002-RUN-030"
 PCLR_PARENT_BEST_UPDATE = 14241
 PCLR_PARENT_METRICS = {
@@ -220,6 +222,9 @@ LOCAL_PCLR_CONFIG_KEYS = PCLR_CONFIG_KEYS | {
     "parent_evaluation_history",
     "parent_evaluation_history_sha256",
 }
+TUNED_LOCAL_PCLR_CONFIG_KEYS = LOCAL_PCLR_CONFIG_KEYS | {
+    "seen_logit_gamma",
+}
 
 
 class TeeStream:
@@ -241,7 +246,9 @@ def load_config(path: Path) -> tuple[dict, str]:
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
     expected_keys = (
-        LOCAL_PCLR_CONFIG_KEYS
+        TUNED_LOCAL_PCLR_CONFIG_KEYS
+        if schema == TUNED_LOCAL_PCLR_SCHEMA
+        else LOCAL_PCLR_CONFIG_KEYS
         if schema == LOCAL_PCLR_SCHEMA
         else PCLR_CONFIG_KEYS
         if schema == PCLR_SCHEMA
@@ -332,15 +339,24 @@ def load_config(path: Path) -> tuple[dict, str]:
             )
         )
     elif is_pclr:
-        local_identity = config["schema_version"] == LOCAL_PCLR_SCHEMA
+        local_identity = config["schema_version"] in LOCAL_PCLR_SCHEMAS
+        tuned_identity = config["schema_version"] == TUNED_LOCAL_PCLR_SCHEMA
         invalid = (
             config["dataset"] != "CUB"
             or config["experiment_id"]
-            != ("V4-TRY-023-R1" if local_identity else "V4-TRY-023")
+            != (
+                "V4-TRY-023-R2"
+                if tuned_identity
+                else "V4-TRY-023-R1"
+                if local_identity
+                else "V4-TRY-023"
+            )
             or config["framework_id"] != "FRAMEWORK-V4"
             or config["condition_id"]
             != (
-                "TG_PLUS_GTD_PLUS_LOCAL_PCLR_RESCUE_FIXED150"
+                "TG_PLUS_GTD_PLUS_TUNED_LOCAL_PCLR_RESCUE_FIXED150"
+                if tuned_identity
+                else "TG_PLUS_GTD_PLUS_LOCAL_PCLR_RESCUE_FIXED150"
                 if local_identity
                 else "TG_PLUS_GTD_PLUS_PCLR_FULL_FIXED150"
             )
@@ -371,7 +387,8 @@ def load_config(path: Path) -> tuple[dict, str]:
             or int(config["reader_hidden_dim"]) != 64
             or int(config["reader_seed"]) != 18601
             or float(config["relation_temperature"]) != 0.07
-            or float(config["ridge_lambda"]) != 1.0
+            or float(config["ridge_lambda"])
+            != (0.03 if tuned_identity else 1.0)
             or float(config["potential_cap"]) != 0.5
             or float(config["max_beta"]) != 0.25
             or float(config["initial_beta"]) != 0.05
@@ -382,13 +399,21 @@ def load_config(path: Path) -> tuple[dict, str]:
             or (
                 local_identity
                 and (
-                    int(config["candidate_top_k"]) != 20
+                    int(config["candidate_top_k"])
+                    != (15 if tuned_identity else 20)
                     or config["edge_selection"] != "both_endpoints_in_parent_topk"
-                    or float(config["correction_scale"]) != 1.25
+                    or float(config["correction_scale"])
+                    != (2.38 if tuned_identity else 1.25)
+                    or float(config["ridge_lambda"])
+                    != (0.03 if tuned_identity else 1.0)
                     or config["parent_evaluation_history"]
                     != "/data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-030/evaluation_history.json"
                     or config["parent_evaluation_history_sha256"]
                     != "10591bb35a51949a1989ae3a918b50bca37c1f465a52c6bb5df5552c1b0a4779"
+                    or (
+                        tuned_identity
+                        and float(config["seen_logit_gamma"]) != 0.525
+                    )
                 )
             )
         )
@@ -451,7 +476,7 @@ def load_config(path: Path) -> tuple[dict, str]:
 
 def load_pclr_parent_history(config: dict) -> list[dict]:
     """Load the SHA-bound canonical RUN-030 trajectory for Local-PCLR parity."""
-    if config["schema_version"] != LOCAL_PCLR_SCHEMA:
+    if config["schema_version"] not in LOCAL_PCLR_SCHEMAS:
         return []
     path = Path(config["parent_evaluation_history"])
     if (
@@ -789,13 +814,18 @@ def build_model(config: dict, tensors: dict[str, torch.Tensor], device: torch.de
         initial_beta=float(config["initial_beta"]),
         candidate_top_k=(
             int(config["candidate_top_k"])
-            if config["schema_version"] == LOCAL_PCLR_SCHEMA
+            if config["schema_version"] in LOCAL_PCLR_SCHEMAS
             else None
         ),
         correction_scale=(
             float(config["correction_scale"])
-            if config["schema_version"] == LOCAL_PCLR_SCHEMA
+            if config["schema_version"] in LOCAL_PCLR_SCHEMAS
             else 1.0
+        ),
+        seen_logit_gamma=(
+            float(config["seen_logit_gamma"])
+            if config["schema_version"] == TUNED_LOCAL_PCLR_SCHEMA
+            else 0.0
         ),
     ).to(device)
 
@@ -1167,6 +1197,7 @@ def _predict_pclr(
     class_ids: torch.Tensor | None,
     *,
     enabled: bool,
+    calibrated: bool = False,
     batch_size: int = 256,
 ) -> torch.Tensor:
     axis = (
@@ -1181,6 +1212,7 @@ def _predict_pclr(
             images,
             class_ids=None if class_ids is None else axis,
             enabled=bool(enabled),
+            calibrated=bool(calibrated),
         )
         if tuple(logits.shape) != (images.size(0), axis.numel()) or not torch.isfinite(
             logits
@@ -1217,6 +1249,36 @@ def evaluate_pclr(
             model, tensors["test_unseen_features"], device, unseenclasses, enabled=False
         ),
     }
+    calibrated_off = (
+        {
+            "seen": _predict_pclr(
+                model,
+                tensors["test_seen_features"],
+                device,
+                None,
+                enabled=False,
+                calibrated=True,
+            ),
+            "unseen": _predict_pclr(
+                model,
+                tensors["test_unseen_features"],
+                device,
+                None,
+                enabled=False,
+                calibrated=True,
+            ),
+            "zs": _predict_pclr(
+                model,
+                tensors["test_unseen_features"],
+                device,
+                unseenclasses,
+                enabled=False,
+                calibrated=True,
+            ),
+        }
+        if float(getattr(model, "seen_logit_gamma", 0.0)) > 0.0
+        else off
+    )
     seen_labels = tensors["test_seen_labels"].long()
     unseen_labels = tensors["test_unseen_labels"].long()
 
@@ -1229,6 +1291,7 @@ def evaluate_pclr(
 
     full_scores = scores(full)
     off_scores = scores(off)
+    calibrated_off_scores = scores(calibrated_off)
     transitions = {
         "seen": _transitions(off["seen"], full["seen"], seen_labels),
         "unseen": _transitions(off["unseen"], full["unseen"], unseen_labels),
@@ -1237,11 +1300,23 @@ def evaluate_pclr(
     result = {
         **full_scores,
         "module_off_metrics": off_scores,
+        "calibrated_module_off_metrics": calibrated_off_scores,
         "full_minus_off_delta": {
             metric: full_scores[metric] - off_scores[metric]
             for metric in ("U", "S", "H", "ZS")
         },
         "pclr_transitions_vs_gtd": transitions,
+        "pclr_transitions_vs_calibrated_off": {
+            "seen": _transitions(
+                calibrated_off["seen"], full["seen"], seen_labels
+            ),
+            "unseen": _transitions(
+                calibrated_off["unseen"], full["unseen"], unseen_labels
+            ),
+            "zs": _transitions(
+                calibrated_off["zs"], full["zs"], unseen_labels
+            ),
+        },
         "diagnostics": {
             "pclr": model.diagnostics(
                 tensors["train_features"][:256].to(device).float(),
@@ -1261,6 +1336,7 @@ def evaluate_pclr(
     if return_predictions:
         result["_predictions"] = full
         result["_off_predictions"] = off
+        result["_calibrated_off_predictions"] = calibrated_off
     return result
 
 
@@ -1388,7 +1464,7 @@ def validate_tune_run_identity(
         if expected_config_sha != config_sha:
             raise ValueError("PCLR expected-config-sha与实际配置不一致。")
         if (
-            config["schema_version"] == LOCAL_PCLR_SCHEMA
+            config["schema_version"] in LOCAL_PCLR_SCHEMAS
             and output_dir.name != config["experiment_id"]
         ):
             raise ValueError("Local-PCLR output-dir末级必须与RUN身份一致。")
@@ -1564,6 +1640,7 @@ def run(
                 )
                 initial.pop("_predictions")
                 frozen_baseline = initial.pop("_off_predictions")
+                initial.pop("_calibrated_off_predictions")
             else:
                 initial = evaluate(
                     model,
@@ -1607,7 +1684,7 @@ def run(
                 }
             )
             history = [initial]
-            if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+            if config["schema_version"] in LOCAL_PCLR_SCHEMAS:
                 validate_pclr_off_history(history, parent_reference_rows)
             best_metrics = copy.deepcopy(initial)
             best_state = copy.deepcopy(model.state_dict())
@@ -1650,7 +1727,7 @@ def run(
             teacher_history = checkpoint["teacher_refresh_history"]
             next_teacher_refresh = checkpoint["next_teacher_refresh_update"]
             history = checkpoint["history"]
-            if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+            if config["schema_version"] in LOCAL_PCLR_SCHEMAS:
                 validate_pclr_off_history(history, parent_reference_rows)
             parent_metrics = checkpoint_parent_metrics(
                 checkpoint, config["parent_metrics_percent"]
@@ -1833,7 +1910,7 @@ def run(
                 }
             )
             history.append(metrics)
-            if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+            if config["schema_version"] in LOCAL_PCLR_SCHEMAS:
                 validate_pclr_off_history(history, parent_reference_rows)
             print(
                 f"eval={metrics['evaluation_index']} update={update} "
@@ -1904,7 +1981,7 @@ def run(
         ):
             raise RuntimeError("GTD完整训练必须逐名义epoch保存确定性teacher refresh。")
         if pclr_enabled:
-            if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+            if config["schema_version"] in LOCAL_PCLR_SCHEMAS:
                 validate_pclr_off_history(history, parent_reference_rows)
                 if len(history) != len(parent_reference_rows):
                     raise RuntimeError("Local-PCLR Off完整轨迹没有覆盖152点评估。")
@@ -1935,12 +2012,14 @@ def run(
             model_best_payload["pclr_asset_identity"] = tensors[
                 "_pclr_asset_identity"
             ]
-        if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+        if config["schema_version"] in LOCAL_PCLR_SCHEMAS:
             model_best_payload["local_pclr_contract"] = {
                 "config_sha256": config_sha,
                 "candidate_top_k": int(config["candidate_top_k"]),
                 "edge_selection": config["edge_selection"],
                 "correction_scale": float(config["correction_scale"]),
+                "ridge_lambda": float(config["ridge_lambda"]),
+                "seen_logit_gamma": float(config.get("seen_logit_gamma", 0.0)),
                 "parent_evaluation_history_sha256": config[
                     "parent_evaluation_history_sha256"
                 ],
@@ -2067,10 +2146,17 @@ def run(
                     "module_off_best_history": module_off_best_history,
                     "module_off_best_parent_reproduced": bool(off_matches_parent),
                     "module_off_full_history_reproduced": bool(
-                        config["schema_version"] == LOCAL_PCLR_SCHEMA
+                        config["schema_version"] in LOCAL_PCLR_SCHEMAS
                         and len(history) == len(parent_reference_rows)
                     ),
                     "same_checkpoint_delta_H": same_checkpoint_delta_h,
+                    "same_checkpoint_calibrated_off_delta_H": float(
+                        best_metrics["H"]
+                        - best_metrics["calibrated_module_off_metrics"]["H"]
+                    ),
+                    "calibrated_module_off_metrics": best_metrics[
+                        "calibrated_module_off_metrics"
+                    ],
                     "net_joint_corrections": net_joint_corrections,
                     "pclr_full_gate_passed": pclr_full_passed,
                     "expert_attributes_used": False,
@@ -2081,13 +2167,17 @@ def run(
                     ),
                 }
             )
-            if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+            if config["schema_version"] in LOCAL_PCLR_SCHEMAS:
                 pclr_metrics = best_metrics["diagnostics"]["pclr"]
                 result.update(
                     {
                         "candidate_top_k": int(config["candidate_top_k"]),
                         "edge_selection": config["edge_selection"],
                         "correction_scale": float(config["correction_scale"]),
+                        "ridge_lambda": float(config["ridge_lambda"]),
+                        "seen_logit_gamma": float(
+                            config.get("seen_logit_gamma", 0.0)
+                        ),
                         "effective_beta_at_best": float(
                             pclr_metrics["effective_beta"]
                         ),
