@@ -2,7 +2,7 @@
 idea_id: IDEA-186
 name: Pairwise Contrastive Laplacian Reasoning
 short_name: PCLR
-status: drop_final_rescue_gate_failed
+status: r3_inference_tune_pending_audit
 base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
 parent_run: TUNE-002-RUN-030
 parent_H: 79.070015
@@ -197,3 +197,32 @@ best update=`13818`：
 cap、checkpoint或门槛再选择都属于看过official结果后的额外搜索。最终状态为
 `drop_final_rescue_gate_failed`，PCLR家族关闭；结果可作为后续独立机制的失败证据，不能
 写成已接纳创新。
+
+## Owner再次覆盖关闭结论：R3嵌套推理选择
+
+Owner明确要求继续系统搜索全部超参数，并要求Top-4/Top-5及后续AWA2/SUN测试。该授权
+不改变R2已经失败的事实；R3单独标记`nested_official_test_selection=true`且不得称blind。
+
+对R2 best checkpoint联合扫描后，现有正式Top-3图的固定最佳组合为candidate Top-K=`17`、
+ridge=`0.3`、inference relation temperature=`0.2`、correction scale=`6.95`、seen
+gamma=`0.575`：`U/S/H/ZS=77.806163/82.716906/80.186419/87.612945`。相对RUN-030
+Parent、同checkpoint Raw Off和同gamma Calibrated Off分别为
+`+1.116404/+1.284507/+1.692670 H`；gap=`4.910743`；seen/unseen净纠错合计`+68`；
+固定checkpoint诊断通过全部门。
+
+单gamma及两种无标签双gamma路由均已扫描。最高H自动退化回全局gamma约`0.575`；强制
+gap<2时最高仅`H=80.045400`，因此不为表面平衡牺牲主指标，但必须完整披露U/S。
+
+OpenAI CLIP同源Top-4/Top-5图分别为`584/729`边；保留旧438条正式关系句、仅对新增
+`146/291`边使用通用类名方向句的Gate A最高为`80.059367/80.077804`，均低于Top-3
+正式图。临时通用句不得作为论文证据，当前不生成数百条正式新描述。
+
+R3是R2 checkpoint上的新评估语义，不重新训练reader。代码commit为
+`38af1e77dc7fa30b35866e78317b4634a00b9430`，config SHA为
+`8528b715c9bc6fcf1f21c4e9da0212cd9efab550efe2c038f24844d7a69766a3`；正式审计复算
+仍过全部门后才可保留。
+
+AWA2/SUN图请求资产已提前生成到仓库外。AWA2 Top-3/Top-4/Top-5=`117/159/201`边，SUN
+Top-3/Top-4/Top-5=`1633/2180/2729`边；集合manifest SHA为
+`4c4491b60bac96ff28555c17cb314baba7fdf5ef2083151499c1696175659dce`。当前资产只包含
+准确类别轴、同CLIP类名embedding、关系描述请求与SHA，不包含伪造的正式关系描述。
