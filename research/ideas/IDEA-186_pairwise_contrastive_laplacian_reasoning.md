@@ -106,7 +106,8 @@ Top-20内的关系边，其余边差置零后继续使用原固定Laplacian map�
 仍距`80.070015`差`0.667890`。该数字使用official test选择Top-K和scale，只作为启动
 一次救援的乐观诊断，不能作为正式结果。
 
-救援代码身份为`d5f59aa2dd60ff903dd0f84bedc887be046d09b5`，config SHA为
-`06563e1725037bbecea0416fc5f5cba03790206673f23bf561c292a86960a347`。新增forward和
+初始冻结身份`d5f59aa2dd60ff903dd0f84bedc887be046d09b5`在双Agent交叉中发现父轨迹
+过强声明P1；集中修复后的救援代码身份为`9028fd79c415f3cac670b1644d77403920b1f4e7`，
+config SHA为`606b0e4d3b69cb3b750d275e13b960bca26025ba72d1a6948964f099b5dd7093`。新增forward和
 beta loss语义必须先完成同一冻结身份的双Agent对抗审核、真实GPU micro和Off完整parity，
 通过后才允许唯一direct-official 150轮Full；未过原`+1 H`门则永久关闭PCLR家族。
