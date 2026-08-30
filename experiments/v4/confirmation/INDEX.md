@@ -29,8 +29,8 @@ V4不复制V3结果文件；以下证据直接绑定原RUN、原代码提交、�
 
 | RUN | 数据集 | Source | 关系资产 | 预检ΔH | 状态 |
 |---|---|---|---|---:|---|
-| V4-CONFIRM-003-AWA2 | AWA2 | V3-TRY-046 | generic Top-3 / 117 edges | +0.233690 | audit passed; ready formal |
-| V4-CONFIRM-003-SUN | SUN | V3-TRY-047 | generic Top-3 / 1633 edges | +0.983386 | audit passed; ready formal |
+| V4-CONFIRM-003-AWA2 | AWA2 | V3-TRY-046 | generic Top-3 / 117 edges | +0.233690 | completed; keep |
+| V4-CONFIRM-003-SUN | SUN | V3-TRY-047 | generic Top-3 / 1633 edges | +0.983386 | completed; keep |
 
 - 评估代码：`d1d8940844e2e540234a7cb8fae688d80efb5247`。
 - AWA2 config SHA：`4c636b5371604cde8ae486ec09c81231d8b3580ce4a8d6a3a021227b4d083c88`；
@@ -42,6 +42,10 @@ V4不复制V3结果文件；以下证据直接绑定原RUN、原代码提交、�
 - 正式签字：代码`d1d8940844e2e540234a7cb8fae688d80efb5247` + 审查tree
   `17e831fef00a09dbaa7882f61c7be13cb68b1790` + 双数据集config/asset SHA + 环境fingerprint
   `8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59`。
+- AWA2正式结果：`U/S/H/ZS=97.656298/95.577794/96.605867/99.047691`，
+  metrics SHA=`7df40519c7b9c770bcc76048491c2d9dfda14f8c3b28dbffd6c66894ff087000`。
+- SUN正式结果：`U/S/H/ZS=80.763888/68.837208/74.325131/92.847222`，
+  metrics SHA=`09a232c3e13dbf6fe42dc50b3f5655d54a3536c512857383580aad9586e666b9`。
 
 ## 适用边界
 
