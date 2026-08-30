@@ -34,6 +34,8 @@ SCRATCH_SCHEMA = "gzsl-paper.v3-gtd-scratch-confirm.v1"
 MULTIDATASET_SCHEMA = "gzsl-paper.v3-gtd-multidataset.v1"
 TUNE_SCHEMA = "gzsl-paper.v4-tg-gtd-tune.v1"
 PCLR_SCHEMA = "gzsl-paper.v4-pclr-train.v1"
+LOCAL_PCLR_SCHEMA = "gzsl-paper.v4-local-pclr-train.v1"
+PCLR_SCHEMAS = {PCLR_SCHEMA, LOCAL_PCLR_SCHEMA}
 PCLR_PARENT_RUN_ID = "TUNE-002-RUN-030"
 PCLR_PARENT_BEST_UPDATE = 14241
 PCLR_PARENT_METRICS = {
@@ -211,6 +213,11 @@ PCLR_CONFIG_KEYS = CONFIG_KEYS | {
     "expert_attributes_used",
     "llm_world_knowledge_used",
 }
+LOCAL_PCLR_CONFIG_KEYS = PCLR_CONFIG_KEYS | {
+    "candidate_top_k",
+    "edge_selection",
+    "correction_scale",
+}
 
 
 class TeeStream:
@@ -231,7 +238,13 @@ def load_config(path: Path) -> tuple[dict, str]:
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     actual = set(config) if isinstance(config, dict) else set()
     schema = config.get("schema_version") if isinstance(config, dict) else None
-    expected_keys = PCLR_CONFIG_KEYS if schema == PCLR_SCHEMA else CONFIG_KEYS
+    expected_keys = (
+        LOCAL_PCLR_CONFIG_KEYS
+        if schema == LOCAL_PCLR_SCHEMA
+        else PCLR_CONFIG_KEYS
+        if schema == PCLR_SCHEMA
+        else CONFIG_KEYS
+    )
     if not isinstance(config, dict) or actual != expected_keys:
         raise ValueError(
             f"GTD配置字段错误；缺少={sorted(expected_keys-actual)}，"
@@ -253,7 +266,7 @@ def load_config(path: Path) -> tuple[dict, str]:
         else -1
     )
     is_tune = config["schema_version"] == TUNE_SCHEMA
-    is_pclr = config["schema_version"] == PCLR_SCHEMA
+    is_pclr = config["schema_version"] in PCLR_SCHEMAS
     shared_invalid = (
         spec is None
         or int(config["random_seed"]) != 7
@@ -317,11 +330,18 @@ def load_config(path: Path) -> tuple[dict, str]:
             )
         )
     elif is_pclr:
+        local_identity = config["schema_version"] == LOCAL_PCLR_SCHEMA
         invalid = (
             config["dataset"] != "CUB"
-            or config["experiment_id"] != "V4-TRY-023"
+            or config["experiment_id"]
+            != ("V4-TRY-023-R1" if local_identity else "V4-TRY-023")
             or config["framework_id"] != "FRAMEWORK-V4"
-            or config["condition_id"] != "TG_PLUS_GTD_PLUS_PCLR_FULL_FIXED150"
+            or config["condition_id"]
+            != (
+                "TG_PLUS_GTD_PLUS_LOCAL_PCLR_RESCUE_FIXED150"
+                if local_identity
+                else "TG_PLUS_GTD_PLUS_PCLR_FULL_FIXED150"
+            )
             or config["device"] != "cuda:0"
             or config["asset_manifest"]
             != "/data/lby/projects/cv_project/GZSL_Warehouse/assets/v3/CUB_openai_vitl14_336_dynamic_v3_v1/asset_manifest.json"
@@ -357,6 +377,14 @@ def load_config(path: Path) -> tuple[dict, str]:
             or float(config["beta_loss_weight"]) != 1.0
             or config["expert_attributes_used"] is not False
             or config["llm_world_knowledge_used"] is not True
+            or (
+                local_identity
+                and (
+                    int(config["candidate_top_k"]) != 20
+                    or config["edge_selection"] != "both_endpoints_in_parent_topk"
+                    or float(config["correction_scale"]) != 1.25
+                )
+            )
         )
     elif config["schema_version"] == SCHEMA:
         invalid = (
@@ -519,7 +547,7 @@ def load_assets(config: dict) -> dict[str, torch.Tensor]:
         or not torch.equal(all_classes, torch.arange(spec["class_count"]))
     ):
         raise ValueError("GTD资产seen/unseen类别轴或split身份错误。")
-    if config["schema_version"] == PCLR_SCHEMA:
+    if config["schema_version"] in PCLR_SCHEMAS:
         relation_manifest_path = Path(config["relation_asset_manifest"])
         if (
             not relation_manifest_path.is_absolute()
@@ -670,7 +698,7 @@ def build_model(config: dict, tensors: dict[str, torch.Tensor], device: torch.de
         missing, unexpected = parent.load_state_dict(state, strict=False)
         if missing or unexpected:
             raise ValueError(f"GTD TG状态不完整：missing={missing}, unexpected={unexpected}")
-    if config["schema_version"] != PCLR_SCHEMA:
+    if config["schema_version"] not in PCLR_SCHEMAS:
         return GTDTSTModel(
             parent,
             seen,
@@ -697,6 +725,16 @@ def build_model(config: dict, tensors: dict[str, torch.Tensor], device: torch.de
         potential_cap=float(config["potential_cap"]),
         max_beta=float(config["max_beta"]),
         initial_beta=float(config["initial_beta"]),
+        candidate_top_k=(
+            int(config["candidate_top_k"])
+            if config["schema_version"] == LOCAL_PCLR_SCHEMA
+            else None
+        ),
+        correction_scale=(
+            float(config["correction_scale"])
+            if config["schema_version"] == LOCAL_PCLR_SCHEMA
+            else 1.0
+        ),
     ).to(device)
 
 
@@ -1284,7 +1322,7 @@ def validate_tune_run_identity(
     expected_config_sha: str | None,
     output_dir: Path,
 ) -> None:
-    if config["schema_version"] == PCLR_SCHEMA:
+    if config["schema_version"] in PCLR_SCHEMAS:
         if expected_config_sha != config_sha:
             raise ValueError("PCLR expected-config-sha与实际配置不一致。")
         return
@@ -1351,7 +1389,7 @@ def run(
         )
         print(f"GTD RUN={config['experiment_id']} commit={code_commit} config_sha={config_sha}")
         model = build_model(config, tensors, device)
-        pclr_enabled = config["schema_version"] == PCLR_SCHEMA
+        pclr_enabled = config["schema_version"] in PCLR_SCHEMAS
         base_model = model
         gtd_enabled = config["condition_id"] != "TG_SCRATCH_FIXED150"
         scratch_initialization = config["tg_checkpoint"] is None

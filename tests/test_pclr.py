@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 import torch
 import torch.nn as nn
@@ -8,6 +9,7 @@ import torch.nn.functional as F
 
 from model.innovations.gtd_tst import GTDTSTModel
 from model.innovations.pclr import PCLRModel
+from model.innovations.train_gtd_tst import load_config
 
 
 class _FakeVPR(nn.Module):
@@ -87,6 +89,17 @@ class PCLRTest(unittest.TestCase):
     def _zero_grad(self) -> None:
         for parameter in self.model.parameters():
             parameter.grad = None
+
+    def _local_model(self) -> PCLRModel:
+        parent, seen, relations, edges = _fixture()
+        return PCLRModel(
+            parent,
+            seen,
+            relations,
+            edges,
+            candidate_top_k=20,
+            correction_scale=1.25,
+        )
 
     def test_constructor_matches_parent_rng_and_reader_initialization_is_fixed(self):
         parent, seen, relations, edges = _fixture()
@@ -187,6 +200,79 @@ class PCLRTest(unittest.TestCase):
                 atol=1e-7,
                 rtol=0.0,
             )
+        )
+
+    def test_local_config_fixes_the_only_rescue_condition(self):
+        config, digest = load_config(
+            Path("config/tries/v4_try_023_r1_local_pclr_rescue.yaml")
+        )
+        self.assertEqual(config["experiment_id"], "V4-TRY-023-R1")
+        self.assertEqual(config["candidate_top_k"], 20)
+        self.assertEqual(config["edge_selection"], "both_endpoints_in_parent_topk")
+        self.assertEqual(config["correction_scale"], 1.25)
+        self.assertEqual(len(digest), 64)
+
+    def test_local_mask_requires_both_edge_endpoints_in_parent_top20(self):
+        model = self._local_model()
+        logits = torch.full((2, 200), -100.0)
+        selected = torch.arange(20)
+        logits[0, selected] = torch.arange(20).float()
+        logits[1, 180:] = torch.arange(20).float()
+        mask = model.candidate_edge_mask(logits)
+        expected0 = torch.isin(model.edge_index[:, 0], selected) & torch.isin(
+            model.edge_index[:, 1], selected
+        )
+        expected1 = torch.isin(model.edge_index[:, 0], torch.arange(180, 200)) & torch.isin(
+            model.edge_index[:, 1], torch.arange(180, 200)
+        )
+        self.assertTrue(torch.equal(mask[0], expected0))
+        self.assertTrue(torch.equal(mask[1], expected1))
+
+    def test_local_potential_is_exact_masked_fixed_laplacian_solution(self):
+        model = self._local_model()
+        scores = torch.randn(2, 438, 2, generator=self.generator)
+        parent_logits = torch.randn(2, 200, generator=self.generator)
+        actual = model.potentials_from_scores(scores, parent_logits)
+        difference = scores[..., 0] - scores[..., 1]
+        difference = difference * model.candidate_edge_mask(parent_logits)
+        expected = difference @ model.laplacian_map.T
+        expected = expected - expected.mean(dim=1, keepdim=True)
+        norm = expected.abs().amax(dim=1, keepdim=True)
+        expected = 0.5 * expected / torch.maximum(norm, torch.full_like(norm, 0.5))
+        self.assertTrue(torch.equal(actual, expected))
+
+    def test_local_off_uses_canonical_normalized_prototype_evaluation(self):
+        model = self._local_model().eval()
+        actual = model.pclr_logits(self.images, enabled=False)
+        expected = (
+            F.normalize(self.images.float(), dim=-1)
+            @ F.normalize(model.prototypes().float(), dim=-1).T
+            * model.scale()
+        )
+        self.assertTrue(torch.equal(actual, expected))
+
+    def test_local_full_is_exact_parent_plus_scaled_masked_correction(self):
+        model = self._local_model().eval()
+        parent = model.deployed_parent_logits(self.images)
+        potential = model.potentials(self.images, parent)
+        expected = (
+            parent
+            + 1.25
+            * model.beta().detach()
+            * parent.std(dim=1, unbiased=False, keepdim=True)
+            * potential
+        )
+        self.assertTrue(torch.equal(model.pclr_logits(self.images), expected))
+
+    def test_local_scale_and_topk_do_not_break_gradient_firewalls(self):
+        model = self._local_model()
+        relation_parameters = model.relation_parameters()
+        loss = model.beta_loss(self.images, self.targets)
+        loss.backward()
+        self.assertIsNotNone(model.raw_beta.grad)
+        self.assertTrue(all(parameter.grad is None for parameter in relation_parameters))
+        self.assertTrue(
+            all(parameter.grad is None for parameter in model.parent_parameters())
         )
 
 

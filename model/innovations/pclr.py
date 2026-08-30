@@ -45,6 +45,8 @@ class PCLRModel(GTDTSTModel):
         potential_cap: float = 0.5,
         max_beta: float = 0.25,
         initial_beta: float = 0.05,
+        candidate_top_k: int | None = None,
+        correction_scale: float = 1.0,
     ) -> None:
         # The inherited GTD gate must consume exactly the same RNG draws as the
         # RUN-030 parent.  Only PCLR's extra reader is made RNG-neutral below.
@@ -70,6 +72,10 @@ class PCLRModel(GTDTSTModel):
             raise ValueError("PCLR potential_cap必须为正数。")
         if float(max_beta) != 0.25 or not 0.0 < float(initial_beta) < float(max_beta):
             raise ValueError("PCLR首轮固定max_beta=0.25且初始beta必须位于其内部。")
+        if candidate_top_k is not None and not 2 <= int(candidate_top_k) < int(class_count):
+            raise ValueError("Local-PCLR candidate_top_k必须位于[2,class_count)内。")
+        if not math.isfinite(float(correction_scale)) or float(correction_scale) <= 0.0:
+            raise ValueError("PCLR correction_scale必须为有限正数。")
 
         relations = torch.as_tensor(relation_embeddings).detach().cpu().float().clone()
         edges = torch.as_tensor(edge_index).detach().cpu().long().clone()
@@ -103,6 +109,10 @@ class PCLRModel(GTDTSTModel):
         self.ridge_lambda = float(ridge_lambda)
         self.potential_cap = float(potential_cap)
         self.max_beta = float(max_beta)
+        self.candidate_top_k = (
+            None if candidate_top_k is None else int(candidate_top_k)
+        )
+        self.correction_scale = float(correction_scale)
 
         # nn.Linear constructors consume the global CPU generator even though
         # both layers are immediately overwritten.  Restore only these extra
@@ -201,7 +211,43 @@ class PCLRModel(GTDTSTModel):
         relations = self.relation_embeddings.to(readout.device)
         return torch.einsum("bd,ekd->bek", readout, relations) / self.temperature
 
-    def potentials_from_scores(self, relation_scores: torch.Tensor) -> torch.Tensor:
+    def deployed_parent_logits(self, image_features: torch.Tensor) -> torch.Tensor:
+        """Return the canonical normalized-prototype evaluation logits."""
+        images = F.normalize(self._validated_images(image_features).float(), dim=-1)
+        prototypes = F.normalize(self.prototypes().float(), dim=-1)
+        logits = images @ prototypes.T * self.scale()
+        if tuple(logits.shape) != (images.size(0), self.class_count):
+            raise ValueError("PCLR parent logits shape错误。")
+        return logits
+
+    def candidate_edge_mask(self, parent_logits: torch.Tensor) -> torch.Tensor:
+        """Select edges whose two endpoints are both in the detached Parent Top-K."""
+        if self.candidate_top_k is None:
+            return torch.ones(
+                parent_logits.size(0),
+                RELATION_EDGE_COUNT,
+                dtype=torch.bool,
+                device=parent_logits.device,
+            )
+        if (
+            parent_logits.ndim != 2
+            or tuple(parent_logits.shape[1:]) != (self.class_count,)
+            or not torch.isfinite(parent_logits).all()
+        ):
+            raise ValueError("Local-PCLR parent logits必须是有限的[batch,200]。")
+        candidate_ids = parent_logits.detach().topk(
+            self.candidate_top_k, dim=1
+        ).indices
+        selected = torch.zeros_like(parent_logits, dtype=torch.bool)
+        selected.scatter_(1, candidate_ids, True)
+        edges = self.edge_index.to(parent_logits.device)
+        return selected[:, edges[:, 0]] & selected[:, edges[:, 1]]
+
+    def potentials_from_scores(
+        self,
+        relation_scores: torch.Tensor,
+        parent_logits: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         """Solve the fixed regularized graph inverse and bound node potentials."""
         if (
             relation_scores.ndim != 3
@@ -211,6 +257,11 @@ class PCLRModel(GTDTSTModel):
         ):
             raise ValueError("PCLR关系分数必须是有限的[batch,438,2]。")
         edge_difference = relation_scores[..., 0] - relation_scores[..., 1]
+        if self.candidate_top_k is not None:
+            if parent_logits is None:
+                raise ValueError("Local-PCLR势能必须绑定Parent Top-K logits。")
+            mask = self.candidate_edge_mask(parent_logits).to(edge_difference.dtype)
+            edge_difference = edge_difference * mask
         potential = edge_difference @ self.laplacian_map.to(
             device=edge_difference.device, dtype=edge_difference.dtype
         ).T
@@ -222,8 +273,14 @@ class PCLRModel(GTDTSTModel):
         )
         return self.potential_cap * potential / denominator
 
-    def potentials(self, image_features: torch.Tensor) -> torch.Tensor:
-        return self.potentials_from_scores(self.relation_scores(image_features))
+    def potentials(
+        self,
+        image_features: torch.Tensor,
+        parent_logits: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        return self.potentials_from_scores(
+            self.relation_scores(image_features), parent_logits
+        )
 
     def pclr_logits(
         self,
@@ -233,20 +290,32 @@ class PCLRModel(GTDTSTModel):
     ) -> torch.Tensor:
         """Return full PCLR logits, slicing the class axis only at the end."""
         if not enabled:
-            # This is deliberately a direct inherited call: module-off is
-            # bitwise TG+GTD rather than a numerically reconstructed analogue.
-            return super().logits(image_features, class_ids)
+            # Legacy PCLR retains its historical direct call.  Local-PCLR fixes
+            # the reporting deviation by matching the canonical normalized-
+            # prototype evaluation used by RUN-030.
+            if self.candidate_top_k is None:
+                return super().logits(image_features, class_ids)
+            parent_full = self.deployed_parent_logits(image_features)
+            if class_ids is None:
+                return parent_full
+            ids = torch.as_tensor(class_ids, device=parent_full.device).long()
+            return parent_full.index_select(1, ids)
 
-        parent_full = super().logits(image_features, None)
+        parent_full = (
+            super().logits(image_features, None)
+            if self.candidate_top_k is None
+            else self.deployed_parent_logits(image_features)
+        )
         parent_std = parent_full.detach().std(
             dim=1, unbiased=False, keepdim=True
         )
         # Reader and beta have their own isolated objectives.  Detaching them
         # here prevents an accidental full-method CE from crossing boundaries.
         correction = (
-            self.beta().detach()
+            self.correction_scale
+            * self.beta().detach()
             * parent_std
-            * self.potentials(image_features).detach()
+            * self.potentials(image_features, parent_full).detach()
         )
         full = parent_full + correction
         if class_ids is not None:
@@ -302,13 +371,20 @@ class PCLRModel(GTDTSTModel):
         self, image_features: torch.Tensor, targets: torch.Tensor
     ) -> torch.Tensor:
         """Seen CE whose only trainable dependency is ``raw_beta``."""
-        parent_full = super().logits(image_features, None).detach()
+        parent_full = (
+            super().logits(image_features, None)
+            if self.candidate_top_k is None
+            else self.deployed_parent_logits(image_features)
+        ).detach()
         target_ids = self._validated_seen_targets(
             targets, parent_full.size(0)
         ).to(parent_full.device)
         parent_std = parent_full.std(dim=1, unbiased=False, keepdim=True).detach()
-        potential = self.potentials(image_features).detach()
-        logits = parent_full + self.beta() * parent_std * potential
+        potential = self.potentials(image_features, parent_full).detach()
+        logits = (
+            parent_full
+            + self.correction_scale * self.beta() * parent_std * potential
+        )
         return F.cross_entropy(logits, target_ids)
 
     @torch.no_grad()
@@ -332,7 +408,12 @@ class PCLRModel(GTDTSTModel):
                 raise ValueError("GTD package诊断不能同时传PCLR targets。")
             return super().diagnostics(image_features)
         scores = self.relation_scores(image_features)
-        potential = self.potentials_from_scores(scores)
+        parent_logits = (
+            None
+            if self.candidate_top_k is None
+            else self.deployed_parent_logits(image_features)
+        )
+        potential = self.potentials_from_scores(scores, parent_logits)
         output = {
             "beta": float(self.beta()),
             "relation_margin_abs_mean": float(
@@ -341,7 +422,13 @@ class PCLRModel(GTDTSTModel):
             "potential_mean_abs": float(potential.abs().mean()),
             "potential_abs_max": float(potential.abs().max()),
             "potential_signed_mean_abs": float(potential.mean(dim=1).abs().max()),
+            "candidate_top_k": float(self.candidate_top_k or self.class_count),
+            "correction_scale": self.correction_scale,
         }
+        if parent_logits is not None:
+            output["active_edge_rate"] = float(
+                self.candidate_edge_mask(parent_logits).float().mean()
+            )
         if targets is not None:
             target_ids = self._validated_seen_targets(
                 targets, scores.size(0)
