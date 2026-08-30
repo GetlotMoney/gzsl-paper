@@ -4,11 +4,11 @@ request: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/PCLR_relation_so
 request_sha256: 52567141f5cba586b89dcefab5129f0c721a23388f38b86e1861632153c539bc
 shards:
   - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/PCLR_relation_sources_v1/pclr_relations_shard0.json
-    sha256: d9cfb247ed7470274646dfd98ed181d7fdb2f997b77106b1c86e5fc067c2f934
+    sha256: 41cd885ec1450638d11c9b772d6c3659734cebcfe9fb87ed6b1a07c04aaaa7bd
   - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/PCLR_relation_sources_v1/pclr_relations_shard1.json
-    sha256: ca8c74a396738669df304102f8ec599b60fbb5ad8facd58fa133a8799ddee56a
+    sha256: 8806b52df2e7377b230cb6da8b1b47933f2e29f0011c0c4526f7fcd0d012dd1e
   - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/PCLR_relation_sources_v1/pclr_relations_shard2.json
-    sha256: c1d7b072c2fe083ca05320b94b4c363d44d7f81dd4d3760a48b9db0942b165aa
+    sha256: d049150c947ed735c807671ca18cad26d2d1644cad4292318c7e60ec64b19301
 parent_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v3/CUB_openai_vitl14_336_dynamic_v3_v1/asset_manifest.json
 parent_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
 clip_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_checkpoints/ViT-L-14-336px.pt
