@@ -78,7 +78,12 @@ def load_multidataset_config(path: Path) -> tuple[dict, str]:
     return config, sha256_file(path)
 
 
-def load_relation_asset(config: dict) -> tuple[torch.Tensor, torch.Tensor, dict]:
+def load_relation_asset(
+    config: dict,
+    *,
+    class_count: int,
+    seen_count: int,
+) -> tuple[torch.Tensor, torch.Tensor, dict]:
     manifest_path = Path(config["relation_manifest"])
     if (
         not manifest_path.is_absolute() or not manifest_path.is_file()
@@ -87,13 +92,26 @@ def load_relation_asset(config: dict) -> tuple[torch.Tensor, torch.Tensor, dict]
         raise ValueError("PCLR multidataset relation manifest mismatch.")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     outputs = manifest.get("outputs_sha256")
+    required_outputs = {
+        "relation_sentence_embeds.pt",
+        "edge_index.pt",
+        "relation_texts.json",
+    }
     if (
         manifest.get("schema_version") != "gzsl-paper.pclr-generic-relation-asset.v1"
         or manifest.get("dataset") != config["dataset"]
+        or manifest.get("class_count") != int(class_count)
+        or manifest.get("seen_count") != int(seen_count)
+        or not isinstance(manifest.get("edge_count"), int)
+        or int(manifest["edge_count"]) <= 0
+        or manifest.get("direction_count") != 2 * int(manifest["edge_count"])
+        or manifest.get("embedding_dimension") != 768
+        or manifest.get("graph_source") != "OpenAI_CLIP_class_name_template_union_top3"
         or manifest.get("human_annotations_used") is not False
         or manifest.get("llm_world_knowledge_used") is not False
         or manifest.get("generic_class_name_directions") is not True
         or not isinstance(outputs, dict)
+        or set(outputs) != required_outputs
     ):
         raise ValueError("PCLR multidataset relation asset schema changed.")
     for name, digest in outputs.items():
@@ -101,15 +119,28 @@ def load_relation_asset(config: dict) -> tuple[torch.Tensor, torch.Tensor, dict]
             raise ValueError(f"PCLR multidataset relation output mismatch: {name}")
     relations = torch.load(
         manifest_path.parent / "relation_sentence_embeds.pt", map_location="cpu", weights_only=True
-    ).float()
-    edges = torch.load(manifest_path.parent / "edge_index.pt", map_location="cpu", weights_only=True).long()
+    )
+    edges = torch.load(
+        manifest_path.parent / "edge_index.pt", map_location="cpu", weights_only=True
+    )
     if (
-        tuple(relations.shape) != (manifest["edge_count"], 2, 768)
+        relations.dtype != torch.float32
+        or edges.dtype != torch.int64
+        or tuple(relations.shape) != (manifest["edge_count"], 2, 768)
         or tuple(edges.shape) != (manifest["edge_count"], 2)
         or not torch.isfinite(relations).all()
         or not torch.allclose(relations.norm(dim=-1), torch.ones_like(relations[..., 0]), atol=1e-4)
+        or int(edges.min()) < 0
+        or int(edges.max()) >= int(class_count)
+        or not bool((edges[:, 0] < edges[:, 1]).all())
+        or torch.unique(edges, dim=0).size(0) != int(manifest["edge_count"])
     ):
         raise ValueError("PCLR multidataset relation tensor contract changed.")
+    degrees = torch.zeros(int(class_count), dtype=torch.long)
+    degrees.scatter_add_(0, edges[:, 0], torch.ones(len(edges), dtype=torch.long))
+    degrees.scatter_add_(0, edges[:, 1], torch.ones(len(edges), dtype=torch.long))
+    if bool(degrees.eq(0).any()):
+        raise ValueError("PCLR multidataset relation graph contains an uncovered class.")
     return relations, edges, manifest
 
 
@@ -223,7 +254,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
     if checkpoint.get("code_commit") != config["source_code_commit"] or checkpoint.get("config_sha256") != source_sha:
         raise ValueError("PCLR multidataset checkpoint identity mismatch.")
     model.load_state_dict(checkpoint["model_state_dict"], strict=True)
-    relations, edges, manifest = load_relation_asset(config)
+    relations, edges, manifest = load_relation_asset(
+        config,
+        class_count=int(tensors["role_sentence_embeds"].size(0)),
+        seen_count=int(model.seen_classes.numel()),
+    )
     result = evaluate(model, tensors, relations, edges, config, device)
     expected = source_metrics["best_metrics"]
     if any(abs(result["raw_metrics"][key] - float(expected[key])) > 1e-6 for key in ("U", "S", "H", "ZS")):
