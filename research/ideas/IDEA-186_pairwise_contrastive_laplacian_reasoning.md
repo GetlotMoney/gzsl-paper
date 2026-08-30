@@ -2,7 +2,7 @@
 idea_id: IDEA-186
 name: Pairwise Contrastive Laplacian Reasoning
 short_name: PCLR
-status: owner_reopened_local_rescue_pending_audit
+status: drop_final_local_rescue_failed
 base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
 parent_run: TUNE-002-RUN-030
 parent_H: 79.070015
@@ -120,3 +120,27 @@ manifest SHA `0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4` 
 environment/GPU fingerprint SHA
 `8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59`。Parent完整轨迹
 另固定SHA `10591bb35a51949a1989ae3a918b50bca37c1f465a52c6bb5df5552c1b0a4779`。
+
+## Local-PCLR正式结果与家族关闭
+
+唯一direct-official fixed-150救援正常完成`21171` updates、`152`个评估点和`150`次
+teacher refresh。best update=`13818`：
+
+`U/S/H/ZS=75.991195/83.094436/79.384234/87.683898`。
+
+- 相对RUN-030 Parent `ΔH=+0.314219`；距离`H=80.070015`仍差`0.685781`。
+- 同checkpoint Local-Off为`U/S/H/ZS=76.212001/81.788653/78.901913/87.016541`，
+  Local-PCLR为`+0.482322 H`；相对原PCLR `79.025018`提高`+0.359216 H`。
+- `|U-S|=7.103240`与ZS安全门通过；seen/unseen净纠错分别`+23/-6`，合计`17`，低于
+  预注册`20`；Parent增益、同checkpoint增益和净纠错三项核心门均未通过。
+- best-ZS独立观察为`87.935549 @ update=18048`，不与best-H拼接。
+- RUN-030的152点评估历史已按update逐点比较，Off的`U/S/H/ZS`全部一致；
+  `module_off_full_history_reproduced=true`，旧PCLR报告偏差已关闭。
+- metrics/model/evaluation history SHA依次为
+  `4be533a63fc25a11bfe0cd09ad9797da7e17215355f7e55e40fec5b8bfc31a21`、
+  `3fe687a08a55e29618efa895691075c8afba239c7b42d01e434d780df189174f`、
+  `43a3e54ecdf95f1722461f7bf96463d78defbdcda1ff1c217cb10f306d9b15a8`。
+
+最终裁决：局部Top-20关系边确实比全438边更有效，且正式结果接近只读诊断`79.402`，
+但增益仍主要来自S上升并伴随U下降，达不到论文核心创新门。IDEA-186及PCLR家族永久
+`drop_final_rescue_gate_failed`；不再运行参数补救、controls或新的PCLR变体。
