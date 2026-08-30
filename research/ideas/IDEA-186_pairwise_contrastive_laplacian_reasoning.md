@@ -2,7 +2,7 @@
 idea_id: IDEA-186
 name: Pairwise Contrastive Laplacian Reasoning
 short_name: PCLR
-status: r3_inference_tune_pending_audit
+status: keep_r3_inference_tune_passed
 base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
 parent_run: TUNE-002-RUN-030
 parent_H: 79.070015
@@ -166,6 +166,18 @@ R2正式RUN签字身份：代码`b0a756dd624e883eb50d19a2455ba06bdc73f118` + 审
 manifest SHA `0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4` +
 environment/GPU fingerprint SHA
 `8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59`。
+
+## R3正式结果
+
+正式只读复算与双GPU micro逐字节一致，metrics SHA为
+`39bea2dbf664dc421cd53b2a4f8d219b85f05b9279e7991b596c61d22aa4042a`：
+
+`U/S/H/ZS=77.806163/82.716906/80.186419/87.612945`。
+
+相对RUN-030 Parent、Raw Off、Calibrated Off分别为`+1.116404/+1.284507/+1.692670 H`；
+gap=`4.910743`、net=`68`、ZS安全，六项AND门全部通过，正式decision为
+`keep_pclr_r3_inference_tune`。必须同时披露effective beta=`0.725859`、上限=`1.7375`、
+`nested_official_test_selection=true`和`strict_blind_claim=false`。
 
 ## R2正式结果
 
