@@ -4,6 +4,10 @@ from model.innovations.pecv import (
     PairwiseErrorCorrectingVerifier,
     corrected_topk_scores,
 )
+from model.innovations.train_pecv_gate import (
+    _stable_topk_local,
+    _truth_injected_train_candidates,
+)
 
 
 def _inputs(batch=4, classes=6, roles=8, dim=12):
@@ -58,3 +62,24 @@ def test_pair_residual_is_zero_sum():
     torch.testing.assert_close(
         (output - parent).sum(dim=1), torch.zeros(4), rtol=0, atol=1e-6
     )
+
+
+def test_stable_topk_breaks_ties_by_global_id():
+    logits = torch.tensor([[1.0, 1.0, 0.0]])
+    local_to_global = torch.tensor([20, 10, 30])
+    ranked = _stable_topk_local(
+        logits, torch.arange(3), local_to_global, top_k=3
+    )
+    assert ranked.tolist() == [[1, 0, 2]]
+
+
+def test_truth_injected_candidates_use_four_strongest_wrong_classes():
+    logits = torch.tensor([[0.4, 0.9, 0.8, 0.7, 0.6, 0.5]])
+    truth = torch.tensor([0])
+    candidates = _truth_injected_train_candidates(
+        logits,
+        truth,
+        torch.arange(6),
+        torch.arange(100, 106),
+    )
+    assert candidates.tolist() == [[0, 1, 2, 3, 4]]

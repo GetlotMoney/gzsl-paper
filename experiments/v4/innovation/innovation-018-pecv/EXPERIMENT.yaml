@@ -6,7 +6,7 @@ evidence_refs:
 base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
 research_question: Can a shared pair verifier correct frozen Parent Top-5 ordering on 50 classes absent from verifier gradients?
 parent: frozen fixed-50 TG+GTD Parent produced by IDEA-171
-train_boundary: 100 dev-seen classes, 4702 images
+train_boundary: 100 dev-seen classes, 4702 images; each row uses truth plus Parent's four strongest wrong seen candidates
 eval_boundary: 50 dev-unseen classes, 2355 images, no gradient
 primary_metric: class-disjoint macro Top-1 gain over Parent
 success_condition:

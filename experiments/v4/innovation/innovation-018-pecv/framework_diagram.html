@@ -6,5 +6,5 @@
 <p>准确父提交：<code>52088f69d7ac4e574e7b63c28b21ac0da7789933</code>。本图对应V4-TRY-013 pre-run代码身份，实际RUN commit由metrics回写。</p>
 <div class="row"><div class="box">冻结CLIP全局特征<br>[B,768]</div><span class="arrow">+</span><div class="box">冻结TG+GTD<br>150原型与8角色文本</div><span class="arrow">→</span><div class="box">冻结Parent Top-5<br>[B,5]</div></div>
 <div class="row"><div class="box new">共享PECV Reader<br>图像 × 候选A/B语义差异<br>输出反对称纠错 c(A,B)</div><span class="arrow">→</span><div class="box new">Top-5内全部候选对<br>零和累加纠错</div><span class="arrow">→</span><div class="box">Parent分数 + 纠错<br>class-disjoint Macro Top-1</div></div>
-<div class="note"><b>训练：</b>100类4702图，只学习真实类胜过Parent最难错误类的pairwise logistic loss。<br><b>评估：</b>50类2355图完全不进入梯度；比较Parent、Full、打乱语义。<br><b>关闭路径：</b>verifier=None时直接返回原Parent分数张量。<br><b>边界：</b>本Gate不报告正式U/S/H/ZS，也不使用unseen图像梯度。</div>
+<div class="note"><b>训练：</b>100类4702图；每图固定为“真类＋Parent最强4个错误seen类”，用与部署完全相同的10个候选对零和聚合，再做Top-5交叉熵。<br><b>评估：</b>50类2355图完全不进入梯度；比较Parent、Full、打乱语义。<br><b>关闭路径：</b>verifier=None时直接返回原Parent分数，并与冻结Parent receipt逐项核对。<br><b>边界：</b>本Gate不报告正式U/S/H/ZS，也不使用unseen图像梯度。</div>
 </body></html>
