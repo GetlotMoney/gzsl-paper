@@ -2,7 +2,7 @@
 idea_id: IDEA-186
 name: Pairwise Contrastive Laplacian Reasoning
 short_name: PCLR
-status: drop_final_local_rescue_failed
+status: owner_reopened_final_tuned_rescue_pending_audit
 base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
 parent_run: TUNE-002-RUN-030
 parent_H: 79.070015
@@ -144,3 +144,18 @@ teacher refresh。best update=`13818`：
 最终裁决：局部Top-20关系边确实比全438边更有效，且正式结果接近只读诊断`79.402`，
 但增益仍主要来自S上升并伴随U下降，达不到论文核心创新门。IDEA-186及PCLR家族永久
 `drop_final_rescue_gate_failed`；不再运行参数补救、controls或新的PCLR变体。
+
+## Owner覆盖关闭结论：唯一R2联合调参
+
+Owner明确认为`+0.314 H`属于难得的真实提升并要求继续。对R1正式best checkpoint只读
+扫描后，Top-15、ridge=`0.03`、correction scale=`2.38`、seen-logit gamma=`0.525`
+得到`U/S/H/ZS=79.565275/80.288148/79.925077/87.938917`，距`80.070015`仅
+`0.144938`。同checkpoint只做最优gamma的Parent最高`H=79.027716`；固定R2 gamma下
+calibrated Off为`H=78.539576`，R2 Full相对它`+1.385500 H`，因此不是纯校准假增益。
+
+Owner只授权这一组进入最终R2，不再搜索更多网格。R2代码commit为
+`b0a756dd624e883eb50d19a2455ba06bdc73f118`，config SHA为
+`0861877ae3e4725e29aff547d45e0b6d56a186179309acb5493c5906b803fd49`。gamma只在
+official Full/Calibrated-Off评估中应用，不进入seen-only beta loss；Raw Off继续与
+RUN-030的152点逐点硬校验。R2仍须同时达到原`H>=80.070015`、相对Parent和Raw Off
+至少`+1 H`、gap/ZS/net门，否则最终关闭。
