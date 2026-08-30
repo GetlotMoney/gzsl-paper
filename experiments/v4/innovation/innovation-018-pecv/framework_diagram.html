@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>V4-TRY-013 PECV</title>
+<style>body{font:16px system-ui;margin:36px;color:#18202a}.row{display:flex;gap:18px;align-items:center;margin:24px 0}.box{border:2px solid #4776b9;border-radius:12px;padding:16px;max-width:260px}.new{border-color:#d66b32;background:#fff6ef}.arrow{font-size:26px}.note{background:#f4f6f8;padding:14px;border-radius:10px}</style></head>
+<body><h1>PECV：冻结Parent候选内的两两纠错</h1>
+<p>准确父提交：<code>52088f69d7ac4e574e7b63c28b21ac0da7789933</code>。本图对应V4-TRY-013 pre-run代码身份，实际RUN commit由metrics回写。</p>
+<div class="row"><div class="box">冻结CLIP全局特征<br>[B,768]</div><span class="arrow">+</span><div class="box">冻结TG+GTD<br>150原型与8角色文本</div><span class="arrow">→</span><div class="box">冻结Parent Top-5<br>[B,5]</div></div>
+<div class="row"><div class="box new">共享PECV Reader<br>图像 × 候选A/B语义差异<br>输出反对称纠错 c(A,B)</div><span class="arrow">→</span><div class="box new">Top-5内全部候选对<br>零和累加纠错</div><span class="arrow">→</span><div class="box">Parent分数 + 纠错<br>class-disjoint Macro Top-1</div></div>
+<div class="note"><b>训练：</b>100类4702图，只学习真实类胜过Parent最难错误类的pairwise logistic loss。<br><b>评估：</b>50类2355图完全不进入梯度；比较Parent、Full、打乱语义。<br><b>关闭路径：</b>verifier=None时直接返回原Parent分数张量。<br><b>边界：</b>本Gate不报告正式U/S/H/ZS，也不使用unseen图像梯度。</div>
+</body></html>

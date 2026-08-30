@@ -1,0 +1,16 @@
+experiment_id: V4-TRY-013
+title: Pairwise Error-Correcting Verifier class-disjoint gate
+idea_id: IDEA-182
+evidence_refs:
+  - /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/prequeue/IDEA-171-hcvc-gate-seed7/EVAL/metrics.json
+base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
+research_question: Can a shared pair verifier correct frozen Parent Top-5 ordering on 50 classes absent from verifier gradients?
+parent: frozen fixed-50 TG+GTD Parent produced by IDEA-171
+train_boundary: 100 dev-seen classes, 4702 images
+eval_boundary: 50 dev-unseen classes, 2355 images, no gradient
+primary_metric: class-disjoint macro Top-1 gain over Parent
+success_condition:
+  macro_gain_pp: 1.0
+  semantic_control_drop_pp: 0.5
+  module_off_exact_parent: true
+status: pre_run

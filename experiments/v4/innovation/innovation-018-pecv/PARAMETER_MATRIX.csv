@@ -1,0 +1,4 @@
+condition,verifier,semantic_mapping,top_k,updates,primary_role
+Parent,off,correct,5,0,matched_parent
+PECV-Full,on,correct,5,1000,primary
+PECV-Shuffled,on,rolled_by_one_class,5,1000,semantic_control

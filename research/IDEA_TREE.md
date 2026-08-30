@@ -192,3 +192,5 @@ V2-H-PLUS-3PP
 - 失败节点保留在树中，不删除、不重编号，也不事后修改成功门槛。
 
 当前创新1闭环：`PAPER-001 → IDEA-001 → legacy H1 evidence → FRAMEWORK-V2 → V2-CONFIRM-001`。owner已授权直接迁移H1旧实验，IDEA-001现标记为`supported / paper_core_innovation`。
+
+V4独立候选：`testing_branch：IDEA-182 / PECV候选两两纠错验证器（100类训练→50类隔离验证）`。
