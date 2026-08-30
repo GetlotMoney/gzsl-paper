@@ -13,4 +13,4 @@ success_condition:
   macro_gain_pp: 1.0
   semantic_control_drop_pp: 0.5
   module_off_exact_parent: true
-status: pre_run
+status: gate_passed

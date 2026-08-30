@@ -33,4 +33,16 @@ P2：语义shuffle只能支持整体语义映射贡献；class-frequency训练�
 
 ## Post-fix复核
 
-待同两名Agent针对最终post-fix提交并行复核后回填。只有双方均报告`P0=0/P1=0`、完成直接互认并共同写出“代码单轮双Agent对抗审核通过”后，才能启动服务器micro与Gate训练。
+- Post-fix提交：`6043e1d7cc5c1af219a7dc0a952398faff27c91f`。
+- 同Agent A/B并行复核5组P1均已关闭，未发现新P0/P1。
+- 双方直接交换复核清单并完成质询互认：`P0=0/P1=0`。
+- 共同结论：**代码单轮双Agent对抗审核通过**。
+
+剩余P2：失败中断会留下空输出目录；shuffle只支持整体语义映射claim；图像频率训练与macro评估可能偏移；Gate checkpoint只验证严格恢复输出，不承诺任意中间步续训等值；TF32需在micro记录。
+
+## GPU micro与真实Gate
+
+- micro commit/config：`6043e1d` / `10ddca9d...`。
+- micro：loss `0.391060`，finite gradient、optimizer step、Parent receipt exact、checkpoint roundtrip全部通过；RTX 4090峰值显存`115,508,224` bytes。
+- TF32：CUDA matmul=`false`，cuDNN=`true`；本Gate不使用卷积。
+- Gate训练：固定1000 updates完成，输出metrics/evidence/checkpoint三文件；代码树clean，训练结束后GPU释放。

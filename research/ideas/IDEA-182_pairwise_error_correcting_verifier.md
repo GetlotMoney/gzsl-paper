@@ -10,7 +10,7 @@ hypothesis: 一个不接收类别ID、只读取冻结图像特征与两候选角
 core_change: 在冻结Parent Top-5内增加反对称、零和的候选两两纠错分数；不改TG、GTD、图像特征或候选集合。
 success_condition: 50类class-disjoint宏平均Top-1相对Parent提高至少1.0个百分点，整体打乱候选原型与角色语义后至少损失0.5个百分点，关闭模块逐值返回Parent，且纠正数大于损坏数。
 failure_condition: 未达到任一成功条件，或纠错损坏数不低于纠正数。
-status: testing
+status: supported
 ---
 
 # IDEA-182：候选两两纠错验证器（PECV）
@@ -19,4 +19,6 @@ status: testing
 
 它不是新的视觉生成器，也不读取unseen图像梯度。训练只使用100个dev-seen类的冻结特征与错误候选；2355张dev-unseen图像只在训练结束后评估。
 
-当前阶段只验证可迁移的排序增益，不提前宣称范式级创新或正式GZSL增益。
+Gate结果：Parent `67.9755%` → PECV `72.5250%`（`+4.5495pp`），纠正/损坏=`121/12`，整体语义打乱后为`32.0389%`。假设在class-disjoint proof gate上成立。
+
+边界：当前只验证可迁移的排序增益，不提前宣称范式级创新或正式GZSL增益；下一步必须在正式200类TG+GTD联合竞争中验证U/S/H/ZS和同checkpoint移除。
