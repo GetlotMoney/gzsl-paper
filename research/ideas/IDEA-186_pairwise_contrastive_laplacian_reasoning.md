@@ -111,3 +111,12 @@ Top-20内的关系边，其余边差置零后继续使用原固定Laplacian map�
 config SHA为`606b0e4d3b69cb3b750d275e13b960bca26025ba72d1a6948964f099b5dd7093`。新增forward和
 beta loss语义必须先完成同一冻结身份的双Agent对抗审核、真实GPU micro和Off完整parity，
 通过后才允许唯一direct-official 150轮Full；未过原`+1 H`门则永久关闭PCLR家族。
+
+正式RUN签字身份固定为：运行代码commit
+`9028fd79c415f3cac670b1644d77403920b1f4e7` + 审查声明提交tree
+`4d275c74ce8f990170546a8dbfa5d15fdfbc10e5` + config SHA
+`606b0e4d3b69cb3b750d275e13b960bca26025ba72d1a6948964f099b5dd7093` + relation
+manifest SHA `0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4` +
+environment/GPU fingerprint SHA
+`8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59`。Parent完整轨迹
+另固定SHA `10591bb35a51949a1989ae3a918b50bca37c1f465a52c6bb5df5552c1b0a4779`。
