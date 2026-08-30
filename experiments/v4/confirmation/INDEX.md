@@ -39,6 +39,9 @@ V4不复制V3结果文件；以下证据直接绑定原RUN、原代码提交、�
   relation manifest SHA：`385744e7532ddf12862c3926878bac64422a902cdeeb87e30a9667045d4093b8`。
 - 两套关系资产均为同CLIP类名方向句，`human_annotations_used=false`、
   `llm_world_knowledge_used=false`。它们验证可扩展的generic PCLR接口，不冒充CUB的LLM形态差异句。
+- 正式签字：代码`d1d8940844e2e540234a7cb8fae688d80efb5247` + 审查tree
+  `17e831fef00a09dbaa7882f61c7be13cb68b1790` + 双数据集config/asset SHA + 环境fingerprint
+  `8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59`。
 
 ## 适用边界
 
