@@ -25,6 +25,21 @@ V4不复制V3结果文件；以下证据直接绑定原RUN、原代码提交、�
 - 共享审查证据：`/data/lby/projects/cv_project/GZSL_Warehouse/reviews/v3/gtd-multidataset/4013cca894b00933f6bfed0a125690c66e54cba1/shared_evidence.json`。
 - 原始审查账本：`experiments/v3/GTD_MULTIDATASET_REVIEW.md`与`experiments/v3/EXPERIMENT_QUEUE.csv`。
 
+## PCLR跨数据集确认（进行中）
+
+| RUN | 数据集 | Source | 关系资产 | 预检ΔH | 状态 |
+|---|---|---|---|---:|---|
+| V4-CONFIRM-003-AWA2 | AWA2 | V3-TRY-046 | generic Top-3 / 117 edges | +0.233690 | audit pending |
+| V4-CONFIRM-003-SUN | SUN | V3-TRY-047 | generic Top-3 / 1633 edges | +0.983386 | audit pending |
+
+- 评估代码：`89b666fe93f6336acd3aaca159910c5ebbfa4286`。
+- AWA2 config SHA：`4c636b5371604cde8ae486ec09c81231d8b3580ce4a8d6a3a021227b4d083c88`；
+  relation manifest SHA：`f93c9a690ce068614bc9792e6b60e989a4fe1fefebeb5df4a0273737e7bdadb2`。
+- SUN config SHA：`43e5f568de8d998d0186116504527433d5c80194e67f527837ceea22ccadb356`；
+  relation manifest SHA：`385744e7532ddf12862c3926878bac64422a902cdeeb87e30a9667045d4093b8`。
+- 两套关系资产均为同CLIP类名方向句，`human_annotations_used=false`、
+  `llm_world_knowledge_used=false`。它们验证可扩展的generic PCLR接口，不冒充CUB的LLM形态差异句。
+
 ## 适用边界
 
 - 三数据集均验证同一TG+GTD代码路径、dataset-specific类别轴、U/S/H/ZS出口和theta-zero关闭路径。
