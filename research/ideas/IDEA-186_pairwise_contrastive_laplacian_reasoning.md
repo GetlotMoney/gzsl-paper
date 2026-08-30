@@ -2,7 +2,7 @@
 idea_id: IDEA-186
 name: Pairwise Contrastive Laplacian Reasoning
 short_name: PCLR
-status: hold_near_target_gate_failed
+status: drop_final_rescue_gate_failed
 base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
 parent_run: TUNE-002-RUN-030
 parent_H: 79.070015
@@ -191,6 +191,9 @@ best update=`13818`：
 `H=79.925072`（scale约`2.38`、gamma约`0.522`），说明当前固定checkpoint已经处于
 离散参数平台，继续细调K/ridge/scale/gamma没有证据补足剩余`0.145 H`。
 
-Owner明确不希望直接放弃，因此状态保留为`hold_near_target_gate_failed`：这是当前强候选和
-后续新机制的父证据，但不是已接纳创新。下一步若继续，必须提出能提升图像/关系判别本身的
-新Experiment，不能再把同一checkpoint参数扫描包装成补救。
+两名Reviewer对正式结果独立复核并直接交叉质询后共同裁定：运行身份和结果合同有效，
+`P0=0/P1=0`，但成功门是AND关系；绝对H与Parent增益两项均失败。R2已被明确授权为
+唯一最终调参补救，因此不存在未消费的预注册触发条款。任何gamma、scale、Top-K、ridge、
+cap、checkpoint或门槛再选择都属于看过official结果后的额外搜索。最终状态为
+`drop_final_rescue_gate_failed`，PCLR家族关闭；结果可作为后续独立机制的失败证据，不能
+写成已接纳创新。

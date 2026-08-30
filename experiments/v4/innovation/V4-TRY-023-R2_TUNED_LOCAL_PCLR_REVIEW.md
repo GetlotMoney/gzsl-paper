@@ -36,3 +36,22 @@ loss=`3.786259`且梯度有限。gamma=`0.525`，初始effective beta=`0.119`，
 
 本轮复用了R1资产、Parent history、测试入口和micro脚本，只补R2 gamma/配置差异证据；
 未运行controls、重复全量SHA、框架图或额外参数网格。
+
+## 正式RUN结果复核
+
+正式RUN完整完成fixed-150：`21171` updates、`152`个评估点、`150`次teacher refresh，
+`stop_reason=completed_fixed_150`。best update=`13818`：
+
+`U/S/H/ZS=79.565275/80.288148/79.925077/87.938917`。
+
+- 相对RUN-030为`+0.855062 H`，距`H=80.070015`和`+1 H`门均差`0.144938`。
+- 同checkpoint Raw Off为`+1.023164 H`；同gamma Calibrated Off为`+1.385500 H`。
+- `|U-S|=0.722873`，Raw-Off seen/unseen净纠错为`-24/+100`，合计`+76`，ZS安全。
+- Raw Off全部`152`点复现RUN-030；metrics SHA为
+  `3d64bd36e48304b025044b109c579001279400ccec075fc1246496c4f28e8578`。
+
+两名Reviewer独立复核公式、身份、门槛和结果合同后直接交叉质询，共同结论为
+`VALID RUN / GATE FAIL / DROP FINAL / NO RESCUE`，`P0=0/P1=0`。Raw-Off增益和净纠错
+包含gamma+PCLR整体；纯PCLR只能引用Calibrated-Off增益及净纠错`+38`。R2已明确是唯一
+最终调参补救，后续再选择gamma、scale、Top-K、ridge、cap、checkpoint或门槛均为事后
+official-test搜索，不符合预注册合同。
