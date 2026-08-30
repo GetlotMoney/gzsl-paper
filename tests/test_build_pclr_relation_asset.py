@@ -64,6 +64,7 @@ class BuildPCLRRelationAssetTest(unittest.TestCase):
             "edge_count": EXPECTED_EDGE_COUNT,
             "class_names_sha256": class_names_sha,
             "clip_checkpoint_sha256": checkpoint_sha,
+            "clip_python_source_sha256": "2" * 64,
             "graph_source": "OpenAI_CLIP_class_name_template_union_top3",
             "template": "a photo of a {class}",
             "seen_induced_min_degree": 1,
@@ -116,6 +117,7 @@ class BuildPCLRRelationAssetTest(unittest.TestCase):
             "counts": {"train": 7057, "test_seen": 1764, "test_unseen": 2967},
             "class_order_sha256": class_names_sha,
             "clip_checkpoint_sha256": checkpoint_sha,
+            "clip_python_source_sha256": "3" * 64,
             "v3_dynamic_extensions": {"human_annotations_used": False},
             "outputs_sha256": {"class_names.json": class_names_sha},
         }
@@ -170,6 +172,7 @@ class BuildPCLRRelationAssetTest(unittest.TestCase):
             self.assertEqual(result["schema_version"], ASSET_SCHEMA)
             self.assertFalse(result["human_annotations_used"])
             self.assertTrue(result["llm_world_knowledge_used"])
+            self.assertFalse(result["relation_encoder_matches_parent"])
             self.assertEqual(
                 tuple(torch.load(output / "edge_index.pt", weights_only=True).shape),
                 (EXPECTED_EDGE_COUNT, 2),

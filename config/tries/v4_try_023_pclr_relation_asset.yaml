@@ -1,7 +1,7 @@
 schema_version: gzsl-paper.pclr-relation-asset-config.v1
 dataset: CUB
 request: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/PCLR_relation_sources_v1/pclr_edge_request.json
-request_sha256: d0f1e685a29c291941921d47eb2e4e9e6a3056710dfdea3033f5bbfeb170ef08
+request_sha256: 52567141f5cba586b89dcefab5129f0c721a23388f38b86e1861632153c539bc
 shards:
   - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/PCLR_relation_sources_v1/pclr_relations_shard0.json
     sha256: d9cfb247ed7470274646dfd98ed181d7fdb2f997b77106b1c86e5fc067c2f934

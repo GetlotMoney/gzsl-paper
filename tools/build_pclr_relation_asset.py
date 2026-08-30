@@ -142,6 +142,11 @@ def load_relation_texts(config: dict) -> tuple[dict, list[dict]]:
         or request.get("template") != EXPECTED_TEMPLATE
         or request.get("seen_induced_min_degree", 0) < 1
         or request.get("clip_checkpoint_sha256") != config["clip_checkpoint_sha256"]
+        or _validate_sha256(
+            request.get("clip_python_source_sha256"),
+            "request.clip_python_source_sha256",
+        )
+        != request.get("clip_python_source_sha256")
         or not isinstance(edges, list)
         or len(edges) != EXPECTED_EDGE_COUNT
     ):
@@ -273,7 +278,9 @@ def _load_parent(config: dict, request: dict) -> dict:
     return parent
 
 
-def _runtime_encoder_identity(parent: dict, batch_size: int) -> dict:
+def _runtime_encoder_identity(
+    parent: dict, batch_size: int, expected_clip_source_sha256: str
+) -> dict:
     import clip
 
     package_root = Path(clip.__file__).resolve().parent
@@ -283,8 +290,8 @@ def _runtime_encoder_identity(parent: dict, batch_size: int) -> dict:
         if not source.is_file():
             raise FileNotFoundError(f"PCLR OpenAI CLIP源码缺失：{source}")
         source_hashes[filename] = sha256_file(source)
-    if source_hashes["clip.py"] != parent.get("clip_python_source_sha256"):
-        raise ValueError("PCLR运行时OpenAI CLIP源码与parent资产不一致。")
+    if source_hashes["clip.py"] != expected_clip_source_sha256:
+        raise ValueError("PCLR运行时OpenAI CLIP源码与关系图预注册身份不一致。")
     distribution = importlib.metadata.distribution("clip")
     direct_url_text = distribution.read_text("direct_url.json")
     direct_url = json.loads(direct_url_text) if direct_url_text else None
@@ -337,7 +344,11 @@ def run(
     if _text_encoder is None:
         if _encoder_identity is not None:
             raise ValueError("生产encoder identity必须由运行时自动采集。")
-        encoder_identity = _runtime_encoder_identity(parent, int(batch_size))
+        encoder_identity = _runtime_encoder_identity(
+            parent,
+            int(batch_size),
+            request["clip_python_source_sha256"],
+        )
         encoder = _production_text_encoder
     else:
         if (
@@ -386,6 +397,16 @@ def run(
             "request_sha256": config["request_sha256"],
             "shard_sha256": [item["sha256"] for item in config["shards"]],
             "clip_checkpoint_sha256": config["clip_checkpoint_sha256"],
+            "relation_clip_python_source_sha256": request[
+                "clip_python_source_sha256"
+            ],
+            "parent_clip_python_source_sha256": parent.get(
+                "clip_python_source_sha256"
+            ),
+            "relation_encoder_matches_parent": (
+                request["clip_python_source_sha256"]
+                == parent.get("clip_python_source_sha256")
+            ),
             "outputs_sha256": outputs_sha,
             "encoder_identity_sha256": _canonical_sha256(encoder_identity),
         }
@@ -408,6 +429,16 @@ def run(
             "shard_sha256": [item["sha256"] for item in config["shards"]],
             "parent_manifest_sha256": config["parent_manifest_sha256"],
             "clip_checkpoint_sha256": config["clip_checkpoint_sha256"],
+            "relation_clip_python_source_sha256": request[
+                "clip_python_source_sha256"
+            ],
+            "parent_clip_python_source_sha256": parent.get(
+                "clip_python_source_sha256"
+            ),
+            "relation_encoder_matches_parent": (
+                request["clip_python_source_sha256"]
+                == parent.get("clip_python_source_sha256")
+            ),
             "class_names_sha256": request["class_names_sha256"],
             "graph_source": request["graph_source"],
             "template": request["template"],
