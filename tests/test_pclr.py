@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import unittest
+import hashlib
+import json
+import tempfile
 from pathlib import Path
 
 import torch
@@ -9,7 +12,13 @@ import torch.nn.functional as F
 
 from model.innovations.gtd_tst import GTDTSTModel
 from model.innovations.pclr import PCLRModel
-from model.innovations.train_gtd_tst import load_config
+from model.innovations.train_gtd_tst import (
+    evaluation_updates,
+    load_config,
+    load_pclr_parent_history,
+    validate_pclr_off_history,
+    validate_tune_run_identity,
+)
 
 
 class _FakeVPR(nn.Module):
@@ -274,6 +283,68 @@ class PCLRTest(unittest.TestCase):
         self.assertTrue(
             all(parameter.grad is None for parameter in model.parent_parameters())
         )
+
+    def test_local_parent_history_is_sha_bound_and_every_point_is_compared(self):
+        config, _ = load_config(
+            Path("config/tries/v4_try_023_r1_local_pclr_rescue.yaml")
+        )
+        updates = [0, *evaluation_updates()]
+        rows = [
+            {
+                "evaluation_index": index,
+                "update": update,
+                "U": 70.0 + index / 1000,
+                "S": 80.0,
+                "H": 75.0,
+                "ZS": 85.0,
+            }
+            for index, update in enumerate(updates)
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "evaluation_history.json"
+            path.write_text(json.dumps({"rows": rows}), encoding="utf-8")
+            config["parent_evaluation_history"] = str(path.resolve())
+            config["parent_evaluation_history_sha256"] = hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
+            parent = load_pclr_parent_history(config)
+            history = [
+                {
+                    "evaluation_index": row["evaluation_index"],
+                    "update": row["update"],
+                    "module_off_metrics": {
+                        metric: row[metric] for metric in ("U", "S", "H", "ZS")
+                    },
+                }
+                for row in parent
+            ]
+            validate_pclr_off_history(history, parent)
+            history[131]["module_off_metrics"]["ZS"] -= 0.01
+            with self.assertRaisesRegex(RuntimeError, "evaluation_index=131"):
+                validate_pclr_off_history(history, parent)
+
+    def test_local_output_dir_and_off_subset_contracts_are_strict(self):
+        config, digest = load_config(
+            Path("config/tries/v4_try_023_r1_local_pclr_rescue.yaml")
+        )
+        validate_tune_run_identity(
+            config, digest, digest, Path("V4-TRY-023-R1")
+        )
+        with self.assertRaisesRegex(ValueError, "output-dir"):
+            validate_tune_run_identity(config, digest, digest, Path("wrong"))
+        model = self._local_model().eval()
+        with self.assertRaisesRegex(ValueError, "class_ids"):
+            model.pclr_logits(
+                self.images,
+                torch.tensor([0, 0, 151]),
+                enabled=False,
+            )
+        diagnostics = model.pclr_diagnostics(self.images)
+        self.assertAlmostEqual(
+            diagnostics["effective_beta"],
+            1.25 * diagnostics["beta"],
+        )
+        self.assertEqual(diagnostics["effective_beta_max"], 0.3125)
 
 
 if __name__ == "__main__":

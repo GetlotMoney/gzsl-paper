@@ -13,6 +13,8 @@ tg_checkpoint: null
 tg_checkpoint_sha256: null
 parent_run_id: TUNE-002-RUN-030
 parent_best_update: 14241
+parent_evaluation_history: /data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-030/evaluation_history.json
+parent_evaluation_history_sha256: 10591bb35a51949a1989ae3a918b50bca37c1f465a52c6bb5df5552c1b0a4779
 parent_metrics_percent:
   U: 76.164645
   S: 82.205832

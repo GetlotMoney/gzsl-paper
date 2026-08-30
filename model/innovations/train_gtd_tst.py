@@ -217,6 +217,8 @@ LOCAL_PCLR_CONFIG_KEYS = PCLR_CONFIG_KEYS | {
     "candidate_top_k",
     "edge_selection",
     "correction_scale",
+    "parent_evaluation_history",
+    "parent_evaluation_history_sha256",
 }
 
 
@@ -383,6 +385,10 @@ def load_config(path: Path) -> tuple[dict, str]:
                     int(config["candidate_top_k"]) != 20
                     or config["edge_selection"] != "both_endpoints_in_parent_topk"
                     or float(config["correction_scale"]) != 1.25
+                    or config["parent_evaluation_history"]
+                    != "/data/lby/projects/cv_project/GZSL_Warehouse/tune/v4/TUNE-002_tg_gtd_hparams/RUN-030/evaluation_history.json"
+                    or config["parent_evaluation_history_sha256"]
+                    != "10591bb35a51949a1989ae3a918b50bca37c1f465a52c6bb5df5552c1b0a4779"
                 )
             )
         )
@@ -441,6 +447,62 @@ def load_config(path: Path) -> tuple[dict, str]:
     if invalid:
         raise ValueError("GTD运行身份、初始化方式或条件开关错误。")
     return config, sha256_file(path)
+
+
+def load_pclr_parent_history(config: dict) -> list[dict]:
+    """Load the SHA-bound canonical RUN-030 trajectory for Local-PCLR parity."""
+    if config["schema_version"] != LOCAL_PCLR_SCHEMA:
+        return []
+    path = Path(config["parent_evaluation_history"])
+    if (
+        not path.is_absolute()
+        or not path.is_file()
+        or sha256_file(path) != config["parent_evaluation_history_sha256"]
+    ):
+        raise ValueError("Local-PCLR Parent完整历史路径或SHA错误。")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    rows = payload.get("rows") if isinstance(payload, dict) else None
+    if not isinstance(rows, list) or len(rows) != 152:
+        raise ValueError("Local-PCLR Parent历史必须包含152个评估点。")
+    for index, row in enumerate(rows):
+        if (
+            not isinstance(row, dict)
+            or int(row.get("evaluation_index", -1)) != index
+            or set(("U", "S", "H", "ZS", "update")) - set(row)
+            or any(
+                not math.isfinite(float(row[metric]))
+                for metric in ("U", "S", "H", "ZS")
+            )
+        ):
+            raise ValueError(f"Local-PCLR Parent历史第{index}点评估身份错误。")
+    expected_updates = [0, *evaluation_updates()]
+    if [int(row["update"]) for row in rows] != expected_updates:
+        raise ValueError("Local-PCLR Parent历史update轴错误。")
+    return rows
+
+
+def validate_pclr_off_history(
+    history: list[dict],
+    parent_rows: list[dict],
+) -> None:
+    """Require every completed Off point to match RUN-030 U/S/H/ZS."""
+    if not parent_rows or len(history) > len(parent_rows):
+        raise ValueError("Local-PCLR Parent历史未绑定或评估点越界。")
+    for index, actual in enumerate(history):
+        expected = parent_rows[index]
+        off = actual.get("module_off_metrics")
+        if (
+            int(actual.get("evaluation_index", -1)) != index
+            or int(actual.get("update", -1)) != int(expected["update"])
+            or not isinstance(off, dict)
+            or any(
+                abs(float(off[metric]) - float(expected[metric])) > 1e-6
+                for metric in ("U", "S", "H", "ZS")
+            )
+        ):
+            raise RuntimeError(
+                f"Local-PCLR Off未逐点复现RUN-030：evaluation_index={index}。"
+            )
 
 
 def checkpoint_parent_metrics(
@@ -1325,6 +1387,11 @@ def validate_tune_run_identity(
     if config["schema_version"] in PCLR_SCHEMAS:
         if expected_config_sha != config_sha:
             raise ValueError("PCLR expected-config-sha与实际配置不一致。")
+        if (
+            config["schema_version"] == LOCAL_PCLR_SCHEMA
+            and output_dir.name != config["experiment_id"]
+        ):
+            raise ValueError("Local-PCLR output-dir末级必须与RUN身份一致。")
         return
     if config["schema_version"] != TUNE_SCHEMA:
         return
@@ -1357,6 +1424,7 @@ def run(
         raise ValueError("GTD expected-commit与当前干净HEAD不一致。")
     config, config_sha = load_config(config_path)
     validate_tune_run_identity(config, config_sha, expected_config_sha, output_dir)
+    parent_reference_rows = load_pclr_parent_history(config)
     spec = DATASET_SPECS[config["dataset"]]
     train_count = int(spec["train_count"])
     seen_count = int(spec["seen_count"])
@@ -1539,6 +1607,8 @@ def run(
                 }
             )
             history = [initial]
+            if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+                validate_pclr_off_history(history, parent_reference_rows)
             best_metrics = copy.deepcopy(initial)
             best_state = copy.deepcopy(model.state_dict())
             best_update = 0
@@ -1580,6 +1650,8 @@ def run(
             teacher_history = checkpoint["teacher_refresh_history"]
             next_teacher_refresh = checkpoint["next_teacher_refresh_update"]
             history = checkpoint["history"]
+            if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+                validate_pclr_off_history(history, parent_reference_rows)
             parent_metrics = checkpoint_parent_metrics(
                 checkpoint, config["parent_metrics_percent"]
             )
@@ -1761,6 +1833,8 @@ def run(
                 }
             )
             history.append(metrics)
+            if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+                validate_pclr_off_history(history, parent_reference_rows)
             print(
                 f"eval={metrics['evaluation_index']} update={update} "
                 f"U={metrics['U']:.6f} S={metrics['S']:.6f} H={metrics['H']:.6f} "
@@ -1830,6 +1904,10 @@ def run(
         ):
             raise RuntimeError("GTD完整训练必须逐名义epoch保存确定性teacher refresh。")
         if pclr_enabled:
+            if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+                validate_pclr_off_history(history, parent_reference_rows)
+                if len(history) != len(parent_reference_rows):
+                    raise RuntimeError("Local-PCLR Off完整轨迹没有覆盖152点评估。")
             off_matches_parent = (
                 int(best_module_off["update"]) == PCLR_PARENT_BEST_UPDATE
                 and all(
@@ -1857,6 +1935,16 @@ def run(
             model_best_payload["pclr_asset_identity"] = tensors[
                 "_pclr_asset_identity"
             ]
+        if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+            model_best_payload["local_pclr_contract"] = {
+                "config_sha256": config_sha,
+                "candidate_top_k": int(config["candidate_top_k"]),
+                "edge_selection": config["edge_selection"],
+                "correction_scale": float(config["correction_scale"]),
+                "parent_evaluation_history_sha256": config[
+                    "parent_evaluation_history_sha256"
+                ],
+            }
         atomic_torch_save(output_dir / "model_best.pth", model_best_payload)
         delta_h = float(best_metrics["H"]) - float(parent_metrics["H"])
         gap = abs(float(best_metrics["U"]) - float(best_metrics["S"]))
@@ -1977,7 +2065,11 @@ def run(
                     "pclr_enabled": True,
                     "best_module_off_observation": best_module_off,
                     "module_off_best_history": module_off_best_history,
-                    "module_off_parent_reproduced": True,
+                    "module_off_best_parent_reproduced": bool(off_matches_parent),
+                    "module_off_full_history_reproduced": bool(
+                        config["schema_version"] == LOCAL_PCLR_SCHEMA
+                        and len(history) == len(parent_reference_rows)
+                    ),
                     "same_checkpoint_delta_H": same_checkpoint_delta_h,
                     "net_joint_corrections": net_joint_corrections,
                     "pclr_full_gate_passed": pclr_full_passed,
@@ -1989,6 +2081,23 @@ def run(
                     ),
                 }
             )
+            if config["schema_version"] == LOCAL_PCLR_SCHEMA:
+                pclr_metrics = best_metrics["diagnostics"]["pclr"]
+                result.update(
+                    {
+                        "candidate_top_k": int(config["candidate_top_k"]),
+                        "edge_selection": config["edge_selection"],
+                        "correction_scale": float(config["correction_scale"]),
+                        "effective_beta_at_best": float(
+                            pclr_metrics["effective_beta"]
+                        ),
+                        "effective_beta_max": float(config["correction_scale"])
+                        * float(config["max_beta"]),
+                        "parent_evaluation_history_sha256": config[
+                            "parent_evaluation_history_sha256"
+                        ],
+                    }
+                )
         atomic_write_json(output_dir / "metrics.json", result)
         print(json.dumps(result, ensure_ascii=False))
         return result

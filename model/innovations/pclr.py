@@ -282,6 +282,22 @@ class PCLRModel(GTDTSTModel):
             self.relation_scores(image_features), parent_logits
         )
 
+    def _validated_class_ids(
+        self,
+        class_ids: torch.Tensor,
+        device: torch.device,
+    ) -> torch.Tensor:
+        ids = torch.as_tensor(class_ids).detach().long()
+        if (
+            ids.ndim != 1
+            or ids.numel() == 0
+            or ids.unique().numel() != ids.numel()
+            or int(ids.min()) < 0
+            or int(ids.max()) >= self.class_count
+        ):
+            raise ValueError("PCLR class_ids必须是合法且无重复的一维全局类别ID。")
+        return ids.to(device)
+
     def pclr_logits(
         self,
         image_features: torch.Tensor,
@@ -298,7 +314,7 @@ class PCLRModel(GTDTSTModel):
             parent_full = self.deployed_parent_logits(image_features)
             if class_ids is None:
                 return parent_full
-            ids = torch.as_tensor(class_ids, device=parent_full.device).long()
+            ids = self._validated_class_ids(class_ids, parent_full.device)
             return parent_full.index_select(1, ids)
 
         parent_full = (
@@ -319,16 +335,7 @@ class PCLRModel(GTDTSTModel):
         )
         full = parent_full + correction
         if class_ids is not None:
-            ids = torch.as_tensor(class_ids).detach().long()
-            if (
-                ids.ndim != 1
-                or ids.numel() == 0
-                or ids.unique().numel() != ids.numel()
-                or int(ids.min()) < 0
-                or int(ids.max()) >= self.class_count
-            ):
-                raise ValueError("PCLR class_ids必须是合法且无重复的一维全局类别ID。")
-            ids = ids.to(full.device)
+            ids = self._validated_class_ids(class_ids, full.device)
             full = full.index_select(1, ids)
         return full
 
@@ -416,6 +423,8 @@ class PCLRModel(GTDTSTModel):
         potential = self.potentials_from_scores(scores, parent_logits)
         output = {
             "beta": float(self.beta()),
+            "effective_beta": self.correction_scale * float(self.beta()),
+            "effective_beta_max": self.correction_scale * self.max_beta,
             "relation_margin_abs_mean": float(
                 (scores[..., 0] - scores[..., 1]).abs().mean()
             ),
