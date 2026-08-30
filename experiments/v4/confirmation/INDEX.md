@@ -29,10 +29,10 @@ V4不复制V3结果文件；以下证据直接绑定原RUN、原代码提交、�
 
 | RUN | 数据集 | Source | 关系资产 | 预检ΔH | 状态 |
 |---|---|---|---|---:|---|
-| V4-CONFIRM-003-AWA2 | AWA2 | V3-TRY-046 | generic Top-3 / 117 edges | +0.233690 | audit pending |
-| V4-CONFIRM-003-SUN | SUN | V3-TRY-047 | generic Top-3 / 1633 edges | +0.983386 | audit pending |
+| V4-CONFIRM-003-AWA2 | AWA2 | V3-TRY-046 | generic Top-3 / 117 edges | +0.233690 | audit passed; ready formal |
+| V4-CONFIRM-003-SUN | SUN | V3-TRY-047 | generic Top-3 / 1633 edges | +0.983386 | audit passed; ready formal |
 
-- 评估代码：`89b666fe93f6336acd3aaca159910c5ebbfa4286`。
+- 评估代码：`d1d8940844e2e540234a7cb8fae688d80efb5247`。
 - AWA2 config SHA：`4c636b5371604cde8ae486ec09c81231d8b3580ce4a8d6a3a021227b4d083c88`；
   relation manifest SHA：`f93c9a690ce068614bc9792e6b60e989a4fe1fefebeb5df4a0273737e7bdadb2`。
 - SUN config SHA：`43e5f568de8d998d0186116504527433d5c80194e67f527837ceea22ccadb356`；
