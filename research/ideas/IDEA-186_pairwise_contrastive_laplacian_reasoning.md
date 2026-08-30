@@ -2,7 +2,7 @@
 idea_id: IDEA-186
 name: Pairwise Contrastive Laplacian Reasoning
 short_name: PCLR
-status: idea_review_passed_asset_freezing
+status: drop_no_rerun
 base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
 parent_run: TUNE-002-RUN-030
 parent_H: 79.070015
@@ -76,3 +76,19 @@ pair selector、角色残差或GTD prototype transport的重复；同时把新�
 接口，删除“范式级”表述。结论只允许冻结资产并进入代码实现，不代表代码审核通过、
 实验有效或论文新颖性已经成立。新增forward/loss/资产入口仍须对准确最终commit完成
 一轮双Agent代码对抗审核。
+
+## 实际结果与最终裁决
+
+- direct-official Full正常完成固定150 nominal epoch/21171 updates；best update=`13818`，
+  `U/S/H/ZS=75.926912/82.386708/79.025018/87.248874`。
+- 相对准确Parent `ΔH=-0.044997`；同checkpoint PCLR-Off仅`+0.123105 H`；seen与
+  unseen合计net correction=`4`。三个独立成功门均失败，最终`drop_no_rerun`。
+- 唯一cap救援要求`0<ΔH_parent<1`，实际为负，因此未触发；controls同样不运行。
+- Parent/GTD最终34个张量、optimizer、scheduler与RUN-030 bitwise一致，全部152点Off
+  U/S/H一致；但update=`18471`的Off-ZS因PCLR关闭评估少一次prototype重归一化而为
+  `86.734289`，RUN-030为`86.774284`，其余151点四指标一致。
+- 两名Reviewer共同裁定RUN身份为`engineering_failed_reporting_deviation`：不可作为论文
+  canonical数值或完整Off轨迹复现；但该偏差不影响Full H、H选点或三个失败门，足以停止
+  投入并淘汰方法，无研究价值再跑150轮。
+- 防复发：以后任何模块Off评估直接复用现有`evaluate/_predict`的prototype normalize
+  语义，并先做seen/unseen/ZS逐预测parity回归；不能只检查U/S/H。
