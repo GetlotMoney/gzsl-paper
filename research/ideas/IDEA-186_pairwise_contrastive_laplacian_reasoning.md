@@ -191,10 +191,16 @@ role0（beak）logits，权重分别为`0.36/0.16`，seen gamma=`0.91`。诊断�
 提高，不是单边校准换分。
 
 R4不重新训练或修改source checkpoint；代码commit为
-`103881d3cccddb492aaf4d02da157d6329939e2c`，config SHA为
+`c80c021e25bdcef5e5a80e2f01286c9f886e3f52`，config SHA为
 `f9ec1da6074225F947A2EF0D468E1543445BCC7A6DF6209A181BE025969D98D1`。它是R3之后的
 再次official-test超参数选择，必须披露nested selection和nonblind；只有审核后双GPU正式复算
 仍`H>=81`且全部门通过，才能完成当前目标。
+
+R4正式签字身份：评估代码`c80c021e25bdcef5e5a80e2f01286c9f886e3f52` + 审查声明tree
+`397cbd2eec88b7307a7fcf3eafbf0d9881a57135` + config SHA
+`f9ec1da6074225f947a2ef0d468e1543445bcc7a6df6209a181be025969d98d1` + source model
+SHA `16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab` + 环境fingerprint
+`8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59`。
 
 ## R2正式结果
 
