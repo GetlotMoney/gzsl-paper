@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FRAMEWORK-V5 · TG+GTD+PCLR-RSE</title>
+<style>
+:root{--ink:#18231f;--muted:#617069;--line:#b8c7bf;--paper:#f5f2ea;--green:#e4f4eb;--green2:#267557;--blue:#e8eefb;--blue2:#4265a5;--violet:#f0eafb;--violet2:#7350a3;--amber:#fff1d5;--amber2:#a66a17;--red:#fff0ec;--red2:#b54c32}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.52 system-ui,"Microsoft YaHei",sans-serif}main{max-width:1480px;margin:auto;padding:28px}h1{margin:0 0 5px}.sub,.meta{color:var(--muted)}.meta{font:13px ui-monospace,Consolas,monospace}.flow{display:grid;grid-template-columns:repeat(9,minmax(120px,1fr));gap:9px;margin:22px 0}.box{position:relative;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;min-height:126px}.box:not(:last-child):after{content:"→";position:absolute;right:-10px;top:48%;z-index:3;color:#69766f;font-weight:800}.box strong{display:block;margin-bottom:7px}.tg{background:var(--green);border:2px solid var(--green2)}.gtd{background:var(--blue);border:2px solid var(--blue2)}.pclr{background:var(--violet);border:2px solid var(--violet2)}.role{background:var(--amber);border:2px solid var(--amber2)}.out{background:var(--red);border:2px solid var(--red2)}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}.formula{font-family:"Cambria Math",serif;background:#f5f7f6;border-radius:8px;padding:8px;margin:7px 0}.wide{grid-column:span 2}.results{width:100%;border-collapse:collapse;background:#fff;margin-top:18px}.results th,.results td{border:1px solid var(--line);padding:8px;text-align:left}.results th{background:#edf1ee}.ok{color:#1c704d;font-weight:700}.warn{color:#985c12;font-weight:700}@media(max-width:1050px){.flow,.cards{grid-template-columns:1fr}.box:after{display:none}.wide{grid-column:auto}}
+</style>
+</head>
+<body><main>
+<h1>FRAMEWORK-V5 · TG+GTD+PCLR-RSE</h1>
+<p class="sub">Tri-Group Geodesic GZSL with Pairwise Laplacian Reasoning and Role Semantic Ensemble</p>
+<p class="meta">source semantics c80c021e25bdcef5e5a80e2f01286c9f886e3f52 · source checkpoint 16b5071f…02ab · formal identity framework/v5 = tag v5</p>
+
+<section class="flow">
+  <div class="box"><strong>输入与边界</strong>冻结CLIP CLS 768D<br>八角色文本<br>200类全局轴<br><em>仅trainval seen梯度</em></div>
+  <div class="box tg"><strong>TG三组原型</strong>local / unique / overall<br>seen视觉中心适配<br>true-unseen Mean8回退</div>
+  <div class="box gtd"><strong>GTD Teacher</strong>seen三折伪unseen<br>33点球面网格<br>CE + 0.1θ²目标</div>
+  <div class="box gtd"><strong>GTD Gate</strong>6维文本几何→16→1<br>detached SmoothL1<br>true-unseen球面迁移</div>
+  <div class="box pclr"><strong>关系证据</strong>200类CLIP Top-3图<br>438边 / 876方向句<br>reader 768→64→768</div>
+  <div class="box pclr"><strong>局部图推理</strong>Parent Top-17候选<br>双端点边激活<br>ridge=0.3 Laplacian逆</div>
+  <div class="box pclr"><strong>PCLR校正</strong>temperature=0.2<br>cap=0.5 / scale=6.95<br>完整200类势能</div>
+  <div class="box role"><strong>Role Ensemble</strong>role6 overall ×0.36<br>role0 beak ×0.16<br>seen gamma=0.91</div>
+  <div class="box out"><strong>统一出口</strong>200类GZSL U/S/H<br>最后才切50类ZS<br>同checkpoint完整指标</div>
+</section>
+
+<section class="cards">
+  <article class="card"><strong>训练目标（R2 checkpoint）</strong><div class="formula">L = LCE(TG) + 0.3 Ltopology + LGTD + Lrelation + Lβ</div><p>Parent、GTD gate、relation reader、raw β参数组隔离；真正unseen图像不进入梯度。</p></article>
+  <article class="card"><strong>边→类势能</strong><div class="formula">rₑ=s(a&gt;b)−s(b&gt;a), d=(BᵀB+0.3I)⁻¹Bᵀr</div><p>只保留Parent Top-17中双端点均命中的边；逐图中心化并截断到±0.5。</p></article>
+  <article class="card"><strong>部署logits</strong><div class="formula">L₃=Lparent+6.95·β·Std(Lparent)·d−0.575·1seen</div><div class="formula">L₅=L₃+0.36 Lrole6+0.16 Lrole0−0.335·1seen</div></article>
+  <article class="card"><strong>身份与关闭路径</strong><p>Raw Parent与R3 controls逐U/S/H/ZS复现source；PCLR/roles均关闭时回到canonical Parent；source checkpoint只读。</p></article>
+  <article class="card wide"><strong>评估协议</strong><p>Chen-style official test选择checkpoint和推理超参数；R3/R4属于嵌套official-test selection。固定披露：<code>test_used_for_selection=true</code>、<code>nested_official_test_selection=true</code>、<code>strict_blind_claim=false</code>。</p></article>
+  <article class="card"><strong>数据与知识</strong><p>CUB不使用312维专家属性、部位、框或分割。关系句使用LLM可见形态知识；<code>human_annotations_used=false</code>。</p></article>
+  <article class="card"><strong>最终模型身份</strong><p class="meta">config f9ec1da6…98d1<br>metrics efbdca19…fc2bc<br>audit tree 397cbd2e…7135</p></article>
+</section>
+
+<table class="results"><thead><tr><th>Dataset / Condition</th><th>U</th><th>S</th><th>H</th><th>ZS</th><th>证据边界</th></tr></thead><tbody>
+<tr><td>CUB V4 Parent</td><td>76.164645</td><td>82.205832</td><td>79.070015</td><td>86.955839</td><td>Raw reference</td></tr>
+<tr><td>CUB R3 PCLR</td><td>77.806163</td><td>82.716906</td><td>80.186419</td><td>87.612945</td><td>candidate-local relation reasoning</td></tr>
+<tr><td><strong>CUB V5 R4</strong></td><td>80.694097</td><td>81.446952</td><td class="ok">81.068777</td><td>88.785273</td><td>正式晋级结果，ΔParent=+1.998762</td></tr>
+<tr><td>AWA2 generic confirmation</td><td>97.656298</td><td>95.577794</td><td>96.605867</td><td>99.047691</td><td class="warn">generic关系资产，部分复现</td></tr>
+<tr><td>SUN generic confirmation</td><td>80.763888</td><td>68.837208</td><td>74.325131</td><td>92.847222</td><td class="warn">generic关系资产，部分复现</td></tr>
+</tbody></table>
+
+<p class="meta">Loss出口：TG CE/topology、GTD gate、PCLR relation/beta。Metric出口：同一checkpoint的U/S/H/ZS与独立best-ZS观察；禁止跨checkpoint拼接。</p>
+</main></body></html>

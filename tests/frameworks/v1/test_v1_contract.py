@@ -196,7 +196,6 @@ def test_config_and_protocol_identity():
 
 
 def test_repository_has_no_template_layer_or_legacy_experiment_tree():
-    assert not (ROOT / "experiments" / "v5").exists()
     assert not (ROOT / "TEMPLATE.yaml").exists()
     assert not any(ROOT.glob("**/*template-v*"))
     framework = yaml.safe_load(
@@ -204,6 +203,11 @@ def test_repository_has_no_template_layer_or_legacy_experiment_tree():
     )
     assert framework["framework_branch"] == "framework/v1"
     assert framework["framework_tag"] == "v1"
+    promoted_v5 = yaml.safe_load(
+        (ROOT / "experiments" / "v5" / "FRAMEWORK.yaml").read_text(encoding="utf-8")
+    )
+    assert promoted_v5["framework_branch"] == "framework/v5"
+    assert promoted_v5["framework_tag"] == "v5"
 
 
 def test_git_identity_is_bound_to_script_repository():
