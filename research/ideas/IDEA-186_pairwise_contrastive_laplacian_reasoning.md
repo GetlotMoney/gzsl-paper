@@ -2,7 +2,7 @@
 idea_id: IDEA-186
 name: Pairwise Contrastive Laplacian Reasoning
 short_name: PCLR
-status: r4_semantic_ensemble_pending_audit
+status: keep_r4_H81_gate_passed
 base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
 parent_run: TUNE-002-RUN-030
 parent_H: 79.070015
@@ -201,6 +201,20 @@ R4正式签字身份：评估代码`c80c021e25bdcef5e5a80e2f01286c9f886e3f52` + 
 `f9ec1da6074225f947a2ef0d468e1543445bcc7a6df6209a181be025969d98d1` + source model
 SHA `16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab` + 环境fingerprint
 `8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59`。
+
+## R4正式结果
+
+正式结果与双GPU micro逐字节一致，metrics SHA为
+`efbdca19f8248b2e16c99baa7aa5a81d2279218db910a9a00e7303d45d2fc2bc`：
+
+`U/S/H/ZS=80.694097/81.446952/81.068777/88.785273`。
+
+- 相对RUN-030 Parent：`+1.998762 H`；相对R3：`+0.882357 H`。
+- gap=`0.752854`；Raw seen/unseen净纠错合计`129`；六项AND门全部通过。
+- Raw与R3 controls逐`U/S/H/ZS`精确复现source；source checkpoint只读。
+- 正式decision=`keep_pclr_r4_semantic_ensemble`，`full_gate_passed=true`。
+- 结果必须披露nested official-test selection、nonblind与LLM世界知识使用；它证明当前协议下
+  达到81，不支持strict blind泛化声明。
 
 ## R2正式结果
 
