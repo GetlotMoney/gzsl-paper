@@ -103,6 +103,27 @@ def _transitions(before, after, labels):
     }
 
 
+def validate_source_control_metrics(result: dict, source_metrics: dict) -> None:
+    """Require this evaluator to reproduce the exact Raw and R3 controls."""
+    pairs = (
+        ("raw", source_metrics.get("raw_off_metrics")),
+        ("r3", source_metrics.get("full_metrics")),
+    )
+    for name, expected in pairs:
+        actual = result.get("metrics", {}).get(name)
+        if not isinstance(actual, dict) or not isinstance(expected, dict):
+            raise RuntimeError(f"PCLR R4 missing {name} source control metrics.")
+        for metric in ("U", "S", "H", "ZS"):
+            if (
+                metric not in actual
+                or metric not in expected
+                or abs(float(actual[metric]) - float(expected[metric])) > 1e-6
+            ):
+                raise RuntimeError(
+                    f"PCLR R4 {name} control parity failed for {metric}."
+                )
+
+
 @torch.no_grad()
 def evaluate(model, tensors, config, device):
     model.eval()
@@ -174,6 +195,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         raise ValueError("PCLR R4 source checkpoint identity mismatch.")
     model.load_state_dict(checkpoint["model_state_dict"], strict=True)
     result = evaluate(model, tensors, config, device)
+    validate_source_control_metrics(result, r3_metrics)
     raw, r3, r4 = result["metrics"]["raw"], result["metrics"]["r3"], result["metrics"]["r4"]
     net = sum(result["transitions"]["raw"][split]["net_correct"] for split in ("seen", "unseen"))
     passed = (
@@ -195,6 +217,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         "nested_official_test_selection": True, "test_used_for_selection": True,
         "test_used_for_hyperparameter_selection": True, "unseen_images_used_for_gradient": False,
         "strict_blind_claim": False, "human_annotations_used": False,
+        "expert_attributes_used": False, "llm_world_knowledge_used": True,
     })
     output = prepare_output_dir(output_dir)
     (output / "config.snapshot.yaml").write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")

@@ -19,6 +19,7 @@ from model.innovations.evaluate_pclr_inference_tuned import (
 from model.innovations.evaluate_pclr_semantic_ensemble import (
     load_semantic_config,
     semantic_ensemble_logits,
+    validate_source_control_metrics,
 )
 from model.innovations.train_gtd_tst import (
     evaluation_updates,
@@ -503,6 +504,17 @@ class PCLRTest(unittest.TestCase):
                 seen_logit_gamma=0.0,
             )[2][:, model.unseen_classes]
         )))
+
+    def test_r4_requires_exact_raw_and_r3_source_control_parity(self):
+        metrics = {name: float(index) for index, name in enumerate(("U", "S", "H", "ZS"), 1)}
+        result = {"metrics": {"raw": dict(metrics), "r3": dict(metrics)}}
+        source = {"raw_off_metrics": dict(metrics), "full_metrics": dict(metrics)}
+        validate_source_control_metrics(result, source)
+        for control, source_key in (("raw", "raw_off_metrics"), ("r3", "full_metrics")):
+            broken = {"metrics": {"raw": dict(metrics), "r3": dict(metrics)}}
+            broken["metrics"][control]["ZS"] += 0.01
+            with self.assertRaisesRegex(RuntimeError, f"{control} control parity"):
+                validate_source_control_metrics(broken, source)
 
 
 if __name__ == "__main__":
