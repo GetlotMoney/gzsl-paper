@@ -16,6 +16,10 @@ from model.innovations.evaluate_pclr_inference_tuned import (
     load_inference_config,
     tuned_inference_logits,
 )
+from model.innovations.evaluate_pclr_semantic_ensemble import (
+    load_semantic_config,
+    semantic_ensemble_logits,
+)
 from model.innovations.train_gtd_tst import (
     evaluation_updates,
     load_config,
@@ -455,6 +459,50 @@ class PCLRTest(unittest.TestCase):
         self.assertTrue(torch.isfinite(full).all())
         self.assertGreaterEqual(active, 0.0)
         self.assertLessEqual(active, 1.0)
+
+    def test_r4_semantic_ensemble_config_and_formula_are_fixed(self):
+        config, digest = load_semantic_config(
+            Path("config/tries/v4_try_023_r4_pclr_semantic_ensemble.yaml")
+        )
+        self.assertEqual(config["role0_weight"], 0.16)
+        self.assertEqual(config["role6_weight"], 0.36)
+        self.assertEqual(config["seen_logit_gamma"], 0.91)
+        self.assertEqual(config["required_h"], 81.0)
+        self.assertEqual(len(digest), 64)
+        model = self._local_model(
+            candidate_top_k=15,
+            correction_scale=2.38,
+            ridge_lambda=0.03,
+            seen_logit_gamma=0.525,
+        ).eval()
+        generator = torch.Generator().manual_seed(4186)
+        with torch.no_grad():
+            model.parent.tg_vpr.sentence_embeds.copy_(
+                F.normalize(torch.randn(200, 8, 768, generator=generator), dim=-1)
+            )
+        raw, r3, full = semantic_ensemble_logits(
+            model,
+            self.images,
+            role0_weight=0.16,
+            role6_weight=0.36,
+            gamma=0.91,
+        )
+        self.assertEqual(tuple(raw.shape), (4, 200))
+        self.assertEqual(tuple(r3.shape), (4, 200))
+        self.assertEqual(tuple(full.shape), (4, 200))
+        self.assertTrue(torch.isfinite(full).all())
+        self.assertTrue(torch.equal(r3[:, model.unseen_classes], (
+            tuned_inference_logits(
+                model,
+                self.images,
+                candidate_top_k=17,
+                ridge_lambda=0.3,
+                potential_cap=0.5,
+                inference_relation_temperature=0.2,
+                correction_scale=6.95,
+                seen_logit_gamma=0.0,
+            )[2][:, model.unseen_classes]
+        )))
 
 
 if __name__ == "__main__":
