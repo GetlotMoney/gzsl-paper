@@ -1,0 +1,57 @@
+# TUNE-002 TG+GTD参数上限
+
+状态：已完成；RUN-030达到H≥79。
+
+固定参考：V3-TRY-041，`U/S/H/ZS=79.624420/76.670682/78.119641/85.794950`。
+
+本实验只改变现有数值参数，仍使用CUB Xian Proposed Split、seen-only梯度、150名义epoch，并按official-test最高H选择checkpoint。Stage 1完成后只组合互不冲突的胜出轴。
+
+## Stage 1结果
+
+| RUN | 唯一变化 | U | S | H | ZS | 相对基准ΔH |
+|---|---|---:|---:|---:|---:|---:|
+| RUN-001 | gate loss=0.5 | 79.691100 | 76.670682 | 78.151719 | 85.794950 | +0.032078 |
+| RUN-002 | gate loss=2.0 | 79.726130 | 76.554513 | 78.108138 | 85.862178 | -0.011503 |
+| RUN-003 | gate LR=3e-5 | 79.227144 | 76.913601 | 78.053232 | 85.397089 | -0.066409 |
+| RUN-004 | gate LR=3e-4 | 80.166322 | 76.207912 | 78.137016 | 85.956633 | +0.017375 |
+| RUN-005 | constant TG LR=3e-5 | 70.796305 | 82.468259 | 76.187840 | 84.673619 | -1.931801 |
+| RUN-006 | constant TG LR=3e-4 | 78.843796 | 77.502424 | 78.167356 | 86.118478 | +0.047715 |
+| RUN-007 | max step=0.75 | 78.985441 | 77.194548 | 78.079726 | 85.490996 | -0.039915 |
+| RUN-008 | max step=3.0 | 79.701638 | 76.709896 | **78.177155** | 85.803193 | **+0.057514** |
+
+八个RUN均验证`history_length=152`、`target_refresh_count=150`、`stop_reason=completed_fixed_150`、准确code/config/asset身份。Stage 2只组合RUN-006与RUN-008的胜出设置。
+
+## Stage 2与最终结论
+
+RUN-009组合`constant TG LR=3e-4`与`max_transport_step=3.0`，得到：
+
+`U/S/H/ZS=78.998828/77.349639/78.165535/86.207408`，best update=`3243`，同checkpoint GTD-off H=`75.410390`，Full-minus-Off H=`+2.755146`。
+
+RUN-009未超过RUN-008，说明两个单轴增益不叠加。最终选择RUN-008：
+
+`U/S/H/ZS=79.701638/76.709896/78.177155/85.803193`，相对原始V3-TRY-041的`H=78.119641`提高`+0.057514`。
+
+阶段性结论：RUN-008是Stage 1/2当前最好条件，但尚未达到owner要求的H≥79；Stage 3继续搜索剩余数值轴。
+
+## Stage 3结果
+
+14个RUN均通过fixed-150身份与输出校验。关键结果：
+
+- RUN-013，max step=2.25：H=`78.210032`。
+- RUN-017，topology weight=0.3：H=`78.461263`。
+- RUN-023，weight decay=1e-3：`U/S/H/ZS=77.765429/80.061287/78.896659/86.858141`，相对原始基准`+0.777018`。
+- RUN-023同checkpoint GTD-off H=`76.139556`，Full-minus-Off H=`+2.757103`。
+
+当前距离H=79还差`0.103341`。Stage 4围绕weight decay细搜，并尝试与topology/max-step胜出值组合。
+
+## Stage 4与最终选择
+
+RUN-030组合`weight_decay=1e-3`与`topology_weight=0.3`，达到：
+
+`U/S/H/ZS=76.164645/82.205832/79.070015/86.955839`，best update=`14241`。
+
+同checkpoint GTD-off为`U/S/H/ZS=71.433824/81.571132/76.166656/86.146760`，Full-minus-Off H=`+2.903360`。
+
+RUN-032额外加入`max_transport_step=2.25`后得到完全相同的U/S/H/ZS，但增加了无收益参数，因此按最小充分条件选择RUN-030。
+
+相对原始V3-TRY-041的H=`78.119641`，最终提升为`+0.950374`。RUN-030已验证`history_length=152`、`target_refresh_count=150`、`stop_reason=completed_fixed_150`、准确code/config/asset身份与完整checkpoint/历史文件。

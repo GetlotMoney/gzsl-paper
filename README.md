@@ -7,9 +7,10 @@
 - `FRAMEWORK-V1`：冻结分支`framework/v1`、Tag`v1`，[HTML框架图](experiments/v1/framework_diagram.html)，确认基线H=`74.2468%`。
 - `FRAMEWORK-V2`：TG-VPR-H1独立框架，冻结分支`framework/v2`、Tag`v2`，[HTML框架图](experiments/v2/framework_diagram.html)，首个正式单seed基线H=`74.023182%`。
 - `FRAMEWORK-V4`：owner晋级的TG+GTD三数据集框架，冻结分支`framework/v4`、Tag`v4`，[HTML框架图](experiments/v4/framework_diagram.html)；CUB/SUN显示GTD正增益，AWA2保留精确no-op边界。
+- `FRAMEWORK-V5`：owner晋级的TG+GTD+PCLR-RSE框架，冻结分支`framework/v5`、Tag`v5`，[HTML框架图](experiments/v5/framework_diagram.html)；CUB正式`U/S/H/ZS=80.694/81.447/81.069/88.785`。
 - V1与V2是两套独立训练路径；V2不接入或静默修改V1。
-- 三套正式框架代码都只迁入必要实现与来源信息，不继承旧Git历史、旧实验账本或旧研究知识。
-- owner已选择`FRAMEWORK-V4 / TG+GTD`作为当前论文主框架；下一创新必须与TG原型学习和GTD unseen几何迁移形成自然衔接。
+- 正式框架代码都只迁入必要实现与来源信息；旧版本实验账本保持原路径只读，不复制或重编号。
+- owner已选择`FRAMEWORK-V5 / TG+GTD+PCLR-RSE`作为当前论文主框架；下一创新必须与关系图推理和角色语义出口形成自然衔接。
 - V4已索引CUB、AWA2和SUN原始RUN作为晋级证据；跨版本证据保留原路径、原commit和原输出，不复制结果。
 
 ## 评估协议
@@ -62,6 +63,14 @@ conda run -n dvsr_gpu python train.py `
 - 正式模型代码：`model/frameworks/v4/`
 - 晋级来源复现入口：`python -m model.frameworks.v4.train`
 - 当前边界：该训练器只接受已冻结的`FRAMEWORK-V3-EXPLORATION`晋级RUN配置；仓库尚未提供新的`FRAMEWORK-V4`基础训练配置，不能把它描述成任意V4新RUN入口。
+
+## FRAMEWORK-V5 入口
+
+- 固定参数与证据：`experiments/v5/FRAMEWORK.yaml`、`config/framework_v5.yaml`。
+- 部署logits入口：`model/frameworks/v5/model.py`。
+- 正式评估入口：`python -m model.frameworks.v5.evaluate`。
+- V5复用已审R2 checkpoint并执行R3 PCLR推理与R4角色语义ensemble；不是重新训练入口。
+- 必须披露nested official-test selection、nonblind和LLM可见形态知识使用。
 
 ## checkpoint兼容边界
 

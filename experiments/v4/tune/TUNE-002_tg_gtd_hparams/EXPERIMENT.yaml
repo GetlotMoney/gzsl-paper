@@ -1,0 +1,41 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: TUNE-002
+framework_id: FRAMEWORK-V4
+kind: tune
+title: TG+GTD fixed-150 official-test-selected parameter search
+research_question: 在不改变TG+GTD公式、数据或评估语义时，现有数值参数能把CUB最高H提高多少？
+base_ref: framework/v4
+base_commit: 52088f69d7ac4e574e7b63c28b21ac0da7789933
+reference_run: V3-TRY-041
+reference_metrics: {U: 79.624420, S: 76.670682, H: 78.119641, ZS: 85.794950}
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+budget:
+  nominal_epochs: 150
+  updates: 21171
+  seed: 7
+stage_1:
+  method: one_factor_at_a_time
+  axes: [gate_loss_weight, gate_learning_rate, tg_learning_rate, max_transport_step]
+  selection: highest_official_test_H_with_same_checkpoint_U_S_ZS
+stage_2:
+  method: combine_non_conflicting_stage_1_winners
+  condition: constant_tg_learning_rate_3e-4_plus_max_transport_step_3
+  status: completed_not_selected
+final_selection:
+  run_id: RUN-030
+  parameter: {weight_decay: 0.001, topology_weight: 0.3}
+  metrics: {U: 76.164645, S: 82.205832, H: 79.070015, ZS: 86.955839}
+  delta_H_vs_reference: 0.950374
+stage_3:
+  method: remaining_numeric_axes_and_finer_tg_lr
+  axes: [constant_tg_learning_rate, max_transport_step, topology_weight, gate_loss_weight, gate_warmup_epochs, weight_decay]
+  run_ids: [RUN-010, RUN-011, RUN-012, RUN-013, RUN-014, RUN-015, RUN-016, RUN-017, RUN-018, RUN-019, RUN-020, RUN-021, RUN-022, RUN-023]
+  status: completed
+stage_4:
+  method: weight_decay_refinement_and_winner_combinations
+  run_ids: [RUN-024, RUN-025, RUN-026, RUN-027, RUN-028, RUN-029, RUN-030, RUN-031, RUN-032]
+  target_H: 79.0
+  status: completed_target_achieved
