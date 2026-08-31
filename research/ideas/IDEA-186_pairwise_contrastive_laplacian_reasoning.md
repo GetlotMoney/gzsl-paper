@@ -2,7 +2,7 @@
 idea_id: IDEA-186
 name: Pairwise Contrastive Laplacian Reasoning
 short_name: PCLR
-status: keep_r3_inference_tune_passed
+status: r4_semantic_ensemble_pending_audit
 base_commit: f87d1af87c3b56d04dadd46c91dcf1ed57309d25
 parent_run: TUNE-002-RUN-030
 parent_H: 79.070015
@@ -178,6 +178,23 @@ environment/GPU fingerprint SHA
 gap=`4.910743`、net=`68`、ZS安全，六项AND门全部通过，正式decision为
 `keep_pclr_r3_inference_tune`。必须同时披露effective beta=`0.725859`、上限=`1.7375`、
 `nested_official_test_selection=true`和`strict_blind_claim=false`。
+
+## R4：类别角色语义出口
+
+Owner要求双GPU继续搜索到`H>=81`。Reader容量/LR/训练温度、5个Reader初始化及融合、
+关系边置信度门控、Top-3/Top-5图融合、coarse patch、中间层特征、train-only类偏置、
+pseudo-unseen自适应gamma、独立Parent ensemble和详细文本覆盖均未超过`80.325`。
+
+固定R2 checkpoint与R3关系校正后，额外融合class-level role6（overall appearance）和
+role0（beak）logits，权重分别为`0.36/0.16`，seen gamma=`0.91`。诊断得到
+`U/S/H/ZS=80.694092/81.446953/81.068771/88.785273`，gap=`0.752861`；U、S和ZS同时
+提高，不是单边校准换分。
+
+R4不重新训练或修改source checkpoint；代码commit为
+`103881d3cccddb492aaf4d02da157d6329939e2c`，config SHA为
+`f9ec1da6074225F947A2EF0D468E1543445BCC7A6DF6209A181BE025969D98D1`。它是R3之后的
+再次official-test超参数选择，必须披露nested selection和nonblind；只有审核后双GPU正式复算
+仍`H>=81`且全部门通过，才能完成当前目标。
 
 ## R2正式结果
 
