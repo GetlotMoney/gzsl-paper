@@ -98,12 +98,12 @@ def evaluate(
             model, assets.test_unseen_features, assets.test_unseen_patches,
             device, batch_size=batch_size, **kwargs
         )
-        zs, _ = predict(
+        zs, zs_pair = predict(
             model, assets.test_unseen_features, assets.test_unseen_patches,
             device, class_ids=assets.unseen_classes, batch_size=batch_size, **kwargs
         )
         predictions[name] = {"seen": seen, "unseen": unseen, "zs": zs}
-        pairs[name] = {"seen": seen_pair, "unseen": unseen_pair}
+        pairs[name] = {"seen": seen_pair, "unseen": unseen_pair, "zs": zs_pair}
         scores[name] = _metrics(seen, unseen, zs, assets)
     full = scores["full"]
     gaps = {
@@ -113,7 +113,7 @@ def evaluate(
     parent_pair_equal = all(
         torch.equal(pairs["parent"][split], pairs[name][split])
         for name in variants
-        for split in ("seen", "unseen")
+        for split in ("seen", "unseen", "zs")
     )
     if not parent_pair_equal:
         raise RuntimeError("CTPM candidate pair changed across module-off conditions.")

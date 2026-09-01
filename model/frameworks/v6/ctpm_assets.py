@@ -155,6 +155,7 @@ def load_top2_gate(config: Mapping[str, Any]) -> dict[str, Any]:
     value = _json(path)
     gates = value.get("gates", {})
     parent = value.get("parent_metrics", {})
+    train_counts = value.get("split_counts", {}).get("train", {})
     if (
         value.get("schema_version") != "gzsl-paper.v6-ctpm-top2-gate.v1"
         or value.get("asset_manifest_sha256") != config["asset_manifest_sha256"]
@@ -164,6 +165,8 @@ def load_top2_gate(config: Mapping[str, Any]) -> dict[str, Any]:
         ))
         or abs(float(parent.get("H", -1.0)) - float(config["parent_metrics_percent"]["H"])) > 1e-6
         or float(value.get("oracle_H_gain", -1.0)) < 1.0
+        or float(train_counts.get("coverage", -1.0)) < 0.60
+        or int(train_counts.get("truth_c2", -1)) < 100
         or value.get("unseen_images_used_for_gradient") is not False
     ):
         raise ValueError("CTPM Top2 gate identity or hard gates mismatch.")

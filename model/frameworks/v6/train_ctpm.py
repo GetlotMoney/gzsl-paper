@@ -116,11 +116,14 @@ def build_model(config: Mapping[str, Any], assets: CTPMTrainAssets, device):
 def _component_gradient_norms(model: CTPMModel) -> dict[str, float]:
     groups = {
         "role_weights": (model.raw_role_weights,),
-        "semantic_mlp": tuple(model.semantic_margin.parameters()),
+        "semantic_hidden": tuple(model.semantic_margin.net[0].parameters()),
+        "semantic_output": tuple(model.semantic_margin.net[-1].parameters()),
         "patch_query": tuple(model.patch_query.parameters()),
         "patch_key": tuple(model.patch_key.parameters()),
-        "visual_mlp": tuple(model.visual_margin.parameters()),
-        "interaction_mlp": tuple(model.interaction_margin.parameters()),
+        "visual_hidden": tuple(model.visual_margin.net[0].parameters()),
+        "visual_output": tuple(model.visual_margin.net[-1].parameters()),
+        "interaction_hidden": tuple(model.interaction_margin.net[0].parameters()),
+        "interaction_output": tuple(model.interaction_margin.net[-1].parameters()),
     }
     result = {}
     for name, params in groups.items():
@@ -248,7 +251,7 @@ def run(
         )
         generator = torch.Generator(device="cpu").manual_seed(int(config["random_seed"]))
         eval_points = evaluation_updates(int(config["total_updates"]), int(config["eval_interval_steps"]))
-        history, best_metrics, best_state, best_update = [], None, None, 0
+        history, best_metrics, best_state, best_update, best_zs = [], None, None, 0, None
         seen = train_assets.seen_classes.to(device)
         global_to_seen = torch.full((model.class_count,), -1, dtype=torch.long, device=device)
         global_to_seen[seen] = torch.arange(seen.numel(), device=device)
@@ -258,6 +261,15 @@ def run(
                 metrics = evaluate(model, eval_assets, device, batch_size=int(config["eval_batch_size"]))
                 row = {"evaluation_index": len(history), "update": update, **metrics}
                 history.append(row)
+                if update == 0 and any(
+                    abs(
+                        float(row["parent_metrics"][metric])
+                        - float(config["parent_metrics_percent"][metric])
+                    )
+                    > 1e-6
+                    for metric in ("U", "S", "H", "ZS")
+                ):
+                    raise RuntimeError("CTPM class-name parent did not reproduce gate metrics.")
                 gaps = row["full_minus_off_delta"]
                 print(
                     f"eval={row['evaluation_index']} update={update} H={row['H']:.6f} "
@@ -268,6 +280,12 @@ def run(
                     best_metrics = copy.deepcopy(row)
                     best_state = {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
                     best_update = update
+                if best_zs is None or float(row["ZS"]) > float(best_zs["ZS"]):
+                    best_zs = {
+                        "update": update,
+                        "U": row["U"], "S": row["S"],
+                        "H": row["H"], "ZS": row["ZS"],
+                    }
                 atomic_torch_save(
                     destination / "checkpoint_last.pth",
                     {
@@ -279,6 +297,7 @@ def run(
                         "scheduler_state_dict": scheduler.state_dict(),
                         "best_update": best_update, "best_metrics": best_metrics,
                         "best_model_state_dict": best_state, "history": history,
+                        "best_zs_observation": best_zs,
                         "asset_identity": train_assets.identity,
                         "reproducibility": reproducibility,
                     },
@@ -305,7 +324,7 @@ def run(
             optimizer.step()
             scheduler.step()
 
-        if best_metrics is None or best_state is None:
+        if best_metrics is None or best_state is None or best_zs is None:
             raise RuntimeError("CTPM did not select a checkpoint.")
         model.load_state_dict(best_state, strict=True)
         final_metrics = evaluate(model, eval_assets, device, batch_size=int(config["eval_batch_size"]))
@@ -327,6 +346,7 @@ def run(
             "schema_version": RESULT_SCHEMA, "experiment_id": config["experiment_id"],
             "code_commit": expected_commit, "config_sha256": config_sha,
             "best_update": best_update, "best_metrics": final_metrics,
+            "best_zs_observation": best_zs,
             "module_success": module_success(
                 final_metrics, float(config["parent_metrics_percent"]["H"]),
                 float(config["required_module_delta_h"]),
