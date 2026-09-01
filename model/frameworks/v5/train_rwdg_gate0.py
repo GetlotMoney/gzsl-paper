@@ -294,6 +294,13 @@ def load_and_validate_oracle_receipt(config: Gate0TrainConfig) -> Mapping[str, A
         raise RWDGDataError("oracle_receipt missing gates object")
     if value.get("used_for_training") is not False:
         raise RWDGDataError("oracle_receipt must be diagnostic-only, not used_for_training")
+    if (
+        value.get("official_test_loaded") is not False
+        or value.get("unseen_images_used_for_gradient") is not False
+        or value.get("pclr_online_inference") is not False
+        or value.get("oracle_all25_opened") is not True
+    ):
+        raise RWDGDataError("oracle_receipt protocol flags mismatch")
     if int(value.get("rows", -1)) != 2355 or int(value.get("active_classes", -1)) != 150:
         raise RWDGDataError("oracle_receipt row/axis mismatch")
     oracle_gate = oracle_gate_from_receipt(value, min_gain=1.0)

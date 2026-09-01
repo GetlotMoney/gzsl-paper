@@ -594,8 +594,10 @@ def _validate_patch_manifest_semantics(
             f"projected-patch manifest patch_shape {patch_shape} does not end with {expected_patch_shape}"
         )
 
-    patch_dtype = _first_value_by_keys(manifest, ("patch_dtype", "patch_feature_dtype"))
-    if str(patch_dtype).lower() != str(patch_contract.dtype).lower():
+    patch_dtype = str(
+        _first_value_by_keys(manifest, ("patch_dtype", "patch_feature_dtype"))
+    ).lower()
+    if not patch_dtype.startswith(str(patch_contract.dtype).lower()):
         raise RWDGDataError(
             f"projected-patch manifest patch_dtype {patch_dtype!r} != expected {patch_contract.dtype!r}"
         )
@@ -616,13 +618,30 @@ def _validate_patch_manifest_semantics(
     if block not in {"last", "final", "24", "block24", "last_visual_transformer_block"}:
         raise RWDGDataError(f"projected-patch manifest block must identify the final/24th block, got {block!r}")
 
-    class_token = _first_value_by_keys(manifest, ("class_token", "cls_token", "include_cls", "cls_removed"))
-    if not _class_token_is_removed(class_token):
-        raise RWDGDataError(f"projected-patch manifest must state class token is removed, got {class_token!r}")
+    removed_flag = _first_value_by_keys(
+        manifest, ("class_token_removed_from_patch_axis",)
+    )
+    if removed_flag is not None:
+        class_token_removed = _truthy_manifest_flag(
+            {"class_token_removed_from_patch_axis": removed_flag},
+            "class_token_removed_from_patch_axis",
+        )
+    else:
+        class_token = _first_value_by_keys(
+            manifest, ("class_token", "cls_token", "include_cls", "cls_removed")
+        )
+        class_token_removed = _class_token_is_removed(class_token)
+    if not class_token_removed:
+        raise RWDGDataError("projected-patch manifest must state class token is removed")
 
-    grid = str(_first_value_by_keys(manifest, ("grid", "patch_grid", "grid_order", "spatial_grid"))).lower()
-    if "24" not in grid or "row" not in grid:
-        raise RWDGDataError(f"projected-patch manifest grid must state 24x24 row-major, got {grid!r}")
+    grid_value = _first_value_by_keys(
+        manifest, ("grid", "patch_grid", "grid_order", "spatial_grid")
+    )
+    grid_shape = _normalize_shape(grid_value)
+    if grid_shape != (24, 24):
+        raise RWDGDataError(
+            f"projected-patch manifest grid must be [24,24], got {grid_value!r}"
+        )
 
 
 def _validate_mock_patch_manifest_semantics(manifest: Mapping[str, Any]) -> None:
@@ -1101,11 +1120,21 @@ def _forbidden_eval_outputs(manifest: Mapping[str, Any]) -> set[str]:
     if isinstance(outputs, Mapping):
         for key in outputs:
             base = str(key).lower().replace("\\", "/").split("/")[-1]
-            if base in {"crop_features.npy", "crop_features.pt", "all25_crop_features.npy"}:
+            if base in {
+                "crop_features.npy",
+                "crop_features.pt",
+                "all25_crop_features.npy",
+                "all25_crop_features.pt",
+            }:
                 forbidden.add(str(key))
     for raw in _walk_manifest_paths(manifest):
         base = str(raw).lower().replace("\\", "/").split("/")[-1]
-        if base in {"crop_features.npy", "crop_features.pt", "all25_crop_features.npy"}:
+        if base in {
+            "crop_features.npy",
+            "crop_features.pt",
+            "all25_crop_features.npy",
+            "all25_crop_features.pt",
+        }:
             forbidden.add(str(raw))
     return forbidden
 

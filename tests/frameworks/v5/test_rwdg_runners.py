@@ -27,6 +27,7 @@ def _receipt(config):
         "pair_crop_oracle25_macro_top1_percent": 82.76147019736808,
         "oracle_gain_pp": 16.068547166940476,
         "used_for_training": False,
+        "oracle_all25_opened": True,
         "official_test_loaded": False,
         "unseen_images_used_for_gradient": False,
         "pclr_online_inference": False,
