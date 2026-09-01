@@ -326,6 +326,7 @@ class RGRAModel(nn.Module):
         cls_features: torch.Tensor,
         patch_features: torch.Tensor,
         q: torch.Tensor,
+        group_weights: torch.Tensor,
         *,
         enabled: bool,
     ) -> dict[str, torch.Tensor]:
@@ -350,7 +351,7 @@ class RGRAModel(nn.Module):
             "bcgn,bnd->bcgd", attention, F.normalize(patch_features, dim=-1)
         )
         role_scores = (support_vectors * q.unsqueeze(0)).sum(dim=-1) * self.scale()
-        l_v = (self.rsc.group_weights().view(1, 1, GROUP_COUNT) * role_scores).sum(dim=-1)
+        l_v = (group_weights.view(1, 1, GROUP_COUNT) * role_scores).sum(dim=-1)
         centered = l_v - l_v.mean(dim=1, keepdim=True)
         standardized = centered / l_v.std(dim=1, unbiased=False, keepdim=True).clamp_min(1e-6)
         return {
@@ -375,10 +376,16 @@ class RGRAModel(nn.Module):
     ) -> dict[str, torch.Tensor]:
         if condition not in RGRA_CONDITIONS:
             raise ValueError(f"unknown RGRA condition: {condition}")
-        q = self.rsc.role_queries(s_off=condition == "s_off")
-        proto = self.rsc.prototypes(s_off=condition == "s_off")
+        semantic_off = condition == "s_off"
+        q = self.rsc.role_queries(s_off=semantic_off)
+        proto = self.rsc.prototypes(s_off=semantic_off)
+        group_weights = self.rsc.group_weights(s_off=semantic_off)
         visual = self._visual_terms(
-            cls_features, patch_features, q, enabled=condition != "v_off"
+            cls_features,
+            patch_features,
+            q,
+            group_weights,
+            enabled=condition != "v_off",
         )
         semantic_logits = visual["z"] @ proto.to(visual["z"].device).T * self.scale()
         visual_logits = visual["l_v"]
@@ -387,10 +394,12 @@ class RGRAModel(nn.Module):
             support_for_relation = torch.full_like(visual["support_gate"], 0.5)
         elif condition == "shuffled":
             generator = torch.Generator(device="cpu").manual_seed(int(shuffle_seed))
-            perm = torch.randperm(self.class_count, generator=generator).to(
-                visual["support_gate"].device
-            )
-            support_for_relation = visual["support_gate"].index_select(1, perm)
+            permutations = torch.rand(
+                visual["support_gate"].size(0),
+                self.class_count,
+                generator=generator,
+            ).argsort(dim=1).to(visual["support_gate"].device)
+            support_for_relation = visual["support_gate"].gather(1, permutations)
         else:
             support_for_relation = visual["support_gate"]
         alpha = self.alpha() if alpha_override is None else relation_scores.new_tensor(float(alpha_override))

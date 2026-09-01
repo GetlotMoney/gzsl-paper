@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -22,6 +23,15 @@ from tools.run_contract import (
     require_clean_code_tree,
 )
 from tools.runtime import sha256_file
+
+
+def _tensor_sha256(value: torch.Tensor) -> str:
+    tensor = value.detach().cpu().contiguous()
+    digest = hashlib.sha256()
+    digest.update(str(tensor.dtype).encode("ascii"))
+    digest.update(json.dumps(list(tensor.shape)).encode("ascii"))
+    digest.update(tensor.numpy().tobytes())
+    return digest.hexdigest()
 
 
 def run(
@@ -53,7 +63,7 @@ def run(
     if device.type != "cuda" or not torch.cuda.is_available():
         raise RuntimeError("RGRA official evaluation requires CUDA.")
     model = RGRAModel.from_graph_free_state(payload["package"]).to(device).eval()
-    assets = load_rgra_eval_assets(config)
+    assets = load_rgra_eval_assets(config, include_relation_assets=False)
     controls = evaluate_all_conditions(
         model, assets, device, int(config["eval_batch_size"])
     )
@@ -65,6 +75,8 @@ def run(
         "export_sha256": expected_export_sha,
         "metrics": controls,
         "eval_asset_identity": assets.identity,
+        "relation_field_shape": list(model.rfm.relation_field.shape),
+        "relation_field_sha256": _tensor_sha256(model.rfm.relation_field),
         "pclr_online_inference": False,
         "test_used_for_selection": True,
         "unseen_images_used_for_gradient": False,

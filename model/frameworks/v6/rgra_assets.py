@@ -122,8 +122,8 @@ class RGRAEvalAssets:
     test_unseen_labels: torch.Tensor
     test_unseen_coarse_patches: np.memmap
     role_sentence_embeds: torch.Tensor
-    relation_directions: torch.Tensor
-    edge_index: torch.Tensor
+    relation_directions: torch.Tensor | None
+    edge_index: torch.Tensor | None
     seen_classes: torch.Tensor
     unseen_classes: torch.Tensor
     identity: dict[str, Any]
@@ -232,19 +232,21 @@ def _validate_visual_manifest(
         "test_seen": spec.test_seen_count,
         "test_unseen": spec.test_unseen_count,
     }
+    scalar_counts_match = (
+        int(manifest.get("class_count", -1)) == spec.class_count
+        and int(manifest.get("seen_class_count", -1)) == spec.seen_count
+        and int(manifest.get("train_count", -1)) == spec.train_count
+        and int(manifest.get("test_seen_count", -1)) == spec.test_seen_count
+        and int(manifest.get("test_unseen_count", -1)) == spec.test_unseen_count
+    )
+    manifest_counts = manifest.get("counts")
+    nested_counts_match = manifest_counts == counts
     invalid = (
         manifest.get("schema_version") != "gzsl-paper.clip-assets.v1"
         or manifest.get("asset_id") != expected_asset_id
         or manifest.get("dataset") != spec.dataset
-        or int(manifest.get("class_count", -1)) != spec.class_count
-        or int(manifest.get("seen_class_count", -1)) != spec.seen_count
-        or int(manifest.get("train_count", -1)) != spec.train_count
-        or int(manifest.get("test_seen_count", -1)) != spec.test_seen_count
-        or int(manifest.get("test_unseen_count", -1)) != spec.test_unseen_count
+        or not (scalar_counts_match or nested_counts_match)
     )
-    manifest_counts = manifest.get("counts")
-    if manifest_counts is not None and manifest_counts != counts:
-        invalid = True
     if invalid:
         raise ValueError("RGRA visual asset identity, dataset, or counts mismatch.")
     forbidden = {
@@ -268,6 +270,9 @@ def _classes_from_manifest(
     manifest: Mapping[str, Any],
     train_labels: torch.Tensor | None,
     spec: RGRADatasetSpec,
+    *,
+    test_seen_labels: torch.Tensor | None = None,
+    test_unseen_labels: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     if "seen_classes" in manifest and "unseen_classes" in manifest:
         seen = torch.tensor(manifest["seen_classes"], dtype=torch.long).sort().values
@@ -276,8 +281,11 @@ def _classes_from_manifest(
         seen = torch.unique(train_labels.long(), sorted=True)
         all_classes = torch.arange(spec.class_count, dtype=torch.long)
         unseen = all_classes[~torch.isin(all_classes, seen)]
+    elif test_seen_labels is not None and test_unseen_labels is not None:
+        seen = torch.unique(test_seen_labels.long(), sorted=True)
+        unseen = torch.unique(test_unseen_labels.long(), sorted=True)
     else:
-        raise ValueError("Manifest must bind seen/unseen classes for eval loading.")
+        raise ValueError("RGRA class axes cannot be derived from manifest or labels.")
     all_classes = torch.cat((seen, unseen)).sort().values
     if (
         seen.ndim != 1
@@ -738,6 +746,7 @@ def load_rgra_eval_assets(
     config: Mapping[str, Any],
     *,
     spec: RGRADatasetSpec = CUB_SPEC,
+    include_relation_assets: bool = True,
 ) -> RGRAEvalAssets:
     manifest_path, manifest, manifest_sha = _load_visual_manifest(config, spec)
     role_sentence_embeds = _validate_role_tensor(
@@ -766,7 +775,13 @@ def load_rgra_eval_assets(
         (spec.test_unseen_count,),
         integer=True,
     )
-    seen, unseen = _classes_from_manifest(manifest, None, spec)
+    seen, unseen = _classes_from_manifest(
+        manifest,
+        None,
+        spec,
+        test_seen_labels=test_seen_labels,
+        test_unseen_labels=test_unseen_labels,
+    )
     if not torch.equal(torch.unique(test_seen_labels, sorted=True), seen):
         raise ValueError("RGRA test_seen labels do not match seen classes.")
     if not torch.equal(torch.unique(test_unseen_labels, sorted=True), unseen):
@@ -783,10 +798,14 @@ def load_rgra_eval_assets(
         PATCH_OUTPUTS["test_unseen"],
         (spec.test_unseen_count, 36, EMBED_DIM),
     )
-    relations = load_rgra_relation_assets(
-        config,
-        visual_manifest_sha256=manifest_sha,
-        spec=spec,
+    relations = (
+        load_rgra_relation_assets(
+            config,
+            visual_manifest_sha256=manifest_sha,
+            spec=spec,
+        )
+        if include_relation_assets
+        else None
     )
     return RGRAEvalAssets(
         test_seen_features=test_seen_features,
@@ -796,14 +815,15 @@ def load_rgra_eval_assets(
         test_unseen_labels=test_unseen_labels,
         test_unseen_coarse_patches=test_unseen_patches,
         role_sentence_embeds=role_sentence_embeds,
-        relation_directions=relations.relation_directions,
-        edge_index=relations.edge_index,
+        relation_directions=(None if relations is None else relations.relation_directions),
+        edge_index=(None if relations is None else relations.edge_index),
         seen_classes=seen,
         unseen_classes=unseen,
         identity={
             "asset_id": manifest["asset_id"],
             "asset_manifest_sha256": manifest_sha,
-            "relation_asset": relations.identity,
+            "relation_asset": None if relations is None else relations.identity,
+            "graph_free_eval_assets": not include_relation_assets,
             "patch_outputs": {
                 PATCH_OUTPUTS["test_seen"]: manifest["outputs_sha256"][
                     PATCH_OUTPUTS["test_seen"]

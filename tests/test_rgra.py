@@ -140,6 +140,16 @@ def test_full_and_all_off_control_paths_have_fixed_shapes_and_attention():
     assert torch.equal(i_off["interaction_logits"], torch.zeros_like(i_off["interaction_logits"]))
 
 
+def test_s_off_visual_path_is_independent_of_learned_semantic_group_weights():
+    model, cls, patches, _ = _fixture()
+    with torch.no_grad():
+        model.rsc.group_logits.copy_(torch.tensor([8.0, -3.0, -5.0]))
+        first = model.score_components(cls, patches, condition="s_off")["visual_logits"]
+        model.rsc.group_logits.copy_(torch.tensor([-4.0, 9.0, -2.0]))
+        second = model.score_components(cls, patches, condition="s_off")["visual_logits"]
+    assert torch.equal(first, second)
+
+
 def test_alpha_zero_full_is_exact_i_off_and_class_slice_is_late():
     model, cls, patches, _ = _fixture()
     alpha_zero = model.logits(cls, patches, condition="full", alpha_override=0.0)
@@ -165,6 +175,12 @@ def test_additive_and_shuffled_controls_preserve_formula_but_change_grounding():
     )
     assert torch.equal(shuffled["support_for_relation"].sort(dim=1).values, full["support_gate"].sort(dim=1).values)
     assert not torch.equal(shuffled["support_for_relation"], full["support_gate"])
+    generator = torch.Generator(device="cpu").manual_seed(7)
+    permutations = torch.rand(4, 200, generator=generator).argsort(dim=1)
+    assert not torch.equal(permutations[0], permutations[1])
+    assert torch.equal(
+        shuffled["support_for_relation"], full["support_gate"].gather(1, permutations)
+    )
 
 
 def test_cls_only_loss_sends_nonzero_gradients_to_all_three_deployed_modules():

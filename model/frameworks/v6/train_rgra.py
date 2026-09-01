@@ -107,6 +107,12 @@ def load_config(path: Path) -> tuple[dict[str, Any], str]:
     )
     if invalid:
         raise ValueError("RGRA config identity, budget, parent, or disclosure changed.")
+    source_config = Path(config["source_config"])
+    if (
+        not source_config.is_file()
+        or sha256_file(source_config) != config["source_config_sha256"]
+    ):
+        raise ValueError("RGRA V5 source config path or SHA mismatch.")
     return config, sha256_file(path)
 
 
@@ -436,7 +442,11 @@ def run(
         eval_interval = int(config["eval_interval_steps"])
         eval_batch_size = int(config["eval_batch_size"])
         for update in range(start_update, total_updates + 1):
-            if update == 0 or update % eval_interval == 0 or update == total_updates:
+            resumed_checkpoint_row = resume_from is not None and update == start_update
+            if (
+                not resumed_checkpoint_row
+                and (update == 0 or update % eval_interval == 0 or update == total_updates)
+            ):
                 full = evaluate_condition(model, eval_assets, device, "full", eval_batch_size)["metrics"]
                 row = {"evaluation_index": len(history), "update": update, **full}
                 history.append(row)
@@ -499,6 +509,12 @@ def run(
             raise RuntimeError("RGRA did not select a Full checkpoint.")
         model.load_state_dict(best_state, strict=True)
         final_controls = evaluate_all_conditions(model, eval_assets, device, eval_batch_size)
+        final_full = final_controls["conditions"]["full"]["metrics"]
+        if any(
+            abs(float(final_full[name]) - float(best_metrics[name])) > 1e-6
+            for name in ("U", "S", "H", "ZS")
+        ):
+            raise RuntimeError("RGRA best checkpoint metrics did not reproduce.")
         parent_h = float(config["parent_metrics_percent"]["H"])
         module_gaps = {name: float(final_controls["gaps_H"][name]) for name in ("s_off", "v_off", "i_off")}
         framework_passed = float(best_metrics["H"]) > parent_h and all(

@@ -252,6 +252,43 @@ class RGRAAssetTest(unittest.TestCase):
         self.assertEqual(assets.seen_classes.tolist(), [0, 1])
         self.assertEqual(assets.unseen_classes.tolist(), [2, 3])
 
+    def test_graph_free_eval_loader_does_not_open_relation_assets(self):
+        self.relation_manifest.unlink()
+        assets = load_rgra_eval_assets(
+            self.config,
+            spec=self.spec,
+            include_relation_assets=False,
+        )
+        self.assertIsNone(assets.relation_directions)
+        self.assertIsNone(assets.edge_index)
+        self.assertTrue(assets.identity["graph_free_eval_assets"])
+        self.assertIsNone(assets.identity["relation_asset"])
+
+    def test_visual_manifest_accepts_v5_nested_counts_without_scalar_counts(self):
+        manifest = json.loads(self.visual_manifest.read_text(encoding="utf-8"))
+        for key in (
+            "class_count",
+            "seen_class_count",
+            "unseen_class_count",
+            "train_count",
+            "test_seen_count",
+            "test_unseen_count",
+        ):
+            manifest.pop(key, None)
+        manifest["counts"] = {"train": 3, "test_seen": 2, "test_unseen": 2}
+        self.visual_manifest.write_text(
+            json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+        )
+        self.config["asset_manifest_sha256"] = sha256_file(self.visual_manifest)
+
+        assets = load_rgra_eval_assets(
+            self.config,
+            spec=self.spec,
+            include_relation_assets=False,
+        )
+        self.assertEqual(assets.seen_classes.tolist(), [0, 1])
+        self.assertEqual(assets.unseen_classes.tolist(), [2, 3])
+
     def test_v5_initialization_binds_checkpoint_code_and_config(self):
         init = load_v5_r2_initialization(
             self.config,
