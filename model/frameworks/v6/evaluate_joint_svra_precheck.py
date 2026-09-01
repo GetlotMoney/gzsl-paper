@@ -634,9 +634,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
     roles, names, class_ids = load_text_tensors(config)
     features = load_official_features(config)
     checkpoints = {
-        "full": load_checkpoint(config["full_checkpoint"], expected_commit=expected_commit, expected_condition=FULL_CONDITION),
-        "no_joint": load_checkpoint(config["no_joint_checkpoint"], expected_commit=expected_commit, expected_condition=NO_JOINT_CONDITION),
-        "sequential": load_checkpoint(config["sequential_checkpoint"], expected_commit=expected_commit, expected_condition=SEQUENTIAL_CONDITION),
+        "full": load_checkpoint(
+            config["full_checkpoint"],
+            expected_commit=config["full_checkpoint"]["training_commit"],
+            expected_condition=FULL_CONDITION,
+        ),
+        "no_joint": load_checkpoint(
+            config["no_joint_checkpoint"],
+            expected_commit=config["no_joint_checkpoint"]["training_commit"],
+            expected_condition=NO_JOINT_CONDITION,
+        ),
+        "sequential": load_checkpoint(
+            config["sequential_checkpoint"],
+            expected_commit=config["sequential_checkpoint"]["training_commit"],
+            expected_condition=SEQUENTIAL_CONDITION,
+        ),
     }
     models = {
         name: instantiate_model(roles, names, class_ids, checkpoint, device)

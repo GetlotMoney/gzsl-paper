@@ -1,4 +1,5 @@
 import inspect
+from pathlib import Path
 
 import pytest
 import torch
@@ -152,3 +153,11 @@ def test_group_safety_gate_requires_challenger_trigger_and_positive_net():
     failing["challenger"] = dict(passing["challenger"], trigger=1, corrected=0)
     result = joint_eval.group_safety_gate(failing)
     assert result["passed"] is False
+
+
+def test_eval_ledger_commit_can_differ_from_training_commit():
+    source = Path("model/frameworks/v6/evaluate_joint_svra_precheck.py").read_text(
+        encoding="utf-8"
+    )
+    for condition in ("full_checkpoint", "no_joint_checkpoint", "sequential_checkpoint"):
+        assert f'expected_commit=config["{condition}"]["training_commit"]' in source
