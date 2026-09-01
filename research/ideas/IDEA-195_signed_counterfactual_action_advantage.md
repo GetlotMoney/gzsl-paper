@@ -1,7 +1,7 @@
 # IDEA-195：Signed Counterfactual Action Advantage（SCAA）
 
 idea_id: IDEA-195
-status: testing_owner_preapproved_rescue
+status: rejected_at_gate0
 source_type: IDEA-194_failure + first_principles + owner_continuous_rescue_authorization
 method_name: Signed Counterfactual Action Advantage
 method_acronym: SCAA
@@ -52,7 +52,7 @@ minimal_viability: exact signed counts, nonzero positive and negative totals ove
 minimal_falsification: train only balanced Full and run Gate0; any parent/off/control/group/B1 failure drops. No threshold/activation/loss-weight/prompt/window/B2 rescue.
 
 current_advantage: none; failure-driven signed reformulation with +16.07pp pair-oracle opportunity.
-performance_status: proof_of_path
+performance_status: below_parent
 failure_boundary: low-res evidence may not predict high-res advantage; MSE may regress toward zero/all-abstain; the maximum over25 actions may turn tiny near-zero positive noise into over-trigger; 4:4 prior may overtrigger; damage patterns may not transfer; S/V contributions may remain weak.
 closest_paradigm_work: GapSight / Learning to Look Again (arXiv:2608.21762v2) already mines global-vs-crop answer loss/margin improvements and trains review/utility/box prediction. SCAA does not claim baseline-relative utility or crop routing originality; only the fixed signed discrete GZSL experiment boundary is tested.
 paper_level_claim: only after all evidence: “Signed counterfactual crop advantages support damage-aware one-shot pair verification in class-disjoint GZSL.” No first claim.
@@ -76,3 +76,18 @@ review_result: `P0=0 / P1=0 / 双Agent交叉审查通过`
 
 - Both agents independently reviewed signed target mapping/counts, tanh/MSE/zero trigger, 4:4 trace statistics, SignedStaticBest, schema/checkpoint, group/B1 gates and tests.
 - They exchanged SHA-bound full reports through shared files, responded to the other report and both concluded `P0=0/P1=0`. Local tests: `23 passed`; reviewer subsets: `18/11 passed`.
+
+## 2026-09-01 Gate0 result and experience
+
+train_checkpoint: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/scaa/V5-TRY-009-GATE0-FULL/scaa_gate0_full.pt@sha256:e4df25be4966db870fd67f9668b6d053307e0490896cee5395b11b425fa9983a`
+eval_config_sha256: `8767e4647fd82d7be3bdc0c3e40c164a56fe98ea0e939725da316a1e63279fcb`
+failure_receipt: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/scaa/V5-TRY-009-GATE0-EVAL/failure.json@sha256:90e82acd18a7eb1ad366409f7fb193945456cb2e2832a3a79ed3a901238ed9a1`
+
+- Exact signed target and sampler counts passed; loss fell `0.305000→0.176570`; all gradients passed.
+- Parent=`66.692923%`; Full=`62.655040%`, Full-Parent=`-4.037883pp`. Full-Soff=`+0.337755pp`; Full-Voff=`+14.298796pp`, showing strong but harmful local-visual dependence.
+- Trigger rate=`60.552017%`; challenger trigger=`83.73%`, leader trigger=`48.74%`. Full corrected144 but damaged239 leaders, net=`-95`.
+- Full beat Random/TextHeatmap, but failed Parent, I/S/V-off, Center/Static and group-safety gates. All B1/data boundaries passed.
+
+root_cause: Independent signed regression followed by `max` over 25 actions amplifies small positive estimation noise. Although mean signed advantage was negative, at least one action exceeded zero on 60.6% of rows; the zero decision boundary therefore recreated excessive leader triggering.
+
+decision: Drop SCAA. Do not tune the zero threshold, MSE, sampler, prompt or windows. The next Idea must replace independent max-thresholding with an explicit abstain-versus-action competition so no-action participates in the same normalized decision.
