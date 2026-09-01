@@ -2,7 +2,7 @@
 idea_id: IDEA-201
 name: Compiled PCLR
 short_name: C-PCLR
-status: proposed_gate_a_passed_revise
+status: rejected_gate_b_below_parent
 source_type: owner_hypothesis
 problem_category: class_competition
 mechanism_tags:
@@ -16,10 +16,11 @@ evidence_refs:
   - FRAMEWORK-V5-R4 metrics SHA efbdca19f8248b2e16c99baa7aa5a81d2279218db910a9a00e7303d45d2fc2bc
   - 2026-09-02 read-only all-edge diagnostic recorded in this card
   - 2026-09-02 IDEA-201 Gate A read-only stdout recorded in this card
+  - V6-TRY-006 metrics SHA fbbd8ef520d8d6bca62cc1d860a0432a244ab99af30761a3ffd8c824f7c90879
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 base_commit_candidate: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 base_ref_candidate: framework/v5 and annotated tag v5^{}
-performance_status: proof_of_path
+performance_status: below_parent
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 strict_blind_claim: false
@@ -218,6 +219,28 @@ PCLR/GTD/TG与评估相关文件相对该commit无diff；固定R2 checkpoint代�
 逐图role标准化、std和cap后的结构代理，不是正式C-PCLR checkpoint，不复现R4 logits，也没有
 产生U/S/H/ZS或真实速度优势；`performance_status`继续保持`proof_of_path`。
 
+### 2026-09-02 Gate B fixed-200正式结果
+
+`V6-TRY-006`在准确父commit独立分支完成seed7、batch50、200名义epoch、28,228 updates和
+202行完整official评估历史。TG/GTD、matched online-V5 Reader/beta与C-PCLR头使用同一父轨迹
+和同一训练预算；C-PCLR固定禁用Top-17。best-Full-H checkpoint=`update13818`：
+
+| 条件 | U | S | H | ZS | Full−off H |
+|---|---:|---:|---:|---:|---:|
+| C-PCLR Full | 77.606910 | 83.639657 | 80.510432 | 88.473403 | — |
+| S-off | 76.141131 | 82.428479 | 79.160157 | 87.064338 | 1.350275 |
+| V-off | 82.206428 | 76.821315 | 79.422694 | 88.181764 | 1.087737 |
+| I-off | 82.451552 | 76.188660 | 79.196481 | 88.189560 | 1.313951 |
+
+matched online-V5同预算best为`U/S/H/ZS=80.112976/81.535739/80.818096/88.646406`
+`@ update13818`；正式V5为`H=81.068777`。C-PCLR相对两者分别为`-0.307664 H`与
+`-0.558345 H`。S/V/I三个部署依赖均超过预注册`1.0 H`门，但Full没有超过任一父条件；程序
+正式decision=`drop_gate_b_contract_failed`，Idea状态改为`rejected_gate_b_below_parent`。
+
+结果证明关系编译路径可运行且三个组成部分均产生非平凡依赖，但没有形成当前准确率优势，不能
+登记为`innovation`或`paper_core_innovation`，不触发Gate C或参数补救。输出URI：
+`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/compiled_pclr/V6-TRY-006`。
+
 ## 5. 最近工作与允许的新颖性边界
 
 下列原始论文页面于2026-09-02重新核对；当前只作Idea检索证据，尚未建立正式PAPER卡或
@@ -388,5 +411,6 @@ Top-17”或“训练一定追回mask增益”。
   `1e-5`。它关闭“数学上不能编译/导出”的风险，但不关闭current advantage、新颖性对照、
   统计门或S/V/I真实贡献P1，因此Idea仍为`proof_of_path / revise`。
 - Gate A回填后payload SHA256：`96704bd3a6424aa1be8c28463df51bb485d12b2d9f19b5b068fa824cb17ece1f`。
-
+- Gate B最终覆盖：fixed-200正式RUN完成并判定`drop_gate_b_contract_failed`；`performance_status`
+  从`proof_of_path`更新为`below_parent`。该结果关闭本Idea，不继续Gate C或补救搜索。
 

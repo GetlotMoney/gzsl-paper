@@ -20,3 +20,9 @@ Reviewer的独立清单、直接文件交换和逐项回应，双方`P0=0/P1=0/p
 batch50 micro-batch，通过后启动正式fixed-200 RUN。顶层`FRAMEWORK.yaml`仍是未接纳DESC历史
 开发元数据，不是本Experiment代码父条件。实验入口见
 [`V6-INNOVATION-001_COMPILED_PCLR`](V6-INNOVATION-001_COMPILED_PCLR/EXPERIMENT.yaml)。
+
+V6-TRY-006已完成fixed-200正式RUN：C-PCLR Full `U/S/H/ZS=77.606910/83.639657/
+80.510432/88.473403 @ update13818`；S/V/I关闭分别降低`1.350275/1.087737/1.313951 H`，
+模块依赖门全部通过。但matched online-V5 best `H=80.818096`，正式V5 `H=81.068777`，
+C-PCLR分别低`0.307664/0.558345 H`。正式decision=`drop_gate_b_contract_failed`；不进入Gate C，
+不做Top-K、alpha、role、seed或checkpoint补救。
