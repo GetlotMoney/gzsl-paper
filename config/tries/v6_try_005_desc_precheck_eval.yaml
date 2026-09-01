@@ -19,19 +19,19 @@ test_unseen_labels_sha256: 7fadd63d51f69cf09cc8107a132d28036b838649b75227a17656e
 action_geometry_sha256: 4e64cb1fa0a24b3fd734d53dc60dadf94057bfadf36ff65fb0e0a063bfdb74cb
 full_checkpoint:
   path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/desc/V6-TRY-005-PRECHECK/full_final.pt
-  sha256: REPLACE_AFTER_ROOT_FREEZE
-  training_commit: REPLACE_AFTER_ROOT_FREEZE
-  train_config_sha256: REPLACE_AFTER_ROOT_FREEZE
+  sha256: 3b8c6b85a014fe0e6f8a5c2d996c2090af8f55ddac616dddc2e30477da6f7825
+  training_commit: 4e4fa9a229a409413622c4286b3ef8cca523cb42
+  train_config_sha256: 461a0167e8dc871749974195f890736e769c4c53ab16dae12a367f231cd9bee5
 no_action_aux_checkpoint:
   path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/desc/V6-TRY-005-PRECHECK/no_action_aux_final.pt
-  sha256: REPLACE_AFTER_ROOT_FREEZE
-  training_commit: REPLACE_AFTER_ROOT_FREEZE
-  train_config_sha256: REPLACE_AFTER_ROOT_FREEZE
+  sha256: fa96ceea48da59ec465cf5e5b9cbfc0c72544bdd55989601483d2f70cae33930
+  training_commit: 4e4fa9a229a409413622c4286b3ef8cca523cb42
+  train_config_sha256: 461a0167e8dc871749974195f890736e769c4c53ab16dae12a367f231cd9bee5
 parent_only_checkpoint:
   path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/desc/V6-TRY-005-PRECHECK/parent_only_final.pt
-  sha256: REPLACE_AFTER_ROOT_FREEZE
-  training_commit: REPLACE_AFTER_ROOT_FREEZE
-  train_config_sha256: REPLACE_AFTER_ROOT_FREEZE
+  sha256: 6b4ea1e9e776621f9551a8bc45ca209634a8c71e91e2beaa34e829fc748c2ba1
+  training_commit: 4e4fa9a229a409413622c4286b3ef8cca523cb42
+  train_config_sha256: 461a0167e8dc871749974195f890736e769c4c53ab16dae12a367f231cd9bee5
 device: cuda:0
 random_seed: 7
 eval_batch_size: 64

@@ -72,3 +72,22 @@ paper_level_claim: none before official precheck and formal confirmation.
 - Agent A/B 复核 SHA256：`502d1618f7ecd7e2f18180f7816be6a9ac33377527e126d99a4e08aa9947e2d4` / `e36984646f3923ac835ebfd5a281ba095b6248ff95cbdfd297ffb7f3d04d1b25`
 - A/B 交叉回应 SHA256：`cda61f8c5065f32919a5d5b01b7170d4db99ff4ec8cb8023817d8407e8b811ce` / `d39b92805848cf1e5aba3ad9823934a6cb523733935e26fccb2d88907315377a`。
 - 双方最终均为 `P0=0 / P1=0 / P2=0 / pass`；共同结论：`范式Idea双Agent对抗审核通过`。
+
+## 2026-09-02 冻结代码交叉审查
+
+- 训练代码 commit/tree：`4e4fa9a229a409413622c4286b3ef8cca523cb42` / `49f91918db1aa084a8c12f8ab3d12e203516bb1f`
+- train config SHA256：`461a0167e8dc871749974195f890736e769c4c53ab16dae12a367f231cd9bee5`
+- eval placeholder SHA256：`2458d38952eba5ad042023408f128ac8114b83f292ab80c7187070874b61644b`
+- Agent A/B 报告 SHA256：`9ccadabead1f7fb0170f41c07a03160cfba540dd02920cdc10f5680436bf3613` / `6a2481169740dad91034fe9deb96fa6a130c299f49cc079d60a84fbff27d8c37`
+- A/B 交叉回应 SHA256：`2f5e39460f6957d61b898e6d1c6d5ff5eff1e0b1cd4654b9543e66d1d813b06a` / `ec6900c8b99cebc184085fb1346352f8814fa7c32459b66b7659122ed5c8370f`
+- 双方最终 `P0=0 / P1=0`，结论：`双Agent交叉审查通过`；本地相关测试为`25 passed`。
+
+## 2026-09-02 DESC预检训练收据
+
+- train receipt：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/desc/V6-TRY-005-PRECHECK/train_receipt.json@sha256:d882ff896ba9fe105d5e9c23c3159ab5335390834177413fa036f6b48a2bd536`
+- target census：`target_census.json@sha256:7781283e19cfa1ab85823c05311ca0a9399332216bb36191d93226bedcfd07b1`，严格命中6065/992与4485/1022/1550/30。
+- Full/No-action-aux/Parent-only共享 initialization SHA `ea1c34a71ca626612596dc2900d43ffffe7f118a9fb76737188e0911b9548033` 和 batch trace SHA `78176690ad5b7385bd16070a2a1cfb4b639319c343df324879b3b56592d84799`。
+- Full checkpoint：`full_final.pt@sha256:3b8c6b85a014fe0e6f8a5c2d996c2090af8f55ddac616dddc2e30477da6f7825`。
+- No-action-aux checkpoint：`no_action_aux_final.pt@sha256:fa96ceea48da59ec465cf5e5b9cbfc0c72544bdd55989601483d2f70cae33930`。
+- Parent-only checkpoint：`parent_only_final.pt@sha256:6b4ea1e9e776621f9551a8bc45ca209634a8c71e91e2beaa34e829fc748c2ba1`。
+- Full step2/final S/V/I梯度均finite/nonzero；Parent-only仅I有梯度，符合控制定义。official性能尚未评估。
