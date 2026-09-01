@@ -85,7 +85,9 @@ Gate bundle:
 - `raw_indices.pt` joins Gate rows to projected-patch `trainval_loc`; train/eval have zero overlap and cover all 7,057 rows.
 - action geometry: 6x6 patches, starts `[0,4,9,14,18]`, row-major 25, SHA256 `4e64cb1fa0a24b3fd734d53dc60dadf94057bfadf36ff65fb0e0a063bfdb74cb`.
 
-`projected_patch_pair_oracle_receipt: required_before_training`; before any optimizer step it must be replaced by a real path/SHA binding the exact projected-patch CLS, 2,355 rows, 150-axis, crop table, Parent, Oracle, gain, corrections and damage.
+projected_patch_pair_oracle_receipt: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rwdg/V5-TRY-007-GATE0-ORACLE/receipt_v2.json@sha256:5bfbc47453e2421e23807af5c7b883840b2ff36039017d66173bbfc61115610e`
+
+The frozen receipt uses generator `tools/prepare_rwdg_oracle.py@sha256:9e80685580be7b9eb330237c3816dc4d5d31d21a840c678b71d00d7f4515696d` and reports projected-patch Parent=`66.692923%`, PairCropOracle25=`82.761470%`, gain=`+16.068547pp`, 375 reachable corrections and zero damage on the exact 2,355 rows/150 axis. It is diagnostic-only and never enters gradients or Full action selection.
 
 ## Exactly three deployment modules
 
