@@ -1,0 +1,41 @@
+schema_version: gzsl-paper.v5-rceg-dev-eval.v1
+experiment_id: V5-TRY-003-GATE0
+eval_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rceg/assets/V5-TRY-003-GATE0/dev_eval/asset_manifest.json
+eval_manifest_sha256: 64b13d1d3df9d1ef0c3f19cbda54a01f65f05fb05081985ec188a70ebc5d6bdf
+bundle_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rceg/assets/V5-TRY-003-GATE0/asset_manifest.json
+bundle_manifest_sha256: bb901374cb57e46a7dd350ce2ea0720da5eee41903aa63e416ef8a3bef3f3dd7
+asset_generation_commit: 214b1aae0b5895cdd25c67d4de1948b598a05a53
+device: cuda:0
+batch_size: 4
+candidate_chunk_size: 5
+bootstrap_seed: 7
+bootstrap_samples: 10000
+checkpoints:
+  full:
+    path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rceg/V5-TRY-003-GATE0/FULL/checkpoint.pt
+    sha256: bfb61bb2e8743e372f982c0d6f74196468f0dcfe1777dbe7fe725654d42f683e
+    training_commit: 48c8bdbb104717e09d120f120eba5223af8daa88
+  absolute_role:
+    path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rceg/V5-TRY-003-GATE0/ABSOLUTE_ROLE/checkpoint.pt
+    sha256: fa7a3b31d4a468fb973a855a98f42710fd5642ac535f3f59ed33421b9660253b
+    training_commit: 48c8bdbb104717e09d120f120eba5223af8daa88
+  reference_difficulty:
+    path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rceg/V5-TRY-003-GATE0/REFERENCE_DIFFICULTY/checkpoint.pt
+    sha256: b58e9549d752a21c8084980bd55baaf5ef9d476e4c7f4e23c555f3bc3b785904
+    training_commit: 48c8bdbb104717e09d120f120eba5223af8daa88
+  target_free:
+    path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rceg/V5-TRY-003-GATE0/TARGET_FREE/checkpoint.pt
+    sha256: 8d6bcd814791ceb9253fab841372c4f879d7a4a79d3d002ec0eecb503b944580
+    training_commit: 48c8bdbb104717e09d120f120eba5223af8daa88
+  target_shuffle:
+    path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rceg/V5-TRY-003-GATE0/TARGET_SHUFFLE/checkpoint.pt
+    sha256: ec887b67671ca2b9411dc63dcb1b5c5f1c9d54d24af57d53382111c4f3265c93
+    training_commit: 48c8bdbb104717e09d120f120eba5223af8daa88
+  role_shuffle:
+    path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rceg/V5-TRY-003-GATE0/ROLE_SHUFFLE/checkpoint.pt
+    sha256: a6140b770f5f1a646ffed66138ba90a6e9d957f0a60dd91a2ec78128c9169564
+    training_commit: 48c8bdbb104717e09d120f120eba5223af8daa88
+unseen_images_used_for_gradient: false
+dev_unseen_text_used_for_gradient: false
+official_test_loaded: false
+pclr_online_inference: false
