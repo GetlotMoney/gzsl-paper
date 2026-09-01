@@ -8,6 +8,7 @@ method_acronym: SCAA
 implementation_branch: exp/v5/innovation/v5-try-009-scaa
 current_run: V5-TRY-009 / Gate0 signed Full
 train_config_sha256: `f25330ed5b7f8a67f012d40a2dc36e0155b3e88f82afc7d94b09dde7b28bc7f4`
+implementation_code_commit: `8b390408235fd5012d70f161cfd47bc0914ab332`
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 predecessor: IDEA-194 D-CCU rejected at Gate0
 problem_category: visual_grounding
@@ -66,3 +67,12 @@ review_result: `P0=0 / P1=0 / P2=0 / PASS`
 - Initial independent review identified the false per-batch sign guarantee and the need to isolate signed damage evidence from activation/trigger calibration.
 - The final draft limits 4:4 to group balance, records actual sign frequencies, fixes Signed-StaticBest to the natural signed mean, adds the Unsigned-calibrated hard control and narrows the GapSight boundary.
 - Both agents independently checked the final SHA and returned `0/0/0`. Owner's standing authorization permits the proof Gate but not promotion or a success claim.
+
+## Code review
+
+review_subject_commit: `8b390408235fd5012d70f161cfd47bc0914ab332`
+review_subject_tree: `ddedff2bad608e761c754bd89af5039e6ee24f25`
+review_result: `P0=0 / P1=0 / 双Agent交叉审查通过`
+
+- Both agents independently reviewed signed target mapping/counts, tanh/MSE/zero trigger, 4:4 trace statistics, SignedStaticBest, schema/checkpoint, group/B1 gates and tests.
+- They exchanged SHA-bound full reports through shared files, responded to the other report and both concluded `P0=0/P1=0`. Local tests: `23 passed`; reviewer subsets: `18/11 passed`.

@@ -134,4 +134,3 @@ def test_interaction_off_bypasses_margin_and_full_swaps_only_top2():
     assert bool(output.swapped.item())
     assert output.logits.argmax(dim=1).item() == 1
     assert torch.equal(output.logits[:, 2], output.parent_logits[:, 2])
-
