@@ -1,0 +1,57 @@
+schema_version: gzsl-paper.v6-rgra-train.v1
+experiment_id: V6-TRY-008
+framework_id: FRAMEWORK-V6-DEVELOPMENT
+dataset: CUB
+condition_id: RGRA_ONE_STAGE_E2E
+base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
+asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v3/CUB_openai_vitl14_336_dynamic_v3_v1/asset_manifest.json
+asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+asset_id: CUB_openai_vitl14_336_dynamic_v3_v1
+coarse_patch_files_sha256:
+  train_coarse_patch_features.npy: ee5e937a4b78cb6d8f8babaa22cfed43ab2807080fda0d1dd4bba4206485c1f0
+  test_seen_coarse_patch_features.npy: ce7b902e43bd0cb89c4244b9d13e19d3af0ef7f91997d718e3e4a5afa389d405
+  test_unseen_coarse_patch_features.npy: ac63d8badf1d1daf9c6328c57016964a24511f815eabd502ca9d58bba17ff78b
+relation_asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v4/pclr_relations/CUB_pclr_relations_453d684b5080f477/asset_manifest.json
+relation_asset_manifest_sha256: 0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4
+relation_asset_id: CUB_pclr_relations_453d684b5080f477
+source_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/pclr/V4-TRY-023-R2/model_best.pth
+source_checkpoint_sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
+source_code_commit: b0a756dd624e883eb50d19a2455ba06bdc73f118
+source_config_sha256: 0861877ae3e4725e29aff547d45e0b6d56a186179309acb5493c5906b803fd49
+parent_metrics_percent:
+  U: 80.694097
+  S: 81.446952
+  H: 81.068777
+  ZS: 88.785273
+target_h: 80.0
+required_module_delta_h: 1.0
+device: cuda:0
+random_seed: 7
+batch_size: 50
+nominal_epochs: 200
+total_updates: 28228
+eval_interval_steps: 141
+learning_rate: 0.00003
+min_learning_rate: 0.000003
+weight_decay: 0.001
+hidden_dim: 64
+topology_loss_weight: 0.3
+direction_loss_weight: 0.1
+relation_ridge: 0.3
+visual_temperature: 0.07
+relation_temperature: 0.2
+seen_logit_gamma: 0.91
+max_rho_s: 0.5
+initial_rho_s: 0.1
+max_beta_v: 1.0
+initial_beta_v: 0.1
+max_alpha: 1.0
+initial_alpha: 0.05
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: false
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+human_annotations_used: false
+expert_attributes_used: false
+llm_world_knowledge_used: true
+
