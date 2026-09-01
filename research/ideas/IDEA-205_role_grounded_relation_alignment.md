@@ -114,3 +114,14 @@ owner_requirement: 2026-09-02 owner explicitly rejected the CRC two-stage/frozen
 - final_A: `fa0aea250db6e2e89f2be115131924ac8054ea8709ea508451f99ee84d72feef`
 - final_B: `6c054c4d275376db6f3893cd8d0f28cca1d7d1c2de8bbdb28ed9ecff1b642a36`
 - result: `P0=0/P1=0`，**双Agent交叉审查通过**；只授权固定配置RUN。
+
+## 2026-09-02 CUDA micro与正式RUN失败结果
+
+- execution_commit: `c830096b50e9f4721b72478f687b412b308bb832`
+- config_sha256: `95b0bc5791e0e7ccabbf1014f09d086cf1a81260e24c5291b0f3def98ff15c6f`
+- CUDA micro通过：batch50；`L_cls`到RSC/RVA/RFM梯度范数=`0.463408/2.033284/0.058595`；attention std=`0.032037`；`alpha0==I-off`误差0；未加载official test。
+- 正式RUN在update22,983 checkpoint后被主动停止。直接原因是R2源模型在提取`P_v5`时未调用`eval()`，TG dropout使两次锚点重放max-abs=`0.145699`、SHA不同，违反固定V5 anchor合同。
+- 停止前全局best仍为update423：`U/S/H/ZS=75.371444/80.628538/77.911411/84.670228`，低于V5 `H=81.068777`。
+- 同checkpoint gaps：S=`+9.548995`、V=`+2.250195`、I=`+0.064736`；Full-additive=`-0.021937`、Full-shuffled=`+0.035142`。即使忽略工程身份错误，I模块与conditional non-equivalence也失败。
+- failure_receipt: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/rgra/V6-TRY-008/failure.json@sha256:7637294196a5fe00da91ff2550a2bd11e8ed9068f7c2541d319ebe5e09e9d5d7`
+- decision: `drop_IDEA205_engineering_invalid_and_empirically_below_parent`。不在失败代码上继续堆；新的锚点保持/关系尺度公式另建IDEA-206并从正式父commit独立分叉。
