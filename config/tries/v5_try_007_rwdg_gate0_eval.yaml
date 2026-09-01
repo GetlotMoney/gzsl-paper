@@ -24,8 +24,8 @@ oracle_receipt: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rwdg/V5-TR
 oracle_receipt_sha256: 5bfbc47453e2421e23807af5c7b883840b2ff36039017d66173bbfc61115610e
 full_checkpoint:
   path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rwdg/V5-TRY-007-GATE0-FULL/rwdg_gate0_full.pt
-  sha256: PENDING_AFTER_TRAIN
-  training_commit: PENDING_AFTER_CODE_FREEZE
+  sha256: 86fd0a12081bcaa822149f41ae7fc2795c9824c2f5eecb97e1162a0b457b1cc8
+  training_commit: 0485445f1dcb83be201717a3c67cf31747782a53
   train_config_sha256: df1b9bb6e9d9db49c186c420f266b31213b97f404f09b875e8a62142c7d62e20
 clip_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_checkpoints/ViT-L-14-336px.pt
 clip_checkpoint_sha256: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02
