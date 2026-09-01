@@ -23,9 +23,9 @@ trainval_count: 7057
 action_geometry_sha256: 4e64cb1fa0a24b3fd734d53dc60dadf94057bfadf36ff65fb0e0a063bfdb74cb
 combined_checkpoint:
   path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/svra/V6-TRY-003-GATE0-FULL/svra_gate0_combined.pt
-  sha256: REPLACE_AFTER_ROOT_FREEZE
-  training_commit: REPLACE_AFTER_ROOT_FREEZE
-  train_config_sha256: REPLACE_AFTER_ROOT_FREEZE
+  sha256: 89b485d58b1cc00c0bd1d248d4e1a472c5368bbfff32eaf3b6cc5c59e1d5eceb
+  training_commit: 8c50f02fc1f7dded7971b39cdac0b5d6b31c3c3a
+  train_config_sha256: 182d61455467f0f88594b7b56a21a916deb1aaa17c0213309a9fcfc4a389b581
 device: cuda:0
 random_seed: 7
 eval_batch_size: 64

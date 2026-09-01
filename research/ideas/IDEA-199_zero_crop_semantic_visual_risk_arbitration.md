@@ -78,3 +78,23 @@ paper_level_claim: none until frozen Gate0, strong controls, formal protocol and
 - A/B 先独立审完同一准确草稿，再直接交换完整清单并逐项回应；交叉回应 SHA256 分别为 `97c4f5964abf442c18591853764497fb3b0f63a8639e746377e69da108f1499e` 与 `08067ddfe0177c22a8ce9816a578a1980b251ce9512783bba7157886fcb73e6f`。
 - 双方最终均为 `P0=0 / P1=0 / P2=0 / pass`。
 - 共同结论：`范式Idea双Agent对抗审核通过`。该通过只允许建立可证伪候选，不代表冻结 Gate、统计稳定性或论文 claim 已成立。
+
+## 2026-09-02 冻结代码交叉审查
+
+- 最终训练代码 commit：`8c50f02fc1f7dded7971b39cdac0b5d6b31c3c3a`
+- 最终训练代码 tree：`62027dbc94df1ca0af49d8e3852a181a9a48f6b9`
+- train config SHA256：`182d61455467f0f88594b7b56a21a916deb1aaa17c0213309a9fcfc4a389b581`
+- eval placeholder config SHA256：`671e61e979ca08605a96859ca5cdda7288be1cd7bbfd2f466626788273dbb600`
+- Agent A 最终复核 SHA256：`ca3a32dc5c4331e5463cabcc34c7ebca8eab8169ca53882980d572048c2349d1`
+- Agent B 最终复核 SHA256：`6a0fe9882e85c368db00afd5750be926fb91c1e7f9a12df1056a862e0b93a801`
+- A/B 交叉回应 SHA256：`49be5ca691121ce4b0d54f04f024045d0199a0c91bfeefe299566329481a22b0` / `43d261a6956b0b83a8980692beaf12370bb42a0b6bd6dfeba3bf459aa729daa6`
+- 双方最终均为 `P0=0 / P1=0 / P2=0 / pass`；结论：`双Agent交叉审查通过`。本地最小相关测试为 `32 passed`。
+
+## 2026-09-02 Gate0 训练收据
+
+- checkpoint：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/svra/V6-TRY-003-GATE0-FULL/svra_gate0_combined.pt@sha256:89b485d58b1cc00c0bd1d248d4e1a472c5368bbfff32eaf3b6cc5c59e1d5eceb`
+- train history：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/svra/V6-TRY-003-GATE0-FULL/train_history.json@sha256:d44473b0d182fcdc6c9da2a17bb4db040bead6bd101d6f9dcb1c6524175d9068`
+- Stage1 目标计数严格复现：`4107` abstain / `595` action；loss `3.258096 -> 0.828329`。
+- 冻结 policy 触发训练行严格复现：`574` rows，`300` challenger-positive / `274` leader-or-outside-negative。
+- Stage1 step2 的 S 与 V upstream 梯度、Stage2 三个 arbiter 的 step2 hidden/output 梯度均为 finite/nonzero。
+- 状态：训练完成，尚未运行 Gate0 eval；上述内容不是性能结果。
