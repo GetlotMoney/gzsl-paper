@@ -1,7 +1,7 @@
 # IDEA-199：Zero-Crop Semantic-Visual Risk Arbitration（SVRA）
 
 idea_id: IDEA-199
-status: proposed_v6_framework_core_proof_gate
+status: supported_at_gate0_pending_formal_confirmation
 base_framework: FRAMEWORK-V6-DEVELOPMENT
 source_code_parent: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 metric_parent: frozen CLIP ViT-L/14@336 class-name Parent, H=66.69292303042761
@@ -10,7 +10,7 @@ problem_category: reliability_robustness
 mechanism_tags: [eight_role_natural_language, counterfactual_spatial_trigger, trigger_conditioned_parent_risk, zero_crop_deployment, sequential_seen_training]
 diagnostic_receipt: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/diagnostics/IDEA-199-trigger-risk/receipt.json@sha256:129434686e6472db715fa43d03def27f0d245fd89ab992598ec4400facbf2f70
 implementation_branch: exp/v6/innovation/v6-try-003-svra
-current_run: V6-TRY-003 / Gate0
+current_run: V6-TRY-003 / Gate0 completed
 
 problem: The exact class-name Parent has useful Top2 candidates but cannot identify which rows are safely correctable. EAAC showed that a semantic-local 26-way policy can isolate a small correction-opportunity cohort, while every deployment-time crop verifier tested so far either damages Parent-correct rows or is unnecessary. IDEA-198's No-crop control outperformed its crop-dependent Full, proving that another raw crop is the wrong causal object.
 
@@ -58,8 +58,8 @@ minimal_viability: exact Stage1/Stage2 counts and SHAs; nonzero gradients in all
 
 minimal_falsification: Run exactly Full, S-off, V-off, I-off, Always-swap, triggered-trained no-trigger, all-row-trained no-trigger and13D ceiling under one frozen Gate0. Drop if Parent or any module point gap is<1pp; Full-Always-swap or either Full-no-trigger control is<0.5pp or has CI lower<=0; net<=0; corrections<=damages; challenger trigger<=leader trigger; trigger/abstain or action occupancy collapses; or any raw crop/eval-all25/eval-label-before-decision boundary fails. No threshold, width, feature, prompt, policy, sampler, geometry, B>0 or Top3 rescue inside this TRY.
 
-current_advantage: The disclosed single dev diagnostic gives4D Full68.203288 versus Parent66.692923 (+1.510365pp), S-off66.517670 (+1.685619pp), V-off66.851359 (+1.351930pp) and I-off=Parent (+1.510365pp). Always-swap is66.144910; removing V trigger collapses to55.442467 or55.939880. Deployment removes the rejected raw-crop encode entirely. This is not a frozen Gate result.
-performance_status: proof_of_path_diagnostic_above_parent_with_speed_or_cost_advantage
+current_advantage: Frozen Gate0 gives4D Full68.335831 versus Parent66.692923 (+1.642908pp), S-off66.571724 (+1.764108pp), V-off66.851359 (+1.484473pp) and I-off=Parent (+1.642908pp), while opening zero raw crops. Always-swap and both no-trigger controls lose by statistically positive margins. Formal/multi-seed confirmation remains pending.
+performance_status: above_parent_at_frozen_gate0_with_speed_or_cost_advantage
 problem_family: class-disjoint GZSL Top1/Top2 correction under frozen vision-language features; broader coverage unknown.
 shared_bottleneck: unsafe correction requires both a localized correction opportunity and an uncertain Parent pair; either alone over-corrects.
 reusable_capability: unknown until a second dataset or formal protocol confirms the trigger-risk conjunction.
@@ -67,7 +67,7 @@ coverage_and_transfer: current evidence only on disclosed CUB dev seen/unseen sp
 frontier_shift: potentially removes all deployment-time high-resolution crop reads while improving the exact Parent.
 downstream_effects: lower inference cost and a deterministic keep path; no claim beyond measured GZSL correction.
 failure_boundary: The4D risk state may be a dev-specific group prior; 4:4 Stage1 sampling may be essential but attribution-unclean; S-zero tests role questions rather than all semantics; action location itself is not claimed necessary; the single diagnostic lacks frozen-code and multi-seed evidence; truth outside Parent Top2 is unreachable.
-paper_level_claim: none until frozen Gate0, strong controls, formal protocol and multi-seed evidence. If those pass, the narrow candidate claim is zero-crop semantic-visual trigger-conditioned risk arbitration for GZSL pair correction, not first-ever routing or selective prediction.
+paper_level_claim: none until formal protocol and multi-seed evidence. If those pass, the narrow candidate claim is zero-crop semantic-visual trigger-conditioned risk arbitration for GZSL pair correction, not first-ever routing or selective prediction.
 
 
 ## 2026-09-02 范式 Idea 双 Agent 对抗定稿
@@ -98,3 +98,23 @@ paper_level_claim: none until frozen Gate0, strong controls, formal protocol and
 - 冻结 policy 触发训练行严格复现：`574` rows，`300` challenger-positive / `274` leader-or-outside-negative。
 - Stage1 step2 的 S 与 V upstream 梯度、Stage2 三个 arbiter 的 step2 hidden/output 梯度均为 finite/nonzero。
 - 状态：训练完成，尚未运行 Gate0 eval；上述内容不是性能结果。
+
+## 2026-09-02 冻结 Gate0 结果
+
+- eval code/config commit：`bb4fae5b4da3df6dbcc2f733f8a46b64eeba71dd`
+- final eval config SHA256：`e37f1997a85906020501fb124a918b3047335222230d39e72db423d8511477e3`
+- result：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/svra/V6-TRY-003-GATE0-EVAL/result.json@sha256:0a979486e8c90596cd57e6ff51e556d9c49c5303caac4045a52dd268cb27ac70`
+
+主要结果：
+
+- Parent=`66.692923`；Full=`68.335831`；`Full-Parent=+1.642908pp`。
+- S-off=`66.571724`，语义模块贡献 `+1.764108pp`。
+- V-off=`66.851359`，视觉模块贡献 `+1.484473pp`。
+- I-off=`66.692923`，交互模块贡献 `+1.642908pp`。
+- 同一 Full trigger 的 Always-swap=`66.144910`，Full 优势 `+2.190921pp`，CI95=`[+0.614185,+3.971078]`。
+- triggered-trained 4D 去掉 trigger 后=`55.758799`；all-row 4D 去掉 trigger 后=`56.390374`，均远低于 Full，证明 V trigger 不是装饰。
+- 13D ceiling=`68.701935`，仅比4D高 `0.366104pp`；`Full-ceiling` CI95=`[-0.861985,+0.069248]`，没有达到预注册的稳定 `+0.5pp` 必要性门，因此保留更简单的4D主方法。
+- Full 纠正84张、破坏46张、净增38张；280/2355触发，25个动作全部被使用，最大动作占用16.07%。
+- `raw_image_open_count=0`、`raw_crop_encode_count=0`、`eval_all25_opened=false`、labels在全部logits冻结后才加载；所有预注册 Gate0 hard gates 为true。
+
+判断：SVRA 达到当前 owner 合同的冻结 Gate0 成功条件：整模型高于准确 Parent，S/V/I 三模块各自同checkpoint关闭均下降至少1.0点，并且强控制与零裁剪边界通过。`H=80`仍只是未达到的追求目标。Parent与三个module point gap的单次class-bootstrap CI仍跨0，必须在formal/multi-seed确认中继续披露，不能写成统计稳定或正式框架已晋级。
