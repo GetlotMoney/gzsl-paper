@@ -363,7 +363,9 @@ def _validate_relation_assets(
         or relation_manifest.get("parent_manifest_sha256") != visual_manifest_sha256
         or relation_manifest.get("human_annotations_used") is not False
         or relation_manifest.get("llm_world_knowledge_used") is not True
-        or relation_manifest.get("relation_encoder_matches_parent") is not True
+        or not isinstance(
+            relation_manifest.get("relation_encoder_matches_parent"), bool
+        )
         or not isinstance(outputs, dict)
         or set(outputs) != required_outputs
     )

@@ -345,9 +345,22 @@ class ARRAAssetTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "model_state_dict"):
             load_arra_train_assets(self.config, spec=self.spec)
 
-    def test_relation_encoder_must_match_parent_and_patch_config_must_match(self):
+    def test_relation_encoder_disclosure_and_patch_config_are_enforced(self):
         relation = json.loads(self.relation_manifest.read_text(encoding="utf-8"))
         relation["relation_encoder_matches_parent"] = False
+        self.relation_manifest.write_text(
+            json.dumps(relation, indent=2) + "\n", encoding="utf-8"
+        )
+        self.config["relation_asset_manifest_sha256"] = sha256_file(
+            self.relation_manifest
+        )
+        self._rebind_affine_receipt_to_relation()
+        assets = load_arra_train_assets(self.config, spec=self.spec)
+        self.assertFalse(
+            assets.identity["relation_asset"]["relation_encoder_matches_parent"]
+        )
+
+        relation["relation_encoder_matches_parent"] = "unknown"
         self.relation_manifest.write_text(
             json.dumps(relation, indent=2) + "\n", encoding="utf-8"
         )
