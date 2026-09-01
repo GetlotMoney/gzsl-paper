@@ -201,6 +201,19 @@ class CompiledPCLRHead(nn.Module):
             **kwargs,
         )
 
+    @torch.no_grad()
+    def sync_source_prototypes(self, source_model: nn.Module) -> None:
+        """Refresh frozen deployment prototypes after the same joint update."""
+        scale = float(source_model.scale().detach())
+        base = F.normalize(source_model.prototypes().detach().float(), dim=-1) * scale
+        roles = F.normalize(
+            source_model.parent.tg_vpr.sentence_embeds.detach().float(), dim=-1
+        ) * scale
+        if base.shape != self.base_q.shape or roles.shape != self.role_q.shape:
+            raise ValueError("C-PCLR source prototype shape发生变化。")
+        self.base_q.copy_(base)
+        self.role_q.copy_(roles)
+
     def alpha(self) -> torch.Tensor:
         return self.alpha_max * torch.sigmoid(self.raw_alpha)
 

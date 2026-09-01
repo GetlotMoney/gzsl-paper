@@ -12,16 +12,16 @@ body{margin:0;background:#f5f7fb;color:#172033;font:15px/1.55 system-ui,-apple-s
 <h1>Compiled PCLR · Gate B</h1>
 <div class="meta">V6-INNOVATION-001 / V6-TRY-006 · base commit 52b511d77b4ad048f35b40dc3cbd9afd092167e9 · pre-run code commit pending freeze</div>
 <section class="flow">
-  <div class="box train"><b>冻结输入</b><br>CLIP CLS x [B,768]<br>TG/GTD P [200,768]<br>8角色 R [200,8,768]<br>关系句 D [438,768]</div>
+  <div class="box train"><b>输入与初始化</b><br>冻结CLIP CLS x [B,768]<br>TG/GTD从同一seed7初始化<br>冻结8角色 R [200,8,768]<br>冻结关系句 D [438,768]</div>
   <div class="box train"><b>训练期图编译</b><div class="formula">M=solve(BᵀB+0.3I,Bᵀ)<br>G=MD/0.2</div>Top-17固定禁用</div>
-  <div class="box train"><b>联合学习</b><br>Reader 768→64→768<br>有界α与8角色权重<br>loss=200类CE+方向CE</div>
+  <div class="box train"><b>一段式联合学习</b><br>TG/GTD：Parent CE/topology/gate<br>Reader、α、8角色权重：200类CE+方向CE<br>同一21171 updates</div>
   <div class="box export"><b>冻结导出</b><div class="formula">h=[normalize(x),Reader(x)]<br>Q=[Q_image,αG]<br>b_seen=-0.91</div></div>
 </section>
 <div class="arrow">训练/导出完成后 ↓ 部署只保留 Reader、Q、b</div>
 <section class="cards">
   <article class="box deploy"><b>部署forward</b><div class="formula">logits = h(x) Qᵀ + b</div><p class="ok">无Top-K、无438边输出、无Laplacian solve、无cap/std、无late role/gamma。</p></article>
   <article class="box metric"><b>Metric出口</b><p>200类联合竞争U/S/H；50类ZS只在完整logits最后切列。同一best-Full-H checkpoint计算Full、S-off、V-off、I-off。</p></article>
-  <article class="box"><b>梯度边界</b><p>最终分类CE→Reader、α、8角色权重；合法seen真类incident-edge方向CE→Reader。TG/GTD P、文本、B/D/M/G和bias冻结；unseen图像不进梯度。</p></article>
+  <article class="box"><b>梯度边界</b><p>Parent CE/topology/gate→TG/GTD；最终分类CE→Reader、α、8角色权重；合法seen真类incident-edge方向CE→Reader。文本、B/D/M/G和bias冻结；unseen图像不进梯度。</p></article>
   <article class="box warn"><b>非等价与风险</b><p>本方法不精确复现R4动态Top-17、cap或std。Gate A只证明固定仿射出口可编译；Gate B必须用真实U/S/H/ZS淘汰。</p></article>
 </section>
 <h2>预注册关闭</h2>

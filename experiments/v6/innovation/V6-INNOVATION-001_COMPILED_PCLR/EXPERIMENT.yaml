@@ -13,6 +13,8 @@ evidence_refs:
 research_question: Can pairwise relation-graph supervision be internalized into an exportable hQ^T+b head while retaining a real H gain over FRAMEWORK-V5?
 unique_change: Replace per-image Top-K/edge/Laplacian/cap/std/late-role inference with frozen G=MD relation prototypes and jointly trained Reader, alpha, and eight fixed-role fusion weights.
 source_checkpoint_sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
+source_checkpoint_usage: parent_control_only_not_training_initialization
+training_initialization: same R2 source-config random initialization at seed7; TG/GTD and C-PCLR train in the same 21171 updates
 relation_asset_manifest_sha256: 0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4
 asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
 config: configs/RUN-001.yaml

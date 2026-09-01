@@ -13,11 +13,22 @@ import torch
 import torch.nn.functional as F
 import yaml
 
-from model.frameworks.v4.train import build_model, load_assets, load_config
+from model.frameworks.v2 import train as h1
+from model.frameworks.v4.train import (
+    GroupwiseSchedule,
+    build_model,
+    load_assets,
+    load_config,
+    rank_modulo_class_folds,
+    refresh_oracle_targets,
+    teacher_refresh_updates,
+)
 from model.frameworks.v5.model import v5_logits
 from model.frameworks.v6.compiled_pclr import CompiledPCLRHead
 from tools.gzsl_data import per_class_accuracy
+from tools.reproducibility import configure_reproducibility
 from tools.run_contract import (
+    atomic_torch_save,
     atomic_write_json,
     current_code_commit,
     prepare_output_dir,
@@ -51,6 +62,7 @@ CONFIG_KEYS = {
     "source_config_sha256",
     "source_checkpoint",
     "source_checkpoint_sha256",
+    "source_checkpoint_usage",
     "source_code_commit",
     "asset_manifest_sha256",
     "relation_asset_manifest_sha256",
@@ -100,6 +112,7 @@ def load_compiled_config(path: Path) -> tuple[dict, str]:
         or config.get("dataset") != "CUB"
         or config.get("source_config_sha256") != SOURCE_CONFIG_SHA
         or config.get("source_checkpoint_sha256") != SOURCE_CHECKPOINT_SHA
+        or config.get("source_checkpoint_usage") != "parent_control_only_not_training_initialization"
         or config.get("source_code_commit") != SOURCE_CODE_COMMIT
         or config.get("asset_manifest_sha256") != ASSET_MANIFEST_SHA
         or config.get("relation_asset_manifest_sha256") != RELATION_MANIFEST_SHA
@@ -148,13 +161,28 @@ def _validate_source_path(config: dict, key: str) -> Path:
     return path
 
 
-def load_source(config: dict, device: torch.device):
+def load_training_source(config: dict, device: torch.device):
+    """Build the same one-stage R2 source initialization without loading its result."""
     source_config_path = _validate_source_path(config, "source_config")
-    source_checkpoint_path = _validate_source_path(config, "source_checkpoint")
+    _validate_source_path(config, "source_checkpoint")
     source_config, source_sha = load_config(source_config_path)
     if source_sha != SOURCE_CONFIG_SHA:
         raise ValueError("C-PCLR source config loader SHA不匹配。")
     tensors = load_assets(source_config)
+    source = build_model(source_config, tensors, device)
+    source.requires_grad_(False)
+    for parameter in tuple(source.parent.parameters()) + tuple(source.gate.parameters()):
+        parameter.requires_grad_(True)
+    return source, tensors, source_config
+
+
+def load_parent_control(config: dict, tensors: dict, device: torch.device):
+    """Load the immutable formal V5 source only for read-only Parent parity."""
+    source_config_path = _validate_source_path(config, "source_config")
+    source_checkpoint_path = _validate_source_path(config, "source_checkpoint")
+    source_config, source_sha = load_config(source_config_path)
+    if source_sha != SOURCE_CONFIG_SHA:
+        raise ValueError("C-PCLR Parent source config loader SHA不匹配。")
     source = build_model(source_config, tensors, device)
     checkpoint = torch.load(source_checkpoint_path, map_location="cpu", weights_only=True)
     if (
@@ -165,22 +193,53 @@ def load_source(config: dict, device: torch.device):
     source.load_state_dict(checkpoint["model_state_dict"], strict=True)
     source.eval()
     source.requires_grad_(False)
-    return source, tensors, checkpoint
+    return source, checkpoint
 
 
 def build_head(source, config: dict, device: torch.device) -> CompiledPCLRHead:
-    head = CompiledPCLRHead.from_source_model(
-        source,
-        ridge_lambda=float(config["ridge_lambda"]),
-        relation_temperature=float(config["relation_temperature"]),
-        direction_temperature=float(config["direction_temperature"]),
-        seen_logit_gamma=float(config["seen_logit_gamma"]),
-        alpha_max=float(config["alpha_max"]),
-        initial_alpha=float(config["initial_alpha"]),
-        role_weight_max=float(config["role_weight_max"]),
-        initial_role_weights=torch.tensor(config["initial_role_weights"]),
-    ).to(device)
+    cpu_state = torch.random.get_rng_state()
+    cuda_states = torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []
+    try:
+        head = CompiledPCLRHead.from_source_model(
+            source,
+            ridge_lambda=float(config["ridge_lambda"]),
+            relation_temperature=float(config["relation_temperature"]),
+            direction_temperature=float(config["direction_temperature"]),
+            seen_logit_gamma=float(config["seen_logit_gamma"]),
+            alpha_max=float(config["alpha_max"]),
+            initial_alpha=float(config["initial_alpha"]),
+            role_weight_max=float(config["role_weight_max"]),
+            initial_role_weights=torch.tensor(config["initial_role_weights"]),
+        ).to(device)
+    finally:
+        torch.random.set_rng_state(cpu_state)
+        if cuda_states:
+            torch.cuda.set_rng_state_all(cuda_states)
     return head
+
+
+def _parent_loss(
+    source,
+    images: torch.Tensor,
+    global_targets: torch.Tensor,
+    *,
+    seen_device: torch.Tensor,
+    global_to_seen: torch.Tensor,
+    fold_package: dict[str, torch.Tensor],
+    source_config: dict,
+) -> dict[str, torch.Tensor]:
+    targets = global_to_seen.index_select(0, global_targets)
+    logits = source.parent.logits(images, seen_device)
+    ce = F.cross_entropy(logits, targets)
+    topology = source.parent.topology_loss()
+    raw_ratio = source.gate.raw_ratio(fold_package["features"])
+    gate = F.smooth_l1_loss(raw_ratio, fold_package["target_ratio"])
+    total = (
+        ce
+        + float(source_config["topology_weight"]) * topology
+        + float(source_config["gate_loss_weight"]) * gate
+    )
+    return {"total": total, "ce": ce, "topology": topology, "gate": gate}
 
 
 def _condition_logits(head: CompiledPCLRHead, images: torch.Tensor) -> dict[str, torch.Tensor]:
@@ -214,6 +273,26 @@ def _transitions(before: torch.Tensor, after: torch.Tensor, labels: torch.Tensor
         "net_correct": int(new.sum() - old.sum()),
         "prediction_changed": int(before.ne(after).sum()),
     }
+
+
+def gate_b_contract_passed(
+    metrics: dict[str, dict[str, float]],
+    *,
+    best_update: int,
+    required_module_delta_h: float,
+    max_us_gap: float,
+) -> bool:
+    """Apply the preregistered AND gate; update 0 can never prove training."""
+    full = metrics["full"]
+    return bool(
+        int(best_update) > 0
+        and float(full["H"]) > float(PARENT_METRICS["H"])
+        and all(
+            float(full["H"] - metrics[name]["H"]) >= float(required_module_delta_h)
+            for name in ("s_off", "v_off", "i_off")
+        )
+        and abs(float(full["U"] - full["S"])) < float(max_us_gap)
+    )
 
 
 @torch.no_grad()
@@ -292,14 +371,35 @@ def _learning_rate(config: dict, update: int) -> float:
     return end + 0.5 * (start - end) * (1.0 + math.cos(math.pi * progress))
 
 
-def _gradient_receipt(head: CompiledPCLRHead) -> dict[str, float]:
+def _gradient_receipt(
+    head: CompiledPCLRHead,
+    *,
+    require_nonzero: bool = False,
+) -> dict[str, float]:
     values = {}
     for name, parameter in head.named_parameters():
         if parameter.grad is None:
             raise RuntimeError(f"C-PCLR trainable参数缺少梯度：{name}")
         if not torch.isfinite(parameter.grad).all():
             raise FloatingPointError(f"C-PCLR梯度包含NaN/Inf：{name}")
-        values[name] = float(parameter.grad.detach().norm().cpu())
+        norm = float(parameter.grad.detach().norm().cpu())
+        if not math.isfinite(norm) or (require_nonzero and norm <= 0.0):
+            requirement = "有限正数" if require_nonzero else "有限非负数"
+            raise RuntimeError(f"C-PCLR trainable参数梯度范数必须为{requirement}：{name}")
+        values[name] = norm
+    return values
+
+
+def _finite_source_gradients(source) -> dict[str, float]:
+    values = {}
+    for group_name, parameters in (
+        ("parent", source.parent.named_parameters()),
+        ("gate", source.gate.named_parameters()),
+    ):
+        for name, parameter in parameters:
+            if parameter.grad is None or not torch.isfinite(parameter.grad).all():
+                raise RuntimeError(f"C-PCLR {group_name}参数缺少有限梯度：{name}")
+            values[f"{group_name}.{name}"] = float(parameter.grad.detach().norm().cpu())
     return values
 
 
@@ -308,32 +408,90 @@ def micro_batch(config_path: Path) -> dict:
     device = torch.device(config["device"])
     if device.type != "cuda" or not torch.cuda.is_available():
         raise RuntimeError("C-PCLR GPU micro-batch要求CUDA。")
-    torch.manual_seed(int(config["random_seed"]))
-    torch.cuda.manual_seed_all(int(config["random_seed"]))
-    source, tensors, _ = load_source(config, device)
+    configure_reproducibility(
+        int(config["random_seed"]), strict_determinism=True, deterministic_warn_only=False
+    )
+    source, tensors, source_config = load_training_source(config, device)
     head = build_head(source, config, device)
+    labels_cpu = tensors["train_labels"].long()
+    seen = torch.unique(labels_cpu, sorted=True)
+    seen_device = seen.to(device)
+    global_to_seen = torch.full((200,), -1, dtype=torch.long, device=device)
+    global_to_seen[seen_device] = torch.arange(len(seen), device=device)
+    visual_centroids = h1.visual_centroids(
+        tensors["train_features"], labels_cpu, seen
+    ).to(device)
+    folds = rank_modulo_class_folds(seen)
+    packages = refresh_oracle_targets(
+        source, visual_centroids, folds, float(source_config["theta_penalty"])
+    )
     images = tensors["train_features"][: int(config["batch_size"])].to(device).float()
-    labels = tensors["train_labels"][: int(config["batch_size"])].to(device).long()
-    losses = head.training_losses(
+    labels = labels_cpu[: int(config["batch_size"])].to(device)
+    parent_losses = _parent_loss(
+        source,
+        images,
+        labels,
+        seen_device=seen_device,
+        global_to_seen=global_to_seen,
+        fold_package=packages[0],
+        source_config=source_config,
+    )
+    head_losses = head.training_losses(
         images,
         labels,
         relation_loss_weight=float(config["relation_loss_weight"]),
     )
-    losses["total"].backward()
-    gradients = _gradient_receipt(head)
+    total = parent_losses["total"] + head_losses["total"]
+    total.backward()
+    _gradient_receipt(head)
+    _finite_source_gradients(source)
+    parent_optimizer = torch.optim.Adam(
+        [*source.parent.parameters(), *source.gate.parameters()], lr=1e-4
+    )
+    head_optimizer = torch.optim.Adam(head.parameters(), lr=float(config["learning_rate"]))
+    parent_optimizer.step()
+    head_optimizer.step()
+    head.sync_source_prototypes(source)
+    parent_optimizer.zero_grad(set_to_none=True)
+    head_optimizer.zero_grad(set_to_none=True)
+    parent_losses = _parent_loss(
+        source,
+        images,
+        labels,
+        seen_device=seen_device,
+        global_to_seen=global_to_seen,
+        fold_package=packages[0],
+        source_config=source_config,
+    )
+    head_losses = head.training_losses(
+        images,
+        labels,
+        relation_loss_weight=float(config["relation_loss_weight"]),
+    )
+    total = parent_losses["total"] + head_losses["total"]
+    total.backward()
+    head_gradients = _gradient_receipt(head, require_nonzero=True)
+    source_gradients = _finite_source_gradients(source)
     export = head.export()
     result = {
         "schema_version": SCHEMA,
         "experiment_id": EXPERIMENT_ID,
         "config_sha256": config_sha,
         "batch_size": len(images),
-        "losses": {key: float(value.detach().cpu()) for key, value in losses.items()},
-        "gradient_norms": gradients,
+        "losses": {
+            "joint_total": float(total.detach().cpu()),
+            **{f"parent_{key}": float(value.detach().cpu()) for key, value in parent_losses.items()},
+            **{f"head_{key}": float(value.detach().cpu()) for key, value in head_losses.items()},
+        },
+        "head_gradient_norms": head_gradients,
+        "source_gradient_norms": source_gradients,
         "alpha": float(head.alpha().detach().cpu()),
         "role_weights": [float(value) for value in head.role_weights().detach().cpu()],
         "export_q_shape": list(export.q.shape),
         "export_bias_shape": list(export.bias.shape),
-        "finite": all(math.isfinite(value) for value in gradients.values()),
+        "finite": all(math.isfinite(value) for value in (*head_gradients.values(), *source_gradients.values())),
+        "one_stage_joint_training": True,
+        "micro_steps": 2,
         "persistent_writes": False,
     }
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
@@ -353,16 +511,59 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
     device = torch.device(config["device"])
     if device.type != "cuda" or not torch.cuda.is_available():
         raise RuntimeError("C-PCLR正式RUN要求CUDA。")
-    torch.use_deterministic_algorithms(True)
-    torch.manual_seed(int(config["random_seed"]))
-    torch.cuda.manual_seed_all(int(config["random_seed"]))
-    source, tensors, source_checkpoint = load_source(config, device)
+    reproducibility = configure_reproducibility(
+        int(config["random_seed"]), strict_determinism=True, deterministic_warn_only=False
+    )
+    source, tensors, source_config = load_training_source(config, device)
     head = build_head(source, config, device)
     train_features = tensors["train_features"].to(device).float()
     train_labels = tensors["train_labels"].to(device).long()
     if len(train_features) != 7057 or torch.unique(train_labels).numel() != 150:
         raise RuntimeError("C-PCLR训练split身份错误。")
-    optimizer = torch.optim.Adam(
+    seen = torch.unique(train_labels.detach().cpu(), sorted=True)
+    seen_device = seen.to(device)
+    global_to_seen = torch.full((200,), -1, dtype=torch.long, device=device)
+    global_to_seen[seen_device] = torch.arange(len(seen), device=device)
+    visual_centroids = h1.visual_centroids(
+        tensors["train_features"], tensors["train_labels"].long(), seen
+    ).to(device)
+    folds = rank_modulo_class_folds(seen)
+    refresh_updates = teacher_refresh_updates(
+        train_count=len(train_features),
+        nominal_epochs=int(config["nominal_epochs"]),
+        batch_size=int(config["batch_size"]),
+    )
+    refresh_set = set(refresh_updates)
+    packages = refresh_oracle_targets(
+        source, visual_centroids, folds, float(source_config["theta_penalty"])
+    )
+    teacher_refresh_count = 1
+
+    parent_parameters = list(source.parent.parameters())
+    gate_parameters = list(source.gate.parameters())
+    if {id(value) for value in parent_parameters}.intersection(id(value) for value in gate_parameters):
+        raise RuntimeError("C-PCLR Parent与Gate参数组不得重叠。")
+    parent_optimizer = torch.optim.Adam(
+        [
+            {"params": parent_parameters, "lr": float(source_config["tg_learning_rate"])},
+            {"params": gate_parameters, "lr": float(source_config["gate_learning_rate"])},
+        ],
+        weight_decay=float(source_config["weight_decay"]),
+    )
+    warmup_updates = (
+        len(train_features) * int(source_config["gate_warmup_epochs"])
+        // int(config["batch_size"])
+    )
+    parent_scheduler = GroupwiseSchedule(
+        parent_optimizer,
+        total_updates=int(config["total_updates"]),
+        warmup_updates=warmup_updates,
+        tg_min_multiplier=float(source_config["tg_min_learning_rate"])
+        / float(source_config["tg_learning_rate"]),
+        gate_min_multiplier=float(source_config["gate_min_learning_rate"])
+        / float(source_config["gate_learning_rate"]),
+    )
+    head_optimizer = torch.optim.Adam(
         head.parameters(),
         lr=float(config["learning_rate"]),
         weight_decay=float(config["weight_decay"]),
@@ -380,39 +581,94 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         print(line)
         log.write(line + "\n")
 
-    initial = evaluate_head(head, tensors, device, source=source)
+    # Parent parity is read-only and RNG-neutral; it does not initialize training.
+    parent_cpu_rng = torch.random.get_rng_state()
+    parent_cuda_rng = torch.cuda.get_rng_state_all()
+    try:
+        parent_control, source_checkpoint = load_parent_control(config, tensors, device)
+        initial = evaluate_head(head, tensors, device, source=parent_control)
+    finally:
+        torch.random.set_rng_state(parent_cpu_rng)
+        torch.cuda.set_rng_state_all(parent_cuda_rng)
+    del parent_control
     parent_predictions = initial.pop("parent_predictions")
     history = [{"update": 0, **initial}]
-    best = copy.deepcopy(initial)
-    best_update = 0
-    best_state = copy.deepcopy(head.state_dict())
+    best = None
+    best_update = -1
+    best_state = None
+    best_source_state = None
+    best_zs = {
+        "update": 0,
+        "ZS": float(initial["metrics"]["full"]["ZS"]),
+        "metrics": copy.deepcopy(initial["metrics"]["full"]),
+    }
     emit({"event": "initial", "update": 0, **initial})
 
-    interval = {"total": 0.0, "classification": 0.0, "relation": 0.0}
+    interval = {
+        "joint_total": 0.0,
+        "parent_total": 0.0,
+        "parent_ce": 0.0,
+        "parent_topology": 0.0,
+        "parent_gate": 0.0,
+        "head_total": 0.0,
+        "head_classification": 0.0,
+        "head_relation": 0.0,
+    }
     interval_steps = 0
     for update in range(1, int(config["total_updates"]) + 1):
+        if update in refresh_set and update != 1:
+            packages = refresh_oracle_targets(
+                source, visual_centroids, folds, float(source_config["theta_penalty"])
+            )
+            teacher_refresh_count += 1
+        source.train()
         head.train()
-        lr = _learning_rate(config, update)
-        for group in optimizer.param_groups:
-            group["lr"] = lr
+        parent_scheduler.set_for_update(update)
+        head_lr = _learning_rate(config, update)
+        for group in head_optimizer.param_groups:
+            group["lr"] = head_lr
         indices = torch.randperm(len(train_features), generator=generator)[
             : int(config["batch_size"])
         ].to(device)
         images = train_features.index_select(0, indices)
         targets = train_labels.index_select(0, indices)
-        optimizer.zero_grad(set_to_none=True)
-        losses = head.training_losses(
+        parent_optimizer.zero_grad(set_to_none=True)
+        head_optimizer.zero_grad(set_to_none=True)
+        parent_losses = _parent_loss(
+            source,
+            images,
+            targets,
+            seen_device=seen_device,
+            global_to_seen=global_to_seen,
+            fold_package=packages[(update - 1) % 3],
+            source_config=source_config,
+        )
+        head_losses = head.training_losses(
             images,
             targets,
             relation_loss_weight=float(config["relation_loss_weight"]),
         )
-        if not torch.isfinite(losses["total"]):
+        joint_total = parent_losses["total"] + head_losses["total"]
+        if not torch.isfinite(joint_total):
             raise FloatingPointError("C-PCLR训练loss包含NaN/Inf。")
-        losses["total"].backward()
+        joint_total.backward()
         _gradient_receipt(head)
-        optimizer.step()
-        for key in interval:
-            interval[key] += float(losses[key].detach().cpu())
+        _finite_source_gradients(source)
+        parent_optimizer.step()
+        head_optimizer.step()
+        head.sync_source_prototypes(source)
+        values = {
+            "joint_total": joint_total,
+            "parent_total": parent_losses["total"],
+            "parent_ce": parent_losses["ce"],
+            "parent_topology": parent_losses["topology"],
+            "parent_gate": parent_losses["gate"],
+            "head_total": head_losses["total"],
+            "head_classification": head_losses["classification"],
+            "head_relation": head_losses["relation"],
+        }
+        for key, value in values.items():
+            interval[key] += float(value.detach().cpu())
         interval_steps += 1
 
         if update % int(config["eval_interval_steps"]) != 0 and update != int(config["total_updates"]):
@@ -420,7 +676,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         evaluation = evaluate_head(head, tensors, device)
         record = {
             "update": update,
-            "learning_rate": lr,
+            "parent_learning_rates": [float(group["lr"]) for group in parent_optimizer.param_groups],
+            "head_learning_rate": head_lr,
             "train_mean": {key: value / interval_steps for key, value in interval.items()},
             "alpha": float(head.alpha().detach().cpu()),
             "role_weights": [float(value) for value in head.role_weights().detach().cpu()],
@@ -430,11 +687,20 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         emit({"event": "evaluation", **record})
         interval = {key: 0.0 for key in interval}
         interval_steps = 0
-        if float(evaluation["metrics"]["full"]["H"]) > float(best["metrics"]["full"]["H"]):
+        if float(evaluation["metrics"]["full"]["ZS"]) > float(best_zs["ZS"]):
+            best_zs = {
+                "update": update,
+                "ZS": float(evaluation["metrics"]["full"]["ZS"]),
+                "metrics": copy.deepcopy(evaluation["metrics"]["full"]),
+            }
+        if best is None or float(evaluation["metrics"]["full"]["H"]) > float(best["metrics"]["full"]["H"]):
             best = copy.deepcopy(evaluation)
             best_update = update
             best_state = copy.deepcopy(head.state_dict())
+            best_source_state = copy.deepcopy(source.state_dict())
 
+    if best is None or best_state is None or best_source_state is None or best_update <= 0:
+        raise RuntimeError("C-PCLR没有产生训练后的best-H checkpoint。")
     head.load_state_dict(best_state, strict=True)
     final = evaluate_head(head, tensors, device)
     full = final["metrics"]["full"]
@@ -443,10 +709,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         for name in ("s_off", "v_off", "i_off")
     }
     parent_delta = float(full["H"] - PARENT_METRICS["H"])
-    passed = (
-        parent_delta > 0.0
-        and all(value >= float(config["required_module_delta_h"]) for value in deltas.values())
-        and abs(float(full["U"] - full["S"])) < float(config["max_us_gap"])
+    passed = gate_b_contract_passed(
+        final["metrics"],
+        best_update=best_update,
+        required_module_delta_h=float(config["required_module_delta_h"]),
+        max_us_gap=float(config["max_us_gap"]),
     )
     export = head.export()
     checkpoint = {
@@ -458,9 +725,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         "source_checkpoint_code_commit": source_checkpoint.get("code_commit"),
         "best_update": best_update,
         "model_state_dict": best_state,
+        "source_model_state_dict": best_source_state,
+        "best_zs_observation": best_zs,
         "export": export.__dict__,
     }
-    torch.save(checkpoint, output / "model_best.pth")
+    atomic_torch_save(output / "model_best.pth", checkpoint)
     atomic_write_json(output / "evaluation_history.json", history)
     result = {
         "schema_version": SCHEMA,
@@ -471,6 +740,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         "base_commit": BASE_COMMIT,
         "source_checkpoint_sha256": SOURCE_CHECKPOINT_SHA,
         "best_update": best_update,
+        "best_zs_observation": best_zs,
         "parent_metrics": PARENT_METRICS,
         "metrics": final["metrics"],
         "transitions": final["transitions"],
@@ -490,6 +760,11 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         "parent_predictions_reproduced": all(
             value.numel() > 0 for value in parent_predictions.values()
         ),
+        "one_stage_joint_training": True,
+        "source_initialized_from_checkpoint": False,
+        "total_updates": int(config["total_updates"]),
+        "teacher_refresh_count": teacher_refresh_count,
+        "reproducibility": reproducibility,
     }
     atomic_write_json(output / "metrics.json", result)
     emit({"event": "complete", **result})

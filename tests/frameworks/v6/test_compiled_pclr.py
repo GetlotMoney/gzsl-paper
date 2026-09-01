@@ -13,7 +13,11 @@ from model.frameworks.v6.compiled_pclr import (
     ROLE_COUNT,
     CompiledPCLRHead,
 )
-from model.frameworks.v6.train_compiled_pclr import evaluate_head, load_compiled_config
+from model.frameworks.v6.train_compiled_pclr import (
+    evaluate_head,
+    gate_b_contract_passed,
+    load_compiled_config,
+)
 
 
 def _edges() -> torch.Tensor:
@@ -165,3 +169,24 @@ def test_evaluate_head_reports_full_and_all_off_conditions() -> None:
         assert set(metrics) == {"U", "S", "H", "ZS"}
         assert all(torch.isfinite(torch.tensor(value)) for value in metrics.values())
     assert set(result["transitions"]) == {"s_off", "v_off", "i_off"}
+
+
+def test_update_zero_can_never_pass_gate_b() -> None:
+    metrics = {
+        "full": {"U": 82.0, "S": 82.0, "H": 82.0, "ZS": 90.0},
+        "s_off": {"U": 80.0, "S": 80.0, "H": 80.0, "ZS": 88.0},
+        "v_off": {"U": 80.0, "S": 80.0, "H": 80.0, "ZS": 88.0},
+        "i_off": {"U": 80.0, "S": 80.0, "H": 80.0, "ZS": 88.0},
+    }
+    assert not gate_b_contract_passed(
+        metrics,
+        best_update=0,
+        required_module_delta_h=1.0,
+        max_us_gap=8.0,
+    )
+    assert gate_b_contract_passed(
+        metrics,
+        best_update=141,
+        required_module_delta_h=1.0,
+        max_us_gap=8.0,
+    )

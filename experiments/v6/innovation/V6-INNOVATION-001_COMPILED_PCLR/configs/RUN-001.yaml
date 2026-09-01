@@ -7,6 +7,7 @@ source_config: /data/lby/projects/cv_project/gzsl-paper-worktrees/pclr/config/tr
 source_config_sha256: 0861877ae3e4725e29aff547d45e0b6d56a186179309acb5493c5906b803fd49
 source_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/pclr/V4-TRY-023-R2/model_best.pth
 source_checkpoint_sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
+source_checkpoint_usage: parent_control_only_not_training_initialization
 source_code_commit: b0a756dd624e883eb50d19a2455ba06bdc73f118
 asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
 relation_asset_manifest_sha256: 0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4
@@ -44,5 +45,4 @@ strict_blind_claim: false
 human_annotations_used: false
 expert_attributes_used: false
 llm_world_knowledge_used: true
-
 
