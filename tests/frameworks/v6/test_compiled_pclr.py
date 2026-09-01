@@ -155,6 +155,9 @@ def test_parameter_contract_and_config() -> None:
     config, config_sha = load_compiled_config(config_path)
     assert config["candidate_top_k"] is None
     assert config["base_commit"] == "52b511d77b4ad048f35b40dc3cbd9afd092167e9"
+    assert config["nominal_epochs"] == 200
+    assert config["total_updates"] == 28228
+    assert config["matched_online_v5_control"] is True
     assert len(config_sha) == 64
 
 
@@ -185,12 +188,21 @@ def test_update_zero_can_never_pass_gate_b() -> None:
     assert not gate_b_contract_passed(
         metrics,
         best_update=0,
+        required_parent_h=81.06877662507551,
         required_module_delta_h=1.0,
         max_us_gap=8.0,
     )
     assert gate_b_contract_passed(
         metrics,
         best_update=141,
+        required_parent_h=81.06877662507551,
+        required_module_delta_h=1.0,
+        max_us_gap=8.0,
+    )
+    assert not gate_b_contract_passed(
+        metrics,
+        best_update=141,
+        required_parent_h=82.1,
         required_module_delta_h=1.0,
         max_us_gap=8.0,
     )

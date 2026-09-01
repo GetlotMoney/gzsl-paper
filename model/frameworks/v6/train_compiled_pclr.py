@@ -14,6 +14,7 @@ import yaml
 
 from model.frameworks.v2 import train as h1
 from model.frameworks.v4.train import (
+    AuxiliarySchedule,
     GroupwiseSchedule,
     build_model,
     load_assets,
@@ -62,6 +63,7 @@ CONFIG_KEYS = {
     "source_checkpoint",
     "source_checkpoint_sha256",
     "source_checkpoint_usage",
+    "matched_online_v5_control",
     "source_code_commit",
     "asset_manifest_sha256",
     "relation_asset_manifest_sha256",
@@ -118,8 +120,9 @@ def load_compiled_config(path: Path) -> tuple[dict, str]:
         or config.get("device") != "cuda:0"
         or int(config.get("random_seed", -1)) != 7
         or int(config.get("batch_size", -1)) != 50
-        or int(config.get("nominal_epochs", -1)) != 150
-        or int(config.get("total_updates", -1)) != 21171
+        or config.get("matched_online_v5_control") is not True
+        or int(config.get("nominal_epochs", -1)) != 200
+        or int(config.get("total_updates", -1)) != 28228
         or int(config.get("eval_interval_steps", -1)) != 141
         or float(config.get("learning_rate", -1)) != 1e-4
         or float(config.get("min_learning_rate", -1)) != 1e-5
@@ -170,7 +173,13 @@ def load_training_source(config: dict, device: torch.device):
     tensors = load_assets(source_config)
     source = build_model(source_config, tensors, device)
     source.requires_grad_(False)
-    for parameter in tuple(source.parent.parameters()) + tuple(source.gate.parameters()):
+    active = (
+        tuple(source.parent.parameters())
+        + tuple(source.gate.parameters())
+        + tuple(source.reader_parameters())
+        + tuple(source.beta_parameters())
+    )
+    for parameter in active:
         parameter.requires_grad_(True)
     return source, tensors, source_config
 
@@ -241,6 +250,29 @@ def _parent_loss(
     return {"total": total, "ce": ce, "topology": topology, "gate": gate}
 
 
+def _online_control_losses(
+    source,
+    images: torch.Tensor,
+    targets: torch.Tensor,
+    *,
+    source_config: dict,
+) -> dict[str, torch.Tensor]:
+    """Original R2 Reader/beta objectives for the matched online V5 control."""
+    relation = source.relation_loss(images, targets)
+    cpu_state = torch.random.get_rng_state()
+    cuda_states = torch.cuda.get_rng_state_all()
+    try:
+        beta = source.beta_loss(images, targets)
+    finally:
+        torch.random.set_rng_state(cpu_state)
+        torch.cuda.set_rng_state_all(cuda_states)
+    total = (
+        float(source_config["relation_loss_weight"]) * relation
+        + float(source_config["beta_loss_weight"]) * beta
+    )
+    return {"total": total, "relation": relation, "beta": beta}
+
+
 def _condition_logits(head: CompiledPCLRHead, images: torch.Tensor) -> dict[str, torch.Tensor]:
     return {
         "full": head(images),
@@ -278,6 +310,7 @@ def gate_b_contract_passed(
     metrics: dict[str, dict[str, float]],
     *,
     best_update: int,
+    required_parent_h: float,
     required_module_delta_h: float,
     max_us_gap: float,
 ) -> bool:
@@ -285,7 +318,7 @@ def gate_b_contract_passed(
     full = metrics["full"]
     return bool(
         int(best_update) > 0
-        and float(full["H"]) > float(PARENT_METRICS["H"])
+        and float(full["H"]) > float(required_parent_h)
         and all(
             float(full["H"] - metrics[name]["H"]) >= float(required_module_delta_h)
             for name in ("s_off", "v_off", "i_off")
@@ -362,6 +395,39 @@ def evaluate_head(
     return result
 
 
+@torch.no_grad()
+def evaluate_online_v5_control(
+    source,
+    tensors: dict,
+    device: torch.device,
+    head: CompiledPCLRHead,
+) -> dict[str, float]:
+    """Evaluate the matched online-R4 path trained in the same updates."""
+    source.eval()
+    seen = head.seen_classes.cpu()
+    all_classes = torch.arange(200)
+    unseen_cpu = all_classes[~torch.isin(all_classes, seen)]
+    unseen = unseen_cpu.to(device)
+    outputs = {"seen": [], "unseen": [], "zs": []}
+    for split, features in (
+        ("seen", tensors["test_seen_features"]),
+        ("unseen", tensors["test_unseen_features"]),
+    ):
+        for start in range(0, len(features), 256):
+            images = features[start : start + 256].to(device).float()
+            logits = v5_logits(source, images)
+            if tuple(logits.shape) != (len(images), 200) or not torch.isfinite(logits).all():
+                raise RuntimeError("C-PCLR matched online V5 logits错误。")
+            outputs[split].append(logits.argmax(dim=1).cpu())
+            if split == "unseen":
+                outputs["zs"].append(
+                    unseen[logits.index_select(1, unseen).argmax(dim=1)].cpu()
+                )
+    for split in outputs:
+        outputs[split] = torch.cat(outputs[split])
+    return _metrics(outputs, tensors, head)
+
+
 def _learning_rate(config: dict, update: int) -> float:
     total = int(config["total_updates"])
     start = float(config["learning_rate"])
@@ -412,6 +478,20 @@ def _finite_source_gradients(source) -> dict[str, float]:
     return values
 
 
+def _finite_control_gradients(source) -> dict[str, float]:
+    values = {}
+    parameters = (
+        [(f"reader.{name}", parameter) for name, parameter in source.reader_in.named_parameters()]
+        + [(f"reader_out.{name}", parameter) for name, parameter in source.reader_out.named_parameters()]
+        + [("raw_beta", source.raw_beta)]
+    )
+    for name, parameter in parameters:
+        if parameter.grad is None or not torch.isfinite(parameter.grad).all():
+            raise RuntimeError(f"C-PCLR matched control参数缺少有限梯度：{name}")
+        values[name] = float(parameter.grad.detach().norm().cpu())
+    return values
+
+
 def micro_batch(config_path: Path) -> dict:
     config, config_sha = load_compiled_config(config_path)
     device = torch.device(config["device"])
@@ -450,19 +530,28 @@ def micro_batch(config_path: Path) -> dict:
         labels,
         relation_loss_weight=float(config["relation_loss_weight"]),
     )
-    total = parent_losses["total"] + head_losses["total"]
+    control_losses = _online_control_losses(
+        source, images, labels, source_config=source_config
+    )
+    total = parent_losses["total"] + control_losses["total"] + head_losses["total"]
     total.backward()
     _gradient_receipt(head)
     _finite_source_gradients(source)
+    _finite_control_gradients(source)
     parent_optimizer = torch.optim.Adam(
         [*source.parent.parameters(), *source.gate.parameters()], lr=1e-4
     )
     head_optimizer = torch.optim.Adam(head.parameters(), lr=float(config["learning_rate"]))
+    control_optimizer = torch.optim.Adam(
+        [*source.reader_parameters(), *source.beta_parameters()], lr=1e-4
+    )
     parent_optimizer.step()
+    control_optimizer.step()
     head_optimizer.step()
     head.sync_source_prototypes(source)
     parent_optimizer.zero_grad(set_to_none=True)
     head_optimizer.zero_grad(set_to_none=True)
+    control_optimizer.zero_grad(set_to_none=True)
     parent_losses = _parent_loss(
         source,
         images,
@@ -477,10 +566,14 @@ def micro_batch(config_path: Path) -> dict:
         labels,
         relation_loss_weight=float(config["relation_loss_weight"]),
     )
-    total = parent_losses["total"] + head_losses["total"]
+    control_losses = _online_control_losses(
+        source, images, labels, source_config=source_config
+    )
+    total = parent_losses["total"] + control_losses["total"] + head_losses["total"]
     total.backward()
     head_gradients = _gradient_receipt(head, require_nonzero=True)
     source_gradients = _finite_source_gradients(source)
+    control_gradients = _finite_control_gradients(source)
     export = head.export()
     result = {
         "schema_version": SCHEMA,
@@ -490,15 +583,20 @@ def micro_batch(config_path: Path) -> dict:
         "losses": {
             "joint_total": float(total.detach().cpu()),
             **{f"parent_{key}": float(value.detach().cpu()) for key, value in parent_losses.items()},
+            **{f"control_{key}": float(value.detach().cpu()) for key, value in control_losses.items()},
             **{f"head_{key}": float(value.detach().cpu()) for key, value in head_losses.items()},
         },
         "head_gradient_norms": head_gradients,
         "source_gradient_norms": source_gradients,
+        "control_gradient_norms": control_gradients,
         "alpha": float(head.alpha().detach().cpu()),
         "role_weights": [float(value) for value in head.role_weights().detach().cpu()],
         "export_q_shape": list(export.q.shape),
         "export_bias_shape": list(export.bias.shape),
-        "finite": all(math.isfinite(value) for value in (*head_gradients.values(), *source_gradients.values())),
+        "finite": all(
+            math.isfinite(value)
+            for value in (*head_gradients.values(), *source_gradients.values(), *control_gradients.values())
+        ),
         "one_stage_joint_training": True,
         "micro_steps": 2,
         "persistent_writes": False,
@@ -572,6 +670,20 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         gate_min_multiplier=float(source_config["gate_min_learning_rate"])
         / float(source_config["gate_learning_rate"]),
     )
+    control_optimizer = torch.optim.Adam(
+        [
+            {"params": list(source.reader_parameters()), "lr": float(source_config["gate_learning_rate"])},
+            {"params": list(source.beta_parameters()), "lr": float(source_config["gate_learning_rate"])},
+        ],
+        weight_decay=0.0,
+    )
+    control_scheduler = AuxiliarySchedule(
+        control_optimizer,
+        total_updates=int(config["total_updates"]),
+        warmup_updates=warmup_updates,
+        min_multiplier=float(source_config["gate_min_learning_rate"])
+        / float(source_config["gate_learning_rate"]),
+    )
     head_optimizer = torch.optim.Adam(
         head.parameters(),
         lr=float(config["learning_rate"]),
@@ -601,11 +713,21 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         torch.cuda.set_rng_state_all(parent_cuda_rng)
     del parent_control
     parent_predictions = initial.pop("parent_predictions")
+    initial_online_control = evaluate_online_v5_control(source, tensors, device, head)
+    initial["matched_online_v5_metrics"] = initial_online_control
     history = [{"update": 0, **initial}]
     best = None
     best_update = -1
     best_state = None
     best_source_state = None
+    best_online_control = None
+    best_online_control_update = -1
+    best_online_control_state = None
+    best_online_control_zs = {
+        "update": 0,
+        "ZS": float(initial_online_control["ZS"]),
+        "metrics": copy.deepcopy(initial_online_control),
+    }
     best_zs = {
         "update": 0,
         "ZS": float(initial["metrics"]["full"]["ZS"]),
@@ -619,6 +741,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         "parent_ce": 0.0,
         "parent_topology": 0.0,
         "parent_gate": 0.0,
+        "control_total": 0.0,
+        "control_relation": 0.0,
+        "control_beta": 0.0,
         "head_total": 0.0,
         "head_classification": 0.0,
         "head_relation": 0.0,
@@ -633,6 +758,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         source.train()
         head.train()
         parent_scheduler.set_for_update(update)
+        control_scheduler.set_for_update(update)
         head_lr = _learning_rate(config, update)
         for group in head_optimizer.param_groups:
             group["lr"] = head_lr
@@ -642,6 +768,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         images = train_features.index_select(0, indices)
         targets = train_labels.index_select(0, indices)
         parent_optimizer.zero_grad(set_to_none=True)
+        control_optimizer.zero_grad(set_to_none=True)
         head_optimizer.zero_grad(set_to_none=True)
         parent_losses = _parent_loss(
             source,
@@ -657,13 +784,18 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
             targets,
             relation_loss_weight=float(config["relation_loss_weight"]),
         )
-        joint_total = parent_losses["total"] + head_losses["total"]
+        control_losses = _online_control_losses(
+            source, images, targets, source_config=source_config
+        )
+        joint_total = parent_losses["total"] + control_losses["total"] + head_losses["total"]
         if not torch.isfinite(joint_total):
             raise FloatingPointError("C-PCLR训练loss包含NaN/Inf。")
         joint_total.backward()
         _gradient_receipt(head)
         _finite_source_gradients(source)
+        _finite_control_gradients(source)
         parent_optimizer.step()
+        control_optimizer.step()
         head_optimizer.step()
         head.sync_source_prototypes(source)
         values = {
@@ -672,6 +804,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
             "parent_ce": parent_losses["ce"],
             "parent_topology": parent_losses["topology"],
             "parent_gate": parent_losses["gate"],
+            "control_total": control_losses["total"],
+            "control_relation": control_losses["relation"],
+            "control_beta": control_losses["beta"],
             "head_total": head_losses["total"],
             "head_classification": head_losses["classification"],
             "head_relation": head_losses["relation"],
@@ -683,13 +818,16 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         if update % int(config["eval_interval_steps"]) != 0 and update != int(config["total_updates"]):
             continue
         evaluation = evaluate_head(head, tensors, device)
+        online_control_metrics = evaluate_online_v5_control(source, tensors, device, head)
         record = {
             "update": update,
             "parent_learning_rates": [float(group["lr"]) for group in parent_optimizer.param_groups],
+            "control_learning_rates": [float(group["lr"]) for group in control_optimizer.param_groups],
             "head_learning_rate": head_lr,
             "train_mean": {key: value / interval_steps for key, value in interval.items()},
             "alpha": float(head.alpha().detach().cpu()),
             "role_weights": [float(value) for value in head.role_weights().detach().cpu()],
+            "matched_online_v5_metrics": online_control_metrics,
             **evaluation,
         }
         history.append(record)
@@ -707,8 +845,29 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
             best_update = update
             best_state = copy.deepcopy(head.state_dict())
             best_source_state = copy.deepcopy(source.state_dict())
+        if (
+            best_online_control is None
+            or float(online_control_metrics["H"]) > float(best_online_control["H"])
+        ):
+            best_online_control = copy.deepcopy(online_control_metrics)
+            best_online_control_update = update
+            best_online_control_state = copy.deepcopy(source.state_dict())
+        if float(online_control_metrics["ZS"]) > float(best_online_control_zs["ZS"]):
+            best_online_control_zs = {
+                "update": update,
+                "ZS": float(online_control_metrics["ZS"]),
+                "metrics": copy.deepcopy(online_control_metrics),
+            }
 
-    if best is None or best_state is None or best_source_state is None or best_update <= 0:
+    if (
+        best is None
+        or best_state is None
+        or best_source_state is None
+        or best_update <= 0
+        or best_online_control is None
+        or best_online_control_state is None
+        or best_online_control_update <= 0
+    ):
         raise RuntimeError("C-PCLR没有产生训练后的best-H checkpoint。")
     head.load_state_dict(best_state, strict=True)
     final = evaluate_head(head, tensors, device)
@@ -717,10 +876,12 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         name: float(full["H"] - final["metrics"][name]["H"])
         for name in ("s_off", "v_off", "i_off")
     }
-    parent_delta = float(full["H"] - PARENT_METRICS["H"])
+    required_parent_h = max(float(PARENT_METRICS["H"]), float(best_online_control["H"]))
+    parent_delta = float(full["H"] - required_parent_h)
     passed = gate_b_contract_passed(
         final["metrics"],
         best_update=best_update,
+        required_parent_h=required_parent_h,
         required_module_delta_h=float(config["required_module_delta_h"]),
         max_us_gap=float(config["max_us_gap"]),
     )
@@ -736,6 +897,10 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         "model_state_dict": best_state,
         "source_model_state_dict": best_source_state,
         "best_zs_observation": best_zs,
+        "matched_online_v5_best_update": best_online_control_update,
+        "matched_online_v5_best_metrics": best_online_control,
+        "matched_online_v5_best_state_dict": best_online_control_state,
+        "matched_online_v5_best_zs_observation": best_online_control_zs,
         "export": export.__dict__,
     }
     atomic_torch_save(output / "model_best.pth", checkpoint)
@@ -751,9 +916,15 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         "best_update": best_update,
         "best_zs_observation": best_zs,
         "parent_metrics": PARENT_METRICS,
+        "matched_online_v5_best_update": best_online_control_update,
+        "matched_online_v5_best_metrics": best_online_control,
+        "matched_online_v5_best_zs_observation": best_online_control_zs,
+        "required_parent_H": required_parent_h,
         "metrics": final["metrics"],
         "transitions": final["transitions"],
-        "delta_H_vs_parent": parent_delta,
+        "delta_H_vs_required_parent": parent_delta,
+        "delta_H_vs_formal_v5": float(full["H"] - PARENT_METRICS["H"]),
+        "delta_H_vs_matched_online_v5": float(full["H"] - best_online_control["H"]),
         "module_off_delta_H": deltas,
         "module_contract_passed": passed,
         "decision": "keep_gate_b" if passed else "drop_gate_b_contract_failed",

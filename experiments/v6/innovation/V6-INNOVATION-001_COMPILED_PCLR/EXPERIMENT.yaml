@@ -3,10 +3,10 @@ experiment_id: V6-INNOVATION-001
 attempt_id: V6-TRY-006
 idea_id: IDEA-201
 name: Compiled PCLR Gate B
-status: review_independent_pass_cross_blocked
+status: revising_fixed200_matched_control
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
-pre_run_code_commit: 89b2908a388c4c6586bbf19216fd50fc777ffdb3
-code_review: CODE_REVIEW.md
+pre_run_code_commit: pending_refreeze
+code_review: CODE_REVIEW.md#final-review-pending
 evidence_refs:
   - research/ideas/IDEA-201_compiled_pclr.md
   - FRAMEWORK-V5-R4 metrics SHA efbdca19f8248b2e16c99baa7aa5a81d2279218db910a9a00e7303d45d2fc2bc
@@ -15,7 +15,7 @@ research_question: Can pairwise relation-graph supervision be internalized into 
 unique_change: Replace per-image Top-K/edge/Laplacian/cap/std/late-role inference with frozen G=MD relation prototypes and jointly trained Reader, alpha, and eight fixed-role fusion weights.
 source_checkpoint_sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
 source_checkpoint_usage: parent_control_only_not_training_initialization
-training_initialization: same R2 source-config random initialization at seed7; TG/GTD and C-PCLR train in the same 21171 updates
+training_initialization: same R2 source-config random initialization at seed7; TG/GTD, matched online V5 Reader/beta, and C-PCLR train in the same 28228 updates
 training_parameter_contract:
   - TG-VPR parameters receive Parent CE and topology loss and are exported through Q_image.
   - GTD gate parameters receive the frozen-oracle gate loss and affect Q_image through synchronized eval-mode prototypes.
@@ -30,10 +30,11 @@ framework_diagram: framework_diagram.html
 result: result.md
 conditions:
   - Full
+  - Matched_online_V5_same_seed_same_28228_updates
   - S-off_same_checkpoint_roles_zero
   - V-off_same_checkpoint_reader_identity
   - I-off_same_checkpoint_alpha_zero
-success_condition: Full H must exceed FRAMEWORK-V5 H=81.06877662507551 and each Full-minus-off H must be at least 1.0pp with abs(U-S)<8.
+success_condition: Full H must exceed both formal FRAMEWORK-V5 H=81.06877662507551 and the matched online-V5 control best H; each Full-minus-off H must be at least 1.0pp with abs(U-S)<8.
 failure_condition: Drop on any failed module gate, non-finite value, Parent parity failure, data-boundary violation, or exported-head contract failure; no parameter rescue is preregistered.
 protocol:
   name: chen_shiming_code_aligned_test_selected_gzsl
