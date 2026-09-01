@@ -1,12 +1,12 @@
 # IDEA-189：Role-Contrast Evidence Gain（RCEG，角色对比证据增益）
 
-status: proposed_owner_confirmed_proof_of_path_candidate
+status: rejected_at_proof_gate
 idea_id: IDEA-189
 source_type: experiment_result + code_analysis + first_principles + owner_hypothesis + nearest_work_boundary
 method_name: Role-Contrast Evidence Gain
 method_acronym: RCEG
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
-current_run: none
+current_run: V5-TRY-003-G0
 problem: CEC证明绝对补全误差可以下降却不改变类别决策；需要检验6+1+1可见角色描述相对同候选类别名，是否真正增加对当前图像隐藏局部证据的解释力。
 hypothesis: 若丰富角色描述携带可迁移、可观察的类别信息，则同一共享预测器在角色条件下应比该候选自己的类别名条件更准确预测隐藏patch目标，且这一候选特异增益应在class-disjoint类别上超过真类难错类、父基线和三项module-off。
 core_change: 用候选特异的name-only预测误差作为reference、6+1+1角色预测误差作为enriched hypothesis，学习并使用二者的嵌套证据增益，而不是绝对补全误差或文本直接重排。
@@ -62,8 +62,8 @@ minimal_viability: On the CUB 100/50 development split, dev-unseen images/text a
 
 minimal_falsification: Run only one seed and the fixed four-mask 100/50 Gate. First test gain direction, absolute role-energy direction and shuffles; only if they pass compute task improvements. Any direction failure, zero prediction changes, module-off gap <1.0pp, control match, or shuffle retention immediately drops IDEA-189; no post-hoc gamma, scale, mask, target layer or prompt changes.
 
-current_advantage: none; no RCEG result exists.
-performance_status: proof_of_path_not_run.
+current_advantage: none; Full相对name-only Parent为`-10.601819pp`，而Target-free相对Parent为`+2.016324pp`。
+performance_status: rejected_below_parent_and_target_free_control_dominates.
 
 failure_boundary: Direct `conv1` patch targets may be too low-level for role text; LLM role facts may be wrong or unobservable; four masks may hide decisive context; rich-role and name-only predictors may differ only by text scale; the absolute-energy control may match; four masked forwards may be too costly. Any such outcome blocks Innovation admission.
 
@@ -152,7 +152,19 @@ CLIP-side cost per image is four masked forwards plus one `conv1` target extract
 
 closest_paradigm_work: Diffusion/Generative Classifiers, RONIN and local IDEA-171. The only narrow candidate distinction is the candidate-specific nested comparison “role-rich hypothesis versus the same class/rival name-only hypothesis” on directly observed, predictor-hidden current-image patch embeddings. This distinction is unproven and is rejected if the Absolute-role control matches.
 
-## 7. 范式Idea双Agent对抗定稿记录
+## 7. 2026-09-01 Gate 0真实结果
+
+- 运行commit：`7aea59e4076b2984f79090a015ba04a2114f26ae`；eval config SHA256：`eafc7a752de2ff8e3460b56beef49f3c0b1bf31bc94031ca3b3de2a346692351`。
+- 资产bundle：`98f06c47e3d9fda4f698aca5de5d4a33292e507de10e523a36303cea93beb54f`；训练4,702张100类dev-seen，冻结评估2,355张50类dev-unseen；official test未加载。
+- dev-unseen 150类联合竞争macro Top-1：Parent=`66.695482%`，Full=`56.093657%`，S-off=`66.695482%`，V-off=`50.304598%`，I-off=`56.248069%`。
+- 强控制：Absolute-role=`55.280948%`，Reference-difficulty=`54.422265%`，Target-free=`68.711805%`。Target-free比Parent高`2.016324pp`，并比Full高`12.618150pp`；隐藏target不是收益必要来源，核心非等价反例成立。
+- 方向门：`G_true>G_hardwrong` macro=`58.806753%`、95% CI=`[54.370809,63.197996]`，未达到60%；`E_role,true<E_role,hardwrong` macro=`56.627830%`、95% CI=`[52.395999,60.793346]`，同样未达到60%。
+- Full相对Parent纠正169、损坏422、净纠正`-253`；虽然799张预测发生变化，但方向整体有害。
+- 只有V-off差值门与两个shuffle破坏门通过；Parent、S-off、I-off、方向、净纠正及三个强控制门均失败，`gate_passed=false`。
+- 失败收据：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rceg/V5-TRY-003-GATE0/EVAL/failure.json@sha256:a7d96e3ffb729f0e6839727c25b1561928d0e74bd062ded869e5f82196f97c16`。
+- 最终决策：按预注册`failure_condition`立即drop。禁止调gamma、scale、mask、target层或prompt救活RCEG；Target-free只能作为下一条底层路径的诊断证据，不能重包装成RCEG成功或范式创新。
+
+## 8. 范式Idea双Agent对抗定稿记录
 
 review_date: 2026-09-01
 review_subject_sha256: `ea9e21244e1161b311b51c50923d7eb6819236677edabc3f7936c6553ada68bc`
