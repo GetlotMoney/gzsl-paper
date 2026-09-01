@@ -253,6 +253,11 @@ class RCEGModel(nn.Module):
                 )
                 role_evidence = visible_tokens.new_zeros(shape, dtype=torch.float32)
                 name_evidence = visible_tokens.new_zeros(shape, dtype=torch.float32)
+            elif mode == "s_off":
+                name_evidence = self.visual_module.name_evidence(
+                    visible_tokens, semantic["name_query"]
+                )
+                role_evidence = name_evidence
             else:
                 role_evidence = self.visual_module.role_evidence(
                     visible_tokens, semantic["role_query"]

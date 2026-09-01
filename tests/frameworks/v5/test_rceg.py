@@ -68,6 +68,17 @@ def test_s_off_exactly_returns_name_only_parent_logits():
     assert torch.equal(s_off["logits"], parent)
 
 
+def test_s_off_never_calls_role_evidence(monkeypatch):
+    model = _model()
+
+    def fail_if_called(*_args, **_kwargs):
+        raise AssertionError("s_off must not read role-conditioned evidence")
+
+    monkeypatch.setattr(model.visual_module, "role_evidence", fail_if_called)
+    output = model(*_inputs(), mode="s_off")
+    assert torch.equal(output["score"], torch.zeros_like(output["score"]))
+
+
 def test_v_and_i_off_keep_same_output_interface():
     model = _model()
     values = _inputs()
