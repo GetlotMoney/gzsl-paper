@@ -113,7 +113,7 @@ class VisibleWitnessField(nn.Module):
         entailment = observable * torch.tanh(margin / MARGIN_SCALE)
         ledger = torch.stack((support, refutation, margin, observable, entailment), dim=-1)
         filip = raw.max(dim=-1).values.mean(dim=-1)
-        return ledger, filip
+        return ledger, filip, raw.argmax(dim=-1), raw.argmin(dim=-1)
 
 
 class FalsificationSolver(nn.Module):
@@ -152,11 +152,20 @@ class OREFModel(nn.Module):
         self.visual_module = VisibleWitnessField()
         self.interaction_module = FalsificationSolver()
         self.candidate_chunk_size = int(candidate_chunk_size)
+        self.call_counts = {}
+
+    def reset_call_counts(self):
+        self.call_counts = {
+            "role_chunk": 0, "name_chunk": 0, "patch_adapter": 0,
+            "falsification_solver": 0, "compensatory_solver": 0,
+        }
 
     def forward(self, image_cls, patch_tokens, *, mode="full"):
         allowed = {"full", "parent", "s_off", "v_off", "i_off", "signed_ledger", "filip", "ledger_mlp"}
         if mode not in allowed:
             raise ValueError(f"OREF mode无效：{mode}")
+        if not self.call_counts:
+            self.reset_call_counts()
         parent = self.semantic_module.parent_logits(image_cls)
         if mode == "parent":
             return {"logits": parent, "base_logits": parent}
@@ -167,9 +176,10 @@ class OREFModel(nn.Module):
         else:
             if patch_tokens is None or patch_tokens.ndim != 3 or patch_tokens.size(-1) != DIM:
                 raise ValueError("OREF patch tokens必须是[B,N,768]。")
+            self.call_counts["patch_adapter"] += 1
             adapted = self.visual_module.adapt(patch_tokens)
         rivals = stable_rivals(parent.detach(), self.semantic_module.class_ids)
-        score_rows, ledger_rows = [], []
+        score_rows, ledger_rows, support_ids, refute_ids = [], [], [], []
         for start in range(0, parent.size(1), self.candidate_chunk_size):
             end = min(start + self.candidate_chunk_size, parent.size(1))
             queries = (
@@ -177,20 +187,28 @@ class OREFModel(nn.Module):
                 if mode == "s_off"
                 else self.semantic_module.role_chunk(rivals, start, end)
             )
+            self.call_counts["name_chunk" if mode == "s_off" else "role_chunk"] += 1
             if mode == "v_off":
                 ledger, filip = self.visual_module.global_ledger(image_cls, queries)
+                support_id = refute_id = torch.full(
+                    ledger.shape[:-1], -1, dtype=torch.long, device=ledger.device
+                )
             else:
-                ledger, filip = self.visual_module.patch_ledger(adapted, queries)
+                ledger, filip, support_id, refute_id = self.visual_module.patch_ledger(adapted, queries)
             if mode == "filip":
                 score = filip
             elif mode in {"i_off", "signed_ledger"}:
+                self.call_counts["compensatory_solver"] += 1
                 score = self.interaction_module.compensatory_score(ledger)
             elif mode == "ledger_mlp":
                 score = self.interaction_module.mlp_score(ledger)
             else:
+                self.call_counts["falsification_solver"] += 1
                 score = self.interaction_module.falsification_score(ledger)
             score_rows.append(score)
             ledger_rows.append(ledger)
+            support_ids.append(support_id)
+            refute_ids.append(refute_id)
         score = torch.cat(score_rows, dim=1)
         score_z = standardize(score)
         base_std = torch.sqrt(parent.var(dim=1, keepdim=True, unbiased=False) + EPS)
@@ -198,6 +216,8 @@ class OREFModel(nn.Module):
         return {
             "logits": logits, "base_logits": parent, "score": score,
             "score_z": score_z, "ledger": torch.cat(ledger_rows, dim=1),
+            "argmax_support_patch": torch.cat(support_ids, dim=1),
+            "argmax_refute_patch": torch.cat(refute_ids, dim=1),
             "rivals": rivals,
         }
 

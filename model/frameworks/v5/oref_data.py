@@ -49,6 +49,8 @@ def load_subset(path: Path, sha: str, *, subset: str, open_patches: bool, open_r
     for key, shape in shapes.items():
         if tuple(values[key].shape) != shape:
             raise ValueError(f"OREF {key} shape错误。")
+    if not torch.equal(values["class_ids"].long(), torch.tensor(meta["class_ids"]).long()):
+        raise ValueError("OREF class_ids tensor与manifest不一致。")
     return values, patches, meta
 
 

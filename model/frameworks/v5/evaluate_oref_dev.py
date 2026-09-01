@@ -25,7 +25,7 @@ CONDITIONS = {
 }
 
 
-def _load_checkpoint(spec, expected, bundle_id):
+def _load_checkpoint(spec, expected, bundle_id, expected_commit):
     path = Path(spec["path"])
     if not path.is_file() or sha256_file(path) != spec["sha256"]:
         raise ValueError(f"OREF checkpoint SHA错误：{expected}")
@@ -33,10 +33,41 @@ def _load_checkpoint(spec, expected, bundle_id):
     if (
         value.get("condition_id") != expected
         or value.get("code_commit") != spec["training_commit"]
+        or spec["training_commit"] != expected_commit
         or value.get("bundle_id") != bundle_id
     ):
         raise ValueError(f"OREF checkpoint身份错误：{expected}")
     return value
+
+
+def align_targetfree_receipt(
+    receipt, *, expected_bundle_id, expected_active_class_ids,
+    expected_eval_class_ids, expected_image_order_sha256,
+    expected_macro_top1, expected_source_failure_sha256,
+):
+    if (
+        receipt.get("bundle_id") != expected_bundle_id
+        or receipt.get("active_class_ids") != [int(x) for x in expected_active_class_ids]
+        or receipt.get("image_order_sha256") != expected_image_order_sha256
+        or receipt.get("metric_axis") != "150_class_joint_macro_top1"
+        or receipt.get("source_failure_sha256") != expected_source_failure_sha256
+    ):
+        raise ValueError("OREF Target-free逐类收据bundle/候选轴/分母身份错误。")
+    ids = [int(x) for x in receipt.get("per_class_class_ids", [])]
+    values = receipt.get("per_class", [])
+    expected_ids = [int(x) for x in expected_eval_class_ids]
+    if (
+        len(ids) != len(expected_ids)
+        or len(values) != len(expected_ids)
+        or len(set(ids)) != len(expected_ids)
+        or set(ids) != set(expected_ids)
+    ):
+        raise ValueError("OREF Target-free逐类class ID集合错误。")
+    mapping = {class_id: float(value) for class_id, value in zip(ids, values, strict=True)}
+    aligned = torch.tensor([mapping[class_id] for class_id in expected_ids], dtype=torch.double)
+    if abs(100.0 * float(aligned.mean()) - float(expected_macro_top1)) > 1e-8:
+        raise ValueError("OREF Target-free逐类均值错误。")
+    return aligned
 
 
 @torch.no_grad()
@@ -55,9 +86,12 @@ def _infer(checkpoint, *, manifest, manifest_sha, bundle, bundle_sha, device, ba
         values["name_embeddings"], roles, values["class_ids"],
         candidate_chunk_size=chunk,
     ).to(device)
-    model.visual_module.load_state_dict(checkpoint["visual_state_dict"], strict=True)
+    visual_adapter_loaded = mode != "v_off"
+    if visual_adapter_loaded:
+        model.visual_module.load_state_dict(checkpoint["visual_state_dict"], strict=True)
     model.interaction_module.ledger_mlp.load_state_dict(checkpoint["ledger_mlp_state_dict"], strict=True)
     model.eval()
+    model.reset_call_counts()
     rows = {key: [] for key in ("logits", "base_logits", "score")}
     count = values["labels"].numel()
     for start in range(0, count, batch_size):
@@ -74,6 +108,8 @@ def _infer(checkpoint, *, manifest, manifest_sha, bundle, bundle_sha, device, ba
     result["class_ids"] = values["class_ids"].long()
     result["image_order_sha256"] = subset["image_order_sha256"]
     result["opened_asset_keys"] = ["image_cls", "name_embeddings", "labels"] + (["role_embeddings"] if open_roles else []) + (["patch_tokens"] if open_patches else [])
+    result["module_call_counts"] = dict(model.call_counts)
+    result["visual_adapter_loaded"] = visual_adapter_loaded
     return result
 
 
@@ -102,7 +138,19 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
     require_clean_code_tree()
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     config_sha = sha256_file(config_path)
+    required = {
+        "schema_version", "checkpoints", "batch_size", "candidate_chunk_size",
+        "bootstrap_samples", "bootstrap_seed", "unseen_images_used_for_gradient",
+        "official_test_loaded", "pclr_online_inference", "bundle_manifest",
+        "bundle_manifest_sha256", "eval_manifest", "eval_manifest_sha256",
+        "device", "targetfree_per_class_receipt", "targetfree_per_class_receipt_sha256",
+        "targetfree_image_order_sha256", "targetfree_macro_top1",
+        "targetfree_bundle_id", "targetfree_active_class_ids",
+        "targetfree_source_failure_sha256",
+    }
     if (
+        not isinstance(config, dict) or not required.issubset(config)
+        or
         config.get("schema_version") != SCHEMA
         or config_sha != expected_config_sha or current_code_commit() != expected_commit
         or set(config.get("checkpoints", {})) != set(CONDITIONS)
@@ -122,7 +170,7 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
     )
     bundle_id = bundle_meta["common_identity"]["bundle_id"]
     checkpoints = {
-        key: _load_checkpoint(config["checkpoints"][key], condition, bundle_id)
+        key: _load_checkpoint(config["checkpoints"][key], condition, bundle_id, expected_commit)
         for key, condition in CONDITIONS.items()
     }
     configure_reproducibility(7, strict_determinism=True, deterministic_warn_only=False)
@@ -133,7 +181,21 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
         device=device, batch_size=4, chunk=5,
     )
     full = _infer(checkpoints["full"], mode="full", **common_args)
-    outputs = {"full": full, "parent": {**full, "logits": full["base_logits"]}}
+    if full["class_ids"].numel() != 150 or torch.unique(full["labels"]).numel() != 50:
+        raise ValueError("OREF eval必须是150候选轴和50个class-disjoint标签类。")
+    outputs = {
+        "full": full,
+        "parent": {
+            **full,
+            "logits": full["base_logits"],
+            "opened_asset_keys": ["image_cls", "name_embeddings", "labels"],
+            "module_call_counts": {
+                "role_chunk": 0, "name_chunk": 0, "patch_adapter": 0,
+                "falsification_solver": 0, "compensatory_solver": 0,
+            },
+            "visual_adapter_loaded": False,
+        },
+    }
     for name, mode in (("s_off", "s_off"), ("v_off", "v_off"), ("i_off", "i_off")):
         outputs[name] = _infer(checkpoints["full"], mode=mode, **common_args)
     for name in ("ledger_mlp", "filip", "signed_ledger"):
@@ -145,15 +207,18 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
     if not targetfree_path.is_file() or sha256_file(targetfree_path) != config["targetfree_per_class_receipt_sha256"]:
         raise ValueError("OREF Target-free逐类收据路径/SHA错误。")
     targetfree_receipt = json.loads(targetfree_path.read_text(encoding="utf-8"))
-    targetfree_vector = torch.tensor(targetfree_receipt.get("per_class", []), dtype=torch.double)
-    if (
-        targetfree_vector.shape != (50,)
-        or targetfree_receipt.get("image_order_sha256") != config["targetfree_image_order_sha256"]
-        or abs(100.0 * float(targetfree_vector.mean()) - float(config["targetfree_macro_top1"])) > 1e-8
-    ):
-        raise ValueError("OREF Target-free逐类收据身份/均值错误。")
+    eval_classes = torch.unique(full["labels"], sorted=True)
+    targetfree_vector = align_targetfree_receipt(
+        targetfree_receipt,
+        expected_bundle_id=config["targetfree_bundle_id"],
+        expected_active_class_ids=config["targetfree_active_class_ids"],
+        expected_eval_class_ids=eval_classes,
+        expected_image_order_sha256=config["targetfree_image_order_sha256"],
+        expected_macro_top1=config["targetfree_macro_top1"],
+        expected_source_failure_sha256=config["targetfree_source_failure_sha256"],
+    )
     metrics = {name: _metrics(output) for name, output in outputs.items()}
-    classes = torch.unique(full["labels"], sorted=True)
+    classes = eval_classes
     generator = torch.Generator(device="cpu").manual_seed(7)
     matrix = torch.randint(0, 50, (10000, 50), generator=generator)
     comparisons = {
@@ -190,16 +255,17 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
     result = {
         "schema_version": SCHEMA, "code_commit": expected_commit,
         "config_sha256": config_sha, "asset_bundle_id": bundle_id,
-        "metrics": {name: {"macro_top1": value["macro_top1"], "micro_top1": value["micro_top1"], "opened_asset_keys": outputs[name]["opened_asset_keys"]} for name, value in metrics.items()},
+        "metrics": {name: {"macro_top1": value["macro_top1"], "micro_top1": value["micro_top1"], "opened_asset_keys": outputs[name]["opened_asset_keys"], "module_call_counts": outputs[name]["module_call_counts"], "visual_adapter_loaded": outputs[name]["visual_adapter_loaded"]} for name, value in metrics.items()},
+        "checkpoint_identities": {name: {"sha256": config["checkpoints"][name]["sha256"], "training_commit": config["checkpoints"][name]["training_commit"], "train_config_sha256": checkpoints[name]["config_sha256"], "gradient_receipt": checkpoints[name]["gradient_receipt"]} for name in checkpoints},
         "targetfree_comparator": {
             "macro_top1": config["targetfree_macro_top1"],
-            "receipt_sha256": config["targetfree_receipt_sha256"],
+            "source_failure_sha256": config["targetfree_source_failure_sha256"],
             "per_class_receipt_sha256": config["targetfree_per_class_receipt_sha256"],
             "comparison": comparisons["targetfree"],
         },
         "comparisons": comparisons,
         "direction": {"macro_pct": 100.0 * float(direction_vector.mean()), "ci95": [float(direction_ci[0]), float(direction_ci[1])]},
-        "transitions": transitions, "gates": gates, "gate_passed": passed,
+        "transitions": transitions, "gates": gates, "preliminary_gate_passed": passed,
         "decision": "continue_remaining_controls" if passed else "drop_oref_preliminary_gate",
         "unseen_images_used_for_gradient": False, "official_test_loaded": False,
         "pclr_online_inference": False,

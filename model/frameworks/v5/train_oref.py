@@ -62,7 +62,6 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
     config, config_sha = load_config(config_path)
     if current_code_commit() != expected_commit or config_sha != expected_config_sha:
         raise ValueError("OREF train commit/config SHA不匹配。")
-    output = prepare_output_dir(output_path)
     values, patches, subset = load_subset(
         Path(config["train_manifest"]), config["train_manifest_sha256"],
         subset="dev_train", open_patches=True, open_roles=True,
@@ -79,6 +78,7 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
         or not bool(torch.isin(values["labels"].long(), values["class_ids"].long()).all())
     ):
         raise ValueError("OREF train资产边界错误。")
+    output = prepare_output_dir(output_path)
     configure_reproducibility(7, strict_determinism=True, deterministic_warn_only=False)
     device = torch.device(config["device"])
     model = OREFModel(
