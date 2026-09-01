@@ -9,7 +9,7 @@ derived_from_framework: FRAMEWORK-V5
 source_idea: IDEA-198
 source_code_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 source_commit_role: formal_v5_parent_only
-status: development_candidate
+status: rejected_pre_implementation
 owner_promotion_decision: not_promoted_no_framework_tag
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
@@ -28,3 +28,4 @@ limitations:
   - This is a development candidate, not an accepted framework.
   - No framework/v6 branch or v6 tag exists.
   - Source commit is the formal V5 parent; rejected EAAC and RoleTriPool code are evidence only and not code parents.
+  - SEAV failed its pre-registered No-crop non-equivalence control before formal implementation; it is not the V6 solution.

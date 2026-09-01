@@ -1,14 +1,14 @@
 # IDEA-198：Safe Explicit Action Verification（SEAV）
 
 idea_id: IDEA-198
-status: proposed_v6_proof_gate
+status: rejected_pre_implementation
 base_framework: FRAMEWORK-V6-DEVELOPMENT
 source_code_parent: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 predecessor_evidence: IDEA-196 EAAC and IDEA-197 RoleTriPool, both rejected and not code parents
 problem_category: reliability_robustness
 mechanism_tags: [explicit_abstention_action_policy, learned_crop_safety_verifier, zero_semantic_off, sequential_seen_training, one_shot_verification]
 implementation_branch: exp/v6/innovation/v6-try-002-seav
-current_run: V6-TRY-002 / Gate0
+current_run: V6-TRY-002 / pre-implementation minimal falsification
 
 problem: EAAC learned a conservative action policy (11.89% trigger) but its fixed rule swapped whenever selected-crop class-name margin was negative, producing53 corrections and59 leader damages. RoleTriPool and direct low-resolution pair classification failed, so the remaining verified bottleneck is whether the acquired crop should be trusted, not another action representation.
 
@@ -59,3 +59,16 @@ identity_and_receipts: Freeze and record the Stage1 checkpoint SHA, policy code 
 - A/B 分别独立审查后直接交换完整清单并逐项回应；Gate0 七条件、同 checkpoint off、Stage1 身份、固定阈值和诊断边界均已关闭。
 - 双方最终结论均为 `P0=0 / P1=0 / P2=0 / pass`。
 - 共同结论：`范式Idea双Agent对抗审核通过`。这只允许建立可证伪候选，不代表指标、统计稳定性或论文新颖性已经成立。
+
+## 2026-09-02 最小证伪结果
+
+failure_receipt: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/seav/V6-TRY-002-PRECHECK/failure.json@sha256:3d10db639cb2a55e4e676c53d63c722302913ae43eff978a019e071105d3090c`
+
+- 在正式实现前，用冻结的 EAAC 动作和同一份已披露 dev 诊断协议训练三种 verifier：Full、No-crop、Margin-only；三者使用相同 15→32→1 容量、初始化、574 个 triggered seen rows 和同一 1000-step batch trace。
+- Parent=`66.692923`，Full=`68.014519`，No-crop=`68.548231`，Margin-only=`66.161810`，Fixed-I=`66.400172`。
+- `Full-No-crop=-0.533712pp`，paired CI95=`[-1.462184,+0.291184]`。No-crop 不仅匹配，而且点估计高于 Full，违反预注册的 `Full-No-crop>=0.5pp 且 CI lower>0` 硬门。
+- Full 发生 60 次纠正、29 次破坏；No-crop 发生 84 次纠正、42 次破坏。增益主要来自 Parent 状态、动作置信度和位置先验，不需要 selected-crop margin；加入 crop margin 反而降低结果。
+
+root_cause: The verifier learned a transferable pre-crop group/action prior rather than a crop-evidence safety decision. Therefore the proposed interaction module is not causally necessary.
+
+decision: Drop IDEA-198 before formal code freeze, code review or training. Interrupted partial unreviewed implementation was deleted and is not a code baseline. The next candidate must not relabel a no-crop prior classifier as crop verification.
