@@ -1,1 +1,2 @@
 attempt_id,idea_id,module_id,attempt_no,rescue_of,failure_mode,rescue_strategy,code_commit,config_ref,change,seed,status,U,S,H,ZS,best_epoch,decision,output_uri
+V5-TRY-004-P0,IDEA-190,OREF,0,,,preliminary_proof_gate,b0f7ac33b82a4b9a0e7f751fdef6ade3f510ed68,config/tries/v5_try_004_oref_full.yaml@sha256:d826d6e215fa50bc391d6888b47be9d9ed9a33ddf8e1c6a025c59d508ba4bb71,dynamic_role_entailment_preliminary_gate,7,queued,,,,,1000_updates,pending_preliminary_gate,/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/oref/V5-TRY-004-PRELIM
