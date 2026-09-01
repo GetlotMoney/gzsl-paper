@@ -13,12 +13,13 @@ def test_ctpm_config_identity_is_parseable():
     assert config["eval_interval_steps"] == 141
     assert config["required_module_delta_h"] == 1.0
     assert config["test_used_for_selection"] is True
+    loaded, digest = load_config(path)
+    assert loaded == config
+    assert len(digest) == 64
 
 
 def test_ctpm_evaluation_schedule_matches_fixed_200():
-    updates = evaluation_updates(7057, 200, 50)
-    assert updates[0] == 0
-    assert updates[1] == 1
-    assert updates[2] == 142
-    assert updates[-1] == 28228
+    updates = sorted(evaluation_updates(28228, 141))
+    assert updates[:3] == [0, 141, 282]
+    assert updates[-2:] == [28200, 28228]
     assert len(updates) == 202

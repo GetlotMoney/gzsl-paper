@@ -4,27 +4,27 @@ framework_id: FRAMEWORK-V6-DEVELOPMENT
 dataset: CUB
 condition_id: CTPM_FULL_FIXED200
 code_parent_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
-base_asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v3/CUB_openai_vitl14_336_dynamic_v3_v1/asset_manifest.json
-base_asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
-base_asset_id: CUB_openai_vitl14_336_dynamic_v3_v1
-visual_asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/rgve/CUB_openai_vitl14_336_coarse36_final_v1/asset_manifest.json
-visual_asset_manifest_sha256: 1d60f9a1672c39a04cf7d5fb50dc417736b9fc6d39b81aa4918cb424b8f586c0
-visual_asset_id: cub-clip-coarse36-3fbf9cffb754ab6d
-class_name_asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/4aee52e1a1360969/asset_manifest.json
-class_name_asset_manifest_sha256: d734d69a40e946577e9dfdb9ffad2f764be6f89b29ef571fb183081afa5c8084
-class_name_asset_id: 4aee52e1a1360969
+asset_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v3/CUB_openai_vitl14_336_dynamic_v3_v1/asset_manifest.json
+asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+asset_id: CUB_openai_vitl14_336_dynamic_v3_v1
+coarse_patch_files_sha256:
+  train_coarse_patch_features.npy: ee5e937a4b78cb6d8f8babaa22cfed43ab2807080fda0d1dd4bba4206485c1f0
+  test_seen_coarse_patch_features.npy: ce7b902e43bd0cb89c4244b9d13e19d3af0ef7f91997d718e3e4a5afa389d405
+  test_unseen_coarse_patch_features.npy: ac63d8badf1d1daf9c6328c57016964a24511f815eabd502ca9d58bba17ff78b
 top2_gate_result: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/ctpm/V6-TRY-010-TOP2-GATE/result.json
 top2_gate_result_sha256: 64d12884994ea44c30945662aaa1781fde8622c08f0526c473a59b043c181bfb
+top2_gate_script_sha256: 965e90705ffcd09aab37b2e91a40d226427f610a545820e6657b8101feb4445d
 parent_metrics_percent:
   U: 62.210363
   S: 64.205813
   H: 63.192339
   ZS: 79.681343
 required_module_delta_h: 1.0
+output_dir: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/ctpm/V6-TRY-010
 device: cuda:0
 random_seed: 7
 batch_size: 50
-eval_batch_size: 512
+eval_batch_size: 128
 nominal_epochs: 200
 total_updates: 28228
 eval_interval_steps: 141
@@ -38,8 +38,10 @@ max_role_weight: 0.75
 pair_loss_weight: 0.1
 attention_diversity_weight: 0.01
 logit_scale: 14.285714285714285
+require_clean_tree: true
 test_used_for_selection: true
 test_used_for_hyperparameter_selection: true
+nested_official_test_selection: true
 unseen_images_used_for_gradient: false
 strict_blind_claim: false
 human_annotations_used: false

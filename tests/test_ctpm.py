@@ -95,3 +95,19 @@ def test_full_loss_backpropagates_to_all_three_modules_and_attention():
     assert sum(p.grad.abs().sum() for p in groups["interaction"] if p.grad is not None) > 0
     assert model.patch_query.weight.grad.abs().sum() > 0
     assert model.patch_key.weight.grad.abs().sum() > 0
+
+
+def test_full_ce_alone_reaches_every_margin_component_at_update0():
+    model, image, patches = _fixture(batch=7, classes=11)
+    output = model(image, patches)
+    labels = output.top2_global[:, 1].detach().clone()
+    torch.nn.functional.cross_entropy(output.logits, labels).backward()
+    assert model.raw_role_weights.grad.abs().sum() > 0
+    assert model.semantic_margin.net[0].weight.grad.abs().sum() > 0
+    assert model.semantic_margin.net[-1].weight.grad.abs().sum() > 0
+    assert model.patch_query.weight.grad.abs().sum() > 0
+    assert model.patch_key.weight.grad.abs().sum() > 0
+    assert model.visual_margin.net[0].weight.grad.abs().sum() > 0
+    assert model.visual_margin.net[-1].weight.grad.abs().sum() > 0
+    assert model.interaction_margin.net[0].weight.grad.abs().sum() > 0
+    assert model.interaction_margin.net[-1].weight.grad.abs().sum() > 0
