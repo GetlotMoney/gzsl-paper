@@ -1,7 +1,7 @@
 # IDEA-194：Dense Counterfactual Correction Utility（D-CCU）
 
 idea_id: IDEA-194
-status: testing_owner_preapproved_rescue
+status: rejected_at_gate0
 source_type: IDEA-193_failure + first_principles + owner_continuous_rescue_authorization
 method_name: Dense Counterfactual Correction Utility
 method_acronym: D-CCU
@@ -61,7 +61,7 @@ minimal_viability: On a real train micro-batch, correction targets have the regi
 minimal_falsification: Train only balanced D-CCU Full and run Gate0. Any Parent/off/control/group-safety/B1 failure immediately drops it. No threshold, prompt, role, geometry, entropy, B2 or architecture rescue.
 
 current_advantage: none; this is a failure-driven target correction with an existing +16.07pp pair-oracle opportunity.
-performance_status: proof_of_path
+performance_status: matched_parent_not_significant
 
 failure_boundary: 4:4 oversampling changes the prior and may still over-trigger at eval; low-resolution evidence may not predict correctable crops; model may learn only Parent margin; class-disjoint transfer may fail; all-zero rows may still dominate; module contributions may remain below one point.
 
@@ -87,3 +87,18 @@ review_result: `P0=0 / P1=0 / 双Agent交叉审查通过`
 - Two agents independently reviewed the frozen D-CCU target, target-count assertions, 4:4 sampler, natural StaticBest, checkpoint/eval interface and group-safety gates.
 - Both found one shared eval-receipt `NameError` P0. The main agent fixed only that affected path plus method/alias identity; both agents restricted recheck to `aa4d4c5..161d8ff` and returned `P0=0/P1=0 / 受影响diff复核通过`.
 - Local contract tests: `22 passed`; post-fix runner/model subset: `17 passed`.
+
+## 2026-09-01 Gate0 result and experience
+
+train_checkpoint: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/dccu/V5-TRY-008-GATE0-FULL/dccu_gate0_full.pt@sha256:69dd27b19fbd6618a469d373cb2de91fa05cc0cb0f325a7619f31c7957c7bbab`
+eval_config_sha256: `a3ceda138a7762769b2c43afdfbbd28a0bfee6c2a97c5251256d982717de670d`
+failure_receipt: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/dccu/V5-TRY-008-GATE0-EVAL/failure.json@sha256:3f2fac53d935d0552c822fa67f27ffa89f98abbc2494cda3d93fbe8ee0fa1da0`
+
+- Training target statistics matched preregistration exactly; loss fell from `0.693147` to `0.216979`, and all projection gradients passed.
+- Parent=`66.692923%`; Full=`66.740131%`, gain=`+0.047208pp`, CI=`[-1.977020,+2.118232]`. Full-Soff=`+0.443188pp`; Full-Voff=`+1.028243pp` but its CI crossed zero. No module contract passed jointly.
+- Trigger fell from IDEA-193's `91.59%` to `11.97%`. Challenger trigger rate=`27.82%` exceeded leader=`6.69%`; corrections=66, leader damages=62, net=`+4`. The target repair therefore solved high-trigger damage but did not produce enough transferable action discrimination.
+- Full used all 25 actions without collapse and all B1/data boundaries passed. Fixed-control advantages were small and nonsignificant.
+
+root_cause: Correction-only binary targets distinguish beneficial actions from everything else, but collapse neutral actions and harmful leader-swapping actions into the same zero label. The model learned when correction may be possible, yet received no direct signal for avoiding action-specific damage; 66 corrections were nearly cancelled by 62 damages.
+
+decision: Drop D-CCU at Gate0. Do not tune threshold/sampling ratio/prompt/attention/windows. A further rescue must be a new Idea with a signed action-advantage target: correction `+1`, no decision change `0`, damage `-1`, with abstention as the exact zero baseline.
