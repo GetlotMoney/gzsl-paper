@@ -15,6 +15,7 @@ from model.frameworks.v6.compiled_pclr import (
     ROLE_COUNT,
     CompiledPCLRHead,
 )
+from model.frameworks.v4.model import PaperV2ThreeModuleModel
 from model.frameworks.v6.train_compiled_pclr import (
     _finite_source_gradients,
     evaluate_head,
@@ -242,3 +243,26 @@ def test_source_gradient_receipt_ignores_inactive_groups() -> None:
     receipt = _finite_source_gradients(source)
     assert receipt
     assert all("inactive" not in name for name in receipt)
+
+
+def test_real_parent_receipt_allows_compatibility_parameter_without_grad() -> None:
+    generator = torch.Generator().manual_seed(11)
+    parent = PaperV2ThreeModuleModel(
+        F.normalize(torch.randn(200, 8, 768, generator=generator), dim=-1),
+        torch.arange(150),
+        F.normalize(torch.randn(150, 768, generator=generator), dim=-1),
+        tg_vpr_mode="full",
+        transport_mode="off",
+        ccgr_mode="off",
+    )
+    gate = nn.Linear(4, 1)
+    source = SimpleNamespace(parent=parent, gate=gate)
+    images = torch.randn(3, 768, generator=generator)
+    loss = parent.logits(images, torch.arange(150)).sum() + parent.topology_loss()
+    loss = loss + gate(torch.randn(3, 4, generator=generator)).sum()
+    loss.backward()
+    assert parent.tg_vpr.semantic_group_logits.grad is None
+    receipt = _finite_source_gradients(source)
+    assert receipt
+    assert any(name.startswith("parent.tg_vpr") for name in receipt)
+    assert any(name.startswith("gate.") for name in receipt)

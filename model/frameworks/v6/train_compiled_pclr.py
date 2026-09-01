@@ -393,10 +393,16 @@ def _finite_source_gradients(source) -> dict[str, float]:
     values = {}
     active_groups = source.parent.parameter_groups()
     for group_name, parameters in active_groups.items():
+        finite_count = 0
         for index, parameter in enumerate(parameters):
-            if parameter.grad is None or not torch.isfinite(parameter.grad).all():
-                raise RuntimeError(f"C-PCLR active parent参数缺少有限梯度：{group_name}[{index}]")
+            if parameter.grad is None:
+                continue
+            if not torch.isfinite(parameter.grad).all():
+                raise RuntimeError(f"C-PCLR active parent参数梯度非有限：{group_name}[{index}]")
             values[f"parent.{group_name}[{index}]"] = float(parameter.grad.detach().norm().cpu())
+            finite_count += 1
+        if parameters and finite_count == 0:
+            raise RuntimeError(f"C-PCLR active parent参数组没有任何实际梯度：{group_name}")
     if not values:
         raise RuntimeError("C-PCLR没有实际启用的Parent参数组。")
     for name, parameter in source.gate.named_parameters():
