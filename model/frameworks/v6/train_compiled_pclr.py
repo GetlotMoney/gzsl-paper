@@ -6,7 +6,6 @@ import argparse
 import copy
 import json
 import math
-import sys
 from pathlib import Path
 
 import torch
@@ -392,14 +391,18 @@ def _gradient_receipt(
 
 def _finite_source_gradients(source) -> dict[str, float]:
     values = {}
-    for group_name, parameters in (
-        ("parent", source.parent.named_parameters()),
-        ("gate", source.gate.named_parameters()),
-    ):
-        for name, parameter in parameters:
+    active_groups = source.parent.parameter_groups()
+    for group_name, parameters in active_groups.items():
+        for index, parameter in enumerate(parameters):
             if parameter.grad is None or not torch.isfinite(parameter.grad).all():
-                raise RuntimeError(f"C-PCLR {group_name}参数缺少有限梯度：{name}")
-            values[f"{group_name}.{name}"] = float(parameter.grad.detach().norm().cpu())
+                raise RuntimeError(f"C-PCLR active parent参数缺少有限梯度：{group_name}[{index}]")
+            values[f"parent.{group_name}[{index}]"] = float(parameter.grad.detach().norm().cpu())
+    if not values:
+        raise RuntimeError("C-PCLR没有实际启用的Parent参数组。")
+    for name, parameter in source.gate.named_parameters():
+        if parameter.grad is None or not torch.isfinite(parameter.grad).all():
+            raise RuntimeError(f"C-PCLR gate参数缺少有限梯度：{name}")
+        values[f"gate.{name}"] = float(parameter.grad.detach().norm().cpu())
     return values
 
 

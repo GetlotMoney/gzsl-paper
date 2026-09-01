@@ -183,36 +183,56 @@ class CompiledPCLRHead(nn.Module):
     @torch.no_grad()
     def from_source_model(cls, source_model: nn.Module, **kwargs) -> "CompiledPCLRHead":
         """Construct from the immutable R2/V5 source model."""
-        return cls(
-            base_prototypes=source_model.prototypes().detach(),
-            role_prototypes=source_model.parent.tg_vpr.sentence_embeds.detach(),
-            relation_embeddings=source_model.relation_embeddings.detach(),
-            edge_index=source_model.edge_index.detach(),
-            seen_classes=source_model.seen_classes.detach(),
-            scale=float(source_model.scale().detach()),
-            reader_in_state=(
-                source_model.reader_in.weight.detach(),
-                source_model.reader_in.bias.detach(),
-            ),
-            reader_out_state=(
-                source_model.reader_out.weight.detach(),
-                source_model.reader_out.bias.detach(),
-            ),
-            **kwargs,
-        )
+        was_training = source_model.training
+        cpu_state = torch.random.get_rng_state()
+        cuda_states = torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []
+        source_model.eval()
+        try:
+            return cls(
+                base_prototypes=source_model.prototypes().detach(),
+                role_prototypes=source_model.parent.tg_vpr.sentence_embeds.detach(),
+                relation_embeddings=source_model.relation_embeddings.detach(),
+                edge_index=source_model.edge_index.detach(),
+                seen_classes=source_model.seen_classes.detach(),
+                scale=float(source_model.scale().detach()),
+                reader_in_state=(
+                    source_model.reader_in.weight.detach(),
+                    source_model.reader_in.bias.detach(),
+                ),
+                reader_out_state=(
+                    source_model.reader_out.weight.detach(),
+                    source_model.reader_out.bias.detach(),
+                ),
+                **kwargs,
+            )
+        finally:
+            source_model.train(was_training)
+            torch.random.set_rng_state(cpu_state)
+            if cuda_states:
+                torch.cuda.set_rng_state_all(cuda_states)
 
     @torch.no_grad()
     def sync_source_prototypes(self, source_model: nn.Module) -> None:
         """Refresh frozen deployment prototypes after the same joint update."""
-        scale = float(source_model.scale().detach())
-        base = F.normalize(source_model.prototypes().detach().float(), dim=-1) * scale
-        roles = F.normalize(
-            source_model.parent.tg_vpr.sentence_embeds.detach().float(), dim=-1
-        ) * scale
-        if base.shape != self.base_q.shape or roles.shape != self.role_q.shape:
-            raise ValueError("C-PCLR source prototype shape发生变化。")
-        self.base_q.copy_(base)
-        self.role_q.copy_(roles)
+        was_training = source_model.training
+        cpu_state = torch.random.get_rng_state()
+        cuda_states = torch.cuda.get_rng_state_all() if torch.cuda.is_available() else []
+        source_model.eval()
+        try:
+            scale = float(source_model.scale().detach())
+            base = F.normalize(source_model.prototypes().detach().float(), dim=-1) * scale
+            roles = F.normalize(
+                source_model.parent.tg_vpr.sentence_embeds.detach().float(), dim=-1
+            ) * scale
+            if base.shape != self.base_q.shape or roles.shape != self.role_q.shape:
+                raise ValueError("C-PCLR source prototype shape发生变化。")
+            self.base_q.copy_(base)
+            self.role_q.copy_(roles)
+        finally:
+            source_model.train(was_training)
+            torch.random.set_rng_state(cpu_state)
+            if cuda_states:
+                torch.cuda.set_rng_state_all(cuda_states)
 
     def alpha(self) -> torch.Tensor:
         return self.alpha_max * torch.sigmoid(self.raw_alpha)

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 from model.frameworks.v6.compiled_pclr import (
@@ -14,6 +16,7 @@ from model.frameworks.v6.compiled_pclr import (
     CompiledPCLRHead,
 )
 from model.frameworks.v6.train_compiled_pclr import (
+    _finite_source_gradients,
     evaluate_head,
     gate_b_contract_passed,
     load_compiled_config,
@@ -190,3 +193,52 @@ def test_update_zero_can_never_pass_gate_b() -> None:
         required_module_delta_h=1.0,
         max_us_gap=8.0,
     )
+
+
+def test_source_sync_is_eval_mode_and_rng_neutral() -> None:
+    head = _head()
+
+    class FakeSource(nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.base = nn.Parameter(torch.randn(CLASS_COUNT, EMBED_DIM))
+            self.parent = SimpleNamespace(
+                tg_vpr=SimpleNamespace(
+                    sentence_embeds=torch.randn(CLASS_COUNT, ROLE_COUNT, EMBED_DIM)
+                )
+            )
+
+        def scale(self):
+            return torch.tensor(20.0)
+
+        def prototypes(self):
+            return F.dropout(self.base, p=0.5, training=self.training)
+
+    source = FakeSource().train()
+    rng_before = torch.random.get_rng_state().clone()
+    head.sync_source_prototypes(source)
+    assert source.training
+    assert torch.equal(torch.random.get_rng_state(), rng_before)
+    expected = F.normalize(source.base.detach(), dim=-1) * 20.0
+    assert torch.allclose(head.base_q, expected, atol=1e-6, rtol=0.0)
+
+
+def test_source_gradient_receipt_ignores_inactive_groups() -> None:
+    class FakeParent(nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.active = nn.Linear(3, 2)
+            self.inactive = nn.Parameter(torch.ones(4))
+
+        def parameter_groups(self):
+            return {"active": list(self.active.parameters()), "inactive": []}
+
+    source = SimpleNamespace(parent=FakeParent(), gate=nn.Linear(2, 1))
+    for parameter in source.parent.active.parameters():
+        parameter.grad = torch.ones_like(parameter)
+    for parameter in source.gate.parameters():
+        parameter.grad = torch.ones_like(parameter)
+    assert source.parent.inactive.grad is None
+    receipt = _finite_source_gradients(source)
+    assert receipt
+    assert all("inactive" not in name for name in receipt)
