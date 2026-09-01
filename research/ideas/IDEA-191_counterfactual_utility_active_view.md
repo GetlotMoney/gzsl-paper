@@ -1,11 +1,11 @@
 # IDEA-191：Counterfactual Utility Active View（CUAV，反事实效用主动视图）
 
-status: proposed_owner_confirmed_proof_of_path_candidate
+status: rejected_at_preliminary_b1_gate
 idea_id: IDEA-191
 source_type: experiment_result + code_analysis + first_principles + owner_hypothesis + nearest_work_boundary
 method_name: Counterfactual Utility Active View
 method_acronym: CUAV
-current_run: none
+current_run: V5-TRY-005-P0
 problem: IDEA-172证明原始高分辨率crop存在巨大oracle上限但静态文本行动失败，OREF进一步否定低分辨率局部token；需要检验seen-only name歧义策略能否在严格B=1下主动请求一个真正有用的新观察。
 hypothesis: 只用100 dev-seen标签对25个固定crop的反事实效用训练离散policy，若能在冻结class-disjoint类别上先选动作后只编码一个原图高清crop，并胜过全部同成本固定/图像-only/低分辨率控制，则主动观察路径成立。
 core_change: 将“下一条视觉输入是什么”变成训练对象；部署先从低分辨率name歧义选择一个离散动作，再获取一个原图高清crop并固定更新全类logits。
@@ -172,14 +172,27 @@ Gate passing is proof only. Formal success later requires Chen-style Full above 
 
 minimal_falsification: First revalidate IDEA-172 25-action oracle on the exact rows/geometries. Then train only Full and Image-only policy and evaluate Parent, Center, StaticBest, Low-resolution, S/V/I-off. If Full does not beat Parent and every displayed control by+1pp with CI lower>0, net correction is nonpositive, or policy collapses to StaticBest/Center, immediately drop CUAV before Random/TextHeatmap/Unrelated/shuffles. No B=2, multi-crop fusion, crop-geometry change, text heatmap rescue, PCLR or policy-architecture search.
 
-current_advantage: none. IDEA-172 oracle is only a ceiling; its real Active result is negative.
-performance_status: proof_of_path_not_run.
+current_advantage: none; Full相对Parent为`-0.576416pp`，并与S-off/Image-only/StaticBest逐值相同，name歧义policy没有贡献。
+performance_status: rejected_policy_collapsed_to_static_action_and_below_parent.
 
 failure_boundary: Seen action utility may learn center/body/background priors; name ambiguity may not localize morphology; expected-loss policy may be an ordinary selector; original high-resolution crop may distract; fixed I update may damage parent-correct images. Center/StaticBest/Image-only/Low-res/TextHeatmap/Unrelated matching Full, eval needing all25, or any module-off below1pp immediately rejects CUAV.
 
 receipt_contract: Save train/eval action histograms, per-image policy entropy distribution, highest-action occupancy, number of used actions, center-action occupancy, StaticBest action overlap, Full↔Center/Static action agreement, initial/final policy state SHAs, geometry/box SHAs, opened asset keys and module call counts. Full eval must separately record `raw_original_open_count=N_eval`, `selected_crop_forward_count=N_eval`, `all25_eval_encoding_count=0`, and one action decision per row made before raw-image open. Highest occupancy>70% or fewer than10 eval actions is a hard failure, not a tuning prompt.
 
 paper_level_claim: Only after proof Gate, formal H, three module-off gates and multi-seed evidence: “A seen-only name-ambiguity policy actively requests one original-resolution crop to resolve class-disjoint GZSL uncertainty under a strict B=1 observation budget.” No first-active-vision, first-zoom, first-crop-policy or first-fine-grained-glimpse claim.
+
+## 2026-09-01 Preliminary B=1 Gate真实结果
+
+- 运行commit：`51f3cc5ac40654945e26141e8c24606641b3e880`；eval config SHA256：`bbaccff97b677e26f55c102faee40f892d9b6d1134f29e4f4dad65a668740426`。
+- 资产bundle：`183dd72dba2d2ac8ddac15b0b9a368a16506276d26384e793942c4106d8518b7`；训练4,702张100类dev-seen，冻结评估2,355张50类dev-unseen/150候选轴；Full eval每图只编码1个selected原图crop，`all25_full_eval_encoding_count=0`。
+- macro Top-1：Parent=`66.695476%`，Full=`66.119060%`，S-off=`66.119060%`，V-off=`66.160054%`，I-off=`52.390812%`。
+- 同成本控制：Center=`58.881945%`，StaticBest=`66.119060%`，Image-only=`66.119060%`。Full、S-off、Image-only和StaticBest逐值相同。
+- Full相对Parent=`-0.576416pp`、95% CI=`[-1.039045,-0.199088]`；相对S-off/StaticBest/Image-only均为`0pp`；相对V-off=`-0.040994pp`。
+- policy在全部2,355张eval图像上100%选择action4，highest occupancy=`1.0`、used actions=`1`、mean entropy=`0.008133`；StaticBest也恰为action4，语义歧义与图像条件均未形成实例级行动。
+- Full纠正1、损坏15、净纠正`-14`。当前固定全类更新下的All25 oracle macro=`65.955071%`，仍低于Parent，说明该I公式本身没有可解上限。
+- 只有Full相对I-off与Center门通过；Parent、S/V-off、StaticBest、Image-only、净纠正、occupancy和used-actions门全部失败，`preliminary_gate_passed=false`。
+- 失败收据：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/cuav/V5-TRY-005-PRELIM/EVAL/failure.json@sha256:738d92a0400ca846f39fb52a6b747e32c47d3cc341be42cd0fe8befff3f5e292`。
+- 最终决策：立即drop CUAV。禁止加entropy、B=2、多crop、改窗口、改融合或policy架构救活。经验是全类crop效用在seen上几乎只产生全局StaticBest，后续若继续主动视觉，必须更换学习问题和更新合同，而不是补policy正则。
 
 ## 范式Idea双Agent对抗定稿记录
 
