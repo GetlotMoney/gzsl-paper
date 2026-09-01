@@ -1,0 +1,32 @@
+schema_version: gzsl-paper.framework.v1
+framework_id: FRAMEWORK-V6-DEVELOPMENT
+framework_ref: v6-development
+framework_branch: exp/v6/innovation/v6-try-004-joint-svra
+framework_tag: null
+method_name: J-SVRA
+method_full_name: Joint Semantic-Visual Risk Arbitration
+derived_from_framework: FRAMEWORK-V5
+source_idea: IDEA-200
+source_code_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
+source_commit_role: formal_v5_parent_only
+status: development_candidate_official_precheck_pending
+owner_promotion_decision: not_promoted_no_framework_tag
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+human_annotations_used: false
+expert_attributes_used: false
+llm_world_knowledge_used: true
+predecessor_evidence:
+  idea_id: IDEA-199
+  method: SVRA
+  status: gate0_supported_but_fixed_official_diagnostic_failed
+  run: V6-TRY-003
+  result: Gate0Full68.335831_OfficialFullH62.723317_OfficialParentH63.192631
+limitations:
+  - This is a development candidate, not an accepted framework.
+  - No framework/v6 branch or v6 tag exists.
+  - Source commit is the formal V5 parent; rejected EAAC, RoleTriPool and SEAV code are evidence only and not code parents.
+  - Sequential SVRA passed class-disjoint Gate0 but failed the fixed official checkpoint diagnostic; it is evidence only and not the J-SVRA code parent.
+  - J-SVRA changes training semantics to one end-to-end full200-axis objective and must pass its frozen official precheck before formal confirmation.
