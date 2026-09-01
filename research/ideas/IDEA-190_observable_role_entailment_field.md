@@ -1,11 +1,11 @@
 # IDEA-190：Observable Role Entailment Field（OREF，可观察角色蕴含场）
 
-status: proposed_owner_confirmed_proof_of_path_candidate
+status: rejected_at_preliminary_proof_gate
 idea_id: IDEA-190
 source_type: experiment_result + code_analysis + first_principles + owner_hypothesis + nearest_work_boundary
 method_name: Observable Role Entailment Field
 method_acronym: OREF
-current_run: none
+current_run: V5-TRY-004-P0
 problem: RCEG证明隐藏补全显著有害，而可见token与角色文本的判别交互仅作为普通控制产生正信号；需要检验动态角色命题能否通过显式支持/反证账本和非补偿式求解形成独立路径。
 hypothesis: 候选相对当前最强竞争类的八个可见角色命题，若由当前图像patch witness形成有符号蕴含状态，并由反证优先规则求解，应在class-disjoint类别上超过name-only父基线、普通token scorer、MLP/CBM/ECOC控制及三项module-off。
 core_change: 将类别判别从点相似度或opaque reranker改写为动态role-vs-rival claims、signed visible ledger和fixed falsification-first solver。
@@ -153,8 +153,8 @@ Gate passing is only proof-of-path. Formal success later requires Chen-style Ful
 
 minimal_falsification: First execute only Parent, Full, three off paths, Ledger-MLP, FILIP and Signed-Ledger on the fixed Gate. If Full does not beat Parent/Target-free, direction fails, or any ordinary scorer matches, immediately reject OREF before the remaining controls. Do not tune temperatures, coefficient2, adapter rank, role set, query definition or fusion after results. The fixed `tau_p=0.07`, margin scale`0.2`, `tau_r=0.1` and refutation coefficient`2` are acknowledged untested inductive biases; failure may not be rescued by changing them.
 
-current_advantage: none. RCEG Target-free is only a diagnostic comparator.
-performance_status: proof_of_path_not_run.
+current_advantage: none; Full相对Parent为`-8.404527pp`，V-off反而比Full高`8.791589pp`，局部witness field与falsification solver没有当前优势。
+performance_status: rejected_below_parent_targetfree_and_filip.
 
 failure_boundary: Patch tokens may encode texture but not the role claim; LLM role facts may be wrong; rival-dependent queries may simply reproduce pairwise reranking; the fixed worst-evidence penalty may over-refute occluded roles; ordinary FILIP/MLP/CBM may explain all gains. Any hard-control match immediately rejects OREF and forbids module-level rescue.
 
@@ -163,6 +163,19 @@ control_scope_disclosure: Learned-CBM covers the absolute language-concept bottl
 implementation_cost_contract: train batch=8, frozen eval batch=4, candidate chunk=5, role chunk=8, token count=576; tokens are stored FP16 and cast FP32 per chunk. Full formal 200-class execution must report peak memory and may reduce batch only as an engineering rerun without changing candidate/role/token axes.
 
 paper_level_claim: Only after Gate, formal H, three module-off gates and multi-seed evidence: “Dynamic candidate-vs-rival role claims are resolved through an explicit visible support/refutation ledger and non-compensatory falsification in GZSL.” No first-token-alignment, first-concept-bottleneck, first-entailment or first-code claim.
+
+## 2026-09-01 Preliminary Gate真实结果
+
+- 运行commit：`78f97a10356cd72eb8f91f86d0bca710b1b9c9e0`；eval config SHA256：`65fa62dbf99c91cfe85d1d055e0f3c195ca39193d033f09a78d0c4acd40d1ecb`。
+- 资产bundle：`a0af41963518865aeb018c3908181640bc76b74665c84f04c902a49c17135bdc`；100类4,702张dev-seen训练，50类2,355张dev-unseen冻结评估，150类联合候选轴；official test未加载。
+- macro Top-1：Parent=`66.695476%`，Full=`58.290949%`，S-off=`55.553467%`，V-off=`67.082538%`，I-off=`57.917141%`。
+- 强控制：Ledger-MLP=`60.292076%`，FILIP=`65.379500%`，Signed-Ledger=`57.222888%`，冻结RCEG Target-free=`68.711806%`。
+- Full相对Parent=`-8.404527pp`、95% CI=`[-16.618173,-0.697901]`；相对Target-free=`-10.420857pp`、95% CI=`[-17.992480,-3.278020]`；相对FILIP=`-7.088551pp`、95% CI=`[-13.625535,-0.868391]`。
+- `F_true>F_hardwrong`方向率=`59.390935%`、95% CI=`[49.263744,69.101846]`，未通过60%与下界>50门。
+- Full纠正169、损坏359、净纠正`-190`；只有V-off略高于Parent`0.387062pp`，但远低于+1门，且说明局部patch witness field本身有害。
+- 全部初步硬门均失败，`preliminary_gate_passed=false`；未实现Learned-CBM、Random-code、Text-only及content cycles，符合最小证伪先停合同。
+- 失败收据：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/oref/V5-TRY-004-PRELIM/EVAL/failure.json@sha256:bef498f92d1a6332d73e2d8b4767a572323da08c5654ca68c63f63e18c000b85`。
+- 最终决策：立即drop OREF。禁止调`tau_p/tau_r`、margin scale、反证系数、adapter rank、角色集、query或fusion救活。经验结论是当前CLIP局部token×角色文本问题族连续失败；后续必须更换学习信号或表示原语，不能只换局部聚合器。
 
 ## 范式Idea双Agent对抗定稿记录
 
