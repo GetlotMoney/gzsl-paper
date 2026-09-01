@@ -1,0 +1,39 @@
+schema_version: gzsl-paper.v5-oref-dev-eval.v1
+experiment_id: V5-TRY-004-PRELIM
+asset_generation_commit: bef25cb4189be251fb15bcfa722b4921ad7a6d4b
+eval_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/oref/assets/V5-TRY-004-PRELIM/dev_eval/asset_manifest.json
+eval_manifest_sha256: 458651919f1043de3e679be9bc094629ea083abf744a6da1e3c67691fb7bfabb
+bundle_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/oref/assets/V5-TRY-004-PRELIM/asset_manifest.json
+bundle_manifest_sha256: deeb65eb32af6951820fb523344e00dceaab00406b0164c62fa9e30ad81844db
+device: cuda:0
+batch_size: 4
+candidate_chunk_size: 5
+bootstrap_seed: 7
+bootstrap_samples: 10000
+checkpoints:
+  full:
+    path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/oref/V5-TRY-004-PRELIM/FULL/checkpoint.pt
+    sha256: bde3279c1e30b7200d273661c8eed96230b82f0c72b5b8a7b168850efa73a8f4
+    training_commit: 78f97a10356cd72eb8f91f86d0bca710b1b9c9e0
+  ledger_mlp:
+    path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/oref/V5-TRY-004-PRELIM/LEDGER_MLP/checkpoint.pt
+    sha256: 4ee1086f663df54ac40671277dc9d33ccb7abbd98af38fcfe969371d765301d2
+    training_commit: 78f97a10356cd72eb8f91f86d0bca710b1b9c9e0
+  filip:
+    path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/oref/V5-TRY-004-PRELIM/FILIP/checkpoint.pt
+    sha256: 1e2eb3f581dc310c66f96cfea6a405e997ea7c62af0212e52be7b2f12825ea08
+    training_commit: 78f97a10356cd72eb8f91f86d0bca710b1b9c9e0
+  signed_ledger:
+    path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/oref/V5-TRY-004-PRELIM/SIGNED_LEDGER/checkpoint.pt
+    sha256: 42cc495c2e4f5b0b474b05243072f20852b8f7488cddf013e2a31c7e3573fc5e
+    training_commit: 78f97a10356cd72eb8f91f86d0bca710b1b9c9e0
+targetfree_per_class_receipt: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rceg/V5-TRY-003-GATE0/TARGET_FREE_PER_CLASS/receipt.json
+targetfree_per_class_receipt_sha256: ff972a9affd8798b567a39ad823fef956ee59ade8eb580bbaaebfbfde854c9f5
+targetfree_image_order_sha256: ec935072a6a1fb8f189d57ab4bf91fe1bb629c87281e2dc9971bbb24635f3a75
+targetfree_macro_top1: 68.71180636559357
+targetfree_bundle_id: 98f06c47e3d9fda4f698aca5de5d4a33292e507de10e523a36303cea93beb54f
+targetfree_active_class_ids: [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30, 31, 32, 34, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 69, 70, 72, 73, 74, 75, 76, 77, 80, 81, 82, 83, 84, 85, 88, 89, 91, 92, 93, 95, 96, 98, 100, 101, 102, 104, 105, 106, 108, 109, 110, 111, 112, 113, 114, 116, 117, 118, 120, 122, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 137, 139, 142, 143, 144, 145, 146, 147, 148, 150, 152, 153, 154, 155, 157, 160, 161, 162, 163, 164, 167, 168, 169, 171, 172, 174, 176, 177, 179, 180, 182, 183, 185, 187, 189, 193, 195, 196, 197, 198, 199]
+targetfree_source_failure_sha256: a7d96e3ffb729f0e6839727c25b1561928d0e74bd062ded869e5f82196f97c16
+unseen_images_used_for_gradient: false
+official_test_loaded: false
+pclr_online_inference: false
