@@ -1,9 +1,9 @@
 # IDEA-200： Joint Semantic-Visual Risk Arbitration（J-SVRA）
 
 idea_id: IDEA-200
-status: proposed_v6_e2e_rescue_precheck
+status: rejected_at_official_precheck
 implementation_branch: exp/v6/innovation/v6-try-004-joint-svra
-current_run: V6-TRY-004 / official precheck
+current_run: V6-TRY-004 / official precheck completed
 base_framework: FRAMEWORK-V6-DEVELOPMENT
 source_code_parent: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 predecessor_evidence: IDEA-199 SVRA Gate0 supported, but its fixed checkpoint failed official diagnostic; predecessor code is evidence, not an automatically accepted formal parent
@@ -93,3 +93,17 @@ paper_level_claim: none before official precheck and formal confirmation.
 - No-joint checkpoint：`no_joint_final.pt@sha256:9b8941a70cab927213c165827a35bed4a6fe8df415f5096bc3bb8c2508500885`。
 - Sequential checkpoint：`sequential_final.pt@sha256:a69ae9e13dfa62bcef383d0fff911ff202f3d02b2974dd1dd00351e1ca2cd367`。
 - Full在step2与step1000的S/V/I梯度均finite/nonzero，soft/hard trigger equality为true；official test尚未用于训练，性能评估仍未执行。
+
+## 2026-09-02 official precheck结果
+
+- failure receipt：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/joint_svra/V6-TRY-004-PRECHECK-EVAL/failure.json@sha256:80b14da64a81180ec2c6315052b4f7b99bc4b699ed6c0b8f426c6b7926eae24f`
+- Full：`U=49.046400 / S=65.935111 / H=56.250432 / ZS=78.078625`。
+- Parent/I-off：`U=62.256966 / S=62.626241 / H=62.441058 / ZS=79.183341`；`Full-Parent=-6.190626 H`。
+- S-off=`47.388415 H`，但V-off=`61.167248 H`、I-off=`62.441058 H`；只有S贡献为正，V与I均破坏结果。
+- No-joint=`60.285100 H`，高于Full `4.034669 H`；Sequential=`50.105076 H`。联合loss不但非必要，而且显著更差。
+- Full触发1965/4731（41.5%），纠正238张、破坏570张、net=-332；leader trigger rate42.69%高于challenger39.97%。
+- soft/hard trigger严格等价、S/V/I梯度、full200 census、zero-crop和labels-after-logits边界均通过，因此失败来自学习目标而非执行或数据合同。
+
+root_cause: Equalized positive weighting plus multiplicative opportunity-risk supervision optimizes balanced latent events rather than final asymmetric correction utility. It drives broad positive action logits, so the hard zero threshold over-triggers Parent-correct leader rows. IDEA-202 must replace probability multiplication with a directly supervised keep-versus-swap competition; no weight/threshold rescue is permitted inside IDEA-200.
+
+decision: Drop IDEA-200. Do not run28,228-update formal confirmation and do not tune its three loss weights, threshold or soft trigger.

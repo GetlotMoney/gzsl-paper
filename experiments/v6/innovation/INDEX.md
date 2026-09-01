@@ -7,3 +7,5 @@
 `V6-TRY-003 / IDEA-199 / SVRA` 已通过冻结 Gate0：保留 S/V correction-opportunity trigger，删除全部部署期 raw crop，并以4D Parent-risk arbiter完成最终 keep/swap。Full=`68.335831`，相对 Parent/S-off/V-off/I-off 分别为 `+1.642908/+1.764108/+1.484473/+1.642908pp`；所有预注册硬门通过。它仍是待 owner 接纳和 formal/multi-seed 确认的候选，不是正式 `framework/v6`。
 
 随后固定 checkpoint 的 official 诊断显示 sequential SVRA Full `H=62.723317`，低于同骨干 Parent `63.192631`，因此不能晋级。当前快速尝试为 `V6-TRY-004 / IDEA-200 / J-SVRA`：按 owner 要求改为 full200 轴下 S/V/I 真正端到端联合训练，先跑固定1000步 official precheck。
+
+`V6-TRY-004 / J-SVRA` official precheck 已失败：Full `H=56.250432`，Parent `62.441058`，No-joint `60.285100`，Sequential `50.105076`；Full纠正238张但破坏570张。失败原因是加权机会—风险乘积把official trigger率推到41.5%，且leader trigger率高于challenger。
