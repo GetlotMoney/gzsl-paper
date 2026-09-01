@@ -1,0 +1,34 @@
+schema_version: gzsl-paper.framework.v1
+framework_id: FRAMEWORK-V6-DEVELOPMENT
+framework_ref: v6-development
+framework_branch: exp/v6/innovation/v6-try-005-desc
+framework_tag: null
+method_name: DESC
+method_full_name: Direct Evidence-Conditioned Swap Competition
+derived_from_framework: FRAMEWORK-V5
+source_idea: IDEA-202
+source_code_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
+source_commit_role: formal_v5_parent_only
+status: development_candidate_official_precheck_pending
+owner_promotion_decision: not_promoted_no_framework_tag
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+human_annotations_used: false
+expert_attributes_used: false
+llm_world_knowledge_used: true
+predecessor_evidence:
+  idea_id: IDEA-200
+  method: J-SVRA
+  status: rejected_at_official_precheck
+  run: V6-TRY-004
+  result: FullH56.250432_ParentH62.441058_NetMinus332
+limitations:
+  - This is a development candidate, not an accepted framework.
+  - No framework/v6 branch or v6 tag exists.
+  - Source commit is the formal V5 parent; rejected EAAC, RoleTriPool and SEAV code are evidence only and not code parents.
+  - J-SVRA failed because weighted opportunity-risk multiplication over-triggered leader rows; it is evidence only and not the DESC code parent.
+  - DESC keeps end-to-end full200 training but replaces factorized gating with one directly supervised keep-swap logit and natural unweighted losses.
+
+

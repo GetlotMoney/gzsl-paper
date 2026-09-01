@@ -1,0 +1,35 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V6-INNOVATION-001
+attempt_id: V6-TRY-006
+idea_id: IDEA-201
+name: Compiled PCLR Gate B
+status: planned_pre_run
+base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
+pre_run_code_commit: pending_freeze
+evidence_refs:
+  - research/ideas/IDEA-201_compiled_pclr.md
+  - FRAMEWORK-V5-R4 metrics SHA efbdca19f8248b2e16c99baa7aa5a81d2279218db910a9a00e7303d45d2fc2bc
+  - IDEA-201 Gate A payload SHA 96704bd3a6424aa1be8c28463df51bb485d12b2d9f19b5b068fa824cb17ece1f
+research_question: Can pairwise relation-graph supervision be internalized into an exportable hQ^T+b head while retaining a real H gain over FRAMEWORK-V5?
+unique_change: Replace per-image Top-K/edge/Laplacian/cap/std/late-role inference with frozen G=MD relation prototypes and jointly trained Reader, alpha, and eight fixed-role fusion weights.
+source_checkpoint_sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
+relation_asset_manifest_sha256: 0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4
+asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+config: configs/RUN-001.yaml
+parameter_matrix: PARAMETER_MATRIX.csv
+framework_diagram: framework_diagram.html
+result: result.md
+conditions:
+  - Full
+  - S-off_same_checkpoint_roles_zero
+  - V-off_same_checkpoint_reader_identity
+  - I-off_same_checkpoint_alpha_zero
+success_condition: Full H must exceed FRAMEWORK-V5 H=81.06877662507551 and each Full-minus-off H must be at least 1.0pp with abs(U-S)<8.
+failure_condition: Drop on any failed module gate, non-finite value, Parent parity failure, data-boundary violation, or exported-head contract failure; no parameter rescue is preregistered.
+protocol:
+  name: chen_shiming_code_aligned_test_selected_gzsl
+  test_used_for_selection: true
+  test_used_for_hyperparameter_selection: true
+  nested_official_test_selection: true
+  unseen_images_used_for_gradient: false
+  strict_blind_claim: false

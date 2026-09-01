@@ -1,0 +1,48 @@
+schema_version: gzsl-paper.v6-compiled-pclr-gate-b.v1
+experiment_id: V6-TRY-006
+idea_id: IDEA-201
+base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
+dataset: CUB
+source_config: /data/lby/projects/cv_project/gzsl-paper-worktrees/pclr/config/tries/v4_try_023_r2_tuned_local_pclr.yaml
+source_config_sha256: 0861877ae3e4725e29aff547d45e0b6d56a186179309acb5493c5906b803fd49
+source_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/pclr/V4-TRY-023-R2/model_best.pth
+source_checkpoint_sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
+source_code_commit: b0a756dd624e883eb50d19a2455ba06bdc73f118
+asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+relation_asset_manifest_sha256: 0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4
+device: cuda:0
+random_seed: 7
+batch_size: 50
+nominal_epochs: 150
+total_updates: 21171
+eval_interval_steps: 141
+learning_rate: 0.0001
+min_learning_rate: 0.00001
+weight_decay: 0.0
+relation_loss_weight: 1.0
+ridge_lambda: 0.3
+relation_temperature: 0.2
+direction_temperature: 0.07
+seen_logit_gamma: 0.91
+alpha_max: 2.0
+initial_alpha: 0.7258594751358033
+role_weight_max: 1.0
+initial_role_weights: [0.16, 0.0, 0.0, 0.0, 0.0, 0.0, 0.36, 0.0]
+candidate_top_k: null
+required_module_delta_h: 1.0
+max_us_gap: 8.0
+parent_metrics_percent:
+  U: 80.69409728050232
+  S: 81.44695162773132
+  H: 81.06877662507551
+  ZS: 88.78527283668518
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+nested_official_test_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+human_annotations_used: false
+expert_attributes_used: false
+llm_world_knowledge_used: true
+
+

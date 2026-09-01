@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>V6-INNOVATION-001 · Compiled PCLR</title>
+<style>
+body{margin:0;background:#f5f7fb;color:#172033;font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}main{max-width:1180px;margin:28px auto;padding:0 22px}h1{margin:0 0 4px;font-size:30px}.meta{color:#526078}.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:24px 0}.box{background:#fff;border:1px solid #cfd8e8;border-radius:14px;padding:16px;box-shadow:0 5px 18px #26395b12}.train{border-top:4px solid #7b61ff}.export{border-top:4px solid #119c87}.deploy{border-top:4px solid #e08732}.metric{border-top:4px solid #cf4a67}.arrow{text-align:center;color:#6b7890;font-size:22px}.cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}.formula{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#eef2f8;padding:10px;border-radius:9px;overflow-wrap:anywhere}.warn{background:#fff6e7;border-color:#e9bd68}.ok{color:#087a67;font-weight:700}table{width:100%;border-collapse:collapse;background:#fff}th,td{padding:10px;border:1px solid #d8dfeb;text-align:left}@media(max-width:850px){.flow,.cards{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<h1>Compiled PCLR · Gate B</h1>
+<div class="meta">V6-INNOVATION-001 / V6-TRY-006 · base commit 52b511d77b4ad048f35b40dc3cbd9afd092167e9 · pre-run code commit pending freeze</div>
+<section class="flow">
+  <div class="box train"><b>冻结输入</b><br>CLIP CLS x [B,768]<br>TG/GTD P [200,768]<br>8角色 R [200,8,768]<br>关系句 D [438,768]</div>
+  <div class="box train"><b>训练期图编译</b><div class="formula">M=solve(BᵀB+0.3I,Bᵀ)<br>G=MD/0.2</div>Top-17固定禁用</div>
+  <div class="box train"><b>联合学习</b><br>Reader 768→64→768<br>有界α与8角色权重<br>loss=200类CE+方向CE</div>
+  <div class="box export"><b>冻结导出</b><div class="formula">h=[normalize(x),Reader(x)]<br>Q=[Q_image,αG]<br>b_seen=-0.91</div></div>
+</section>
+<div class="arrow">训练/导出完成后 ↓ 部署只保留 Reader、Q、b</div>
+<section class="cards">
+  <article class="box deploy"><b>部署forward</b><div class="formula">logits = h(x) Qᵀ + b</div><p class="ok">无Top-K、无438边输出、无Laplacian solve、无cap/std、无late role/gamma。</p></article>
+  <article class="box metric"><b>Metric出口</b><p>200类联合竞争U/S/H；50类ZS只在完整logits最后切列。同一best-Full-H checkpoint计算Full、S-off、V-off、I-off。</p></article>
+  <article class="box"><b>梯度边界</b><p>最终分类CE→Reader、α、8角色权重；合法seen真类incident-edge方向CE→Reader。TG/GTD P、文本、B/D/M/G和bias冻结；unseen图像不进梯度。</p></article>
+  <article class="box warn"><b>非等价与风险</b><p>本方法不精确复现R4动态Top-17、cap或std。Gate A只证明固定仿射出口可编译；Gate B必须用真实U/S/H/ZS淘汰。</p></article>
+</section>
+<h2>预注册关闭</h2>
+<table><tr><th>条件</th><th>唯一关闭</th><th>硬门</th></tr><tr><td>S-off</td><td>角色原型项置零</td><td>Full−off ≥1.0 H</td></tr><tr><td>V-off</td><td>Reader改为identity u=normalize(x)</td><td>Full−off ≥1.0 H</td></tr><tr><td>I-off</td><td>α=0</td><td>Full−off ≥1.0 H</td></tr></table>
+</main></body></html>

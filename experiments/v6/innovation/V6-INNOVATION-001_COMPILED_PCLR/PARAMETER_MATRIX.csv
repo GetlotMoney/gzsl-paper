@@ -1,0 +1,5 @@
+condition,checkpoint,semantic_roles,visual_reader,compiled_interaction,candidate_top_k,retrain,decision_rule
+Full,same_best_full,on,learned,on,,yes,select_max_full_H
+S-off,same_best_full,off,learned,on,,no,Full_H_minus_off_H_ge_1pp
+V-off,same_best_full,on,identity,on,,no,Full_H_minus_off_H_ge_1pp
+I-off,same_best_full,on,learned,off,,no,Full_H_minus_off_H_ge_1pp
