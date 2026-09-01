@@ -110,3 +110,17 @@ owner_requirement: RGRA failure is now recorded; this rescue remains authorized 
 - result: `P0=0/P1=0`，**双Agent交叉审查通过**；只授权固定配置RUN。
 
 post_micro_identity_fix: 首次micro在资产加载阶段因真实`relation_encoder_matches_parent=false`被错误拒绝，未进入训练。修复commit=`c1f93bb9478fab3b210364cd9aa0a03e97e58be5`；A/B最终交叉SHA=`2b2e06b96fbdb41e26f061f100f975758b2b5d96b7c3522465098de73a9a6d0a`/`a49ac25594bc5eab389e30301edf4e4815e296dddd9657c8359ef02239f15e16`；新身份`P0=0/P1=0`，双Agent交叉审查通过。
+
+## 2026-09-02 正式结果
+
+- execution_commit: `fe5077f84321dc38633179460049a5faa3bb8d62`
+- config_sha256: `58f631a37f984c72818c30fe76f6f9b19e79b325179237241202e1902330b5e3`
+- Full-H选择在update0：`U/S/H/ZS=77.128023/83.584017/80.226347/88.462567`。训练后H持续下降，update28,228为`67.878294`，属于明显seen过拟合。
+- 同checkpoint：S-off H=`79.331127`，S gap=`+0.895220`；V-off H=`80.397321`，V gap=`-0.170974`；I-off H=`79.961204`，I gap=`+0.265143`。
+- additive与shuffled均与Full完全相同，gap0、net correction0；`delta`条件交互没有形成非平凡行为。
+- owner最新成功门只要求S/V/I各>=1且不强制H80；ARRA三项全部失败，因此`rejected_after_full_run`。
+- graph-free export parity=`0`；工程合同成立，失败是机制/优化结果，不是代码错误。
+- result: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/arra/V6-TRY-009/metrics.json@sha256:cb92d47dfb9eb8e0ffc56ca6e3161d7c8fd341863a1217758e0124a687e7e118`
+- model: `model_best.pth@sha256:0f05874159733459c14fdcb84f279d9eb46b5fc79fc264fe2c8cc98725cfbcf8`
+- export: `arra_graph_free_export.pt@sha256:86c372d30d119cf953d2af8dc781b3aad62f817ebba9cd0d6b5bd513941c8d84`
+- decision: ARRA只保留为V5扩展失败证据，不计独立V6框架。新主线回到IDEA-208的Top1/Top2×36patch一次连续修正。
