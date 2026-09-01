@@ -1,7 +1,7 @@
 # IDEA-193：Role-Window Dense Glimpse（RWDG，角色—窗口密集取证）
 
 idea_id: IDEA-193
-status: testing_owner_confirmed_method_candidate
+status: rejected_at_gate0
 source_type: owner_hypothesis + diagnostic_result + experiment_result + first_principles + nearest_work_boundary
 problem_category: visual_grounding
 mechanism_tags: [eight_role_text, role_to_window_attention, dense_counterfactual_action_supervision, one_shot_glimpse, pair_verification]
@@ -195,7 +195,7 @@ minimal_viability: Real seen-only micro-batch proves all listed gradients after 
 minimal_falsification: Gate 0 immediately rejects parent/module/control/cost/collapse/net failures. Gate 1 rejects the sole possible contribution claim if a strong control matches. No post-result architecture, threshold, prompt, role, window, entropy or crop-budget rescue is permitted.
 
 current_advantage: none; the oracle is opportunity evidence only.
-performance_status: proof_of_path_not_run
+performance_status: below_parent
 
 failure_boundary: Low-resolution tokens may not predict high-resolution crop usefulness; descriptions may be absent/wrong; attention may repeat RGVE overlap; outside all-zero rows may dominate; action may collapse; Sparse/No-Glimpse may match; the fixed verifier may damage Parent-correct rows; memory and crop forward add cost.
 
@@ -227,3 +227,17 @@ review_result: `P0=0 / P1=0 / 双Agent交叉审查通过`
 - The main agent then fixed only the affected asset/receipt boundary diff. Both reviewers restricted their recheck to `8b760d4..0485445` and independently reported `P0=0/P1=0 / 受影响diff复核通过`.
 - Local evidence: RWDG runner/model tests `17 passed`; affected runner/model subset `12 passed`; data subset `5 passed`; formal patch manifest helper passed; the 5.9-GiB patch file was independently rehashed to the registered SHA `937a906d18cc7acc556e75fe8b9822e47be8cc6b3d21c89e181a80a257940537`.
 - Train config SHA is fixed above. Eval config is a schema-reviewed template; only checkpoint path/SHA/training commit are filled after training as a pure identity update. GPU/environment fingerprint remains a required runtime receipt field.
+
+## 2026-09-01 Gate0 result and experience
+
+train_checkpoint: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rwdg/V5-TRY-007-GATE0-FULL/rwdg_gate0_full.pt@sha256:86fd0a12081bcaa822149f41ae7fc2795c9824c2f5eecb97e1162a0b457b1cc8`
+eval_config_sha256: `6551725d37508e6e027ee9b2d86ba632257e250284d8b5c3007909adb299ef37`
+failure_receipt: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/rwdg/V5-TRY-007-GATE0-EVAL/failure.json@sha256:47344542667603749a35bec554e63fa84281486a39c91fdd786dea8c6b3766b6`
+
+- All registered gradients passed. Parent=`66.692923%`; Full=`61.151459%`, Full-Parent=`-5.541464pp`. Full-Soff=`+0.477914pp`; Full-Voff=`+0.249916pp`.
+- Full corrected 151 challenger rows but damaged 284 Parent-correct leaders, net=`-133`; trigger rate=`91.592357%`. All 25 actions were occupied, so this was not action collapse.
+- B1 and data-boundary gates passed. The learned selector beat all fixed triggered controls, but its target rewarded acting on the wrong population.
+
+root_cause: Crop correctness is not decision improvement. Parent-correct leader rows were labeled positive whenever a crop kept the leader, despite abstention already being correct and safer.
+
+decision: Drop IDEA-193. Do not tune threshold/prompt/attention/roles/windows/budget. Continue with new IDEA-194 because correction-only targets change the learning signal.
