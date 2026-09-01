@@ -73,3 +73,23 @@ paper_level_claim: none before official precheck and formal confirmation.
 - A/B 逐项回应 SHA256：`6a8b403450e2345d75b6873a4098b249a4b8324cd2a3a6275096908a3fa2c563` / `1a6a34b731fa6db88d069b355a6c1dbd4e2f840286f01380da9ab8879f23c163`。
 - 已关闭 soft/hard trigger 同义、No-joint/Sequential 硬控制、nested official-test披露、30条冲突行和完整收据要求。
 - 双方最终均为 `P0=0 / P1=0 / P2=0 / pass`；共同结论：`范式Idea双Agent对抗审核通过`。
+
+## 2026-09-02 冻结代码交叉审查
+
+- 训练代码 commit/tree：`75cbd754881ed5115b18091a499511faffb605d6` / `0d2df67aa35ab7c762d8054098168ded3e875541`
+- train config SHA256：`86707ec2a801c9a1ea27e86bb6c2144e5d29ed6261e0742e431735fd33390e60`
+- eval placeholder SHA256：`e87b54c39e08f927fdd083633d984e4a1100fd3722dbffbdfd892887f65f06af`
+- Agent A/B 报告 SHA256：`24820b634d8c718fda2902a0f6ab76ef16770a91878b923f219cf475d1103208` / `1529006672f51cd2353191c0033beaaf6d71c97e455e7971454f0f0fbe3abd03`
+- A/B 交叉回应 SHA256：`c5f5178389b0dd4bc7381dfa77c17d6845df484fe2e99fc11e2016067a860807` / `6fc32c8d1c1a2fab24d491f251504be047ecd653d6101cc8867396c51539646b`
+- 双方最终 `P0=0 / P1=0`，结论：`双Agent交叉审查通过`；本地最小相关测试为`24 passed`。
+
+## 2026-09-02 端到端预检训练收据
+
+- train receipt：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/joint_svra/V6-TRY-004-PRECHECK/train_receipt.json@sha256:832af9fb9a74dc166fddacafc28d1caa59322979d5aa5eeb9266a1fd7a232133`
+- target census：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/joint_svra/V6-TRY-004-PRECHECK/target_census.json@sha256:1bd68866ad029952008a40c669ae2322b3b9bebff74491f576f891edf210bc39`
+- census严格命中：`6065/992` abstain/action，`4485/1022/1550` leader/challenger/outside，`30` conflict；26类直方图与预注册值一致。
+- Full/No-joint共用 initialization SHA `3e318c6804843a15518a8a8ce45f936586131bcd0bb88066b55adca40f3e50a7` 和 batch trace SHA `78176690ad5b7385bd16070a2a1cfb4b639319c343df324879b3b56592d84799`。
+- Full checkpoint：`full_joint_final.pt@sha256:99ddb6c7a29d6c055e5095d9863a922471a18cf3c345451c00874ddc2dc7d3f4`。
+- No-joint checkpoint：`no_joint_final.pt@sha256:9b8941a70cab927213c165827a35bed4a6fe8df415f5096bc3bb8c2508500885`。
+- Sequential checkpoint：`sequential_final.pt@sha256:a69ae9e13dfa62bcef383d0fff911ff202f3d02b2974dd1dd00351e1ca2cd367`。
+- Full在step2与step1000的S/V/I梯度均finite/nonzero，soft/hard trigger equality为true；official test尚未用于训练，性能评估仍未执行。
