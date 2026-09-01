@@ -10,7 +10,9 @@ method_acronym: RWDG
 base_framework: FRAMEWORK-V5
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 implementation_branch: exp/v5/innovation/v5-try-007-rwdg
-current_run: none_pre_run
+current_run: V5-TRY-007 / Gate0 Full-only
+implementation_code_commit: 0485445f1dcb83be201717a3c67cf31747782a53
+train_config_sha256: df1b9bb6e9d9db49c186c420f266b31213b97f404f09b875e8a62142c7d62e20
 reuse_refs: [IDEA-133, IDEA-172, IDEA-191, IDEA-192]
 evidence_refs:
   - research/ideas/IDEA-133_visual_evidence_learning.md
@@ -215,3 +217,15 @@ review_status: owner_accepted_after_three_round_cross_disagreement
 - In v2 independent review A reported one P1 (Full head shape) while B passed. In cross-response A accepted PASS while B accepted REVISE, so there is no common v2 signature and this card does not claim “双Agent对抗审核通过”.
 - The main-agent v3 synthesis applied the stricter fix by freezing Full as `261->64->1`, linear biases, LayerNorm behavior and control-capacity intent.
 - The owner explicitly accepted v3 and authorized implementation. This resolves the three-round decision gate but does not replace code review, the projected-patch oracle receipt or real Gate results.
+
+## Gate0 code review
+
+review_subject_commit: `0485445f1dcb83be201717a3c67cf31747782a53`
+review_subject_tree: `6e4e731ad3d141e7e61fb233a826b1f2e96ecef4`
+review_agents: [`/root/rwdg_review_a`, `/root/rwdg_review_b`]
+review_result: `P0=0 / P1=0 / 双Agent交叉审查通过`
+
+- Both fresh reviewers independently inspected frozen commit `8b760d4`, exchanged SHA-bound full reports directly through shared files, responded to the other report and concluded `P0=0/P1=0`.
+- The main agent then fixed only the affected asset/receipt boundary diff. Both reviewers restricted their recheck to `8b760d4..0485445` and independently reported `P0=0/P1=0 / 受影响diff复核通过`.
+- Local evidence: RWDG runner/model tests `17 passed`; affected runner/model subset `12 passed`; data subset `5 passed`; formal patch manifest helper passed; the 5.9-GiB patch file was independently rehashed to the registered SHA `937a906d18cc7acc556e75fe8b9822e47be8cc6b3d21c89e181a80a257940537`.
+- Train config SHA is fixed above. Eval config is a schema-reviewed template; only checkpoint path/SHA/training commit are filled after training as a pure identity update. GPU/environment fingerprint remains a required runtime receipt field.
