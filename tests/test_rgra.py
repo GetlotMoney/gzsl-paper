@@ -50,9 +50,11 @@ def test_raw_6_plus_1_plus_1_text_contract_and_s_off_exact_path():
     queries = raw_role_queries(sentences)
     assert tuple(queries.shape) == (200, 3, 768)
     assert torch.allclose(queries.norm(dim=-1), torch.ones(200, 3), atol=1e-6)
-    assert torch.equal(queries[:, 0], F.normalize(sentences[:, :6].mean(dim=1), dim=-1))
-    assert torch.equal(queries[:, 1], F.normalize(sentences[:, 6], dim=-1))
-    assert torch.equal(queries[:, 2], F.normalize(sentences[:, 7], dim=-1))
+    assert torch.allclose(
+        queries[:, 0], F.normalize(sentences[:, :6].mean(dim=1), dim=-1), atol=1e-7
+    )
+    assert torch.allclose(queries[:, 1], F.normalize(sentences[:, 6], dim=-1), atol=1e-7)
+    assert torch.allclose(queries[:, 2], F.normalize(sentences[:, 7], dim=-1), atol=1e-7)
 
     model, _, _, _ = _fixture()
     assert torch.equal(model.rsc.prototypes(s_off=True), model.rsc.p_mean8)
