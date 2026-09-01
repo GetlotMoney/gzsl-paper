@@ -31,9 +31,9 @@ llm_world_knowledge_used: true
 
 # IDEA-201：编译式PCLR（C-PCLR）
 
-> 当前身份：双Agent独立复审后的`proof_of_path / revise`草稿。它仍不是已通过的新颖性结论，
-> 不是Innovation登记，也不授权创建分支、实现代码或启动实验。owner于2026-09-02确认准确
-> 父commit为`52b511d77b4ad048f35b40dc3cbd9afd092167e9`；当前V6失败候选及其commit不得作为代码父条件。
+> 当前身份：owner已将S/V/I统一方法晋级为`FRAMEWORK-V7`，论文方法父基线固定为TG+GTD。
+> 历史`proof_of_path/revise`、程序`drop_gate_b_contract_failed`、低于内部V5/matched online-V5、
+> test-selected与未完成成本/多数据集/新颖性对照等事实继续原样保留，不因晋级被删除或改写。
 
 ## 1. 唯一问题与核心假设
 

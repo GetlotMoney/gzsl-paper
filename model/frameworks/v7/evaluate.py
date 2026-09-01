@@ -30,6 +30,12 @@ def evaluate(config_path: Path, device: torch.device) -> dict[str, float]:
     asset_config_path = Path(config["asset_source_config"])
     if (
         config.get("schema_version") != "gzsl-paper.framework-v7.deploy.v1"
+        or config.get("source_run_commit")
+        != "8de7cebda0235ab12e1b4b8f669134c8f4e2c075"
+        or config.get("source_training_config_sha256")
+        != "73a812268b18e9f46a2cedf59acdabb8ef0cdb13388ec83b5f23b73475e4239b"
+        or config.get("promotion_source_commit")
+        != "2f7837266f4077b3fb7e40927fc6571499a76747"
         or not checkpoint_path.is_absolute()
         or not asset_config_path.is_absolute()
         or sha256_file(checkpoint_path) != config["source_checkpoint_sha256"]

@@ -3,6 +3,7 @@ framework_id: FRAMEWORK-V7
 framework_ref: v7
 framework_branch: framework/v7
 framework_tag: v7
+refs_status: pending_promotion_freeze
 framework_diagram: experiments/v7/framework_diagram.html
 method_name: TG+GTD+C-PCLR-SVI
 method_full_name: Relation-Supervised Generalized Zero-Shot Learning with Semantic Roles, Visual Relation Reading, and Incidence Compilation
@@ -10,12 +11,14 @@ paper_parent_method: TG+GTD
 paper_parent_run: TUNE-002-RUN-030
 paper_parent_H: 79.070015
 repository_promotion_source: V6-TRY-006 / IDEA-201
-reviewed_code_commit: b707b0c4671051244cebf4f8404299fc016b281e
+promotion_source_commit: 2f7837266f4077b3fb7e40927fc6571499a76747
+v6_reviewed_training_code_commit: b707b0c4671051244cebf4f8404299fc016b281e
 source_run_commit: 8de7cebda0235ab12e1b4b8f669134c8f4e2c075
+v7_deployment_code_commit: 568b01ec8a8e48ffe78336a6fc99f7708de03cbc
 source_checkpoint_sha256: a551de9d182222141ab4be9db1ae2020417be3a7a7d1d4b369510d635f2207c9
 source_metrics_sha256: fbbd8ef520d8d6bca62cc1d860a0432a244ab99af30761a3ffd8c824f7c90879
 owner_promotion_decision: promote_c_pclr_svi_as_framework_v7
-status: promoted_owner_accepted_first_paper_framework
+status: owner_accepted_pending_formal_refs
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
 test_used_for_hyperparameter_selection: true
@@ -29,6 +32,7 @@ training_entry: model/frameworks/v6/train_compiled_pclr.py
 deployment_entry: model/frameworks/v7/model.py
 evaluation_entry: model/frameworks/v7/evaluate.py
 formal_config: config/framework_v7.yaml
+framework_v7_config_sha256: 7c806382b6d1899a3639ed16cd287c7894b210efda58707358172b2224b943dd
 modules:
   S:
     name: Semantic role prototypes
