@@ -8,6 +8,7 @@ method_acronym: EAAC
 implementation_branch: exp/v5/innovation/v5-try-010-eaac
 current_run: V5-TRY-010 / Gate0 explicit-abstain Full
 train_config_sha256: `97b1cf6206b0f6081e24dd8b735afef9ddc7e00c70bccbec3f9263f9e7a7a326`
+implementation_code_commit: `3366c1de468154dfb415433fe15f02e7295ae5ee`
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 predecessor: IDEA-195 SCAA rejected at Gate0
 problem_category: visual_grounding
@@ -65,3 +66,12 @@ review_result: `P0=0 / P1=0 / P2=0 / PASS`
 
 - Independent review found no P0/P1 and requested precise strongest-margin, trace, StaticBest, ambiguity diagnostics and prior-work boundaries.
 - The final draft closed every P2 and both agents independently returned `0/0/0`. Owner's standing authorization permits the proof Gate but not promotion or a novelty claim.
+
+## Code review
+
+review_subject_commit: `3366c1de468154dfb415433fe15f02e7295ae5ee`
+review_subject_tree: `c0f7be7c37b4cfe62c2a397569f514df383e6740`
+review_result: `P0=0 / P1=0 / 双Agent交叉审查通过`
+
+- Both agents independently reviewed policy-logit offset, explicit abstain tie, strongest-margin targets/counts, CE, 4:4 trace, natural StaticBest, checkpoint/eval, B1 and group gates.
+- They exchanged SHA-bound reports through shared files, replied to the other report and both concluded `P0=0/P1=0`. Local tests: `22 passed`.
