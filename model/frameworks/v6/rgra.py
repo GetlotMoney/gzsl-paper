@@ -136,10 +136,10 @@ class RoleVisualAligner(nn.Module):
         super().__init__()
         self.max_beta = float(max_beta)
         self.adapter = BottleneckResidual(EMBED_DIM, hidden_dim)
-        self.query_proj = nn.Linear(EMBED_DIM, EMBED_DIM, bias=False)
-        self.key_proj = nn.Linear(EMBED_DIM, EMBED_DIM, bias=False)
-        nn.init.eye_(self.query_proj.weight)
-        nn.init.eye_(self.key_proj.weight)
+        self.query_proj = nn.Linear(EMBED_DIM, hidden_dim, bias=False)
+        self.key_proj = nn.Linear(EMBED_DIM, hidden_dim, bias=False)
+        nn.init.xavier_uniform_(self.query_proj.weight)
+        nn.init.xavier_uniform_(self.key_proj.weight)
         self.raw_beta = nn.Parameter(_logit_from_bounded(initial_beta, max_beta))
 
     def beta(self) -> torch.Tensor:
@@ -191,6 +191,7 @@ class RGRAModel(nn.Module):
         initial_alpha: float = 0.05,
         scale: torch.Tensor | float | None = None,
         reader_state_dict: dict[str, torch.Tensor] | None = None,
+        compiled_relation_field: torch.Tensor | None = None,
     ) -> None:
         super().__init__()
         if seen_classes is None:
@@ -217,7 +218,13 @@ class RGRAModel(nn.Module):
             raise ValueError("edge_index out of class axis.")
         if tuple(relations.shape) not in ((edges.size(0), 2, EMBED_DIM), (edges.size(0), EMBED_DIM)):
             raise ValueError("relation embeddings/directions shape mismatch.")
-        relation_field = build_relation_field(relations, edges, relation_ridge, int(class_count))
+        relation_field = (
+            build_relation_field(relations, edges, relation_ridge, int(class_count))
+            if compiled_relation_field is None
+            else F.normalize(torch.as_tensor(compiled_relation_field).float(), dim=-1)
+        )
+        if tuple(relation_field.shape) != (int(class_count), EMBED_DIM):
+            raise ValueError("compiled_relation_field must be [class,768].")
 
         self.class_count = int(class_count)
         self.visual_temperature = float(visual_temperature)
@@ -246,12 +253,17 @@ class RGRAModel(nn.Module):
         initial_scale = 1.0 / 0.07 if scale is None else float(torch.as_tensor(scale))
         self.logit_scale = nn.Parameter(torch.log(torch.tensor(initial_scale)))
         if reader_state_dict is not None:
-            prefixed = {key.removeprefix("reader_").removeprefix("reader."): value for key, value in reader_state_dict.items()}
             translated = {
-                key.replace("reader_in.", "in_proj.").replace("reader_out.", "out_proj."): value
-                for key, value in prefixed.items()
+                key.removeprefix("reader.")
+                .replace("reader_in.", "in_proj.")
+                .replace("reader_out.", "out_proj."): value
+                for key, value in reader_state_dict.items()
             }
-            self.rfm.reader.load_state_dict(translated, strict=False)
+            missing, unexpected = self.rfm.reader.load_state_dict(translated, strict=True)
+            if missing or unexpected:
+                raise ValueError(
+                    f"reader initialization mismatch: missing={missing}, unexpected={unexpected}"
+                )
 
     @property
     def raw_alpha(self) -> torch.nn.Parameter:
@@ -542,4 +554,68 @@ class RGRAModel(nn.Module):
                 not in {"relation_embeddings", "edge_index", "incidence", "laplacian_map"}
             },
             "metadata": self.export_classifier(),
+            "constructor": {
+                "class_count": self.class_count,
+                "hidden_dim": self.rsc.adapter.in_proj.out_features,
+                "visual_temperature": self.visual_temperature,
+                "relation_temperature": self.relation_temperature,
+                "seen_logit_gamma": self.seen_logit_gamma,
+                "max_rho_s": self.rsc.max_rho,
+                "max_beta_v": self.rva.max_beta,
+                "max_alpha": self.rfm.max_alpha,
+            },
         }
+
+    @classmethod
+    def from_graph_free_state(cls, package: dict) -> "RGRAModel":
+        """Rebuild the deployed classifier without relation/edge/graph inputs."""
+        if not isinstance(package, dict) or set(package) != {
+            "state_dict",
+            "metadata",
+            "constructor",
+        }:
+            raise ValueError("invalid RGRA graph-free package.")
+        state = package["state_dict"]
+        constructor = package["constructor"]
+        if not isinstance(state, dict) or not isinstance(constructor, dict):
+            raise ValueError("invalid RGRA graph-free package payload.")
+        forbidden = {"relation_embeddings", "edge_index", "incidence", "laplacian_map"}
+        if forbidden.intersection(state):
+            raise ValueError("graph-free RGRA package contains forbidden graph tensors.")
+        required = {
+            "rsc.role_sentence_embeds",
+            "rsc.p_v5",
+            "seen_classes",
+            "rfm.relation_field",
+        }
+        if not required.issubset(state):
+            raise ValueError("graph-free RGRA package is incomplete.")
+        class_count = int(constructor["class_count"])
+        dummy_directions = torch.zeros(1, EMBED_DIM)
+        dummy_directions[0, 0] = 1.0
+        dummy_edges = torch.tensor([[0, 1]], dtype=torch.long)
+        model = cls(
+            state["rsc.role_sentence_embeds"],
+            state["rsc.p_v5"],
+            dummy_directions,
+            dummy_edges,
+            state["seen_classes"],
+            class_count=class_count,
+            hidden_dim=int(constructor["hidden_dim"]),
+            visual_temperature=float(constructor["visual_temperature"]),
+            relation_temperature=float(constructor["relation_temperature"]),
+            seen_logit_gamma=float(constructor["seen_logit_gamma"]),
+            max_rho_s=float(constructor["max_rho_s"]),
+            initial_rho_s=0.1,
+            max_beta_v=float(constructor["max_beta_v"]),
+            initial_beta_v=0.1,
+            max_alpha=float(constructor["max_alpha"]),
+            initial_alpha=0.05,
+            compiled_relation_field=state["rfm.relation_field"],
+        )
+        missing, unexpected = model.load_state_dict(state, strict=True)
+        if missing or unexpected:
+            raise ValueError(
+                f"graph-free RGRA state mismatch: missing={missing}, unexpected={unexpected}"
+            )
+        return model

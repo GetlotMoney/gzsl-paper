@@ -81,6 +81,40 @@ def test_relation_field_is_compiled_and_raw_graph_assets_are_not_persisted():
     assert not {"relation_embeddings", "edge_index", "incidence", "laplacian_map"} & export_keys
 
 
+def test_graph_free_export_roundtrip_matches_full_logits():
+    model, cls, patches, _ = _fixture()
+    model.eval()
+    package = model.export_graph_free_state()
+    deployed = RGRAModel.from_graph_free_state(package).eval()
+    with torch.no_grad():
+        expected = model.logits(cls, patches, condition="full")
+        actual = deployed.logits(cls, patches, condition="full")
+    assert torch.allclose(actual, expected, atol=1e-6, rtol=0.0)
+
+
+def test_v5_reader_initialization_is_loaded_into_rfm():
+    model, _, _, _ = _fixture()
+    state = {
+        "reader_in.weight": torch.full_like(model.rfm.reader.in_proj.weight, 0.125),
+        "reader_in.bias": torch.full_like(model.rfm.reader.in_proj.bias, -0.25),
+        "reader_out.weight": torch.full_like(model.rfm.reader.out_proj.weight, 0.375),
+        "reader_out.bias": torch.full_like(model.rfm.reader.out_proj.bias, -0.5),
+    }
+    replacement = RGRAModel(
+        model.rsc.role_sentence_embeds,
+        model.rsc.p_v5,
+        model.relation_embeddings,
+        model.edge_index,
+        model.seen_classes,
+        class_count=model.class_count,
+        reader_state_dict=state,
+    )
+    assert torch.equal(replacement.rfm.reader.in_proj.weight, state["reader_in.weight"])
+    assert torch.equal(replacement.rfm.reader.in_proj.bias, state["reader_in.bias"])
+    assert torch.equal(replacement.rfm.reader.out_proj.weight, state["reader_out.weight"])
+    assert torch.equal(replacement.rfm.reader.out_proj.bias, state["reader_out.bias"])
+
+
 def test_full_and_all_off_control_paths_have_fixed_shapes_and_attention():
     model, cls, patches, _ = _fixture()
     for condition in sorted(RGRA_CONDITIONS):
