@@ -1,0 +1,17 @@
+schema_version: gzsl-paper.v5-cuav-dev-train.v1
+experiment_id: V5-TRY-005-PRELIM
+condition_id: CUAV_FULL
+train_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/cuav/assets/V5-TRY-005-PRELIM/dev_train/asset_manifest.json
+train_manifest_sha256: 0fc6df6b5babd8c8c2822f33ade9caa1fdad9284a424f028dd20991e7b50d20c
+bundle_manifest: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/cuav/assets/V5-TRY-005-PRELIM/asset_manifest.json
+bundle_manifest_sha256: 0b956bb4445033e14bb692dd725fbf894db1f8e2fc337d78cf4a1b3b63cd3450
+asset_generation_commit: f0ed4449059bbbadd714b8dd23c85e2f34d5977b
+device: cuda:0
+random_seed: 7
+batch_size: 8
+total_updates: 1000
+learning_rate: 0.001
+weight_decay: 0.0001
+unseen_images_used_for_gradient: false
+official_test_loaded: false
+pclr_online_inference: false
