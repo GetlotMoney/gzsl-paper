@@ -10,7 +10,7 @@ body{margin:0;background:#f5f7fb;color:#172033;font:15px/1.55 system-ui,-apple-s
 </head>
 <body><main>
 <h1>Compiled PCLR · Gate B</h1>
-<div class="meta">V6-INNOVATION-001 / V6-TRY-006 · base commit 52b511d77b4ad048f35b40dc3cbd9afd092167e9 · pre-run code commit pending freeze</div>
+<div class="meta">V6-INNOVATION-001 / V6-TRY-006 · base commit 52b511d77b4ad048f35b40dc3cbd9afd092167e9 · pre-run code commit 89b2908a388c4c6586bbf19216fd50fc777ffdb3</div>
 <section class="flow">
   <div class="box train"><b>输入与初始化</b><br>冻结CLIP CLS x [B,768]<br>TG/GTD从同一seed7初始化<br>冻结8角色 R [200,8,768]<br>冻结关系句 D [438,768]</div>
   <div class="box train"><b>训练期图编译</b><div class="formula">M=solve(BᵀB+0.3I,Bᵀ)<br>G=MD/0.2</div>Top-17固定禁用</div>
