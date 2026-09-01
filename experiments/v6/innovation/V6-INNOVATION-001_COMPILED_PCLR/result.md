@@ -2,8 +2,8 @@
 
 状态：`review_passed_pending_gpu_microbatch`。两名Reviewer对commit
 `b707b0c4671051244cebf4f8404299fc016b281e`先独立写入完整清单，再各自直接读取并逐项回应
-对方文件；双方最终均为`P0=0/P1=0/pass`并写出“双Agent交叉审查通过”。尚未执行服务器
-micro-batch或正式RUN，当前没有U/S/H/ZS结果。
+对方文件；双方最终均为`P0=0/P1=0/pass`并写出“双Agent交叉审查通过”。GPU batch50
+micro-batch已通过；尚未执行正式RUN，当前没有U/S/H/ZS结果。
 
 预注册判断：Full必须同时高于正式FRAMEWORK-V5 `H=81.06877662507551`和同seed、同28,228步
 训练的matched online-V5 control最佳H；同一Full

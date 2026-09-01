@@ -59,4 +59,5 @@
 - 交叉后Agent B：`pass/P0=0/P1=0`，明确写出“双Agent交叉审查通过”。
 
 最终结论：`双Agent交叉审查通过`。P2仅为账本一致性、断点恢复便利和更强梯度审计建议，
-按项目规则不阻断当前可逆GPU micro-batch或正式RUN。GPU fingerprint和micro-batch收据待运行后绑定。
+按项目规则不阻断当前RUN。GPU micro-batch已通过，收据见`MICRO_BATCH.md`；正式GPU fingerprint
+SHA256=`027e187f11992788ab8b5e780ab4fd709b9935255d47d652bae7cb4335494b69`。
