@@ -1,7 +1,7 @@
 # IDEA-197：Role Tri-Pool Signed Window Utility
 
 idea_id: IDEA-197
-status: testing_owner_approved_v6_candidate
+status: rejected_at_gate0
 source_type: owner_hypothesis + IDEA-193/195 failure diagnosis
 problem_category: visual_grounding
 mechanism_tags: [role_patch_difference, mean_max_min_pooling, signed_action_target, natural_sampling, one_shot_verification]
@@ -28,7 +28,7 @@ unique_change: Replace 36-patch window mean plus learned role-to-window attentio
 minimal_falsification: Train only Full for the fixed seed7/1000-update Gate0 contract. Full must exceed Parent and same-checkpoint S/V/I-off by at least 1.0 point with paired class-bootstrap lower bound above zero, beat triggered Center/StaticBest/HashRandom/TextHeatmap by at least 0.5 point, achieve positive net corrections, retain both trigger and abstain, use at least two actions, and satisfy physical B<=1. Any hard gate failure drops the candidate; no Top3, prompt, threshold, class-weight, focal-loss, resampling, window or B2 rescue in this TRY.
 
 current_advantage: none; this is an owner-approved performance-oriented supporting path, not a standalone innovation claim.
-performance_status: proof_of_path
+performance_status: below_parent
 failure_boundary: Low-resolution projected patches may not reveal high-resolution crop details; max/min may amplify noisy patches; invisible roles may generate false peaks; natural sampling may collapse to neutral; truth outside Parent Top2 is unreachable; the fixed class-name crop verifier may discard role information used for selection.
 paper_level_claim: none before real Gate0 and required controls.
 
@@ -42,3 +42,17 @@ review_result: `Design P0=0/P1=0; Code P0=0/P1=0; 双Agent交叉审查通过`
 - Both agents independently reviewed the V6 identity, RoleTriPool formula, tri-state targets, natural sampling, S/V/I-off, B1, assets, controls and receipts.
 - A found one StaticBest P1: eval counted correction only while train selected correction-minus-damage. Commit `5d1b316` aligned eval to the natural 4,702x25 tri-state net histogram and added checkpoint-detail equality assertions. Both agents restricted recheck to the affected diff and returned `P0=0/P1=0`.
 - They exchanged SHA-bound complete reports via shared temporary files, replied to the other report and jointly passed the development candidate. Local V6 tests: `18 passed`.
+
+## 2026-09-02 Gate0 result
+
+train_checkpoint: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/role_tripool/V6-TRY-001-GATE0-FULL/role_tripool_gate0_full.pt@sha256:d68a27a7704beb4afd7246d9a6c91506809b112752d855fa4efe42534c9416a8`
+eval_config_sha256: `b29e35659815491a65ecf9b67c885336e8b8e2f01fb6239071cbdf3d9d6f263f`
+failure_receipt: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/role_tripool/V6-TRY-001-GATE0-EVAL/failure.json@sha256:2af434be572587e16ce93456eb95b09ad8a9f0cfc45c95559e41aecfc7ff0ca5`
+
+- Parent=`66.692923%`; Full=`66.554494%`, Full-Parent=`-0.138429pp`; Full-Soff=`+0.087403pp`; Full-Voff=`-0.094826pp`.
+- Only22/2355 rows triggered and every triggered row selected action24; corrections6, damages9, net=-3. The natural tri-state objective converged to neutral-dominant near-total abstention and action collapse.
+- All data/B1 boundaries passed. Direct no-crop pair classification using the same tri-pool evidence was also diagnosed under natural sampling and reached only`66.781195%` (`+0.088271pp`, CI crossing zero).
+
+root_cause: Low-resolution role tri-pool evidence does not reliably identify the high-resolution corrective action. Natural damage/neutral/correction supervision makes abstention globally optimal; direct pair classification likewise carries too little transferable signal.
+
+decision: Drop RoleTriPool. V6 remains a development line, not a formal framework. The next V6 candidate must use the only observed positive route: retain the explicit-abstention action policy but replace the fixed crop sign rule with a seen-trained crop safety verifier.
