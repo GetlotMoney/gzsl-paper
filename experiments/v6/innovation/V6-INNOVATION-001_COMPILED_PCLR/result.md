@@ -37,6 +37,14 @@ best-Full-H checkpoint=`update13818`：
 真实deployment dependency，但简单冻结出口没有保留在线V5的全部准确率。按预注册停止该Idea，
 不运行Gate C或任何补救参数搜索。
 
+## Owner覆盖决定
+
+owner在查看完整结果后明确决定“这次就算通过”，因此本候选保留为
+`owner_override_keep_efficiency_candidate`。该决定不改写程序原始drop和真实差值：它表示owner
+接受`-0.307664 H`相对matched online-V5、`-0.558345 H`相对正式V5的准确率损失，并准备从
+“精度更高”改为“精度—部署成本折中”评估。真实速度、显存和吞吐尚未测量；补齐之前不得写
+“更高效”“Pareto优势成立”或“已晋级正式framework”。
+
 ## 仓库外证据
 
 - URI：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/compiled_pclr/V6-TRY-006`

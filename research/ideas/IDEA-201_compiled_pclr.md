@@ -2,7 +2,7 @@
 idea_id: IDEA-201
 name: Compiled PCLR
 short_name: C-PCLR
-status: rejected_gate_b_below_parent
+status: owner_override_keep_efficiency_candidate
 source_type: owner_hypothesis
 problem_category: class_competition
 mechanism_tags:
@@ -20,7 +20,7 @@ evidence_refs:
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 base_commit_candidate: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 base_ref_candidate: framework/v5 and annotated tag v5^{}
-performance_status: below_parent
+performance_status: below_parent_owner_accepted_for_efficiency_validation
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 strict_blind_claim: false
@@ -413,4 +413,7 @@ Top-17”或“训练一定追回mask增益”。
 - Gate A回填后payload SHA256：`96704bd3a6424aa1be8c28463df51bb485d12b2d9f19b5b068fa824cb17ece1f`。
 - Gate B最终覆盖：fixed-200正式RUN完成并判定`drop_gate_b_contract_failed`；`performance_status`
   从`proof_of_path`更新为`below_parent`。该结果关闭本Idea，不继续Gate C或补救搜索。
-
+- Owner覆盖决定：owner于后续对话明确“这次就算通过”。该决定把IDEA-201保留为效率型论文候选，
+  不改写程序原始`drop_gate_b_contract_failed`与真实数值，不等于准确率门通过，也不自动晋级
+  `innovation/framework`。后续若用于论文，必须补真实延迟/显存/吞吐、多数据集与最近工作对照，
+  claim限定为精度—部署成本折中和窄方法组合。

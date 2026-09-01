@@ -26,3 +26,7 @@ V6-TRY-006已完成fixed-200正式RUN：C-PCLR Full `U/S/H/ZS=77.606910/83.63965
 模块依赖门全部通过。但matched online-V5 best `H=80.818096`，正式V5 `H=81.068777`，
 C-PCLR分别低`0.307664/0.558345 H`。正式decision=`drop_gate_b_contract_failed`；不进入Gate C，
 不做Top-K、alpha、role、seed或checkpoint补救。
+
+Owner后续明确覆盖内部裁决，将V6-TRY-006保留为效率型论文候选：状态
+`owner_override_keep_efficiency_candidate`。原始程序drop、指标差值和未完成的成本证据保持不变；
+该覆盖不等于准确率门通过，也不自动晋级FRAMEWORK-V6。

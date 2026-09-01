@@ -3,7 +3,7 @@ experiment_id: V6-INNOVATION-001
 attempt_id: V6-TRY-006
 idea_id: IDEA-201
 name: Compiled PCLR Gate B
-status: completed_drop_below_parent
+status: completed_owner_override_keep_efficiency_candidate
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 pre_run_code_commit: b707b0c4671051244cebf4f8404299fc016b281e
 code_review: CODE_REVIEW.md#200-epoch-matched-control最终审查
@@ -15,7 +15,8 @@ metrics_sha256: fbbd8ef520d8d6bca62cc1d860a0432a244ab99af30761a3ffd8c824f7c90879
 evaluation_history_sha256: 746e02c8dfc40d21fba1ad1c9051502d545e4cd75eb4cdc2d3dd8cbd2fcbcd96
 model_best_sha256: a551de9d182222141ab4be9db1ae2020417be3a7a7d1d4b369510d635f2207c9
 training_log_sha256: d0ba36c136beb9249ca699f25a237d0060c801522ff728f625eaf4a6820f75b7
-decision: drop_gate_b_contract_failed
+program_decision: drop_gate_b_contract_failed
+owner_decision: owner_override_keep_efficiency_candidate
 evidence_refs:
   - research/ideas/IDEA-201_compiled_pclr.md
   - FRAMEWORK-V5-R4 metrics SHA efbdca19f8248b2e16c99baa7aa5a81d2279218db910a9a00e7303d45d2fc2bc
