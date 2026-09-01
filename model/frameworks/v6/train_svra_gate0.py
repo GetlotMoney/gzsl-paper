@@ -464,7 +464,7 @@ def precompute_eaac_target_plan(
         "outside": int(groups.eq(2).sum().item()),
     }
     stats = {
-        "target_policy": "stage1_eaac_strongest_corrective_action_or_abstain",
+        "target_policy": "svra_reuses_eaac_strongest_corrective_action_or_abstain",
         "row_count": int(targets26.numel()),
         "class_histogram": hist,
         "abstain_rows": int(targets26.eq(0).sum().item()),
@@ -727,6 +727,30 @@ def assert_nonzero_gradients(report: Mapping[str, GradientGateReport], *, label:
     bad = {name: gate for name, gate in report.items() if not gate.finite}
     if bad:
         raise RuntimeError(f"{label} gradient gate failed: non-finite gradients {bad}")
+
+
+def assert_stage1_second_step_contract(
+    report: Mapping[str, GradientGateReport],
+) -> None:
+    semantic = [
+        name
+        for name, gate in report.items()
+        if name.startswith("semantic.") and gate.finite and gate.nonzero
+    ]
+    visual_upstream = [
+        name
+        for name, gate in report.items()
+        if name.startswith("visual.")
+        and not name.startswith("visual.utility_output.")
+        and gate.finite
+        and gate.nonzero
+    ]
+    if not semantic:
+        raise RuntimeError("Stage1 step2 gradient gate failed: no semantic gradient")
+    if not visual_upstream:
+        raise RuntimeError(
+            "Stage1 step2 gradient gate failed: no visual upstream gradient"
+        )
 
 
 def freeze_stage1_model(model: nn.Module) -> None:
@@ -1128,6 +1152,7 @@ def build_checkpoint_payload(
     stage1_sampler: BalancedGroupSampler,
     stage1_sampled_stats: Mapping[str, Any],
     asset_receipt: Mapping[str, Any],
+    oracle_receipt: Mapping[str, str],
 ) -> Mapping[str, Any]:
     model_state = _module_state(model)
     forbidden = [
@@ -1154,6 +1179,7 @@ def build_checkpoint_payload(
         "allrow_arbiter4_control_state_dict": _module_state(stage2["allrow4"]),
         "config": asdict(config),
         "asset_receipt": dict(asset_receipt),
+        "oracle_receipt": dict(oracle_receipt),
         "train_targets": {
             "labels_path": train_targets.labels_path,
             "labels_sha256": train_targets.labels_sha256,
@@ -1189,7 +1215,7 @@ def build_checkpoint_payload(
             "config_sha256": config_sha256,
             "seed": config.seed,
             "action_geometry_sha256": config.action_geometry_sha256,
-            "oracle_receipt_sha256": config.oracle_receipt_sha256,
+            "oracle_receipt_sha256": oracle_receipt["sha256"],
             "target_sha256": target_plan.stats["target_sha256"],
             "trigger_rows_sha256": trigger_plan.stats["trigger_rows_sha256"],
             "trigger_label_sha256": trigger_plan.stats["trigger_label_sha256"],
@@ -1351,12 +1377,37 @@ def build_svra_model(
 ) -> nn.Module:
     from model.frameworks.v6.svra import SemanticVisualRiskArbiter
 
+    active_ids = class_ids.to(dtype=torch.long)
+    if role_embeddings.shape[0] != active_ids.numel():
+        role_embeddings = role_embeddings.index_select(
+            0,
+            active_ids.to(device=role_embeddings.device),
+        )
+    if name_embeddings.shape[0] != active_ids.numel():
+        name_embeddings = name_embeddings.index_select(
+            0,
+            active_ids.to(device=name_embeddings.device),
+        )
     return SemanticVisualRiskArbiter(
         role_embeddings,
         name_embeddings,
-        class_ids,
+        active_ids,
         seed=seed,
     ).to(device)
+
+
+def verify_oracle_receipt(config: Gate0TrainConfig) -> Mapping[str, str]:
+    path = Path(config.oracle_receipt).expanduser()
+    if not path.is_file():
+        raise RuntimeError(f"oracle_receipt is missing: {path}")
+    path = path.resolve()
+    actual_sha = sha256_file(path)
+    if actual_sha.lower() != config.oracle_receipt_sha256.lower():
+        raise RuntimeError(
+            "oracle_receipt_sha256 mismatch: "
+            f"got={actual_sha} expected={config.oracle_receipt_sha256}"
+        )
+    return {"path": str(path), "sha256": actual_sha}
 
 
 def _asset_receipt_from_assets(assets: Any) -> Mapping[str, Any]:
@@ -1389,6 +1440,7 @@ def train_full_gate0(
     expected_commit: str,
 ) -> Path:
     validate_config(config)
+    oracle_receipt = verify_oracle_receipt(config)
     commit, clean, status = git_commit_and_clean(repo_root)
     if commit != expected_commit:
         raise RuntimeError(f"expected commit mismatch: HEAD={commit}, expected={expected_commit}")
@@ -1446,6 +1498,7 @@ def train_full_gate0(
         loss, grad2 = train_stage1_step(model, optimizer, train_view, train_targets, rows, target_plan, device=device)
         stage1_losses.append(loss)
         assert_nonzero_gradients(grad2, label="Stage1 step2")
+        assert_stage1_second_step_contract(grad2)
         for _ in range(2, config.stage1_updates):
             rows = sampler.sample()
             loss, _ = train_stage1_step(model, optimizer, train_view, train_targets, rows, target_plan, device=device)
@@ -1478,6 +1531,7 @@ def train_full_gate0(
             stage1_sampler=sampler,
             stage1_sampled_stats=sampled_stats,
             asset_receipt=_asset_receipt_from_assets(assets),
+            oracle_receipt=oracle_receipt,
         )
         output_dir = prepare_output_dir(config.output_dir, repo_root)
         checkpoint_path = output_dir / "svra_gate0_combined.pt"
@@ -1493,6 +1547,7 @@ def train_full_gate0(
                 "config_sha256": config_sha256,
                 "checkpoint_path": str(checkpoint_path),
                 "checkpoint_sha256": checkpoint_sha,
+                "oracle_receipt": checkpoint["oracle_receipt"],
                 "official_test_loaded": config.official_test_loaded,
                 "unseen_images_used_for_gradient": config.unseen_images_used_for_gradient,
                 "pclr_online_inference": config.pclr_online_inference,

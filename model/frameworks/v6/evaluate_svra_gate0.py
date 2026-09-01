@@ -347,10 +347,13 @@ def freeze_policy(
     }
     for start in range(0, view.size, batch_size):
         rows = np.arange(start, min(start + batch_size, view.size), dtype=np.int64)
-        batch = view.batch(rows, include_patches=True, as_torch=True, device=device)
-        patches = batch["patches"]
-        if visual_off:
-            patches = batch["cls"][:, None, :].expand(-1, patches.shape[1], -1)
+        batch = view.batch(
+            rows,
+            include_patches=not visual_off,
+            as_torch=True,
+            device=device,
+        )
+        patches = None if visual_off else batch["patches"]
         policy = _policy_state(model, batch["cls"], patches, semantic_off=semantic_off, visual_off=visual_off)
         probs = _risk_probabilities(model, policy)
         parent_logits.append(_field(policy, "parent_logits").detach().cpu())

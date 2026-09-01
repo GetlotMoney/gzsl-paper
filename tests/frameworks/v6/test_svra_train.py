@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 from model.frameworks.v6 import train_svra_gate0 as svra_train
 from model.frameworks.v6.svra import ParentRiskArbiter, ParentRiskCeilingArbiter
@@ -135,6 +136,54 @@ def test_train_asset_config_uses_svra_action_bundle_name():
 
     assert asset_config.action_bundle_manifest.path == "bundle.json"
     assert asset_config.action_bundle_manifest.sha256 == "6" * 64
+
+
+def test_build_svra_model_slices_200_class_assets_to_active_axis():
+    generator = torch.Generator().manual_seed(7)
+    role_embeddings = F.normalize(
+        torch.randn(200, 8, svra_train.FEATURE_DIM, generator=generator),
+        dim=-1,
+    )
+    name_embeddings = F.normalize(
+        torch.randn(200, svra_train.FEATURE_DIM, generator=generator),
+        dim=-1,
+    )
+    class_ids = torch.tensor([3, 9, 42, 199])
+
+    model = svra_train.build_svra_model(
+        role_embeddings,
+        name_embeddings,
+        class_ids,
+        device=torch.device("cpu"),
+        seed=7,
+    )
+    state = model.policy_state(
+        F.normalize(torch.randn(2, svra_train.FEATURE_DIM, generator=generator), dim=-1),
+        F.normalize(
+            torch.randn(2, 576, svra_train.FEATURE_DIM, generator=generator),
+            dim=-1,
+        ),
+    )
+
+    assert model.semantic.role_embeddings.shape == (4, 8, svra_train.FEATURE_DIM)
+    assert torch.equal(model.class_ids, class_ids)
+    assert state.parent_logits.shape == (2, 4)
+
+
+def test_oracle_receipt_is_verified_before_training_identity(tmp_path):
+    receipt = tmp_path / "receipt.json"
+    receipt.write_text('{"ok": true}\n', encoding="utf-8")
+    sha = svra_train.sha256_file(receipt)
+
+    verified = svra_train.verify_oracle_receipt(
+        _config(oracle_receipt=str(receipt), oracle_receipt_sha256=sha)
+    )
+
+    assert verified == {"path": str(receipt), "sha256": sha}
+    with pytest.raises(RuntimeError, match="oracle_receipt_sha256 mismatch"):
+        svra_train.verify_oracle_receipt(
+            _config(oracle_receipt=str(receipt), oracle_receipt_sha256="0" * 64)
+        )
 
 
 def test_load_dev_train_targets_reuses_verified_manifest_sha_without_rehash(
@@ -323,6 +372,102 @@ def test_train_arbiter_step2_reaches_hidden_gradient_after_zero_head_update():
     assert step2["hidden.weight"]["finite"]
     assert step2["hidden.weight"]["nonzero"]
     assert step2["output.weight"]["nonzero"]
+
+
+class _Stage1View:
+    size = 4
+
+    def __init__(self, cls: torch.Tensor, patches: torch.Tensor) -> None:
+        self.cls = cls
+        self.patches = patches
+
+    def batch(self, rows, *, include_patches: bool, as_torch: bool, device: torch.device):
+        assert include_patches is True
+        assert as_torch is True
+        index = torch.as_tensor(rows, dtype=torch.long)
+        return {
+            "cls": self.cls.index_select(0, index).to(device),
+            "patches": self.patches.index_select(0, index).to(device),
+        }
+
+
+def test_stage1_zero_head_step2_reaches_semantic_and_visual_upstream():
+    generator = torch.Generator().manual_seed(11)
+    class_ids = torch.arange(4)
+    roles = F.normalize(
+        torch.randn(4, 8, svra_train.FEATURE_DIM, generator=generator),
+        dim=-1,
+    )
+    names = F.normalize(
+        torch.randn(4, svra_train.FEATURE_DIM, generator=generator),
+        dim=-1,
+    )
+    model = svra_train.build_svra_model(
+        roles,
+        names,
+        class_ids,
+        device=torch.device("cpu"),
+        seed=7,
+    )
+    svra_train.configure_stage1_trainable(model)
+    optimizer = torch.optim.AdamW(
+        [param for param in model.parameters() if param.requires_grad],
+        lr=0.001,
+        weight_decay=0.0001,
+        foreach=False,
+        fused=False,
+    )
+    view = _Stage1View(
+        F.normalize(torch.randn(4, svra_train.FEATURE_DIM, generator=generator), dim=-1),
+        F.normalize(
+            torch.randn(4, 576, svra_train.FEATURE_DIM, generator=generator),
+            dim=-1,
+        ),
+    )
+    targets = svra_train.TrainSubsetTargets(
+        labels=torch.arange(4),
+        class_ids=class_ids,
+        crop_features=torch.zeros(4, svra_train.ACTION_COUNT, svra_train.FEATURE_DIM),
+        labels_path="labels.pt",
+        class_ids_path="class_ids.pt",
+        crop_features_path="crop_features.pt",
+        labels_sha256="labels",
+        class_ids_sha256="classes",
+        crop_features_sha256="crops",
+    )
+    target_plan = svra_train.EAACTargetPlan(
+        targets26=torch.tensor([1, 2, 0, 3]),
+        groups=torch.tensor([1, 1, 0, 1]),
+        margins=torch.zeros(4, svra_train.ACTION_COUNT),
+        dense_targets=torch.zeros(4, svra_train.ACTION_COUNT, dtype=torch.bool),
+        stats={},
+    )
+    rows = torch.arange(4)
+
+    _, step1 = svra_train.train_stage1_step(
+        model,
+        optimizer,
+        view,
+        targets,
+        rows,
+        target_plan,
+        device=torch.device("cpu"),
+    )
+    assert any(
+        name.startswith("visual.utility_output.") and gate.nonzero
+        for name, gate in step1.items()
+    )
+    _, step2 = svra_train.train_stage1_step(
+        model,
+        optimizer,
+        view,
+        targets,
+        rows,
+        target_plan,
+        device=torch.device("cpu"),
+    )
+
+    svra_train.assert_stage1_second_step_contract(step2)
 
 
 def test_stage2_uses_core_arbiter_architecture():

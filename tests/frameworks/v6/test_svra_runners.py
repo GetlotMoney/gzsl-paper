@@ -238,15 +238,18 @@ class _EvalView:
         self.cls = cls
         self.patches = patches
         self.size = int(cls.shape[0])
+        self.include_patches_calls: list[bool] = []
 
     def batch(self, rows, *, include_patches: bool, as_torch: bool, device: torch.device):
-        assert include_patches is True
         assert as_torch is True
+        self.include_patches_calls.append(bool(include_patches))
         index = torch.as_tensor(rows, dtype=torch.long)
-        return {
+        result = {
             "cls": self.cls.index_select(0, index).to(device),
-            "patches": self.patches.index_select(0, index).to(device),
         }
+        if include_patches:
+            result["patches"] = self.patches.index_select(0, index).to(device)
+        return result
 
 
 def _train_config() -> svra_train.Gate0TrainConfig:
@@ -363,6 +366,7 @@ def test_train_payload_loads_into_eval_core_and_freezes_all_condition_logits(tmp
         stage1_sampler=sampler,
         stage1_sampled_stats={},
         asset_receipt={},
+        oracle_receipt={"path": "oracle.json", "sha256": "a" * 64},
     )
     checkpoint_path = tmp_path / "svra_gate0_combined.pt"
     torch.save(payload, checkpoint_path)
@@ -418,6 +422,7 @@ def test_train_payload_loads_into_eval_core_and_freezes_all_condition_logits(tmp
     )
     logits, swaps = svra_eval.build_condition_logits(full, s_off, v_off)
 
+    assert False in view.include_patches_calls
     assert set(logits) == {
         "parent",
         "full",
