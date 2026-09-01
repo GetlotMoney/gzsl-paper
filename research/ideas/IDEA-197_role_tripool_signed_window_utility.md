@@ -12,6 +12,7 @@ base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 implementation_branch: exp/v6/innovation/v6-try-001-role-tripool
 current_run: V6-TRY-001 / Gate0 Full-only
 train_config_sha256: `80e564bc9f6636a377d9c4955ec27454cce17b96148c468877d7d164738ecea4`
+implementation_code_commit: `5d1b316adbd482a4be7c2a4938f92c611e6348ae`
 predecessor: IDEA-196 / EAAC rejected at Gate0; not a code parent
 
 problem: The current role-window implementation first averages all 36 projected CLIP patches in a window and then learns an indirect 8x25 role-to-window attention. A small but decisive part can be diluted by the other 35 patches, while the attention allocation has no direct location supervision. Prior signed-action training also used a 4:4 row sampler that changed the natural train distribution.
@@ -30,3 +31,14 @@ current_advantage: none; this is an owner-approved performance-oriented supporti
 performance_status: proof_of_path
 failure_boundary: Low-resolution projected patches may not reveal high-resolution crop details; max/min may amplify noisy patches; invisible roles may generate false peaks; natural sampling may collapse to neutral; truth outside Parent Top2 is unreachable; the fixed class-name crop verifier may discard role information used for selection.
 paper_level_claim: none before real Gate0 and required controls.
+
+## V6 design and code review
+
+review_subject_commit: `5d1b316adbd482a4be7c2a4938f92c611e6348ae`
+review_subject_tree: `60cab901aa13359eab38f3a1cebe7e6e4936f42d`
+review_agents: [`/root/rwdg_review_a`, `/root/rwdg_review_b`]
+review_result: `Design P0=0/P1=0; Code P0=0/P1=0; 双Agent交叉审查通过`
+
+- Both agents independently reviewed the V6 identity, RoleTriPool formula, tri-state targets, natural sampling, S/V/I-off, B1, assets, controls and receipts.
+- A found one StaticBest P1: eval counted correction only while train selected correction-minus-damage. Commit `5d1b316` aligned eval to the natural 4,702x25 tri-state net histogram and added checkpoint-detail equality assertions. Both agents restricted recheck to the affected diff and returned `P0=0/P1=0`.
+- They exchanged SHA-bound complete reports via shared temporary files, replied to the other report and jointly passed the development candidate. Local V6 tests: `18 passed`.
