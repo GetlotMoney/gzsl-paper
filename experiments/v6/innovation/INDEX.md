@@ -14,8 +14,9 @@
 
 `V6-TRY-006 / IDEA-201 / C-PCLR`由owner从正式V5 commit
 `52b511d77b4ad048f35b40dc3cbd9afd092167e9`独立授权。它不继承TRY-001至005代码，固定禁用
-Top-17，把冻结关系方向图编译为`G=MD`类别原型，只训练Reader、单一alpha和8角色权重，导出
-`hQ^T+b`。当前状态为`planned_pre_run`；必须先完成冻结commit的双Agent代码交叉审查和一次
-GPU batch50 micro-batch，之后才允许正式fixed-150 RUN。实验入口见
+Top-17，把冻结关系方向图编译为`G=MD`类别原型；TG/GTD、matched online-V5控制头和C-PCLR
+在同一seed7、28,228步内训练，C-PCLR导出`hQ^T+b`。冻结commit `b707b0c...`已完成两名临时
+Reviewer的独立清单、直接文件交换和逐项回应，双方`P0=0/P1=0/pass`。当前等待唯一一次GPU
+batch50 micro-batch，通过后启动正式fixed-200 RUN。顶层`FRAMEWORK.yaml`仍是未接纳DESC历史
+开发元数据，不是本Experiment代码父条件。实验入口见
 [`V6-INNOVATION-001_COMPILED_PCLR`](V6-INNOVATION-001_COMPILED_PCLR/EXPERIMENT.yaml)。
-

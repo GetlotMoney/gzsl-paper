@@ -41,3 +41,22 @@
 
 因此当前准确状态为：`两份独立pass，但直接交叉未完成`。在owner明确批准协议例外前，不得写
 “双Agent交叉审查通过”，不得启动GPU micro-batch或正式RUN。
+
+## 200-epoch matched-control最终审查
+
+- 冻结代码commit：`b707b0c4671051244cebf4f8404299fc016b281e`
+- RUN config SHA256：`73a812268b18e9f46a2cedf59acdabb8ef0cdb13388ec83b5f23b73475e4239b`
+- 本地最小验证：`29 passed`
+- Agent A初始清单：`reviews/agent_a_initial.md`，SHA256
+  `e89bb2022f54cbbf34fafd5aeacaac0afa96af0a75f7b87d2829868817caeb24`，结论`pass/P0=0/P1=0`。
+- Agent B初始清单：`reviews/agent_b_initial.md`，SHA256
+  `cbd40b83388f35c56655cea613651f3cf43af440ef782ae653ee675438eccdb3`，结论`pass/P0=0/P1=0`。
+- Agent A直接读取B后回应：`reviews/agent_a_response_to_b.md`，SHA256
+  `9da975876f85f2e2c1fead712465008daf3490468d4d82ee979fee44d07357a5`。
+- Agent B直接读取A后回应：`reviews/agent_b_response_to_a.md`，SHA256
+  `53b6be3c15d75d8b35d5b9c0077eed17d2c36f38a77b8104e6b91e12123e0f11`。
+- 交叉后Agent A：`pass/P0=0/P1=0`，明确写出“双Agent交叉审查通过”。
+- 交叉后Agent B：`pass/P0=0/P1=0`，明确写出“双Agent交叉审查通过”。
+
+最终结论：`双Agent交叉审查通过`。P2仅为账本一致性、断点恢复便利和更强梯度审计建议，
+按项目规则不阻断当前可逆GPU micro-batch或正式RUN。GPU fingerprint和micro-batch收据待运行后绑定。

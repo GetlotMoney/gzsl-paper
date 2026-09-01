@@ -3,10 +3,10 @@ experiment_id: V6-INNOVATION-001
 attempt_id: V6-TRY-006
 idea_id: IDEA-201
 name: Compiled PCLR Gate B
-status: revising_fixed200_matched_control
+status: review_passed_pending_gpu_microbatch
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
-pre_run_code_commit: pending_refreeze
-code_review: CODE_REVIEW.md#final-review-pending
+pre_run_code_commit: b707b0c4671051244cebf4f8404299fc016b281e
+code_review: CODE_REVIEW.md#200-epoch-matched-control最终审查
 evidence_refs:
   - research/ideas/IDEA-201_compiled_pclr.md
   - FRAMEWORK-V5-R4 metrics SHA efbdca19f8248b2e16c99baa7aa5a81d2279218db910a9a00e7303d45d2fc2bc
