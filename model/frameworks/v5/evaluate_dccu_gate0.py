@@ -1065,7 +1065,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
     }
     result = {
         "schema_version": SCHEMA,
-        "method": "DCCU",
+        "method": "D-CCU",
         "condition_id": "DCCU_FULL",
         "experiment_id": config["experiment_id"],
         "code_commit": code_commit,
@@ -1085,8 +1085,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         },
         "group_statistics": group_stats,
         "dccu_gates": {
-            "leader_trigger_rate": float(leader_trigger_rate),
-            "challenger_trigger_rate": float(challenger_trigger_rate),
+            "leader_trigger_rate": float(group_safety["leader_trigger_rate"]),
+            "challenger_trigger_rate": float(group_safety["challenger_trigger_rate"]),
             "leader_damage": int(group_stats["leader"]["damaged"]),
             "challenger_corrections": int(group_stats["challenger"]["corrected"]),
         },

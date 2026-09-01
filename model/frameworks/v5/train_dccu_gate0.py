@@ -1344,6 +1344,7 @@ __all__ = [
     "compare_oracle_identity",
     "compute_static_best_action",
     "dccu_dense_correction_targets",
+    "dccu_correction_targets",
     "dense_utility_loss",
     "git_commit_and_clean",
     "gradient_gate_report",
