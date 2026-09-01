@@ -152,4 +152,3 @@ def test_group_safety_gate_requires_challenger_trigger_and_positive_net():
     failing["challenger"] = dict(passing["challenger"], trigger=1, corrected=0)
     result = joint_eval.group_safety_gate(failing)
     assert result["passed"] is False
-
