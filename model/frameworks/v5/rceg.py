@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import math
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -82,7 +80,7 @@ class RoleContrastSemanticModule(nn.Module):
             / BASE_TEMPERATURE
         )
 
-    def chunk(
+    def name_chunk(
         self,
         rival_positions: torch.Tensor,
         start: int,
@@ -90,18 +88,12 @@ class RoleContrastSemanticModule(nn.Module):
     ) -> dict[str, torch.Tensor]:
         batch = rival_positions.size(0)
         candidate_name = self.name_embeddings[start:end]
-        candidate_role = self.role_embeddings[start:end]
         rival_index = rival_positions[:, start:end]
         rival_name = self.name_embeddings[rival_index]
-        rival_role = self.role_embeddings[rival_index]
         candidate_name = candidate_name.view(1, end - start, TEXT_DIM).expand(
             batch, -1, -1
         )
-        candidate_role = candidate_role.view(
-            1, end - start, ROLE_COUNT, TEXT_DIM
-        ).expand(batch, -1, -1, -1)
         name_query = F.normalize(candidate_name - rival_name, dim=-1)
-        role_query = F.normalize(candidate_role - rival_role, dim=-1)
         name_candidate_roles = candidate_name[:, :, None, :].expand(
             -1, -1, ROLE_COUNT, -1
         )
@@ -112,15 +104,32 @@ class RoleContrastSemanticModule(nn.Module):
             -1, -1, ROLE_COUNT, -1
         )
         return {
-            "role_query": role_query,
             "name_query": name_query,
-            "role_triplet": torch.cat(
-                (candidate_role, rival_role, role_query), dim=-1
-            ),
             "name_triplet": torch.cat(
                 (name_candidate_roles, name_rival_roles, name_query_roles), dim=-1
             ),
         }
+
+    def chunk(
+        self,
+        rival_positions: torch.Tensor,
+        start: int,
+        end: int,
+    ) -> dict[str, torch.Tensor]:
+        values = self.name_chunk(rival_positions, start, end)
+        batch = rival_positions.size(0)
+        candidate_role = self.role_embeddings[start:end].view(
+            1, end - start, ROLE_COUNT, TEXT_DIM
+        ).expand(batch, -1, -1, -1)
+        rival_role = self.role_embeddings[rival_positions[:, start:end]]
+        role_query = F.normalize(candidate_role - rival_role, dim=-1)
+        values.update({
+            "role_query": role_query,
+            "role_triplet": torch.cat(
+                (candidate_role, rival_role, role_query), dim=-1
+            ),
+        })
+        return values
 
 
 class MaskedRoleEvidenceModule(nn.Module):
@@ -246,13 +255,22 @@ class RCEGModel(nn.Module):
         class_count = parent_logits.size(1)
         for start in range(0, class_count, self.candidate_chunk_size):
             end = min(start + self.candidate_chunk_size, class_count)
-            semantic = self.semantic_module.chunk(rival_positions, start, end)
+            semantic = (
+                self.semantic_module.name_chunk(rival_positions, start, end)
+                if mode == "s_off"
+                else self.semantic_module.chunk(rival_positions, start, end)
+            )
             if mode == "v_off":
                 shape = (
                     batch, end - start, MASK_COUNT, ROLE_COUNT, TEXT_DIM
                 )
                 role_evidence = visible_tokens.new_zeros(shape, dtype=torch.float32)
                 name_evidence = visible_tokens.new_zeros(shape, dtype=torch.float32)
+            elif mode == "s_off":
+                name_evidence = self.visual_module.name_evidence(
+                    visible_tokens, semantic["name_query"]
+                )
+                role_evidence = name_evidence
             elif mode == "s_off":
                 name_evidence = self.visual_module.name_evidence(
                     visible_tokens, semantic["name_query"]

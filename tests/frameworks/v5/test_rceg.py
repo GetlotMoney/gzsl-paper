@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+from unittest.mock import patch
 
 from model.frameworks.v5.rceg import (
     MASK_COUNT,
@@ -63,7 +64,12 @@ def test_s_off_exactly_returns_name_only_parent_logits():
     model = _model()
     values = _inputs()
     parent = model(*values, mode="parent")["logits"]
-    s_off = model(*values, mode="s_off")
+    with patch.object(
+        model.visual_module,
+        "role_evidence",
+        side_effect=AssertionError("S-off不得读取role evidence"),
+    ):
+        s_off = model(*values, mode="s_off")
     assert torch.equal(s_off["score"], torch.zeros_like(s_off["score"]))
     assert torch.equal(s_off["logits"], parent)
 
