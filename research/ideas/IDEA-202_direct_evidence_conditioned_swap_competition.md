@@ -1,9 +1,9 @@
 # IDEA-202： Direct Evidence-Conditioned Swap Competition（DESC）
 
 idea_id: IDEA-202
-status: proposed_v6_e2e_rescue_precheck
+status: rejected_at_official_precheck
 implementation_branch: exp/v6/innovation/v6-try-005-desc
-current_run: V6-TRY-005 / official precheck
+current_run: V6-TRY-005 / official precheck completed
 base_framework: FRAMEWORK-V6-DEVELOPMENT
 source_code_parent: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 predecessor_evidence: IDEA-200 J-SVRA rejected at official precheck; not a code parent
@@ -91,3 +91,17 @@ paper_level_claim: none before official precheck and formal confirmation.
 - No-action-aux checkpoint：`no_action_aux_final.pt@sha256:fa96ceea48da59ec465cf5e5b9cbfc0c72544bdd55989601483d2f70cae33930`。
 - Parent-only checkpoint：`parent_only_final.pt@sha256:6b4ea1e9e776621f9551a8bc45ca209634a8c71e91e2beaa34e829fc748c2ba1`。
 - Full step2/final S/V/I梯度均finite/nonzero；Parent-only仅I有梯度，符合控制定义。official性能尚未评估。
+
+## 2026-09-02 official precheck结果
+
+- failure receipt：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/desc/V6-TRY-005-PRECHECK-EVAL/failure.json@sha256:883612250a0eeab54c26320a83261d63a60b2566658f98e5a1db293745efbc09`
+- Full：`U=33.355970 / S=63.999216 / H=43.855002 / ZS=76.850664`。
+- Parent/I-off/Parent-only：`H=62.441058`；`Full-Parent=-18.586056 H`。
+- S-off=`15.631597 H`，V-off=`61.601972 H`，No-action-aux=`37.001364 H`。S与action auxiliary影响输出，但Full的局部视觉路径仍显著伤害官方泛化。
+- Full swap1625/4731（34.35%），纠正227张、破坏1067张、net=-840；全部25个action均使用，非单action collapse。
+- Full相对No-action-aux高 `+6.853638 H`，但仍远低于Parent；Parent-only学成全keep并等于Parent。
+- full200 census、自然无权重loss、端到端S/V/I梯度、同init/trace、zero-crop和labels-after-logits边界全部成立，因此失败不是代码或协议问题。
+
+root_cause: The learned direct head uses the absolute scale and direction of seen-class spatial evidence states, which shift on official unseen images. Action auxiliary improves structure but does not make the swap logit class-invariant; it still over-swaps and destroys Parent-correct predictions. The next Idea must use an invariant relative/ranking or calibrated damage-control primitive rather than another unrestricted decision MLP.
+
+decision: Drop IDEA-202. Do not tune BCE/CE coefficients, threshold, pooling temperature or head width within DESC.

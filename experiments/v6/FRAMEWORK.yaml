@@ -9,7 +9,7 @@ derived_from_framework: FRAMEWORK-V5
 source_idea: IDEA-202
 source_code_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 source_commit_role: formal_v5_parent_only
-status: development_candidate_official_precheck_pending
+status: rejected_at_official_precheck
 owner_promotion_decision: not_promoted_no_framework_tag
 evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
 test_used_for_selection: true
@@ -30,3 +30,4 @@ limitations:
   - Source commit is the formal V5 parent; rejected EAAC, RoleTriPool and SEAV code are evidence only and not code parents.
   - J-SVRA failed because weighted opportunity-risk multiplication over-triggered leader rows; it is evidence only and not the DESC code parent.
   - DESC keeps end-to-end full200 training but replaces factorized gating with one directly supervised keep-swap logit and natural unweighted losses.
+  - DESC failed: Full H43.855002 versus Parent62.441058, with1625 swaps and net -840; direct evidence scale did not transfer.

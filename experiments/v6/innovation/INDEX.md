@@ -11,3 +11,5 @@
 `V6-TRY-004 / J-SVRA` official precheck 已失败：Full `H=56.250432`，Parent `62.441058`，No-joint `60.285100`，Sequential `50.105076`；Full纠正238张但破坏570张。失败原因是加权机会—风险乘积把official trigger率推到41.5%，且leader trigger率高于challenger。
 
 当前快速尝试为 `V6-TRY-005 / IDEA-202 / DESC`：保留端到端 full200 轴和空间辅助监督，但删除概率乘法与正样本加权，改为局部证据直接参与单一 keep-vs-swap logit。
+
+`V6-TRY-005 / DESC` official precheck 已失败：Full `H=43.855002`，Parent `62.441058`，No-action-aux `37.001364`；Full发生1625次swap、净损失840张。空间辅助相对No-action-aux有用，但直接head仍把seen证据尺度误当成可迁移决策信号。
