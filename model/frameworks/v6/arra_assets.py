@@ -286,6 +286,12 @@ def _validate_visual_manifest(
     )
     if invalid:
         raise ValueError("ARRA visual asset identity, dataset, counts, or fields mismatch.")
+    configured_patches = config.get("coarse_patch_files_sha256")
+    if not isinstance(configured_patches, dict) or any(
+        configured_patches.get(filename) != outputs.get(filename)
+        for filename in PATCH_OUTPUTS.values()
+    ):
+        raise ValueError("ARRA coarse patch config does not match the visual manifest.")
     roles = manifest.get("role_names")
     if isinstance(roles, list) and tuple(roles) != ROLE_NAMES:
         raise ValueError("ARRA role order is not the frozen 6+1+1 order.")
@@ -357,7 +363,7 @@ def _validate_relation_assets(
         or relation_manifest.get("parent_manifest_sha256") != visual_manifest_sha256
         or relation_manifest.get("human_annotations_used") is not False
         or relation_manifest.get("llm_world_knowledge_used") is not True
-        or not isinstance(relation_manifest.get("relation_encoder_matches_parent"), bool)
+        or relation_manifest.get("relation_encoder_matches_parent") is not True
         or not isinstance(outputs, dict)
         or set(outputs) != required_outputs
     )
@@ -503,6 +509,48 @@ def _checkpoint_payload(config: Mapping[str, Any]) -> tuple[dict[str, Any], str]
     return payload, actual
 
 
+def load_affine_diagnostic_receipt(config: Mapping[str, Any]) -> dict[str, Any]:
+    path = _path_from_config(config, "affine_diagnostic_receipt")
+    expected_sha = _expected_sha(
+        config,
+        "affine_diagnostic_receipt_sha256",
+        default="0d5323edc6881b703818a9d103da9447919833cde98f626035783ba649c18a24",
+    )
+    if not path.is_file() or sha256_file(path) != expected_sha:
+        raise ValueError("ARRA affine diagnostic receipt path or SHA mismatch.")
+    payload = _read_json(path)
+    formula = payload.get("formula", {})
+    full = payload.get("conditions", {}).get("P_plus_roles_plus_relation", {})
+    invalid = (
+        payload.get("schema_version")
+        != "gzsl-paper.idea206-arra-affine-diagnostic.v1"
+        or payload.get("asset_manifest_sha256") != config["asset_manifest_sha256"]
+        or payload.get("relation_manifest_sha256")
+        != config["relation_asset_manifest_sha256"]
+        or payload.get("source_checkpoint_sha256")
+        != config["source_checkpoint_sha256"]
+        or formula.get("source_model_eval_mode") is not True
+        or float(formula.get("role0_weight", -1.0)) != 0.16
+        or float(formula.get("role6_weight", -1.0)) != 0.36
+        or float(formula.get("alpha", -1.0)) != 1.0
+        or float(formula.get("relation_temperature", -1.0)) != 0.2
+        or float(formula.get("seen_gamma", -1.0)) != 0.575
+        or formula.get("patch_residual_enabled") is not False
+        or abs(float(full.get("H", -1.0)) - 80.39732145034174) > 1e-6
+        or payload.get("test_used_for_hyperparameter_selection") is not True
+        or payload.get("nested_official_test_selection") is not True
+        or payload.get("unseen_images_used_for_gradient") is not False
+    )
+    if invalid:
+        raise ValueError("ARRA affine diagnostic receipt semantics mismatch.")
+    return {
+        "path": str(path),
+        "sha256": expected_sha,
+        "script_sha256": config["affine_diagnostic_script_sha256"],
+        "full_metrics": dict(full),
+    }
+
+
 def _materialize_source_once(
     state_dict: Mapping[str, torch.Tensor],
     role_sentence_embeds: torch.Tensor,
@@ -637,13 +685,20 @@ def load_v5_r2_initialization(
         raise ValueError("V5 R2 checkpoint code commit mismatch.")
     if payload.get("config_sha256") != expected_config_sha:
         raise ValueError("V5 R2 checkpoint config SHA mismatch.")
-    explicit = payload.get("arra_initialization", payload.get("rgra_initialization"))
+    explicit = payload.get("arra_initialization")
     if isinstance(explicit, dict):
         p_v5, scale = _validate_initial_values(explicit["p_v5"], explicit["scale"], spec)
         reader_source = explicit.get("reader_state_dict", payload.get("reader_state_dict", {}))
         reader = _reader_from_state_dict(reader_source)
-        anchor_delta = float(explicit.get("source_eval_anchor_replay_max_abs", 0.0))
-        scale_delta = float(explicit.get("source_eval_scale_replay_abs", 0.0))
+        if {
+            "source_eval_anchor_replay_max_abs",
+            "source_eval_scale_replay_abs",
+        } - set(explicit):
+            raise ValueError("explicit ARRA initialization lacks eval replay evidence.")
+        anchor_delta = float(explicit["source_eval_anchor_replay_max_abs"])
+        scale_delta = float(explicit["source_eval_scale_replay_abs"])
+        if anchor_delta > 1e-6 or scale_delta > 1e-6:
+            raise ValueError("explicit ARRA initialization failed eval replay parity.")
     else:
         state_dict = payload.get("model_state_dict")
         if not isinstance(state_dict, dict):
@@ -691,6 +746,7 @@ def load_arra_train_assets(
     *,
     spec: ARRADatasetSpec = CUB_SPEC,
 ) -> ARRATrainAssets:
+    affine_receipt = load_affine_diagnostic_receipt(config)
     manifest_path, manifest, manifest_sha = _load_visual_manifest(config, spec)
     train_features = _validate_tensor(
         _load_torch_output(manifest_path, manifest, "train_features.pt"),
@@ -746,6 +802,7 @@ def load_arra_train_assets(
             "v5_r2_config_sha256": init.checkpoint_config_sha256,
             "source_eval_anchor_replay_max_abs": init.source_eval_anchor_replay_max_abs,
             "source_eval_scale_replay_abs": init.source_eval_scale_replay_abs,
+            "affine_diagnostic": affine_receipt,
             "patch_outputs": {
                 PATCH_OUTPUTS["train"]: manifest["outputs_sha256"][PATCH_OUTPUTS["train"]],
             },

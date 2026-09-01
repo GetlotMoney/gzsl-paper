@@ -82,6 +82,24 @@ class ARRATest(unittest.TestCase):
             ridge_lambda=model.ridge_lambda,
         )
         self.assertTrue(torch.equal(model.compiled_relation_field, expected))
+        incidence = torch.zeros(EDGE_COUNT, CLASS_COUNT)
+        rows = torch.arange(EDGE_COUNT)
+        incidence[rows, model.edge_index[:, 0]] = 1.0
+        incidence[rows, model.edge_index[:, 1]] = -1.0
+        mapping = torch.linalg.solve(
+            incidence.T @ incidence + model.ridge_lambda * torch.eye(CLASS_COUNT),
+            incidence.T,
+        )
+        raw_difference = (
+            model.relation_sentence_embeds[:, 0]
+            - model.relation_sentence_embeds[:, 1]
+        )
+        receipt_field = F.normalize(mapping @ raw_difference, dim=-1)
+        normalized_edge_field = F.normalize(
+            mapping @ F.normalize(raw_difference, dim=-1), dim=-1
+        )
+        self.assertTrue(torch.equal(model.compiled_relation_field, receipt_field))
+        self.assertFalse(torch.allclose(receipt_field, normalized_edge_field, atol=1e-6))
 
     def test_full_formula_and_controls_are_explicit(self) -> None:
         model, cls, patches, _ = _fixture()

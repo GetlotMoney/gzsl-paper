@@ -19,6 +19,9 @@ source_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/pclr/V4
 source_checkpoint_sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
 source_code_commit: b0a756dd624e883eb50d19a2455ba06bdc73f118
 source_config_sha256: 0861877ae3e4725e29aff547d45e0b6d56a186179309acb5493c5906b803fd49
+affine_diagnostic_receipt: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/rgra/IDEA-206-ARRA-AFFINE-DIAG-R1/result.json
+affine_diagnostic_receipt_sha256: 0d5323edc6881b703818a9d103da9447919833cde98f626035783ba649c18a24
+affine_diagnostic_script_sha256: ff72b80ec2ba8ca53f8652f96a59b912bf820706ab2af0930e598e9270246d56
 parent_metrics_percent:
   U: 80.694097
   S: 81.446952

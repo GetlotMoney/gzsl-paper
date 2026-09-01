@@ -519,12 +519,9 @@ class ARRAClassifier(nn.Module):
         )
         scores = torch.einsum("bd,ekd->bek", components.zr, relations)
         scores = scores / DIRECTION_TEMPERATURE
-        seen = torch.zeros(CLASS_COUNT, dtype=torch.bool, device=components.logits.device)
-        seen[self.seen_classes.to(components.logits.device)] = True
-        seen_edge = seen[edges[:, 0]] & seen[edges[:, 1]]
         incident_a = target_ids[:, None].eq(edges[None, :, 0])
         incident_b = target_ids[:, None].eq(edges[None, :, 1])
-        incident = (incident_a | incident_b) & seen_edge[None]
+        incident = incident_a | incident_b
         counts = incident.sum(dim=1)
         if bool(counts.eq(0).any()):
             raise ValueError("each target must have at least one seen-seen incident edge.")

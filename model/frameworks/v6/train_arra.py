@@ -55,6 +55,9 @@ CONFIG_KEYS = {
     "source_checkpoint_sha256",
     "source_code_commit",
     "source_config_sha256",
+    "affine_diagnostic_receipt",
+    "affine_diagnostic_receipt_sha256",
+    "affine_diagnostic_script_sha256",
     "parent_metrics_percent",
     "target_h",
     "required_module_delta_h",
@@ -144,6 +147,10 @@ def load_config(path: Path) -> tuple[dict[str, Any], str]:
         or abs(float(config.get("seen_logit_gamma", -1.0)) - 0.575) > 1e-9
         or abs(float(config.get("initial_alpha", -1.0)) - 1.0) > 1e-9
         or abs(float(config.get("initial_delta", -1.0))) > 1e-9
+        or config.get("affine_diagnostic_receipt_sha256")
+        != "0d5323edc6881b703818a9d103da9447919833cde98f626035783ba649c18a24"
+        or config.get("affine_diagnostic_script_sha256")
+        != "ff72b80ec2ba8ca53f8652f96a59b912bf820706ab2af0930e598e9270246d56"
         or config.get("require_clean_tree") is not True
         or config.get("feature_provenance_complete") is not False
         or config.get("pclr_online_inference") is not False
@@ -355,6 +362,29 @@ def _module_gradient_norms(model) -> dict[str, float]:
     return result
 
 
+def _component_gradient_norms(model) -> dict[str, float]:
+    groups = {
+        "raw_w": (model.raw_role_weights,),
+        "visual_adapter": tuple(model.visual_adapter.parameters()),
+        "patch_query": tuple(model.patch_query.parameters()),
+        "patch_key": tuple(model.patch_key.parameters()),
+        "beta": (model.raw_beta,),
+        "relation_reader": tuple(model.relation_reader.parameters()),
+        "alpha": (model.raw_alpha,),
+        "delta": (model.raw_delta,),
+    }
+    result = {}
+    for name, parameters in groups.items():
+        total = 0.0
+        for parameter in parameters:
+            if parameter.grad is not None:
+                if not torch.isfinite(parameter.grad).all():
+                    raise FloatingPointError(f"ARRA non-finite component gradient: {name}")
+                total += float(parameter.grad.detach().float().norm().cpu())
+        result[name] = total
+    return result
+
+
 def _logits(model, cls, patches, **kwargs):
     if hasattr(model, "logits"):
         try:
@@ -440,6 +470,14 @@ def micro_contract(
         value = float(cls_only[name])
         if not np.isfinite(value) or value <= 0.0:
             raise RuntimeError(f"L_cls did not reach ARRA module {name}: {value}")
+    cls_component_norms = _component_gradient_norms(model)
+    if any(
+        not np.isfinite(value) or value <= 0.0
+        for value in cls_component_norms.values()
+    ):
+        raise RuntimeError(
+            f"L_cls did not reach every preregistered ARRA component: {cls_component_norms}"
+        )
 
     model.zero_grad(set_to_none=True)
     total, parts = _loss_parts(model, cls, patches, targets, config)
@@ -499,11 +537,23 @@ def micro_contract(
         affine_reference_max_abs = float((affine - affine_reference).abs().max().cpu())
         if affine_reference_max_abs > 1e-5:
             raise RuntimeError("ARRA beta0/delta0 affine replay does not match receipt formula.")
+        export_package = model.export_graph_free()
+        from model.frameworks.v6.arra import ARRAGraphFreeClassifier
+
+        deployed = ARRAGraphFreeClassifier.from_export(export_package).to(device).eval()
+        export_micro_max_abs = float(
+            (model(cls, patches) - deployed(cls, patches)).abs().max().cpu()
+        )
+        if export_micro_max_abs > 1e-5:
+            raise RuntimeError("ARRA CUDA micro graph-free export parity failed.")
     model.zero_grad(set_to_none=True)
     return {
         "official_test_loaded": False,
         "batch_size": count,
-        "cls_only": {key: float(value) for key, value in cls_only.items()},
+        "cls_only": {
+            **{key: float(value) for key, value in cls_only.items()},
+            "component_gradient_norms": cls_component_norms,
+        },
         "total_loss": {
             "value": float(total.detach().cpu()),
             "parts": {key: float(value.detach().cpu()) for key, value in parts.items()},
@@ -514,6 +564,7 @@ def micro_contract(
         "alpha_zero_i_off_max_abs": alpha_zero_i_off_max_abs,
         "affine_additive_max_abs": affine_additive_max_abs,
         "affine_reference_max_abs": affine_reference_max_abs,
+        "graph_free_export_max_abs": export_micro_max_abs,
         "condition_shapes": shapes,
     }
 
@@ -807,6 +858,15 @@ def run(
             and int(final_controls["transitions"][name]["net"]) >= 20
             for name in ("additive", "shuffled")
         )
+        near_threshold = (
+            0.0 < float(best_metrics["H"]) - parent_h < 0.2
+            or any(
+                0.0
+                <= value - float(config["required_module_delta_h"])
+                < 0.2
+                for value in module_gaps.values()
+            )
+        )
         export_package = (
             model.export_graph_free_state()
             if hasattr(model, "export_graph_free_state")
@@ -873,6 +933,7 @@ def run(
             "module_gaps_H": module_gaps,
             "framework_performance_contract_passed": framework_passed,
             "conditional_non_equivalence_passed": non_equivalence_passed,
+            "near_threshold_tentative": near_threshold,
             "h80_is_target_not_gate": True,
             "target_h": float(config["target_h"]),
             "micro": micro,

@@ -42,6 +42,7 @@ class ARRAAssetTest(unittest.TestCase):
         self._write_visual_asset()
         self._write_relation_asset()
         self._write_checkpoint()
+        self._write_affine_receipt()
         self.config = {
             "asset_manifest": str(self.visual_manifest),
             "asset_manifest_sha256": sha256_file(self.visual_manifest),
@@ -51,6 +52,20 @@ class ARRAAssetTest(unittest.TestCase):
             "relation_asset_id": "synthetic_relation_asset",
             "v5_r2_checkpoint": str(self.checkpoint),
             "v5_r2_checkpoint_sha256": sha256_file(self.checkpoint),
+            "source_checkpoint_sha256": sha256_file(self.checkpoint),
+            "affine_diagnostic_receipt": str(self.affine_receipt),
+            "affine_diagnostic_receipt_sha256": sha256_file(self.affine_receipt),
+            "affine_diagnostic_script_sha256": "f" * 64,
+            "coarse_patch_files_sha256": {
+                name: json.loads(self.visual_manifest.read_text(encoding="utf-8"))[
+                    "outputs_sha256"
+                ][name]
+                for name in (
+                    "train_coarse_patch_features.npy",
+                    "test_seen_coarse_patch_features.npy",
+                    "test_unseen_coarse_patch_features.npy",
+                )
+            },
         }
 
     def tearDown(self) -> None:
@@ -210,6 +225,50 @@ class ARRAAssetTest(unittest.TestCase):
         self.checkpoint = self.root / "model_best.pth"
         torch.save(payload, self.checkpoint)
 
+    def _write_affine_receipt(self) -> None:
+        payload = {
+            "schema_version": "gzsl-paper.idea206-arra-affine-diagnostic.v1",
+            "asset_manifest_sha256": sha256_file(self.visual_manifest),
+            "relation_manifest_sha256": sha256_file(self.relation_manifest),
+            "source_checkpoint_sha256": sha256_file(self.checkpoint),
+            "formula": {
+                "source_model_eval_mode": True,
+                "role0_weight": 0.16,
+                "role6_weight": 0.36,
+                "alpha": 1.0,
+                "relation_temperature": 0.2,
+                "seen_gamma": 0.575,
+                "patch_residual_enabled": False,
+            },
+            "conditions": {
+                "P_plus_roles_plus_relation": {
+                    "U": 77.396578,
+                    "S": 83.640134,
+                    "H": 80.39732145034174,
+                    "ZS": 88.425398,
+                }
+            },
+            "test_used_for_hyperparameter_selection": True,
+            "nested_official_test_selection": True,
+            "unseen_images_used_for_gradient": False,
+        }
+        self.affine_receipt = self.root / "affine_result.json"
+        self.affine_receipt.write_text(
+            json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+        )
+
+    def _rebind_affine_receipt_to_relation(self) -> None:
+        payload = json.loads(self.affine_receipt.read_text(encoding="utf-8"))
+        payload["relation_manifest_sha256"] = self.config[
+            "relation_asset_manifest_sha256"
+        ]
+        self.affine_receipt.write_text(
+            json.dumps(payload, indent=2) + "\n", encoding="utf-8"
+        )
+        self.config["affine_diagnostic_receipt_sha256"] = sha256_file(
+            self.affine_receipt
+        )
+
     def test_train_loader_keeps_official_test_assets_unopened(self):
         (self.visual_dir / "test_seen_features.pt").unlink()
         assets = load_arra_train_assets(self.config, spec=self.spec)
@@ -278,11 +337,42 @@ class ARRAAssetTest(unittest.TestCase):
                 spec=self.spec,
             )
 
+    def test_old_rgra_explicit_initialization_cannot_bypass_eval_replay(self):
+        payload = torch.load(self.checkpoint, map_location="cpu", weights_only=True)
+        payload["rgra_initialization"] = payload.pop("arra_initialization")
+        torch.save(payload, self.checkpoint)
+        self.config["v5_r2_checkpoint_sha256"] = sha256_file(self.checkpoint)
+        with self.assertRaisesRegex(ValueError, "model_state_dict"):
+            load_arra_train_assets(self.config, spec=self.spec)
+
+    def test_relation_encoder_must_match_parent_and_patch_config_must_match(self):
+        relation = json.loads(self.relation_manifest.read_text(encoding="utf-8"))
+        relation["relation_encoder_matches_parent"] = False
+        self.relation_manifest.write_text(
+            json.dumps(relation, indent=2) + "\n", encoding="utf-8"
+        )
+        self.config["relation_asset_manifest_sha256"] = sha256_file(
+            self.relation_manifest
+        )
+        self._rebind_affine_receipt_to_relation()
+        with self.assertRaisesRegex(ValueError, "relation asset identity"):
+            load_arra_train_assets(self.config, spec=self.spec)
+
+        self.config["coarse_patch_files_sha256"][
+            "train_coarse_patch_features.npy"
+        ] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "coarse patch config"):
+            load_arra_eval_assets(
+                self.config,
+                spec=self.spec,
+                include_relation_assets=False,
+            )
     def test_relation_manifest_must_bind_visual_manifest_sha(self):
         relation_manifest = json.loads(self.relation_manifest.read_text(encoding="utf-8"))
         relation_manifest["parent_manifest_sha256"] = "0" * 64
         self.relation_manifest.write_text(json.dumps(relation_manifest, indent=2) + "\n", encoding="utf-8")
         self.config["relation_asset_manifest_sha256"] = sha256_file(self.relation_manifest)
+        self._rebind_affine_receipt_to_relation()
 
         with self.assertRaisesRegex(ValueError, "relation asset identity"):
             load_arra_train_assets(self.config, spec=self.spec)
