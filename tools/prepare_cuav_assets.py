@@ -78,12 +78,12 @@ def _save(path, value):
 
 
 @torch.no_grad()
-def encode_subset(model, preprocess, paths, *, device, batch_size, workers, include_lowres):
+def encode_subset(model, preprocess, paths, *, device, batch_size, workers, include_preprocessed):
     loader = DataLoader(
         CropDataset(paths, preprocess), batch_size=batch_size, shuffle=False,
         num_workers=workers, pin_memory=device.type == "cuda",
     )
-    full_rows, crop_rows, box_rows, lowres_rows = [], [], [], []
+    full_rows, crop_rows, box_rows, preprocessed_rows = [], [], [], []
     for views, boxes in loader:
         batch, count = views.shape[:2]
         features = F.normalize(
@@ -93,25 +93,15 @@ def encode_subset(model, preprocess, paths, *, device, batch_size, workers, incl
         full_rows.append(features[:, 0])
         crop_rows.append(features[:, 1:])
         box_rows.append(boxes)
-        if include_lowres:
-            full_tensor = views[:, 0]
-            lowres = []
-            for row, column in WINDOWS:
-                crop = full_tensor[:, :, row*PATCH_PIXELS:(row+SIDE)*PATCH_PIXELS, column*PATCH_PIXELS:(column+SIDE)*PATCH_PIXELS]
-                lowres.append(F.interpolate(crop, size=(336, 336), mode="bicubic", align_corners=False))
-            lowres = torch.stack(lowres, dim=1)
-            encoded = F.normalize(
-                model.encode_image(lowres.reshape(batch * 25, 3, 336, 336).to(device).float()).float(),
-                dim=-1,
-            ).reshape(batch, 25, 768).cpu()
-            lowres_rows.append(encoded)
+        if include_preprocessed:
+            preprocessed_rows.append(views[:, 0].half().cpu())
     return (
         torch.cat(full_rows), torch.cat(crop_rows), torch.cat(box_rows),
-        torch.cat(lowres_rows) if lowres_rows else None,
+        torch.cat(preprocessed_rows) if preprocessed_rows else None,
     )
 
 
-def _write_manifest(directory, *, subset, indices, class_ids, full_cls, crop_features, lowres_features, boxes, labels, names, paths, common, include_crops):
+def _write_manifest(directory, *, subset, indices, class_ids, full_cls, crop_features, preprocessed_images, boxes, labels, names, paths, common, include_crops):
     directory.mkdir(parents=True)
     tensors = {
         "full_cls.pt": full_cls.float(), "labels.pt": labels.index_select(0, indices).long(),
@@ -130,14 +120,14 @@ def _write_manifest(directory, *, subset, indices, class_ids, full_cls, crop_fea
         array[:] = crop_features.numpy().astype(np.float16)
         array.flush(); del array
         outputs[crop_path.name] = sha256_file(crop_path)
-    if lowres_features is not None:
-        lowres_path = directory / "lowres_crop_features.npy"
+    if preprocessed_images is not None:
+        preprocessed_path = directory / "preprocessed_336.npy"
         array = np.lib.format.open_memmap(
-            lowres_path, mode="w+", dtype=np.float16, shape=tuple(lowres_features.shape)
+            preprocessed_path, mode="w+", dtype=np.float16, shape=tuple(preprocessed_images.shape)
         )
-        array[:] = lowres_features.numpy().astype(np.float16)
+        array[:] = preprocessed_images.numpy().astype(np.float16)
         array.flush(); del array
-        outputs[lowres_path.name] = sha256_file(lowres_path)
+        outputs[preprocessed_path.name] = sha256_file(preprocessed_path)
     relative = [str(path).replace("\\", "/") for path in paths]
     paths_file = directory / "image_paths.json"
     paths_file.write_text(json.dumps(relative, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -151,7 +141,7 @@ def _write_manifest(directory, *, subset, indices, class_ids, full_cls, crop_fea
         "count": int(indices.numel()), "class_ids": [int(x) for x in class_ids],
         "crop_actions": WINDOWS, "crop_action_sha256": WINDOW_SHA,
         "crop_features_present": include_crops,
-        "lowres_crop_features_present": lowres_features is not None,
+        "preprocessed_336_present": preprocessed_images is not None,
         "image_order_sha256": order_sha, "common_identity": common,
         "outputs_sha256": outputs,
     }
@@ -188,6 +178,12 @@ def run(config_path, output_dir, *, device_name, batch_size, workers, text_manif
     eval_indices = validation["val_unseen_raw_indices"].sort().values
     train_classes = validation["dev_seen_classes"]
     active = torch.cat((train_classes, validation["dev_unseen_classes"])).sort().values
+    if (
+        train_indices.numel() != 4702 or eval_indices.numel() != 2355
+        or train_classes.numel() != 100 or active.numel() != 150
+        or names.shape != (200, 768)
+    ):
+        raise ValueError("CUAV标准100/50开发划分或文本轴错误。")
     image_paths = [
         resolve_xlsa_image_path(paths["raw_root"], value, config["image_path_anchors"])
         for value in split.image_files
@@ -215,30 +211,30 @@ def run(config_path, output_dir, *, device_name, batch_size, workers, text_manif
     eval_paths = [image_paths[int(i)] for i in eval_indices]
     train_full, train_crops, train_boxes, _ = encode_subset(
         model, preprocess, train_paths, device=device, batch_size=batch_size, workers=workers,
-        include_lowres=False,
+        include_preprocessed=False,
     )
-    eval_full, eval_crops, eval_boxes, eval_lowres = encode_subset(
+    eval_full, eval_crops, eval_boxes, eval_preprocessed = encode_subset(
         model, preprocess, eval_paths, device=device, batch_size=batch_size, workers=workers,
-        include_lowres=True,
+        include_preprocessed=True,
     )
     subsets = {
         "dev_train": _write_manifest(
             output_dir / "dev_train", subset="dev_train", indices=train_indices,
             class_ids=train_classes, full_cls=train_full, crop_features=train_crops,
             boxes=train_boxes, labels=split.labels, names=names, paths=train_paths,
-            common=common, include_crops=True, lowres_features=None,
+            common=common, include_crops=True, preprocessed_images=None,
         ),
         "dev_eval": _write_manifest(
             output_dir / "dev_eval", subset="dev_eval", indices=eval_indices,
             class_ids=active, full_cls=eval_full, crop_features=eval_crops,
             boxes=eval_boxes, labels=split.labels, names=names, paths=eval_paths,
-            common=common, include_crops=False, lowres_features=eval_lowres,
+            common=common, include_crops=False, preprocessed_images=eval_preprocessed,
         ),
         "dev_eval_oracle": _write_manifest(
             output_dir / "dev_eval_oracle", subset="dev_eval_oracle", indices=eval_indices,
             class_ids=active, full_cls=eval_full, crop_features=eval_crops,
             boxes=eval_boxes, labels=split.labels, names=names, paths=eval_paths,
-            common=common, include_crops=True, lowres_features=None,
+            common=common, include_crops=True, preprocessed_images=None,
         ),
     }
     root = {"schema_version": BUNDLE_SCHEMA, "mode": "dev", "common_identity": common, "subsets": subsets}

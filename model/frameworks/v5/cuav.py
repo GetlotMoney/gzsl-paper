@@ -42,6 +42,13 @@ class NameAmbiguityState(nn.Module):
 
     def forward(self, full_cls, *, semantic_off=False):
         parent = F.normalize(full_cls.float(), dim=-1) @ self.names.T / TEMPERATURE
+        if semantic_off:
+            return {
+                "parent_logits": parent,
+                "query": torch.zeros(full_cls.size(0), DIM, device=full_cls.device),
+                "stats": torch.zeros(full_cls.size(0), 4, device=full_cls.device),
+                "top2": torch.full((full_cls.size(0), 2), -1, dtype=torch.long, device=full_cls.device),
+            }
         top2 = stable_top2(parent.detach(), self.class_ids)
         rows = torch.arange(parent.size(0), device=parent.device)
         query = F.normalize(self.names[top2[:, 0]] - self.names[top2[:, 1]], dim=-1)
@@ -51,9 +58,6 @@ class NameAmbiguityState(nn.Module):
             parent[rows, top2[:, 0]] - parent[rows, top2[:, 1]],
             entropy, parent.mean(1), parent.std(1, unbiased=False),
         ), dim=1)
-        if semantic_off:
-            query = torch.zeros_like(query)
-            stats = torch.zeros_like(stats)
         return {"parent_logits": parent, "query": query, "stats": stats, "top2": top2}
 
 

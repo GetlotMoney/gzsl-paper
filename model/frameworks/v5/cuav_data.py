@@ -15,7 +15,7 @@ SUBSET_SCHEMA = "gzsl-paper.cuav-crop-subset.v1"
 BUNDLE_SCHEMA = "gzsl-paper.cuav-crop-bundle.v1"
 
 
-def load_subset(path, sha, *, subset, open_crops, open_paths, open_lowres=False):
+def load_subset(path, sha, *, subset, open_crops, open_paths, open_preprocessed=False):
     path = Path(path)
     if not path.is_file() or sha256_file(path) != sha:
         raise ValueError("CUAV subset manifest路径/SHA错误。")
@@ -37,14 +37,14 @@ def load_subset(path, sha, *, subset, open_crops, open_paths, open_lowres=False)
         crops = np.load(crop_path, mmap_mode="r")
         if crops.shape != (int(meta["count"]), 25, 768) or crops.dtype != np.float16:
             raise ValueError("CUAV crop feature shape/dtype错误。")
-    lowres = None
-    if open_lowres:
-        lowres_path = path.parent / "lowres_crop_features.npy"
-        if not lowres_path.is_file() or sha256_file(lowres_path) != outputs.get(lowres_path.name):
-            raise ValueError("CUAV lowres crop feature资产错误。")
-        lowres = np.load(lowres_path, mmap_mode="r")
-        if lowres.shape != (int(meta["count"]), 25, 768) or lowres.dtype != np.float16:
-            raise ValueError("CUAV lowres crop feature shape/dtype错误。")
+    preprocessed = None
+    if open_preprocessed:
+        preprocessed_path = path.parent / "preprocessed_336.npy"
+        if not preprocessed_path.is_file() or sha256_file(preprocessed_path) != outputs.get(preprocessed_path.name):
+            raise ValueError("CUAV preprocessed336资产错误。")
+        preprocessed = np.load(preprocessed_path, mmap_mode="r")
+        if preprocessed.shape != (int(meta["count"]), 3, 336, 336) or preprocessed.dtype != np.float16:
+            raise ValueError("CUAV preprocessed336 shape/dtype错误。")
     image_paths = None
     if open_paths:
         paths_file = path.parent / "image_paths.json"
@@ -55,7 +55,18 @@ def load_subset(path, sha, *, subset, open_crops, open_paths, open_lowres=False)
             raise ValueError("CUAV image path count错误。")
     if not torch.equal(values["class_ids"].long(), torch.tensor(meta["class_ids"]).long()):
         raise ValueError("CUAV class_ids与manifest不一致。")
-    return values, crops, lowres, image_paths, meta
+    count, classes = int(meta["count"]), len(meta["class_ids"])
+    expected = {
+        "full_cls": (count, 768), "labels": (count,), "raw_indices": (count,),
+        "class_ids": (classes,), "name_embeddings": (classes, 768),
+        "crop_boxes": (count, 25, 4),
+    }
+    for key, shape in expected.items():
+        if tuple(values[key].shape) != shape:
+            raise ValueError(f"CUAV {key} shape错误。")
+    if meta.get("crop_action_sha256") != "4e64cb1fa0a24b3fd734d53dc60dadf94057bfadf36ff65fb0e0a063bfdb74cb":
+        raise ValueError("CUAV crop action geometry SHA错误。")
+    return values, crops, preprocessed, image_paths, meta
 
 
 def validate_bundle(path, sha, *, subset, subset_sha):

@@ -6,6 +6,7 @@ import torch
 import torch.nn.functional as F
 
 from model.frameworks.v5.cuav import CUAVModel, cuav_policy_loss, standardize
+from model.frameworks.v5.evaluate_cuav_dev import encode_lowres_selected
 from tools.prepare_cuav_assets import WINDOWS, WINDOW_SHA
 
 
@@ -51,9 +52,8 @@ def test_policy_starts_uniform_and_two_step_gradient_contract():
 
 def test_s_off_zeros_ambiguity_state():
     model=_model(); full,_=_inputs()
-    with patch.object(model.semantic_module,"forward",wraps=model.semantic_module.forward) as call:
+    with patch("model.frameworks.v5.cuav.stable_top2",side_effect=AssertionError("ambiguity opened")):
         output=model.policy(full,semantic_off=True)
-    assert call.call_args.kwargs["semantic_off"] is True
     assert output["policy_logits"].shape==(2,25)
 
 
@@ -68,3 +68,16 @@ def test_policy_loss_is_finite():
     model=_model(); output=model.training_forward(*_inputs())
     losses=cuav_policy_loss(output,torch.tensor([0,1]))
     assert all(torch.isfinite(value) for value in losses.values())
+
+
+def test_lowres_executor_encodes_only_selected_action_per_row():
+    class FakeModel:
+        def __init__(self): self.count=0
+        def encode_image(self, images):
+            self.count += images.size(0)
+            value=images.mean(dim=(1,2,3),keepdim=False)
+            return value[:,None].expand(-1,768)
+    model=FakeModel(); images=torch.randn(3,3,336,336).half(); actions=torch.tensor([0,12,24])
+    output=encode_lowres_selected(model,images,actions,torch.device("cpu"),batch_size=2)
+    assert output.shape==(3,768)
+    assert model.count==3

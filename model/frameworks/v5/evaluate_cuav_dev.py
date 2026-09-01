@@ -51,6 +51,27 @@ def encode_selected(model, preprocess, paths, actions, device, batch_size=32, wo
     return torch.cat(rows), torch.cat(boxes)
 
 
+@torch.no_grad()
+def encode_lowres_selected(model, preprocessed, actions, device, batch_size=32):
+    rows = []
+    for start in range(0, len(actions), batch_size):
+        end = min(start + batch_size, len(actions))
+        source = preprocessed[start:end]
+        images = (
+            source.clone().float()
+            if isinstance(source, torch.Tensor)
+            else torch.from_numpy(np.asarray(source).copy()).float()
+        )
+        crops = []
+        for local, action in enumerate(actions[start:end].tolist()):
+            row, column = WINDOWS[int(action)]
+            crop = images[local:local+1, :, row*14:(row+6)*14, column*14:(column+6)*14]
+            crops.append(F.interpolate(crop, size=(336, 336), mode="bicubic", align_corners=False)[0])
+        batch = torch.stack(crops).to(device)
+        rows.append(F.normalize(model.encode_image(batch).float(), dim=-1).cpu())
+    return torch.cat(rows)
+
+
 def load_checkpoint(spec, expected_condition, expected_commit, bundle_id):
     path = Path(spec["path"])
     if not path.is_file() or sha256_file(path) != spec["sha256"]:
@@ -59,10 +80,15 @@ def load_checkpoint(spec, expected_condition, expected_commit, bundle_id):
     if (
         value.get("schema_version") != "gzsl-paper.v5-cuav-dev-train.v1"
         or value.get("condition_id") != expected_condition
+        or value.get("semantic_off") != (expected_condition == "CUAV_IMAGE_ONLY")
         or value.get("code_commit") != expected_commit
         or spec["training_commit"] != expected_commit
         or value.get("bundle_id") != bundle_id
-        or not all(value.get("gradient_receipt", {}).values())
+        or not all(value.get("gradient_receipt", {}).get(key) is True for key in (
+            ("step1_Wa_nonzero", "step2_Wa_nonzero", "step2_Wz_nonzero", "step2_Wq_Ws_not_applicable")
+            if expected_condition == "CUAV_IMAGE_ONLY"
+            else ("step1_Wa_nonzero", "step2_Wa_nonzero", "step2_Wz_nonzero", "step2_Wq_nonzero", "step2_Ws_nonzero")
+        ))
     ):
         raise ValueError("CUAV checkpoint身份错误。")
     return value
@@ -146,20 +172,25 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
         or config["official_test_loaded"] is not False or config["pclr_online_inference"] is not False
     ):
         raise ValueError("CUAV eval配置错误。")
-    eval_values, _, lowres, paths, eval_meta = load_subset(
+    eval_values, _, preprocessed, paths, eval_meta = load_subset(
         config["eval_manifest"], config["eval_manifest_sha256"], subset="dev_eval",
-        open_crops=False, open_paths=True, open_lowres=True,
+        open_crops=False, open_paths=True, open_preprocessed=True,
     )
     train_values, train_crops, _, _, train_meta = load_subset(
         config["train_manifest"], config["train_manifest_sha256"], subset="dev_train",
         open_crops=True, open_paths=False,
     )
     bundle = validate_bundle(config["bundle_manifest"], config["bundle_manifest_sha256"], subset="dev_eval", subset_sha=config["eval_manifest_sha256"])
+    validate_bundle(config["bundle_manifest"], config["bundle_manifest_sha256"], subset="dev_train", subset_sha=config["train_manifest_sha256"])
+    validate_bundle(config["bundle_manifest"], config["bundle_manifest_sha256"], subset="dev_eval_oracle", subset_sha=config["oracle_manifest_sha256"])
     bundle_id = bundle["common_identity"]["bundle_id"]
     if (
         eval_meta["common_identity"]["code_commit"] != config["asset_generation_commit"]
+        or train_meta["common_identity"]["bundle_id"] != bundle_id
         or eval_values["class_ids"].numel() != 150 or torch.unique(eval_values["labels"]).numel() != 50
+        or not bool(torch.isin(eval_values["labels"].long(), eval_values["class_ids"].long()).all())
         or train_values["class_ids"].numel() != 100
+        or len(train_values["labels"]) != 4702 or len(eval_values["labels"]) != 2355
     ):
         raise ValueError("CUAV 100/50资产边界错误。")
     full_cp = load_checkpoint(config["full_checkpoint"], "CUAV_FULL", expected_commit, bundle_id)
@@ -179,8 +210,7 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
     image_crop, _ = encode_selected(clip_model, preprocess, paths, image_actions, device)
     center_crop, _ = encode_selected(clip_model, preprocess, paths, center_actions, device)
     static_crop, _ = encode_selected(clip_model, preprocess, paths, static_actions, device)
-    lowres_array = torch.from_numpy(np.array(lowres, copy=True)).float()
-    lowres_selected = lowres_array[torch.arange(len(full_actions)), full_actions]
+    lowres_selected = encode_lowres_selected(clip_model, preprocessed, full_actions, device)
     logits = {}
     logits["full"], full_update_calls = selected_logits(full_cp, eval_values, full_crop, device)
     logits["parent"] = CUAVModel(eval_values["name_embeddings"], eval_values["class_ids"]).semantic_module(eval_values["full_cls"])["parent_logits"]
@@ -190,6 +220,9 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
     logits["center"], _ = selected_logits(full_cp, eval_values, center_crop, device)
     logits["static_best"], _ = selected_logits(full_cp, eval_values, static_crop, device)
     logits["image_only"], image_update_calls = selected_logits(image_cp, eval_values, image_crop, device, semantic_off=True)
+    expected_full_boxes = eval_values["crop_boxes"][torch.arange(len(full_actions)), full_actions]
+    if not torch.equal(full_boxes.long(), expected_full_boxes.long()):
+        raise ValueError("CUAV selected raw crop box与资产geometry不一致。")
     values = {name: metrics(value, eval_values) for name, value in logits.items()}
     generator = torch.Generator().manual_seed(7); matrix = torch.randint(0,50,(10000,50),generator=generator)
     comparisons = {name: comparison(values["full"]["per_class"], values[name]["per_class"], matrix) for name in ("parent","s_off","v_off","i_off","center","static_best","image_only")}
@@ -207,7 +240,13 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
         config["oracle_manifest"], config["oracle_manifest_sha256"], subset="dev_eval_oracle",
         open_crops=True, open_paths=False,
     )
-    if oracle_meta["image_order_sha256"] != eval_meta["image_order_sha256"]:
+    if (
+        oracle_meta["image_order_sha256"] != eval_meta["image_order_sha256"]
+        or oracle_meta["common_identity"]["bundle_id"] != bundle_id
+        or not torch.equal(oracle_values["class_ids"].long(), eval_values["class_ids"].long())
+        or not torch.equal(oracle_values["labels"].long(), eval_values["labels"].long())
+        or len(oracle_values["labels"]) != 2355
+    ):
         raise ValueError("CUAV oracle rows与B1 eval不一致。")
     oracle_model=CUAVModel(oracle_values["name_embeddings"],oracle_values["class_ids"]).to(device).eval()
     oracle_predictions=[]
@@ -228,6 +267,10 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
         "comparisons":comparisons,"transitions":{"corrected":int(corrected.sum()),"damaged":int(damaged.sum()),"net":int(corrected.sum()-damaged.sum())},
         "policy":{"full_histogram":[int(x) for x in histogram],"highest_occupancy":highest,"used_actions":int(histogram.gt(0).sum()),"mean_entropy":float(full_entropy.mean()),"center_overlap":float(full_actions.eq(12).double().mean()),"static_best_action":static_action,"static_best_is_center":static_action==12,"static_train_losses":static_losses,"full_soff_agreement":float(full_actions.eq(soff_actions).double().mean()),"full_image_only_agreement":float(full_actions.eq(image_actions).double().mean())},
         "oracle":{"macro_top1":100*float(oracle_vector.mean()),"all25_diagnostic_only":True},
+        "checkpoint_identities":{
+            "full":{"sha256":config["full_checkpoint"]["sha256"],"training_commit":config["full_checkpoint"]["training_commit"],"train_config_sha256":full_cp["config_sha256"],"gradient_receipt":full_cp["gradient_receipt"]},
+            "image_only":{"sha256":config["image_only_checkpoint"]["sha256"],"training_commit":config["image_only_checkpoint"]["training_commit"],"train_config_sha256":image_cp["config_sha256"],"gradient_receipt":image_cp["gradient_receipt"]},
+        },
         "b1_receipt":{
             "raw_original_open_count_by_condition":{
                 "full":len(paths),"s_off":len(paths),"image_only":len(paths),
@@ -236,7 +279,12 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
             "total_control_raw_original_open_count":len(paths)*5,
             "full_selected_crop_forward_count":len(paths),
             "all25_full_eval_encoding_count":0,
+            "v_off_lowres_selected_crop_forward_count":len(paths),
+            "v_off_all25_eval_encoding_count":0,
+            "v_off_preprocessed_336_opened":True,
             "full_boxes_sample":full_boxes[0].tolist(),
+            "full_actions_sha256":__import__("hashlib").sha256(full_actions.numpy().tobytes()).hexdigest(),
+            "full_selected_boxes_sha256":__import__("hashlib").sha256(full_boxes.numpy().tobytes()).hexdigest(),
             "policy_decision_before_raw_open":True,
         },
         "module_call_counts":{"full_policy":full_policy_calls,"full_update":full_update_calls,"s_off_policy":soff_policy_calls,"s_off_update":soff_update_calls,"v_off":voff_calls,"i_off":ioff_calls,"image_only_policy":image_policy_calls,"image_only_update":image_update_calls},
