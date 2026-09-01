@@ -1,11 +1,11 @@
 # IDEA-192：Dense Counterfactual Pairwise Glimpse Utility（D-CPGU，密集反事实二元高清观察效用）
 
-status: proposed_owner_confirmed_proof_of_path_candidate
+status: revised_before_run_invalidated_by_owner_input_contract
 idea_id: IDEA-192
 source_type: experiment_result + diagnostic_result + first_principles + owner_hypothesis + nearest_work_boundary
 method_name: Dense Counterfactual Pairwise Glimpse Utility
 method_acronym: D-CPGU
-current_run: none
+current_run: none; pre-run code commit aa9eb4518a940a63341ae8fc24e2d2a1ac91b820 was never trained
 problem: 当前2355-row诊断证明Top1/Top2高清crop具有+16.189pp oracle上限，但IDEA-172文本行动和CUAV expected-loss policy均失败；需要检验25维dense反事实效用能否在观察前预测有用动作并安全abstain。
 hypothesis: 只用100 dev-seen生成每个样本25个crop动作的二元正确性向量，若模型能从全图name歧义预测该效用场，并在B≤1下安全abstain或获取一个高清crop完成固定keep/swap，则可在class-disjoint类别上超过Parent、普通selector/rerank及三项off。
 core_change: 将学习对象从单动作标签或expected crop loss改为完整25维counterfactual correctness vector，并为pair-unreachable样本提供全零utility与固定0.5 abstain。
@@ -20,7 +20,7 @@ base_framework: FRAMEWORK-V5
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 gate_computational_parent: frozen OpenAI CLIP ViT-L/14@336 CLS × one canonical class-name prompt
 formal_reference: FRAMEWORK-V5 H=81.06877662507551 is reported only; D-CPGU prohibits PCLR online inference
-owner_decision: 2026-09-01 owner接受IDEA-192/D-CPGU并授权继续尝试→失败→合规补救→经验总结闭环；不允许核心反例成立后扩大B、改阈值、几何或模型族救活。
+owner_decision: 2026-09-01 owner initially accepted D-CPGU, then clarified that the actual semantic input must be six part descriptions plus overall plus distinctive and that a real train-time attention mechanism was required. The name-only CLS+MLP implementation was therefore invalidated before server training. Its code/review evidence remains on `exp/v5/innovation/v5-try-006-dcpgu`; it is not a code parent. The changed input, representation and falsifiable hypothesis continue as IDEA-193 from the formal V5 parent.
 reuse_refs: [IDEA-172, IDEA-191]
 
 ## Current evidence
