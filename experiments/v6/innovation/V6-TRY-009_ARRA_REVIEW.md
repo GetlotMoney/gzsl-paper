@@ -27,3 +27,15 @@ local_evidence: `15 passed`
 剩余P2均不阻断固定配置RUN；graph-free表示不读取relation/edge/graph资产，不表示text-free。owner此前要求不要HTML，本proof-of-path不生成HTML图。
 
 本审查只授权固定配置CUDA micro与正式RUN，不证明性能或Innovation。
+
+## 真实micro前relation flag修复重签
+
+- first_micro_failure: 真实manifest披露`relation_encoder_matches_parent=false`，旧代码误把非阻断P2收紧为必须true，训练前即失败，未进入forward或梯度。
+- fixed_commit: `c1f93bb9478fab3b210364cd9aa0a03e97e58be5`
+- fixed_tree: `cfd10d1dd0de0c6793e8365533989800c64f52e5`
+- config_sha256: 不变，`58f631a37f984c72818c30fe76f6f9b19e79b325179237241202e1902330b5e3`
+- A复核: `79318597aee9d2d2b9c9550e7479cf5910e4150d54cd088b98dd1c2ff5d5b342`
+- B复核: `f4314fd2e150e34a0b31034f114cb9df7e039bc902b9f778c8f4928975d4a3f3`
+- A最终交叉: `2b2e06b96fbdb41e26f061f100f975758b2b5d96b7c3522465098de73a9a6d0a`
+- B最终交叉: `a49ac25594bc5eab389e30301edf4e4815e296dddd9657c8359ef02239f15e16`
+- result: 新commit身份`P0=0/P1=0`，**双Agent交叉审查通过**。字段必须是bool并将真实false写入receipt；禁止声称relation encoder与parent相同。

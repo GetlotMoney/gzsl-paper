@@ -108,3 +108,5 @@ owner_requirement: RGRA failure is now recorded; this rescue remains authorized 
 - final_A: `0069bfe645ea3b20146df4f538725a54d1fd8837330199d97d2c0f414208b999`
 - final_B: `ca785dae6d0f52ec023dc223a5b84209b8df2a08772f29e36aca4ec951283a49`
 - result: `P0=0/P1=0`，**双Agent交叉审查通过**；只授权固定配置RUN。
+
+post_micro_identity_fix: 首次micro在资产加载阶段因真实`relation_encoder_matches_parent=false`被错误拒绝，未进入训练。修复commit=`c1f93bb9478fab3b210364cd9aa0a03e97e58be5`；A/B最终交叉SHA=`2b2e06b96fbdb41e26f061f100f975758b2b5d96b7c3522465098de73a9a6d0a`/`a49ac25594bc5eab389e30301edf4e4815e296dddd9657c8359ef02239f15e16`；新身份`P0=0/P1=0`，双Agent交叉审查通过。
