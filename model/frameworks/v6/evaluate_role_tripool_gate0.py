@@ -31,8 +31,12 @@ from PIL import Image
 from model.frameworks.v6.role_tripool import (
     ACTION_COUNT,
     ACTION_GEOMETRY_SHA256,
+    CORRECTION_CLASS,
+    DAMAGE_CLASS,
     FEATURE_DIM,
+    NEUTRAL_CLASS,
     PAIR_TEMPERATURE,
+    TRISTATE_CLASS_COUNT,
     WINDOW_SIZE,
     WINDOW_STARTS,
     RoleWindowDenseGlimpse,
@@ -567,97 +571,101 @@ def train_static_best_action(
     labels = _load_output_tensor_from_assets(assets, "dev_train", "labels.pt").long()
     _validate_axis_labels("dev_train", labels, train_class_ids)
     crops = _load_crop_feature_memmap(assets, "dev_train", expected_count=train_view.size)
-    choice_counts = torch.zeros(ACTION_COUNT + 1, dtype=torch.long)
-    target_margin_min = float("inf")
-    target_margin_max = float("-inf")
-    target_margin_sum = 0.0
-    target_margin_count = 0
-    strongest_negative_margin_min = float("inf")
-    strongest_negative_margin_max = float("-inf")
-    strongest_negative_margin_sum = 0.0
-    strongest_negative_margin_count = 0
+    all_targets: list[torch.Tensor] = []
     group_counts = torch.zeros(3, dtype=torch.long)
     for start in range(0, train_view.size, batch_size):
         end = min(start + batch_size, train_view.size)
         rows = np.arange(start, end, dtype=np.int64)
         batch = train_view.batch(rows, include_patches=False, as_torch=True, device=device)
         crop_batch = torch.from_numpy(np.asarray(crops[start:end]).copy()).to(device).float()
-        pair = model.parent_state(batch["cls"])
-        names = model.name_embeddings.to(device=device)
-        crop_logits = torch.einsum(
-            "bad,cd->bac", F.normalize(crop_batch, dim=-1), names
-        ) / PAIR_TEMPERATURE
-        local_labels = model._global_to_local_indices(labels[start:end].to(device), device)
-        leader = pair.top2[:, 0]
-        challenger = pair.top2[:, 1]
-        group = torch.full_like(local_labels, fill_value=2)
-        group = torch.where(local_labels.eq(leader), torch.zeros_like(group), group)
-        group = torch.where(local_labels.eq(challenger), torch.ones_like(group), group)
+        targets, group, _ = model.signed_action_targets(
+            batch["cls"],
+            crop_batch,
+            labels[start:end].to(device),
+        )
+        targets_cpu = targets.detach().cpu().long()
+        if targets_cpu.shape != (end - start, ACTION_COUNT):
+            raise RWDGEvalError(f"Role Tri-Pool static target shape错误：{tuple(targets_cpu.shape)}")
+        if bool((targets_cpu < 0).any()) or bool((targets_cpu >= TRISTATE_CLASS_COUNT).any()):
+            raise RWDGEvalError("Role Tri-Pool static target必须为三态class id [0,2]。")
+        all_targets.append(targets_cpu)
         group_counts += torch.bincount(group.detach().cpu(), minlength=3)[:3]
-
-        action_axis = torch.arange(ACTION_COUNT, device=device)
-        row = torch.arange(end - start, device=device)
-        leader_score = crop_logits[row[:, None], action_axis[None, :], leader[:, None]]
-        challenger_score = crop_logits[row[:, None], action_axis[None, :], challenger[:, None]]
-        margin = leader_score - challenger_score
-        strongest_margin, strongest_action = margin.min(dim=1)
-        choice = torch.zeros(end - start, dtype=torch.long, device=device)
-        choose_action = group.eq(1) & strongest_margin.lt(0)
-        choice[choose_action] = strongest_action[choose_action] + 1
-        choice_counts += torch.bincount(choice.detach().cpu(), minlength=ACTION_COUNT + 1)
-
-        flat_margin = margin.detach().cpu().double().flatten()
-        target_margin_min = min(target_margin_min, float(flat_margin.min()))
-        target_margin_max = max(target_margin_max, float(flat_margin.max()))
-        target_margin_sum += float(flat_margin.sum())
-        target_margin_count += int(flat_margin.numel())
-        chosen_negative = strongest_margin[choose_action].detach().cpu().double()
-        if chosen_negative.numel() > 0:
-            strongest_negative_margin_min = min(
-                strongest_negative_margin_min, float(chosen_negative.min())
-            )
-            strongest_negative_margin_max = max(
-                strongest_negative_margin_max, float(chosen_negative.max())
-            )
-            strongest_negative_margin_sum += float(chosen_negative.sum())
-            strongest_negative_margin_count += int(chosen_negative.numel())
-    non_abstain_counts = choice_counts[1:]
-    action = int(torch.argmax(non_abstain_counts).item())
-    choice_stats = {
-        "target_policy": "per_window_damage_neutral_correction",
+    targets_all = torch.cat(all_targets).long()
+    if targets_all.shape != (train_view.size, ACTION_COUNT):
+        raise RWDGEvalError(f"Role Tri-Pool natural target shape错误：{tuple(targets_all.shape)}")
+    corrections = targets_all.eq(CORRECTION_CLASS).sum(dim=0).long()
+    damages = targets_all.eq(DAMAGE_CLASS).sum(dim=0).long()
+    neutrals = targets_all.eq(NEUTRAL_CLASS).sum(dim=0).long()
+    net = corrections - damages
+    action = int(torch.argmax(net).item())  # torch.argmax returns the smallest max index.
+    class_histogram = [
+        int(x)
+        for x in torch.bincount(
+            targets_all.reshape(-1), minlength=TRISTATE_CLASS_COUNT
+        )[:TRISTATE_CLASS_COUNT].tolist()
+    ]
+    detail = {
+        "target_policy": "per_window_executable_damage_neutral_correction",
+        "target_definition": "role_tripool_per_window_signed_net_benefit",
         "natural_train_rows": int(train_view.size),
-        "abstain_count": int(choice_counts[0]),
-        "non_abstain_count": int(non_abstain_counts.sum()),
-        "choice_counts_26": [int(x) for x in choice_counts],
-        "action_counts_25": [int(x) for x in non_abstain_counts],
+        "count": int(targets_all.shape[0]),
+        "correction_histogram": [int(x) for x in corrections.tolist()],
+        "damage_histogram": [int(x) for x in damages.tolist()],
+        "neutral_histogram": [int(x) for x in neutrals.tolist()],
+        "net_histogram": [int(x) for x in net.tolist()],
         "static_best_action": action,
-        "static_best_action_frequency": int(non_abstain_counts[action]),
-        "static_best_expected_action12": action == 12,
+        "static_best_net": int(net[action]),
+        "static_best_definition": "largest correction-minus-damage count on natural train rows",
+        "static_best_rule": "max_natural_net_action",
         "group_counts": {
             "leader": int(group_counts[0]),
             "challenger": int(group_counts[1]),
             "outside": int(group_counts[2]),
         },
-        "target_margin": {
-            "min": target_margin_min,
-            "mean": target_margin_sum / max(1, target_margin_count),
-            "max": target_margin_max,
-        },
-        "strongest_negative_margin": {
-            "min": None if strongest_negative_margin_count == 0 else strongest_negative_margin_min,
-            "mean": None if strongest_negative_margin_count == 0 else strongest_negative_margin_sum / strongest_negative_margin_count,
-            "max": None if strongest_negative_margin_count == 0 else strongest_negative_margin_max,
-            "count": strongest_negative_margin_count,
-        },
+        "tri_state_class_histogram": class_histogram,
+        "class_names": ["damage", "neutral", "correction"],
     }
     receipt = {
-        "choice_counts_26": choice_stats["choice_counts_26"],
-        "action_counts_25": choice_stats["action_counts_25"],
+        "correction_histogram": detail["correction_histogram"],
+        "damage_histogram": detail["damage_histogram"],
+        "neutral_histogram": detail["neutral_histogram"],
+        "net_histogram": detail["net_histogram"],
         "count": int(train_view.size),
-        "target_policy": choice_stats["target_policy"],
-        "choice_stats": choice_stats,
+        "static_best_action": action,
+        "static_best_rule": detail["static_best_rule"],
+        "target_policy": detail["target_policy"],
+        "detail": detail,
     }
-    return action, [int(x) for x in non_abstain_counts], _json_sha256(receipt), choice_stats
+    return action, [int(x) for x in net.tolist()], _json_sha256(receipt), detail
+
+
+def assert_static_best_matches_checkpoint(
+    *,
+    computed_action: int,
+    computed_detail: Mapping[str, Any],
+    checkpoint: Mapping[str, Any],
+) -> None:
+    checkpoint_static = checkpoint.get("static_best")
+    if not isinstance(checkpoint_static, Mapping):
+        raise RWDGEvalError("checkpoint缺少static_best。")
+    expected = {
+        "static_best_action": computed_action,
+        "static_best_rule": computed_detail["static_best_rule"],
+        "count": computed_detail["count"],
+        "correction_histogram": computed_detail["correction_histogram"],
+        "damage_histogram": computed_detail["damage_histogram"],
+        "net_histogram": computed_detail["net_histogram"],
+        "static_best_definition": computed_detail["static_best_definition"],
+        "group_counts": computed_detail["group_counts"],
+        "tri_state_class_histogram": computed_detail["tri_state_class_histogram"],
+    }
+    mismatches = {
+        key: {"checkpoint": checkpoint_static.get(key), "computed": value}
+        for key, value in expected.items()
+        if checkpoint_static.get(key) != value
+    }
+    if mismatches:
+        raise RWDGEvalError(f"checkpoint static_best与eval重算不一致：{mismatches}")
 
 
 def center_actions(size: int) -> torch.Tensor:
@@ -920,6 +928,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         config["full_checkpoint"],
         expected_commit=expected_commit,
         expected_bundle_sha256=config["cuav_bundle_manifest_sha256"],
+        expected_train_config_sha256=config["full_checkpoint"]["train_config_sha256"],
     )
     full_model = instantiate_model(assets, eval_class_ids, checkpoint, device)
     train_model = instantiate_model(assets, train_class_ids, checkpoint, device)
@@ -942,13 +951,18 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         full_model, eval_view, full_trace, device=device, batch_size=eval_batch
     )
 
-    static_action, static_action_counts, static_sha, action_choice_stats = train_static_best_action(
+    static_action, static_net_histogram, static_sha, static_best_detail = train_static_best_action(
         train_model,
         train_view,
         assets,
         train_class_ids,
         device=device,
         batch_size=eval_batch,
+    )
+    assert_static_best_matches_checkpoint(
+        computed_action=static_action,
+        computed_detail=static_best_detail,
+        checkpoint=checkpoint,
     )
 
     # Post-freeze metadata: raw paths/boxes are opened only after all Full/S/V decisions are frozen.
@@ -1160,7 +1174,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
             "leader_damage": int(group_stats["leader"]["damaged"]),
             "challenger_corrections": int(group_stats["challenger"]["corrected"]),
         },
-        "action_choice": action_choice_stats,
+        "static_best_detail": static_best_detail,
         "utility": {
             "trigger_count": trigger_count,
             "abstain_count": int(eval_view.size - trigger_count),
@@ -1175,7 +1189,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
         "role_tripool_evidence": evidence_summary(full_trace),
         "controls": {
             "static_best_action": int(static_action),
-            "static_best_action_counts": static_action_counts,
+            "static_best_net_histogram": static_net_histogram,
             "static_best_sha256": static_sha,
             "static_best_target_policy": "max_natural_correction_minus_damage_action",
             "hash_random_mapping_sha256": random_sha,
