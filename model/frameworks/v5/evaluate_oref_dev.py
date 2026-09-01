@@ -23,6 +23,10 @@ CONDITIONS = {
     "full": "OREF_FULL", "ledger_mlp": "OREF_LEDGER_MLP",
     "filip": "OREF_FILIP", "signed_ledger": "OREF_SIGNED_LEDGER",
 }
+SCORE_MODES = {
+    "OREF_FULL": "full", "OREF_LEDGER_MLP": "ledger_mlp",
+    "OREF_FILIP": "filip", "OREF_SIGNED_LEDGER": "signed_ledger",
+}
 
 
 def _load_checkpoint(spec, expected, bundle_id, expected_commit):
@@ -31,13 +35,27 @@ def _load_checkpoint(spec, expected, bundle_id, expected_commit):
         raise ValueError(f"OREF checkpoint SHA错误：{expected}")
     value = torch.load(path, map_location="cpu", weights_only=True)
     if (
+        value.get("schema_version") != "gzsl-paper.v5-oref-dev-train.v1"
+        or
         value.get("condition_id") != expected
+        or value.get("score_mode") != SCORE_MODES[expected]
         or value.get("code_commit") != spec["training_commit"]
         or spec["training_commit"] != expected_commit
         or value.get("bundle_id") != bundle_id
+        or not all(value.get("gradient_receipt", {}).get(key) is True for key in (
+            "step1_Wo_nonzero", "step1_Wi_zero_allowed",
+            "step2_Wo_nonzero", "step2_Wi_nonzero",
+        ))
     ):
         raise ValueError(f"OREF checkpoint身份错误：{expected}")
     return value
+
+
+def require_same_active_axis(config_axis, full_axis):
+    expected = [int(x) for x in full_axis]
+    if [int(x) for x in config_axis] != expected:
+        raise ValueError("OREF Target-free配置候选轴不等于当前OREF eval轴。")
+    return expected
 
 
 def align_targetfree_receipt(
@@ -147,9 +165,10 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
         "targetfree_image_order_sha256", "targetfree_macro_top1",
         "targetfree_bundle_id", "targetfree_active_class_ids",
         "targetfree_source_failure_sha256",
+        "experiment_id", "asset_generation_commit",
     }
     if (
-        not isinstance(config, dict) or not required.issubset(config)
+        not isinstance(config, dict) or set(config) != required
         or
         config.get("schema_version") != SCHEMA
         or config_sha != expected_config_sha or current_code_commit() != expected_commit
@@ -181,8 +200,15 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
         device=device, batch_size=4, chunk=5,
     )
     full = _infer(checkpoints["full"], mode="full", **common_args)
-    if full["class_ids"].numel() != 150 or torch.unique(full["labels"]).numel() != 50:
+    if (
+        full["class_ids"].numel() != 150
+        or torch.unique(full["labels"]).numel() != 50
+        or not bool(torch.isin(full["labels"], full["class_ids"]).all())
+    ):
         raise ValueError("OREF eval必须是150候选轴和50个class-disjoint标签类。")
+    current_active_axis = require_same_active_axis(
+        config["targetfree_active_class_ids"], full["class_ids"]
+    )
     outputs = {
         "full": full,
         "parent": {
@@ -211,7 +237,7 @@ def run(config_path, output_path, expected_commit, expected_config_sha):
     targetfree_vector = align_targetfree_receipt(
         targetfree_receipt,
         expected_bundle_id=config["targetfree_bundle_id"],
-        expected_active_class_ids=config["targetfree_active_class_ids"],
+        expected_active_class_ids=current_active_axis,
         expected_eval_class_ids=eval_classes,
         expected_image_order_sha256=config["targetfree_image_order_sha256"],
         expected_macro_top1=config["targetfree_macro_top1"],

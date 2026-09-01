@@ -4,7 +4,9 @@ import torch
 import torch.nn.functional as F
 import pytest
 
-from model.frameworks.v5.evaluate_oref_dev import align_targetfree_receipt
+from model.frameworks.v5.evaluate_oref_dev import (
+    align_targetfree_receipt, require_same_active_axis,
+)
 from model.frameworks.v5.oref import OREFModel, oref_loss, stable_rivals
 
 
@@ -125,3 +127,9 @@ def test_targetfree_receipt_rejects_wrong_candidate_axis():
             expected_eval_class_ids=torch.arange(50), expected_image_order_sha256="rows",
             expected_macro_top1=50.0, expected_source_failure_sha256="failure",
         )
+
+
+def test_targetfree_config_axis_must_equal_oref_eval_axis():
+    assert require_same_active_axis([2, 5, 9], torch.tensor([2, 5, 9])) == [2, 5, 9]
+    with pytest.raises(ValueError):
+        require_same_active_axis([2, 5, 8], torch.tensor([2, 5, 9]))
