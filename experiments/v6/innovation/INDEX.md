@@ -30,3 +30,7 @@ C-PCLR分别低`0.307664/0.558345 H`。正式decision=`drop_gate_b_contract_fail
 Owner后续明确覆盖内部裁决，将V6-TRY-006保留为效率型论文候选：状态
 `owner_override_keep_efficiency_candidate`。原始程序drop、指标差值和未完成的成本证据保持不变；
 该覆盖不等于准确率门通过，也不自动晋级FRAMEWORK-V6。
+
+Owner随后将S/V/I统一方法正式晋级为`FRAMEWORK-V7`，论文父基线固定为TG+GTD；内部V5与matched
+online-V5继续作为开发历史保留。`FRAMEWORK-V6-DEVELOPMENT`保持另一套待定框架身份，不因V7
+晋级被覆盖或合并。

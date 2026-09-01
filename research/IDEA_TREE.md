@@ -22,7 +22,7 @@
 | `semantic_representation` | 类别语义和原型如何形成更有结构的表示 | [`IDEA-001 / TG-VPR-H1`](ideas/IDEA-001_tg_vpr_h1.md) |
 | `cross_class_transfer` | seen知识如何可靠迁移到unseen原型 | [`IDEA-005 / TST`](ideas/IDEA-005_tst.md)、[`IDEA-146 / GTD-TST`](ideas/IDEA-146_gtd_tst.md) |
 | `visual_grounding` | 实例级局部视觉证据能否支持或反驳类别语义 | [`IDEA-133`](ideas/IDEA-133_visual_evidence_learning.md)、[`IDEA-158 / GAVE`](ideas/IDEA-158_gave.md)、[`IDEA-159 / RGT`](ideas/IDEA-159_rgt.md)、[`IDEA-160 / full-resolution concept grounding`](ideas/IDEA-160_full_resolution_concept_grounding.md)、[`IDEA-161 / intermediate-patch concept signal`](ideas/IDEA-161_intermediate_patch_concept_signal.md)、[`IDEA-162 / learnable concept readout probe`](ideas/IDEA-162_learnable_concept_readout_probe.md)、[`IDEA-163 / tri-state evidence predicate set`](ideas/IDEA-163_tri_state_evidence_predicate_set.md)、[`IDEA-164 / observable signed evidence`](ideas/IDEA-164_observable_signed_evidence.md)、[`IDEA-165 / constrained evidence graph search`](ideas/IDEA-165_constrained_evidence_graph_search.md)、[`IDEA-167 / conditional information evidence`](ideas/IDEA-167_conditional_information_evidence.md)、[`IDEA-168 / concept-specific region interaction`](ideas/IDEA-168_concept_specific_region_interaction.md)、[`IDEA-169 / contrastive concept interaction`](ideas/IDEA-169_contrastive_concept_interaction.md)、[`IDEA-171 / hypothesis-conditioned visual completion`](ideas/IDEA-171_hypothesis_conditioned_visual_completion.md)、[`IDEA-188 / CEC`](ideas/IDEA-188_cec.md)、[`IDEA-189 / RCEG`](ideas/IDEA-189_role_contrast_evidence_gain.md)、[`IDEA-190 / OREF`](ideas/IDEA-190_observable_role_entailment_field.md)、[`IDEA-191 / CUAV`](ideas/IDEA-191_counterfactual_utility_active_view.md)、[`IDEA-192 / D-CPGU`](ideas/IDEA-192_dense_counterfactual_pairwise_glimpse_utility.md)、[`IDEA-193 / RWDG`](ideas/IDEA-193_role_window_dense_glimpse.md)、[`IDEA-194 / D-CCU`](ideas/IDEA-194_dense_counterfactual_correction_utility.md)、[`IDEA-195 / SCAA`](ideas/IDEA-195_signed_counterfactual_action_advantage.md)、[`IDEA-196 / EAAC`](ideas/IDEA-196_explicit_abstention_action_competition.md)、[`IDEA-197 / RoleTriPool`](ideas/IDEA-197_role_tripool_signed_window_utility.md) |
-| `class_competition` | 细粒度候选和seen/unseen联合竞争如何避免错误修正 | [`IDEA-201 / C-PCLR`](ideas/IDEA-201_compiled_pclr.md)，Gate B低于父条件但S/V/I均过门；owner覆盖保留为效率型候选，真实性能/成本证据待补 |
+| `class_competition` | 细粒度候选和seen/unseen联合竞争如何避免错误修正 | [`IDEA-201 / C-PCLR`](ideas/IDEA-201_compiled_pclr.md)，S/V/I统一方法已由owner晋级为FRAMEWORK-V7；论文父基线为TG+GTD |
 | `learning_generalization` | 训练目标与选择规则如何迁移到未见类别 | 当前无已晋级V4 Idea；相关V2历史按需检索 |
 | `reliability_robustness` | 如何识别不可靠证据并保持关闭路径 | [`IDEA-198 / SEAV`](ideas/IDEA-198_safe_explicit_action_verification.md)、[`IDEA-199 / SVRA`](ideas/IDEA-199_zero_crop_semantic_visual_risk_arbitration.md)、[`IDEA-200 / J-SVRA`](ideas/IDEA-200_joint_semantic_visual_risk_arbitration.md)、[`IDEA-202 / DESC`](ideas/IDEA-202_direct_evidence_conditioned_swap_competition.md)；GAVE、RGT也包含该机制标签 |
 | `evaluation_diagnostic` | 资产、缓存、评估和诊断合同是否可信 | 作为诊断证据记录，不包装为论文创新 |
@@ -90,4 +90,14 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 
 ## 三创新论文门槛
 
-最终目标仍是三个围绕同一核心研究问题、各自有独立证据且能够自然串联的创新。当前正式主线只有TG+GTD；GAVE未晋级、RGT已拒绝，不能为了凑数量写成最终三创新框架。
+最终目标仍是三个围绕同一核心研究问题、各自有独立证据且能够自然串联的创新。当前首个正式论文框架为FRAMEWORK-V7；GAVE未晋级、RGT已拒绝，不能为了凑数量写成最终三创新框架。
+
+## FRAMEWORK-V7
+
+- 状态：owner正式接纳，待冻结`framework/v7`分支与`v7` Tag。
+- 论文方法：TG+GTD+C-PCLR-SVI。
+- 论文父框架：TG+GTD / TUNE-002-RUN-030，`H=79.070015`。
+- 正式来源：[`IDEA-201`](ideas/IDEA-201_compiled_pclr.md)与`V6-TRY-006`。
+- 正式结果：`U/S/H/ZS=77.606910/83.639657/80.510432/88.473403`，相对论文父基线
+  `+1.440417 H`；S/V/I关闭分别降低`1.350275/1.087737/1.313951 H`。
+- V6继续作为另一套待定开发框架保留；V7不继承未接纳V6候选代码作为未来实验父条件。

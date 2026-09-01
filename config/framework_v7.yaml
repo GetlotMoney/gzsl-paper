@@ -1,0 +1,59 @@
+schema_version: gzsl-paper.framework-v7.deploy.v1
+framework_id: FRAMEWORK-V7
+method_name: TG+GTD+C-PCLR-SVI
+dataset: CUB
+source_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/compiled_pclr/V6-TRY-006/model_best.pth
+source_checkpoint_sha256: a551de9d182222141ab4be9db1ae2020417be3a7a7d1d4b369510d635f2207c9
+source_run_commit: 8de7cebda0235ab12e1b4b8f669134c8f4e2c075
+source_training_config_sha256: 73a812268b18e9f46a2cedf59acdabb8ef0cdb13388ec83b5f23b73475e4239b
+asset_source_config: /data/lby/projects/cv_project/gzsl-paper-worktrees/pclr/config/tries/v4_try_023_r2_tuned_local_pclr.yaml
+asset_source_config_sha256: 0861877ae3e4725e29aff547d45e0b6d56a186179309acb5493c5906b803fd49
+asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+relation_manifest_sha256: 0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4
+paper_parent:
+  method: TG+GTD
+  run: TUNE-002-RUN-030
+  H: 79.070015
+training:
+  random_seed: 7
+  batch_size: 50
+  nominal_epochs: 200
+  total_updates: 28228
+  eval_interval_steps: 141
+  candidate_top_k: null
+deployment:
+  input_shape: [batch, 768]
+  reader: 768-64-768 residual MLP
+  q_shape: [200, 1536]
+  bias_shape: [200]
+  forward: h(x) @ Q.T + b
+  online_top_k: false
+  online_relation_edges: false
+  online_laplacian_solve: false
+modules:
+  S: eight fixed role-semantic prototype residuals
+  V: learned visual relation Reader
+  I: compiled directed relation residual G=MD with bounded alpha
+protocol:
+  name: chen_shiming_code_aligned_test_selected_gzsl
+  test_used_for_selection: true
+  test_used_for_hyperparameter_selection: true
+  nested_official_test_selection: true
+  unseen_images_used_for_gradient: false
+  strict_blind_claim: false
+  human_annotations_used: false
+  expert_attributes_used: false
+  llm_world_knowledge_used: true
+metrics:
+  U: 77.60691046714783
+  S: 83.639657497406
+  H: 80.51043185404096
+  ZS: 88.4734034538269
+  delta_H_vs_paper_parent: 1.440416854040965
+module_off_delta_H:
+  S: 1.3502747276005493
+  V: 1.0877374809349334
+  I: 1.3139510379839123
+formal_metrics_sha256: fbbd8ef520d8d6bca62cc1d860a0432a244ab99af30761a3ffd8c824f7c90879
+owner_decision: promote_c_pclr_svi_as_framework_v7
+internal_provenance_disclosure: V5 and matched online-V5 remain repository development references but are not the paper method parent

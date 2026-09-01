@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FRAMEWORK-V7 · TG+GTD+C-PCLR-SVI</title>
+<style>
+:root{--ink:#152033;--muted:#647087;--line:#d5ddea;--base:#edf4ff;--s:#f7efff;--v:#eaf9f4;--i:#fff3e6;--out:#fff}.page{max-width:1240px;margin:30px auto;padding:0 24px}body{margin:0;background:#f6f8fc;color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}h1{font-size:30px;margin:0}.meta{color:var(--muted);margin:3px 0 22px}.flow{display:grid;grid-template-columns:1.05fr .9fr .9fr .9fr 1fr;gap:13px;align-items:stretch}.box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 6px 20px #1d31520e}.base{background:var(--base);border-top:4px solid #477ed8}.s{background:var(--s);border-top:4px solid #8e59c6}.v{background:var(--v);border-top:4px solid #2d9b7e}.i{background:var(--i);border-top:4px solid #d7842e}.out{background:var(--out);border-top:4px solid #ca4f6f}.tag{font-size:12px;font-weight:700;letter-spacing:.07em;color:var(--muted)}.title{font-size:18px;font-weight:750;margin:4px 0 8px}.formula{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#ffffffb8;border:1px solid #dce3ee;border-radius:9px;padding:9px;margin:8px 0;overflow-wrap:anywhere}.arrow{text-align:center;font-size:22px;color:#8490a3;margin:12px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:18px}.metric{font-size:21px;font-weight:750}.ok{color:#087b64}.warn{color:#9a5f15}.wide{grid-column:1/-1}table{width:100%;border-collapse:collapse;background:#fff}th,td{padding:9px;border:1px solid var(--line);text-align:left}@media(max-width:980px){.flow,.cards{grid-template-columns:1fr}.wide{grid-column:auto}}
+</style>
+</head>
+<body><main class="page">
+<h1>FRAMEWORK-V7 · TG+GTD+C-PCLR-SVI</h1>
+<div class="meta">Paper parent: TG+GTD · Source run: V6-TRY-006 · Formal commit: pending promotion freeze</div>
+
+<section class="flow">
+  <article class="box base"><div class="tag">BASE</div><div class="title">TG + GTD</div><p>CLIP CLS特征与类别文本形成基础类别原型，并通过GTD学习seen→unseen迁移。</p><div class="formula">x∈R⁷⁶⁸<br>P∈R²⁰⁰×⁷⁶⁸</div></article>
+  <article class="box s"><div class="tag">S · SEMANTIC</div><div class="title">角色语义</div><p>8种角色描述形成类别语义残差，补充单一类名无法表达的细粒度差异。</p><div class="formula">Qimage=P+ΣwrRr</div></article>
+  <article class="box v"><div class="tag">V · VISUAL</div><div class="title">关系Reader</div><p>残差MLP读取图片中的有向差异证据，并接受关系方向CE与最终分类CE。</p><div class="formula">u=norm(x+W₂·GELU(W₁x))</div></article>
+  <article class="box i"><div class="tag">I · INTERACTION</div><div class="title">关系编译</div><p>把有向比较文本边积分为200个类别关系残差原型。</p><div class="formula">M=solve(BᵀB+λI,Bᵀ)<br>G=MD</div></article>
+  <article class="box out"><div class="tag">DEPLOYMENT</div><div class="title">统一分类出口</div><p>训练完成后不再读取关系图、边或Laplacian。</p><div class="formula">h=[norm(x),u]<br>logits=hQᵀ+b</div></article>
+</section>
+
+<div class="arrow">关系图只进入训练与导出阶段 ↓ 部署阶段仅保留Reader、Q、b</div>
+
+<section class="cards">
+  <article class="box"><div class="tag">LOSS</div><div class="title">训练出口</div><p>TG/GTD：Parent CE、topology、gate loss。Reader：方向CE与200类CE。α与角色权重：200类CE。</p></article>
+  <article class="box"><div class="tag">METRIC</div><div class="title">评估出口</div><p>U/S/H在200类联合空间计算；ZS最后切50个unseen列。整模型official H选择同一checkpoint。</p></article>
+  <article class="box"><div class="tag">BOUNDARY</div><div class="title">数据边界</div><p>训练仅使用7,057张seen trainval图像。unseen图像不进梯度；固定披露test-selected、nonblind和LLM文本来源。</p></article>
+  <article class="box"><div class="tag">RESULT</div><div class="metric">H = 80.510</div><p>相对论文父基线TG+GTD H=79.070，提升<span class="ok">+1.440 H</span>。</p></article>
+  <article class="box"><div class="tag">MODULE OFF</div><div class="title">独立贡献</div><p>S / V / I关闭分别降低<span class="ok">1.350 / 1.088 / 1.314 H</span>。</p></article>
+  <article class="box"><div class="tag">LIMITATION</div><div class="title">当前缺口</div><p class="warn">部署成本、多数据集、多seed与不可还原先例对照尚未完成；不作blind-test或“首次组件”claim。</p></article>
+</section>
+
+<section class="box wide" style="margin-top:18px">
+<div class="tag">INTERNAL PROVENANCE — NOT THE PAPER METHOD PARENT</div>
+<p>仓库保留FRAMEWORK-V5与matched online-V5作为开发历史和事实证据；论文方法父框架固定为TG+GTD。内部历史不得删除，也不得用于声称blind selection。</p>
+</section>
+
+<h2>正式指标</h2>
+<table><tr><th>Condition</th><th>U</th><th>S</th><th>H</th><th>ZS</th><th>Full−off H</th></tr>
+<tr><td>FRAMEWORK-V7 Full</td><td>77.606910</td><td>83.639657</td><td>80.510432</td><td>88.473403</td><td>—</td></tr>
+<tr><td>S-off</td><td>76.141131</td><td>82.428479</td><td>79.160157</td><td>87.064338</td><td>1.350275</td></tr>
+<tr><td>V-off</td><td>82.206428</td><td>76.821315</td><td>79.422694</td><td>88.181764</td><td>1.087737</td></tr>
+<tr><td>I-off</td><td>82.451552</td><td>76.188660</td><td>79.196481</td><td>88.189560</td><td>1.313951</td></tr></table>
+</main></body></html>

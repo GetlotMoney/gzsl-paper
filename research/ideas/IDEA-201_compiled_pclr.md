@@ -2,7 +2,7 @@
 idea_id: IDEA-201
 name: Compiled PCLR
 short_name: C-PCLR
-status: owner_override_keep_efficiency_candidate
+status: promoted_framework_v7
 source_type: owner_hypothesis
 problem_category: class_competition
 mechanism_tags:
@@ -20,7 +20,7 @@ evidence_refs:
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 base_commit_candidate: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 base_ref_candidate: framework/v5 and annotated tag v5^{}
-performance_status: below_parent_owner_accepted_for_efficiency_validation
+performance_status: above_paper_parent_owner_promoted_v7
 test_used_for_selection: true
 unseen_images_used_for_gradient: false
 strict_blind_claim: false
@@ -417,3 +417,6 @@ Top-17”或“训练一定追回mask增益”。
   不改写程序原始`drop_gate_b_contract_failed`与真实数值，不等于准确率门通过，也不自动晋级
   `innovation/framework`。后续若用于论文，必须补真实延迟/显存/吞吐、多数据集与最近工作对照，
   claim限定为精度—部署成本折中和窄方法组合。
+- FRAMEWORK-V7晋级：owner进一步明确论文不以内部V5为父框架，采用TG+GTD作为公开方法父基线，
+  并将S/V/I统一方法晋级为首个正式论文框架`FRAMEWORK-V7`。相对TG+GTD `H=79.070015`，
+  V7 Full提升`+1.440417 H`；内部V5和matched online-V5结果继续保留为开发事实，不删除、不改写。

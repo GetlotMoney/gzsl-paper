@@ -1,0 +1,63 @@
+schema_version: gzsl-paper.framework.v1
+framework_id: FRAMEWORK-V7
+framework_ref: v7
+framework_branch: framework/v7
+framework_tag: v7
+framework_diagram: experiments/v7/framework_diagram.html
+method_name: TG+GTD+C-PCLR-SVI
+method_full_name: Relation-Supervised Generalized Zero-Shot Learning with Semantic Roles, Visual Relation Reading, and Incidence Compilation
+paper_parent_method: TG+GTD
+paper_parent_run: TUNE-002-RUN-030
+paper_parent_H: 79.070015
+repository_promotion_source: V6-TRY-006 / IDEA-201
+reviewed_code_commit: b707b0c4671051244cebf4f8404299fc016b281e
+source_run_commit: 8de7cebda0235ab12e1b4b8f669134c8f4e2c075
+source_checkpoint_sha256: a551de9d182222141ab4be9db1ae2020417be3a7a7d1d4b369510d635f2207c9
+source_metrics_sha256: fbbd8ef520d8d6bca62cc1d860a0432a244ab99af30761a3ffd8c824f7c90879
+owner_promotion_decision: promote_c_pclr_svi_as_framework_v7
+status: promoted_owner_accepted_first_paper_framework
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+nested_official_test_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+human_annotations_used: false
+expert_attributes_used: false
+llm_world_knowledge_used: true
+training_entry: model/frameworks/v6/train_compiled_pclr.py
+deployment_entry: model/frameworks/v7/model.py
+evaluation_entry: model/frameworks/v7/evaluate.py
+formal_config: config/framework_v7.yaml
+modules:
+  S:
+    name: Semantic role prototypes
+    function: integrate eight role-specific class semantics into Q_image
+    off_delta_H: 1.3502747276005493
+  V:
+    name: Visual relation Reader
+    function: learn image-conditioned directional relation evidence
+    off_delta_H: 1.0877374809349334
+  I:
+    name: Incidence relation compiler
+    function: integrate directed comparison-text edges into class residual prototypes G=MD
+    off_delta_H: 1.3139510379839123
+deployment_contract:
+  input: normalized CLIP CLS feature and Reader output
+  output: 200-class logits
+  formula: h(x) Q^T + b
+  q_shape: [200, 1536]
+  online_graph_required: false
+formal_result:
+  experiment: V6-TRY-006
+  best_update: 13818
+  U: 77.60691046714783
+  S: 83.639657497406
+  H: 80.51043185404096
+  ZS: 88.4734034538269
+  delta_H_vs_paper_parent: 1.440416854040965
+limitations:
+  - result is nested official-test selected and is not a blind-test claim
+  - broad components have related-work precedents; paper claim is limited to the unified S/V/I framework
+  - repository V5 and matched online-V5 development results remain preserved and are not erased
+  - deployment latency, AWA2, SUN, multi-seed, and irreducibility controls remain future confirmation evidence

@@ -8,9 +8,10 @@
 - `FRAMEWORK-V2`：TG-VPR-H1独立框架，冻结分支`framework/v2`、Tag`v2`，[HTML框架图](experiments/v2/framework_diagram.html)，首个正式单seed基线H=`74.023182%`。
 - `FRAMEWORK-V4`：owner晋级的TG+GTD三数据集框架，冻结分支`framework/v4`、Tag`v4`，[HTML框架图](experiments/v4/framework_diagram.html)；CUB/SUN显示GTD正增益，AWA2保留精确no-op边界。
 - `FRAMEWORK-V5`：owner晋级的TG+GTD+PCLR-RSE框架，冻结分支`framework/v5`、Tag`v5`，[HTML框架图](experiments/v5/framework_diagram.html)；CUB正式`U/S/H/ZS=80.694/81.447/81.069/88.785`。
+- `FRAMEWORK-V7`：owner晋级的TG+GTD+C-PCLR-SVI论文框架，冻结分支`framework/v7`、Tag`v7`，[HTML框架图](experiments/v7/framework_diagram.html)；论文父基线TG+GTD `H=79.070`，完整框架`U/S/H/ZS=77.607/83.640/80.510/88.473`。
 - V1与V2是两套独立训练路径；V2不接入或静默修改V1。
 - 正式框架代码都只迁入必要实现与来源信息；旧版本实验账本保持原路径只读，不复制或重编号。
-- owner已选择`FRAMEWORK-V5 / TG+GTD+PCLR-RSE`作为当前论文主框架；下一创新必须与关系图推理和角色语义出口形成自然衔接。
+- owner已选择`FRAMEWORK-V7 / TG+GTD+C-PCLR-SVI`作为当前论文首个正式框架；论文父框架固定为TG+GTD。`FRAMEWORK-V6-DEVELOPMENT`继续作为另一套待定开发框架保留，不与V7合并。
 - V4已索引CUB、AWA2和SUN原始RUN作为晋级证据；跨版本证据保留原路径、原commit和原输出，不复制结果。
 
 ## 评估协议
@@ -71,6 +72,15 @@ conda run -n dvsr_gpu python train.py `
 - 正式评估入口：`python -m model.frameworks.v5.evaluate`。
 - V5复用已审R2 checkpoint并执行R3 PCLR推理与R4角色语义ensemble；不是重新训练入口。
 - 必须披露nested official-test selection、nonblind和LLM可见形态知识使用。
+
+## FRAMEWORK-V7 入口
+
+- 固定参数与证据：`experiments/v7/FRAMEWORK.yaml`、`config/framework_v7.yaml`。
+- 独立无图部署入口：`model/frameworks/v7/model.py`。
+- 正式评估入口：`python -m model.frameworks.v7.evaluate`。
+- 论文方法父框架为TG+GTD；S/V/I分别是角色语义、视觉关系Reader和incidence关系编译。
+- 部署只执行Reader与`hQ^T+b`，不依赖V6实验模块、Top-K、关系边或Laplacian求解。
+- 必须披露test-selected、nonblind、LLM关系文本使用以及多数据集/成本证据尚未完成。
 
 ## checkpoint兼容边界
 
