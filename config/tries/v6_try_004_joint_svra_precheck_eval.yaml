@@ -1,0 +1,50 @@
+schema_version: gzsl-paper.v6-joint-svra-precheck-eval.v1
+experiment_id: V6-TRY-004-JOINT-SVRA-PRECHECK-EVAL
+role_tensor: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/69c9c6d82a755fe8/role_sentence_embeds.pt
+role_tensor_sha256: f614a06cd93b071a4d8c7355f78a10588a0b954e46bc99c64b76399c8af5a889
+name_tensor: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_vitl14_336/CUB/69c9c6d82a755fe8/class_name_embeds.pt
+name_tensor_sha256: c3a2f177f728621a56d1e972b91614346eee47a749e2902db0af33fac0543232
+test_seen_cls: data/cache/CUB_test_seen_features.pt
+test_seen_cls_sha256: 5af75c696c8d285e35a35cc41eb538017f5452d1eaf13e34fe3ee978e72983c5
+test_seen_patches: data/cache/CUB_test_seen_patch_features.pt
+test_seen_patches_sha256: d1a21b3a4797ffa28115ffb22cc6d1e401453d605b99360c731d46e523a794ca
+test_seen_labels: data/cache/CUB_test_seen_labels.pt
+test_seen_labels_sha256: 06f3f7057b6847fd912544ddb921d0ca3fca96d0888503f3fc87a52f98d3de14
+test_unseen_cls: data/cache/CUB_test_unseen_features.pt
+test_unseen_cls_sha256: 32c1b89edb72a94e27585060ac968f1afc99000a9bd8c42acee8469971fb107e
+test_unseen_patches: data/cache/CUB_test_unseen_patch_features.pt
+test_unseen_patches_sha256: 3ef523a1fe582fa2e1be88f3a975bda64e31a565e69fe001efec2f21fa3b1d77
+test_unseen_labels: data/cache/CUB_test_unseen_labels.pt
+test_unseen_labels_sha256: 7fadd63d51f69cf09cc8107a132d28036b838649b75227a17656eac8640b9c59
+action_geometry_sha256: 4e64cb1fa0a24b3fd734d53dc60dadf94057bfadf36ff65fb0e0a063bfdb74cb
+full_checkpoint:
+  path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/joint_svra/V6-TRY-004-PRECHECK/full_joint_final.pt
+  sha256: 99ddb6c7a29d6c055e5095d9863a922471a18cf3c345451c00874ddc2dc7d3f4
+  training_commit: 75cbd754881ed5115b18091a499511faffb605d6
+  train_config_sha256: 86707ec2a801c9a1ea27e86bb6c2144e5d29ed6261e0742e431735fd33390e60
+no_joint_checkpoint:
+  path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/joint_svra/V6-TRY-004-PRECHECK/no_joint_final.pt
+  sha256: 9b8941a70cab927213c165827a35bed4a6fe8df415f5096bc3bb8c2508500885
+  training_commit: 75cbd754881ed5115b18091a499511faffb605d6
+  train_config_sha256: 86707ec2a801c9a1ea27e86bb6c2144e5d29ed6261e0742e431735fd33390e60
+sequential_checkpoint:
+  path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/joint_svra/V6-TRY-004-PRECHECK/sequential_final.pt
+  sha256: a69ae9e13dfa62bcef383d0fff911ff202f3d02b2974dd1dd00351e1ca2cd367
+  training_commit: 75cbd754881ed5115b18091a499511faffb605d6
+  train_config_sha256: 86707ec2a801c9a1ea27e86bb6c2144e5d29ed6261e0742e431735fd33390e60
+device: cuda:0
+random_seed: 7
+eval_batch_size: 64
+bootstrap_seed: 7
+bootstrap_samples: 10000
+module_contract_margin: 1.0
+support_control_margin: 0.5
+max_action_occupancy: 0.70
+require_clean_tree: true
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: false
+nested_official_test_selection: true
+strict_blind_claim: false
+official_test_loaded: true
+unseen_images_used_for_gradient: false
+pclr_online_inference: false
