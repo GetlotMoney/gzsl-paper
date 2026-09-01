@@ -8,6 +8,7 @@ method_acronym: D-CCU
 implementation_branch: exp/v5/innovation/v5-try-008-dccu
 current_run: V5-TRY-008 / Gate0 balanced Full
 train_config_sha256: `1c73cf95bcebdba91a288fcfb9a39dd3141eb2857f956dd11376a16053475f09`
+implementation_code_commit: `161d8ff7c34823ab98699488289dfa4f3460a087`
 base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
 predecessor: IDEA-193 RWDG rejected at Gate0
 problem_category: visual_grounding
@@ -76,3 +77,13 @@ review_result: `P0=0 / P1=0 / P2=0 / PASS`
 - Independent review first identified the 4:4 sampling-prior attribution and GapSight boundary as core issues.
 - The unified draft made balancing an explicit non-posterior training aid, added a natural-sampler attribution control, narrowed novelty, fixed group-safety and all-abstain gates, and froze StaticBest on the natural 4,702-row distribution.
 - Both agents independently re-read the final SHA and returned `0/0/0`. Owner previously authorized all subsequent in-scope rescue attempts without repeated approval; this authorizes the proof Gate but not promotion or a success claim.
+
+## Code review
+
+review_subject_commit: `161d8ff7c34823ab98699488289dfa4f3460a087`
+review_subject_tree: `aac5f7f47b3899895c6fac879ee07fc6b1176dd2`
+review_result: `P0=0 / P1=0 / 双Agent交叉审查通过`
+
+- Two agents independently reviewed the frozen D-CCU target, target-count assertions, 4:4 sampler, natural StaticBest, checkpoint/eval interface and group-safety gates.
+- Both found one shared eval-receipt `NameError` P0. The main agent fixed only that affected path plus method/alias identity; both agents restricted recheck to `aa4d4c5..161d8ff` and returned `P0=0/P1=0 / 受影响diff复核通过`.
+- Local contract tests: `22 passed`; post-fix runner/model subset: `17 passed`.
