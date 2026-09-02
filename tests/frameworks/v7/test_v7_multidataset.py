@@ -6,15 +6,15 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-from model.frameworks.v6.compiled_pclr import CompiledPCLRHead
+from model.frameworks.v6.compiled_pclr import CompiledPCLRHead, initialized_reader_states
+from model.frameworks.v7.train_multidataset import build_head
 from tools.build_v7_relation_asset import load_relation_rows
 from tools.runtime import sha256_file
 
 
 def _dynamic_head() -> CompiledPCLRHead:
     generator = torch.Generator().manual_seed(17)
-    reader_in = (torch.randn(64, 768, generator=generator), torch.zeros(64))
-    reader_out = (torch.zeros(768, 64), torch.zeros(768))
+    reader_in, reader_out = initialized_reader_states()
     return CompiledPCLRHead(
         base_prototypes=torch.randn(5, 768, generator=generator),
         role_prototypes=torch.randn(5, 8, 768, generator=generator),
@@ -26,6 +26,43 @@ def _dynamic_head() -> CompiledPCLRHead:
         reader_out_state=reader_out,
         seen_logit_gamma=0.1,
     )
+
+
+def test_build_head_does_not_require_reader_on_gtd_source() -> None:
+    class _TG:
+        sentence_embeds = torch.randn(5, 8, 768, generator=torch.Generator().manual_seed(21))
+
+    class _Parent:
+        tg_vpr = _TG()
+
+    class _Source:
+        parent = _Parent()
+        seen_classes = torch.tensor([0, 1, 2])
+        training = True
+
+        def eval(self):
+            self.training = False
+
+        def train(self, mode=True):
+            self.training = mode
+
+        def prototypes(self):
+            return torch.randn(5, 768, generator=torch.Generator().manual_seed(22))
+
+        def scale(self):
+            return torch.tensor(20.0)
+
+    config = {
+        "ridge_lambda": 0.3, "relation_temperature": 0.2,
+        "direction_temperature": 0.07, "seen_logit_gamma": 0.1,
+        "alpha_max": 2.0, "initial_alpha": 0.7258594751358033,
+        "role_weight_max": 1.0,
+        "initial_role_weights": [0.16, 0.0, 0.0, 0.0, 0.0, 0.0, 0.36, 0.0],
+    }
+    relations = F.normalize(torch.randn(3, 2, 768, generator=torch.Generator().manual_seed(23)), dim=-1)
+    edges = torch.tensor([[0, 1], [0, 3], [3, 4]])
+    head = build_head(_Source(), relations, edges, config, torch.device("cpu"))
+    assert tuple(head.reader_in.weight.shape) == (64, 768)
 
 
 def test_dynamic_class_and_edge_shapes_export() -> None:

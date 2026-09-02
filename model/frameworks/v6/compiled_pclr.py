@@ -9,6 +9,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from model.frameworks.v4.pclr import READER_SEED
+
 
 CLASS_COUNT = 200
 EDGE_COUNT = 438
@@ -41,6 +43,19 @@ def _inverse_tanh_ratio(value: torch.Tensor, maximum: float) -> torch.Tensor:
     if bool(ratio.abs().ge(1.0).any()):
         raise ValueError("角色初值必须严格位于有界范围内。")
     return torch.atanh(ratio)
+
+
+def initialized_reader_states() -> tuple[
+    tuple[torch.Tensor, torch.Tensor], tuple[torch.Tensor, torch.Tensor]
+]:
+    """Reproduce the RNG-isolated Reader initialization used by PCLR."""
+    generator = torch.Generator(device="cpu").manual_seed(READER_SEED)
+    reader_in_weight = torch.empty(READER_HIDDEN_DIM, EMBED_DIM)
+    nn.init.xavier_uniform_(reader_in_weight, generator=generator)
+    return (
+        (reader_in_weight, torch.zeros(READER_HIDDEN_DIM)),
+        (torch.zeros(EMBED_DIM, READER_HIDDEN_DIM), torch.zeros(EMBED_DIM)),
+    )
 
 
 class CompiledPCLRHead(nn.Module):
@@ -92,6 +107,8 @@ class CompiledPCLRHead(nn.Module):
             or seen.numel() == 0
             or seen.numel() >= class_count
             or seen.unique().numel() != seen.numel()
+            or int(seen.min()) < 0
+            or int(seen.max()) >= class_count
         ):
             raise ValueError("C-PCLR seen_classes必须是合法唯一全局类别ID。")
         if int(edges.min()) < 0 or int(edges.max()) >= class_count:

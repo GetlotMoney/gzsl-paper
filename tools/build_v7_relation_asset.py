@@ -94,11 +94,20 @@ def load_relation_rows(config: dict) -> tuple[dict, list[dict]]:
         or request.get("clip_python_source_sha256") != config["clip_python_source_sha256"]
         or not isinstance(edges, list)
         or len(edges) != int(request.get("edge_count", -1))
+        or int(request.get("direction_count", -1)) != 2 * len(edges)
+        or int(request.get("class_count", -1)) < 2
+        or not 0 < int(request.get("seen_count", -1)) < int(request.get("class_count", -1))
     ):
         raise ValueError("V7关系request身份错误。")
     edge_by_id = {int(row["edge_id"]): row for row in edges}
     if set(edge_by_id) != set(range(len(edges))):
         raise ValueError("V7关系request edge_id不连续。")
+    endpoints = [(int(row["a_id"]), int(row["b_id"])) for row in edges]
+    if (
+        len(set(endpoints)) != len(endpoints)
+        or any(a < 0 or a >= b or b >= int(request["class_count"]) for a, b in endpoints)
+    ):
+        raise ValueError("V7关系request边必须唯一、升序且位于类别轴内。")
 
     output = []
     expected_next = 0
@@ -181,6 +190,7 @@ def load_relation_rows(config: dict) -> tuple[dict, list[dict]]:
         "direction_count": request["direction_count"],
         "request_sha256": config["request_sha256"],
         "graph_source": request["graph_source"],
+        "top_k": request["top_k"],
         "generator_shards": generator_records,
         "human_annotations_used": False,
         "llm_world_knowledge_used": True,

@@ -20,7 +20,7 @@ from model.frameworks.v4.train import (
     refresh_oracle_targets,
     teacher_refresh_updates,
 )
-from model.frameworks.v6.compiled_pclr import CompiledPCLRHead
+from model.frameworks.v6.compiled_pclr import CompiledPCLRHead, initialized_reader_states
 from model.frameworks.v6.train_compiled_pclr import (
     _finite_source_gradients,
     _gradient_receipt,
@@ -142,6 +142,15 @@ def load_relation_asset(config: dict, identity: dict) -> tuple[torch.Tensor, tor
         or manifest.get("dataset") != config["dataset"]
         or manifest.get("class_count") != identity["class_count"]
         or manifest.get("seen_count") != identity["seen_count"]
+        or int(manifest.get("edge_count", 0)) <= 0
+        or manifest.get("direction_count") != 2 * int(manifest.get("edge_count", 0))
+        or manifest.get("embedding_dimension") != 768
+        or manifest.get("graph_source") != "OpenAI_CLIP_class_name_template_union_top3"
+        or manifest.get("top_k") != 3
+        or not isinstance(manifest.get("request_sha256"), str)
+        or len(manifest["request_sha256"]) != 64
+        or not isinstance(manifest.get("config_sha256"), str)
+        or len(manifest["config_sha256"]) != 64
         or manifest.get("human_annotations_used") is not False
         or manifest.get("llm_world_knowledge_used") is not True
         or manifest.get("visible_only_annotation") is not True
@@ -159,8 +168,16 @@ def load_relation_asset(config: dict, identity: dict) -> tuple[torch.Tensor, tor
         or tuple(edges.shape) != (edge_count, 2)
         or edges.dtype != torch.int64
         or not torch.isfinite(relations).all()
+        or not torch.allclose(
+            relations.float().norm(dim=-1),
+            torch.ones((edge_count, 2), dtype=torch.float32),
+            atol=1e-4,
+            rtol=0.0,
+        )
         or int(edges.min()) < 0
         or int(edges.max()) >= identity["class_count"]
+        or bool(edges[:, 0].ge(edges[:, 1]).any())
+        or torch.unique(edges, dim=0).size(0) != edge_count
     ):
         raise ValueError("V7多数据集关系张量合同错误。")
     return relations, edges, manifest
@@ -179,14 +196,14 @@ def load_training_source(config: dict, device: torch.device):
     return source, tensors, source_config
 
 
-def validate_training_identity(source, tensors: dict, identity: dict, configured_skips: list[int]) -> None:
+def validate_training_identity(head, tensors: dict, identity: dict, configured_skips: list[int]) -> None:
     labels = tensors["train_labels"].long()
     seen = torch.unique(labels, sorted=True)
     if len(labels) != identity["train_count"] or seen.numel() != identity["seen_count"]:
         raise ValueError("V7多数据集trainval split身份错误。")
     if int(seen.min()) < 0 or int(seen.max()) >= identity["class_count"]:
         raise ValueError("V7多数据集训练标签超出类别轴。")
-    edges = source.edge_index.detach().cpu()
+    edges = head.edge_index.detach().cpu()
     seen_mask = torch.zeros(identity["class_count"], dtype=torch.bool)
     seen_mask[seen] = True
     seen_edges = edges[seen_mask[edges[:, 0]] & seen_mask[edges[:, 1]]]
@@ -201,6 +218,7 @@ def build_head(source, relations, edges, config: dict, device: torch.device) -> 
     was_training = source.training
     source.eval()
     try:
+        reader_in_state, reader_out_state = initialized_reader_states()
         head = CompiledPCLRHead(
             base_prototypes=source.prototypes(),
             role_prototypes=source.parent.tg_vpr.sentence_embeds,
@@ -208,8 +226,8 @@ def build_head(source, relations, edges, config: dict, device: torch.device) -> 
             edge_index=edges,
             seen_classes=source.seen_classes,
             scale=float(source.scale()),
-            reader_in_state=(source.reader_in.weight, source.reader_in.bias),
-            reader_out_state=(source.reader_out.weight, source.reader_out.bias),
+            reader_in_state=reader_in_state,
+            reader_out_state=reader_out_state,
             ridge_lambda=float(config["ridge_lambda"]),
             relation_temperature=float(config["relation_temperature"]),
             direction_temperature=float(config["direction_temperature"]),
@@ -344,7 +362,8 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
     def emit(v):
         line=json.dumps(v,sort_keys=True); print(line); log.write(line+"\n")
     initial=evaluate(head,source,tensors,device); history=[{"update":0,**initial}]; emit({"event":"initial","update":0,**initial})
-    best=None; best_update=-1; best_state=None; best_source_state=None; parent_best=None; parent_best_update=-1
+    best=None; best_update=-1; best_state=None; best_source_state=None
+    parent_best=copy.deepcopy(initial["parent_metrics"]); parent_best_update=0
     best_zs={"update":0,"ZS":initial["metrics"]["full"]["ZS"],"metrics":initial["metrics"]["full"]}
     parent_best_zs={"update":0,"ZS":initial["parent_metrics"]["ZS"],"metrics":initial["parent_metrics"]}
     interval={"joint":0.0,"parent":0.0,"classification":0.0,"relation":0.0}; steps=0
@@ -375,7 +394,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
     final=evaluate(head,source,tensors,device); passed,deltas=_contract(final["metrics"],parent_best["H"],best_update,config); export=head.export()
     checkpoint={"schema_version":SCHEMA,"experiment_id":config["experiment_id"],"code_commit":code_commit,"config_sha256":config_sha,"best_update":best_update,"model_state_dict":best_state,"source_model_state_dict":best_source_state,"export":export.__dict__}
     atomic_torch_save(output/"model_best.pth",checkpoint); atomic_write_json(output/"evaluation_history.json",history)
-    result={"schema_version":SCHEMA,"experiment_id":config["experiment_id"],"dataset":config["dataset"],"code_commit":code_commit,"config_sha256":config_sha,"relation_asset_manifest_sha256":config["relation_manifest_sha256"],"best_update":best_update,"metrics":final["metrics"],"parent_best_metrics":parent_best,"parent_best_update":parent_best_update,"delta_H_vs_parent":float(final["metrics"]["full"]["H"]-parent_best["H"]),"module_off_delta_H":deltas,"best_zs_observation":best_zs,"parent_best_zs_observation":parent_best_zs,"module_contract_passed":passed,"decision":"keep_v7_multidataset" if passed else "drop_v7_multidataset_contract_failed","direction_skip_seen_class_ids":config["direction_skip_seen_class_ids"],"teacher_refresh_count":refresh_count,"total_updates":int(config["total_updates"]),"test_used_for_selection":True,"unseen_images_used_for_gradient":False,"strict_blind_claim":False,"llm_world_knowledge_used":True,"reproducibility":reproducibility}
+    result={"schema_version":SCHEMA,"experiment_id":config["experiment_id"],"dataset":config["dataset"],"code_commit":code_commit,"config_sha256":config_sha,"relation_asset_manifest_sha256":config["relation_manifest_sha256"],"best_update":best_update,"metrics":final["metrics"],"parent_best_metrics":parent_best,"parent_best_update":parent_best_update,"delta_H_vs_parent":float(final["metrics"]["full"]["H"]-parent_best["H"]),"module_off_delta_H":deltas,"best_zs_observation":best_zs,"parent_best_zs_observation":parent_best_zs,"module_contract_passed":passed,"decision":"keep_v7_multidataset" if passed else "drop_v7_multidataset_contract_failed","direction_skip_seen_class_ids":config["direction_skip_seen_class_ids"],"teacher_refresh_count":refresh_count,"total_updates":int(config["total_updates"]),"test_used_for_selection":True,"test_used_for_hyperparameter_selection":True,"nested_official_test_selection":True,"unseen_images_used_for_gradient":False,"strict_blind_claim":False,"human_annotations_used":False,"expert_attributes_used":False,"llm_world_knowledge_used":True,"reproducibility":reproducibility}
     atomic_write_json(output/"metrics.json",result); emit({"event":"complete",**result}); log.close(); return result
 
 
