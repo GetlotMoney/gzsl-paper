@@ -71,7 +71,6 @@ class CTPMModel(nn.Module):
         hidden_dim: int = 32,
         patch_projection_dim: int = 64,
         max_margin: float = 2.0,
-        max_role_weight: float = 0.75,
         semantic_name_weight: float = 0.0,
     ):
         super().__init__()
@@ -81,32 +80,29 @@ class CTPMModel(nn.Module):
             raise ValueError("class_name_embeds and role_sentence_embeds class axes differ.")
         if int(hidden_dim) <= 0 or int(patch_projection_dim) <= 0:
             raise ValueError("hidden_dim and patch_projection_dim must be positive.")
-        if float(scale) <= 0 or float(max_margin) <= 0 or float(max_role_weight) <= 0:
-            raise ValueError("scale, max_margin and max_role_weight must be positive.")
+        if float(scale) <= 0 or float(max_margin) <= 0:
+            raise ValueError("scale and max_margin must be positive.")
         if not 0.0 <= float(semantic_name_weight) <= 1.0:
             raise ValueError("semantic_name_weight must be in [0,1].")
 
         self.class_count = int(class_name_embeds.size(0))
         self.scale_value = float(scale)
         self.max_margin = float(max_margin)
-        self.max_role_weight = float(max_role_weight)
         self.semantic_name_weight = float(semantic_name_weight)
         self.register_buffer("class_name_embeds", F.normalize(class_name_embeds.float(), dim=-1))
         self.register_buffer("role_sentence_embeds", F.normalize(role_sentence_embeds.float(), dim=-1))
 
-        self.raw_role_weights = nn.Parameter(torch.zeros(8))
         self.semantic_margin = TinyMarginMLP(9, int(hidden_dim))
         self.patch_query = nn.Linear(768, int(patch_projection_dim), bias=False)
         self.patch_key = nn.Linear(768, int(patch_projection_dim), bias=False)
         self.visual_margin = TinyMarginMLP(8, int(hidden_dim))
-        self.interaction_margin = TinyMarginMLP(13, int(hidden_dim))
+        self.interaction_margin = TinyMarginMLP(10, int(hidden_dim))
 
     def scale(self) -> torch.Tensor:
         return torch.tensor(self.scale_value, device=self.class_name_embeds.device)
 
     def _role_prototypes(self) -> torch.Tensor:
-        weights = F.softmax(self.raw_role_weights, dim=0)
-        role_mix = torch.einsum("r,crd->cd", weights, self.role_sentence_embeds)
+        role_mix = self.role_sentence_embeds.mean(dim=1)
         if self.semantic_name_weight > 0.0:
             role_mix = (
                 float(self.semantic_name_weight) * self.class_name_embeds
@@ -233,7 +229,7 @@ class CTPMModel(nn.Module):
         interaction_alignment = semantic_evidence * visual_evidence
         i_input = torch.cat(
             (
-                torch.stack((margin0, d_s, d_v, d_s * d_v, h0), dim=1),
+                torch.stack((margin0, h0), dim=1),
                 interaction_alignment,
             ),
             dim=1,
@@ -278,7 +274,7 @@ class CTPMModel(nn.Module):
 
     def parameter_groups(self) -> dict[str, list[nn.Parameter]]:
         return {
-            "semantic": list(self.semantic_margin.parameters()) + [self.raw_role_weights],
+            "semantic": list(self.semantic_margin.parameters()),
             "visual": list(self.visual_margin.parameters()),
             "interaction": (
                 list(self.patch_query.parameters()) + list(self.patch_key.parameters())
@@ -325,15 +321,9 @@ def balanced_pair_ce(
 
 
 def isolated_interaction_margin(model: CTPMModel, output: CTPMOutput) -> torch.Tensor:
-    """Recompute CMI with detached S/V prefixes so only I receives this loss."""
-    h0 = output.interaction_input[:, 4].detach()
-    scalar_input = torch.stack(
-        (
-            output.margin0.detach(), output.d_s.detach(), output.d_v.detach(),
-            (output.d_s * output.d_v).detach(), h0,
-        ),
-        dim=1,
-    )
+    """Recompute role-patch I without any S/V trainable dependency."""
+    h0 = output.interaction_input[:, 1].detach()
+    scalar_input = torch.stack((output.margin0.detach(), h0), dim=1)
     alignment = output.semantic_evidence.detach() * output.visual_evidence
     i_input = torch.cat((scalar_input, alignment), dim=1)
     return model.max_margin * torch.tanh(model.interaction_margin(i_input))

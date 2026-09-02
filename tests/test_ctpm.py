@@ -56,12 +56,11 @@ def test_forward_uses_semantic_pair_and_keeps_it_for_visual_interaction_offs():
     assert torch.allclose(full.correction.sum(dim=1), torch.zeros(image.shape[0]))
     assert torch.allclose(s_off.d_s, torch.zeros_like(s_off.d_s))
     assert torch.allclose(s_off.role_logits, torch.zeros_like(s_off.role_logits))
-    assert torch.allclose(s_off.interaction_input[:, 1], torch.zeros_like(s_off.d_s))
     assert torch.allclose(v_off.d_v, torch.zeros_like(v_off.d_v))
     assert torch.allclose(v_off.candidate_visual_evidence, torch.zeros_like(v_off.candidate_visual_evidence))
-    assert torch.allclose(v_off.interaction_input[:, 2], torch.zeros_like(v_off.d_v))
-    assert torch.allclose(v_off.interaction_input[:, 3], torch.zeros_like(v_off.d_v))
-    assert v_off.interaction_input[:, 5:].abs().sum() > 0  # role-patch I remains active.
+    assert torch.allclose(v_off.interaction_input, full.interaction_input)
+    assert torch.allclose(v_off.d_i, full.d_i)
+    assert v_off.interaction_input[:, 2:].abs().sum() > 0  # role-patch I remains active.
     assert torch.allclose(i_off.d_i, torch.zeros_like(i_off.d_i))
 
 
@@ -110,7 +109,6 @@ def test_full_ce_alone_reaches_every_margin_component_at_update0():
     output = model(image, patches)
     labels = output.top2_global[:, 1].detach().clone()
     torch.nn.functional.cross_entropy(output.logits, labels).backward()
-    assert model.raw_role_weights.grad.abs().sum() > 0
     assert model.semantic_margin.net[0].weight.grad.abs().sum() > 0
     assert model.semantic_margin.net[-1].weight.grad.abs().sum() > 0
     assert model.patch_query.weight.grad.abs().sum() > 0

@@ -12,9 +12,9 @@ DIAL R2 达到 `H=68.554693`、V gap `+4.439539`，但 I gap 仅 `+0.091948`。�
 
 ## 三端与推理
 
-- S：将 6 个部位、1 个全局、1 个独特描述的 8 个归一化文本 embedding 以共享 softmax role 权重组成类别原型；CLS 与200类原型直接分类并产生唯一 Top1/Top2。S 另由全局 CLS 的8维 role-difference evidence输出 `d_s`。
+- S：将 6 个部位、1 个全局、1 个独特描述的 8 个归一化文本 embedding 严格等权均值后归一化组成类别原型；CLS 与200类原型直接分类并产生唯一 Top1/Top2。S 另由全局 CLS 的8维 role-difference evidence输出 `d_s`。原型权重冻结，避免seen训练塌缩到单一句。
 - V：不使用 role query。36 patch 仅对两个完整类别原型计算 top-3/mean/max 聚合候选证据，输出 `d_v`，负责局部视觉表示增强。
-- I：独占 8 个 role-difference query 对36 patch的注意力；将逐角色全局语义证据与逐角色patch证据相乘，输出 `d_i`，负责细粒度角色—局部视觉对应。
+- I：独占 8 个 role-difference query 对36 patch的注意力；将逐角色全局语义证据与逐角色patch证据相乘，只连同基础pair margin与熵输出 `d_i`。I不读取`d_s/d_v`，因此V-off不会连带改变I。
 
 最终只执行一次 `d=d_s+d_v+d_i`，对 Top1/Top2做 `-d/2,+d/2` 反对称修正。没有搜索、crop、hard swap、图或第二轮推理。
 
@@ -31,6 +31,6 @@ Full CE 更新全部可训练分支。三个 balanced pair CE 都从 detached �
 - minimal_viability: 八句均值原型真实 `H=68.750566`、seen/unseen Top2覆盖 `0.808957/0.812605`；Top2 oracle `H=81.328356`，尚有 `+12.577790 H`空间。CUDA micro需证明三路梯度隔离、V/I pair不变、S-off切换到name pair、attention非均匀且test未加载。
 - minimal_falsification: 固定 seed7、batch50、28,228 updates，一次 Chen-style official-test-selected运行。Full必须高于同checkpoint semantic-only，且 S/V/I gap全部 `>=1.0 H`；不要求H80。
 - current_advantage: 只读gate证明 prototype candidate coverage与oracle空间；`performance_status=proof_of_path`。
-- failure_boundary: 共享role权重可能seen过拟合；整体patch聚合可能丢小部位；即使功能拆开，S/V/I仍可能纠正同一批pair错误。
+- failure_boundary: 整体patch聚合可能丢小部位；严格等权文本不能自适应描述质量；即使功能拆开，S/V/I仍可能纠正同一批pair错误。
 
 没有教师、蒸馏、专家属性、人工属性答案、未见图像梯度或PCLR在线推理。若R3失败，IDEA-208/CTPM按三次救援预算永久关闭，不再调参。

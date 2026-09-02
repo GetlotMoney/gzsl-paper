@@ -167,7 +167,6 @@ def build_model_from_checkpoint(checkpoint: dict, assets: CTPMEvalAssets, device
         hidden_dim=int(config["hidden_dim"]),
         patch_projection_dim=int(config["patch_projection_dim"]),
         max_margin=float(config["max_margin"]),
-        max_role_weight=float(config["max_role_weight"]),
     ).to(device)
     model.load_state_dict(checkpoint["model_state_dict"], strict=True)
     return model

@@ -42,7 +42,7 @@ CONFIG_KEYS = {
     "output_dir", "device", "random_seed", "batch_size", "eval_batch_size",
     "nominal_epochs", "total_updates", "eval_interval_steps", "weight_decay",
     "hidden_dim", "patch_projection_dim",
-    "max_margin", "max_role_weight", "semantic_learning_rate",
+    "max_margin", "semantic_learning_rate",
     "visual_interaction_learning_rate", "semantic_min_learning_rate",
     "visual_interaction_min_learning_rate", "attention_diversity_weight",
     "logit_scale", "require_clean_tree", "rescue_of_experiment_id",
@@ -125,13 +125,11 @@ def build_model(config: Mapping[str, Any], assets: CTPMTrainAssets, device):
         scale=float(config["logit_scale"]), hidden_dim=int(config["hidden_dim"]),
         patch_projection_dim=int(config["patch_projection_dim"]),
         max_margin=float(config["max_margin"]),
-        max_role_weight=float(config["max_role_weight"]),
     ).to(device)
 
 
 def _component_gradient_norms(model: CTPMModel) -> dict[str, float]:
     groups = {
-        "role_weights": (model.raw_role_weights,),
         "semantic_hidden": tuple(model.semantic_margin.net[0].parameters()),
         "semantic_output": tuple(model.semantic_margin.net[-1].parameters()),
         "patch_query": tuple(model.patch_query.parameters()),

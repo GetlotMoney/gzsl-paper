@@ -49,7 +49,6 @@ weight_decay: 0.001
 hidden_dim: 32
 patch_projection_dim: 64
 max_margin: 2.0
-max_role_weight: 0.75
 attention_diversity_weight: 0.01
 logit_scale: 14.285714285714285
 require_clean_tree: true
