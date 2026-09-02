@@ -8,7 +8,13 @@ import torch.nn.functional as F
 
 from model.frameworks.v6.compiled_pclr import CompiledPCLRHead, initialized_reader_states
 from model.frameworks.v7.train_multidataset import build_head
-from tools.build_v7_relation_asset import load_relation_rows
+from tools.build_v7_relation_asset import (
+    ASSET_SCHEMA,
+    TEXT_SCHEMA,
+    _asset_manifest,
+    _validate_clip_context,
+    load_relation_rows,
+)
 from tools.runtime import sha256_file
 
 
@@ -178,3 +184,28 @@ def test_v7_relation_shard_rejects_same_direction_body(tmp_path: Path) -> None:
         assert "双方向正文相同" in str(error)
     else:
         raise AssertionError("同正文双方向关系必须被拒绝")
+
+
+def test_v7_asset_manifest_keeps_asset_schema() -> None:
+    manifest = _asset_manifest(
+        {"schema_version": TEXT_SCHEMA, "dataset": "AWA2"},
+        asset_id="asset", config_sha="a" * 64, output_sha={"x": "b" * 64},
+        checkpoint_sha="c" * 64, clip_source_sha="d" * 64,
+    )
+    assert manifest["schema_version"] == ASSET_SCHEMA
+
+
+def test_v7_asset_preflight_reports_overlong_direction() -> None:
+    class _Clip:
+        @staticmethod
+        def tokenize(texts, *, truncate):
+            if "long" in texts[0]:
+                raise RuntimeError("too long")
+            return torch.zeros(1, 77, dtype=torch.long)
+
+    try:
+        _validate_clip_context(_Clip(), ["short", "long"])
+    except ValueError as error:
+        assert "direction_id=1" in str(error)
+    else:
+        raise AssertionError("超长关系句必须在编码前被拒绝")

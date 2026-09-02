@@ -4,9 +4,9 @@ request: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v7/relation_sources
 request_sha256: 1542825d51684891acef5fe1f4290cb2722bbdab7404d199109f3aaa4794c357
 shards:
   - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v7/relation_sources/SUN_v1/SUN_shard0.json
-    sha256: fb0c2e41eaf6d44d37a171d7022f161b02ec9f98614e6258385f73734cd5418c
+    sha256: 3d5b79920db800290f1d9ee299ab8a17c822c8914f786f84b9f962fb56a97c5d
   - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v7/relation_sources/SUN_v1/SUN_shard1.json
-    sha256: 459be3b606b12de5b3530a0ad7c2b534a6f678d2fa8b15f6606dae35957be401
+    sha256: 801a0a30830840322ff851afdffbc4298c1250f85ab5380a1ed885a04fce8c5c
   - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v7/relation_sources/SUN_v1/SUN_shard2.json
     sha256: efacfcf5f427747fd816fdf8b6b395bc1d27dd66eb1a24d60cdaa0b5966fbe8e
   - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v7/relation_sources/SUN_v1/SUN_shard3.json

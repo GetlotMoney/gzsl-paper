@@ -79,6 +79,36 @@ def _comparison_body(text: str) -> str:
     return text.split(":", 1)[1].strip().casefold()
 
 
+def _validate_clip_context(clip_module, texts: list[str]) -> None:
+    for direction_id, text in enumerate(texts):
+        try:
+            clip_module.tokenize([text], truncate=False)
+        except RuntimeError as error:
+            raise ValueError(f"V7关系句超过CLIP上下文：direction_id={direction_id}") from error
+
+
+def _asset_manifest(
+    metadata: dict,
+    *,
+    asset_id: str,
+    config_sha: str,
+    output_sha: dict[str, str],
+    checkpoint_sha: str,
+    clip_source_sha: str,
+) -> dict:
+    return {
+        **metadata,
+        "schema_version": ASSET_SCHEMA,
+        "asset_id": asset_id,
+        "embedding_dimension": 768,
+        "clip_model": f"OpenAI {MODEL_NAME}",
+        "clip_checkpoint_sha256": checkpoint_sha,
+        "clip_python_source_sha256": clip_source_sha,
+        "config_sha256": config_sha,
+        "outputs_sha256": output_sha,
+    }
+
+
 def load_relation_rows(config: dict) -> tuple[dict, list[dict]]:
     request_path = Path(config["request"])
     if sha256_file(request_path) != config["request_sha256"]:
@@ -214,6 +244,7 @@ def run(config_path: Path, output_root: Path, device: str, batch_size: int) -> d
         raise ValueError("V7关系OpenAI CLIP源码身份错误。")
     metadata, rows = load_relation_rows(config)
     flattened = [row[key] for row in rows for key in ("a_over_b", "b_over_a")]
+    _validate_clip_context(clip, flattened)
     embeddings = _production_text_encoder(flattened, checkpoint, device, int(batch_size))
     expected = (int(metadata["direction_count"]), 768)
     if tuple(embeddings.shape) != expected or not torch.isfinite(embeddings).all():
@@ -246,22 +277,25 @@ def run(config_path: Path, output_root: Path, device: str, batch_size: int) -> d
             for name in ("relation_texts.json", "relation_sentence_embeds.pt", "edge_index.pt")
         }
         asset_id = _canonical_sha256(
-            {"config": config_sha, "metadata": metadata, "outputs": output_sha, "model": MODEL_NAME}
+            {
+                "asset_schema": ASSET_SCHEMA,
+                "config": config_sha,
+                "metadata": metadata,
+                "outputs": output_sha,
+                "model": MODEL_NAME,
+            }
         )[:16]
         output_dir = output_root / f"{config['dataset']}_v7_relations_{asset_id}"
         if output_dir.exists():
             raise FileExistsError(f"V7关系资产已存在：{output_dir}")
-        manifest = {
-            "schema_version": ASSET_SCHEMA,
-            **metadata,
-            "asset_id": asset_id,
-            "embedding_dimension": 768,
-            "clip_model": f"OpenAI {MODEL_NAME}",
-            "clip_checkpoint_sha256": config["clip_checkpoint_sha256"],
-            "clip_python_source_sha256": config["clip_python_source_sha256"],
-            "config_sha256": config_sha,
-            "outputs_sha256": output_sha,
-        }
+        manifest = _asset_manifest(
+            metadata,
+            asset_id=asset_id,
+            config_sha=config_sha,
+            output_sha=output_sha,
+            checkpoint_sha=config["clip_checkpoint_sha256"],
+            clip_source_sha=config["clip_python_source_sha256"],
+        )
         (temporary / "asset_manifest.json").write_text(
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
