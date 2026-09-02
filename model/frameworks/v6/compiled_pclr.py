@@ -77,17 +77,24 @@ class CompiledPCLRHead(nn.Module):
         relations = torch.as_tensor(relation_embeddings).detach().cpu().float().clone()
         edges = torch.as_tensor(edge_index).detach().cpu().long().clone()
         seen = torch.as_tensor(seen_classes).detach().cpu().long().clone()
-        if tuple(base.shape) != (CLASS_COUNT, EMBED_DIM):
-            raise ValueError("C-PCLR base_prototypes必须是[200,768]。")
-        if tuple(roles.shape) != (CLASS_COUNT, ROLE_COUNT, EMBED_DIM):
-            raise ValueError("C-PCLR role_prototypes必须是[200,8,768]。")
-        if tuple(relations.shape) != (EDGE_COUNT, 2, EMBED_DIM):
-            raise ValueError("C-PCLR relation_embeddings必须是[438,2,768]。")
-        if tuple(edges.shape) != (EDGE_COUNT, 2):
-            raise ValueError("C-PCLR edge_index必须是[438,2]。")
-        if seen.ndim != 1 or seen.numel() != 150 or seen.unique().numel() != 150:
-            raise ValueError("C-PCLR seen_classes必须是150个唯一全局类别ID。")
-        if int(edges.min()) < 0 or int(edges.max()) >= CLASS_COUNT:
+        if base.ndim != 2 or base.size(1) != EMBED_DIM or base.size(0) < 2:
+            raise ValueError("C-PCLR base_prototypes必须是[class_count,768]。")
+        class_count = int(base.size(0))
+        if tuple(roles.shape) != (class_count, ROLE_COUNT, EMBED_DIM):
+            raise ValueError("C-PCLR role_prototypes必须是[class_count,8,768]。")
+        if relations.ndim != 3 or tuple(relations.shape[1:]) != (2, EMBED_DIM):
+            raise ValueError("C-PCLR relation_embeddings必须是[edge_count,2,768]。")
+        edge_count = int(relations.size(0))
+        if edge_count <= 0 or tuple(edges.shape) != (edge_count, 2):
+            raise ValueError("C-PCLR edge_index必须是[edge_count,2]。")
+        if (
+            seen.ndim != 1
+            or seen.numel() == 0
+            or seen.numel() >= class_count
+            or seen.unique().numel() != seen.numel()
+        ):
+            raise ValueError("C-PCLR seen_classes必须是合法唯一全局类别ID。")
+        if int(edges.min()) < 0 or int(edges.max()) >= class_count:
             raise ValueError("C-PCLR边端点超出类别轴。")
         if not torch.isfinite(base).all() or not torch.isfinite(roles).all():
             raise ValueError("C-PCLR类别原型包含NaN/Inf。")
@@ -108,23 +115,23 @@ class CompiledPCLRHead(nn.Module):
 
         base_q = F.normalize(base, dim=-1) * float(scale)
         role_q = F.normalize(roles, dim=-1) * float(scale)
-        incidence = torch.zeros(EDGE_COUNT, CLASS_COUNT, dtype=torch.float64)
-        rows = torch.arange(EDGE_COUNT)
+        incidence = torch.zeros(edge_count, class_count, dtype=torch.float64)
+        rows = torch.arange(edge_count)
         incidence[rows, edges[:, 0]] = 1.0
         incidence[rows, edges[:, 1]] = -1.0
         system = incidence.T @ incidence + float(ridge_lambda) * torch.eye(
-            CLASS_COUNT, dtype=torch.float64
+            class_count, dtype=torch.float64
         )
         mapping = torch.linalg.solve(system, incidence.T)
         direction = (relations[:, 0] - relations[:, 1]).double()
         compiled_g = (mapping @ direction / float(relation_temperature)).float()
 
-        seen_mask = torch.zeros(CLASS_COUNT, dtype=torch.bool)
+        seen_mask = torch.zeros(class_count, dtype=torch.bool)
         seen_mask[seen] = True
         seen_edges = seen_mask.index_select(0, edges[:, 0]) & seen_mask.index_select(
             0, edges[:, 1]
         )
-        seen_bias = torch.zeros(CLASS_COUNT, dtype=torch.float32)
+        seen_bias = torch.zeros(class_count, dtype=torch.float32)
         seen_bias[seen] = -float(seen_logit_gamma)
 
         self.register_buffer("base_q", base_q, persistent=True)
@@ -140,6 +147,8 @@ class CompiledPCLRHead(nn.Module):
         self.direction_temperature = float(direction_temperature)
         self.alpha_max = float(alpha_max)
         self.role_weight_max = float(role_weight_max)
+        self.class_count = class_count
+        self.edge_count = edge_count
 
         self.reader_in = nn.Linear(EMBED_DIM, READER_HIDDEN_DIM)
         self.reader_out = nn.Linear(READER_HIDDEN_DIM, EMBED_DIM)
@@ -290,7 +299,7 @@ class CompiledPCLRHead(nn.Module):
             semantic_enabled=semantic_enabled,
             interaction_enabled=interaction_enabled,
         ).T + self.seen_bias
-        if tuple(logits.shape) != (values.size(0), CLASS_COUNT):
+        if tuple(logits.shape) != (values.size(0), self.class_count):
             raise RuntimeError("C-PCLR logits shape错误。")
         return logits
 
@@ -314,16 +323,21 @@ class CompiledPCLRHead(nn.Module):
         incident_b = targets[:, None].eq(edges[None, :, 1])
         incident = (incident_a | incident_b) & self.seen_edge_mask.to(readout.device)[None]
         counts = incident.sum(dim=1)
-        if bool(counts.eq(0).any()):
-            raise ValueError("C-PCLR seen真类缺少seen-seen incident edge。")
+        valid = counts.gt(0)
+        if not bool(valid.any()):
+            # A graph may legitimately leave a seen class without a seen-seen
+            # incident edge (SUN class 102).  Its classification CE remains
+            # active while the unavailable direction supervision contributes 0.
+            return scores.sum() * 0.0
         direction_targets = incident_b.long()
         losses = -F.log_softmax(scores, dim=-1).gather(
             2, direction_targets.unsqueeze(-1)
         ).squeeze(-1)
-        return (
+        per_image = (
             (losses * incident.to(losses.dtype)).sum(dim=1)
-            / counts.to(losses.dtype)
-        ).mean()
+            / counts.clamp_min(1).to(losses.dtype)
+        )
+        return per_image[valid].mean()
 
     def training_losses(
         self,

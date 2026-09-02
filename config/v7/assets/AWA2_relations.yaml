@@ -1,0 +1,14 @@
+schema_version: gzsl-paper.v7-relation-asset-build.v1
+dataset: AWA2
+request: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v7/relation_sources/AWA2_v1/top3_request.json
+request_sha256: 8279075435c0163f9778e7f5bd1e85ad3610bcc5ec40d7c9622443568d51a313
+shards:
+  - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v7/relation_sources/AWA2_v1/AWA2_shard0.json
+    sha256: 42231681315ded32048ee36dc2b771a9878dda5cac6a816bbda76ac0b08b9820
+  - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v7/relation_sources/AWA2_v1/AWA2_shard1.json
+    sha256: 2e4a1848f2f3acd79c389286b4c934d8604373a99435289f57404f312a48e2ef
+  - path: /data/lby/projects/cv_project/GZSL_Warehouse/assets/v7/relation_sources/AWA2_v1/AWA2_shard2.json
+    sha256: 87c23f2937b86cfef9fbeb11ec3f7d1e6a60bd98f29eec99a2649d1edd940b76
+clip_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/assets/clip_checkpoints/ViT-L-14-336px.pt
+clip_checkpoint_sha256: 3035c92b350959924f9f00213499208652fc7ea050643e8b385c2dac08641f02
+clip_python_source_sha256: 9540f200fbf8145479fa655382a56dab048d238cc698b9cbd8df3b6d86d3f1b6
