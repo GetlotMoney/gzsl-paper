@@ -75,6 +75,7 @@ conda run -n dvsr_gpu python train.py `
 
 ## FRAMEWORK-V7 入口
 
+- 小白教程：[FRAMEWORK-V7代码、PyTorch与图拉普拉斯详解](docs/FRAMEWORK_V7_CODE_TUTORIAL.md)。
 - 固定参数与证据：`experiments/v7/FRAMEWORK.yaml`、`config/framework_v7.yaml`。
 - 独立无图部署入口：`model/frameworks/v7/model.py`。
 - 正式评估入口：`python -m model.frameworks.v7.evaluate`。
