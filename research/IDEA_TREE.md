@@ -94,7 +94,7 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 
 ## FRAMEWORK-V7
 
-- 状态：owner正式接纳，待冻结`framework/v7`分支与`v7` Tag。
+- 状态：owner正式接纳，`framework/v7`分支与`v7` Tag冻结在同一正式commit。
 - 论文方法：TG+GTD+C-PCLR-SVI。
 - 论文父框架：TG+GTD / TUNE-002-RUN-030，`H=79.070015`。
 - 正式来源：[`IDEA-201`](ideas/IDEA-201_compiled_pclr.md)与`V6-TRY-006`。
