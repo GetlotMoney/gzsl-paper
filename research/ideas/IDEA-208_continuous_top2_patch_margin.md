@@ -113,3 +113,17 @@ owner_requirement: returns to the owner-specified Top1/Top2 x36patch new-framewo
 - review_receipt: `experiments/v6/innovation/V6-TRY-010_CTPM_REVIEW.md`
 - final_A/B: `7845db90fa252217522b4ff43541a73dc2a370bb32c7e96f4c0a6ed24fc10ef1` / `d7e0c783b2928bdf3ce52bb53db88e3c5e87dab6aaf42f0469c5d41a2de299b0`
 - result: `P0=0/P1=0`，**双Agent交叉审查通过**。
+
+## 2026-09-02 正式结果
+
+- execution_commit: `a7546e8d83f6c7d4e2de53c5c676652623393725`
+- config_sha256: `b81339070614a49fa0833cb0c0899d97f0d564aa42741317c164bdc332d96f23`
+- best update16,356：`U/S/H/ZS=69.689388/68.954587/69.320040/85.399628`；相对class-name Parent H63.192339为`+6.127700`。
+- 同checkpoint：S-off H13.368284，S gap=`+55.951756`；V-off H69.086060，V gap=`+0.233980`；I-off H68.925691，I gap=`+0.394349`。
+- owner成功门只要求S/V/I各>=1且Full>Parent；S通过，V/I失败，因此`module_success=false`，不受H80影响。
+- `S-query-off H=69.591763`高于Full，表明role-difference query本身未优于class-name query；`margin_only/no_l_role H=65.875978`，证明Full主要收益来自全局role logits。
+- Parent到Full transitions：seen inside/outside Top2净纠正`+34/+46`；unseen `+105/+117`。Top2路径有纠正行为，但V/I边际被S替代。
+- result: `/data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/ctpm/V6-TRY-010/metrics.json@sha256:0150246204204524ad6224ff36a261c65800f6221b433b3a9c31c523aad50234`
+- model: `model_best.pth@sha256:28909e7a2ba531c295bcae0d1d5bc6d96c1c16f255d40d02878bed68920be33b`
+- history: `evaluation_history.json@sha256:8d183f69de6454a4701da6fbf136164abe1a441ca715deb9ad8f148ffefecd54`
+- decision: `fail_V_and_I_module_gap`。CTPM补救预算使用0/3；进入R1/IDEA-210，只修改branch-isolated balanced residual pair supervision和S/V-I同时LR分组，推理结构不变。
