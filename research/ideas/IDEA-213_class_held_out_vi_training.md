@@ -1,7 +1,7 @@
 # IDEA-213: Class-Held-Out V/I Training
 
 idea_id: IDEA-213
-status: testing_non_innovation_tune_rescue
+status: revised_small_positive_signal_below_formal_floor
 problem_category: learning_generalization
 problem: TUNE013把head分类CE限制到seen类后，仍可能让V/I在普通seen批次上学习到只适合当前seen类别的视觉读出和关系强度，无法模拟official unseen没有图像梯度的迁移边界。
 mechanism_tags: [one_text, class_held_out, first_order_meta, reader, interaction, tune]
@@ -15,7 +15,9 @@ principle_difference: V/I的学习对象从“拟合同批seen分类”改为“
 non_equivalence_test: inner batch类别与pseudo-unseen outer类别必须不相交；outer CE候选轴必须是全部train seen类并包含inner/meta-seen列，这些列必须获得非零直接梯度；临时inner step不得改变正式参数；outer loss必须给正式Reader/alpha提供梯度；S仍由普通seen CE提供梯度；official test张量不得进入任何梯度路径。
 minimal_viability: CPU单元micro路径能证明临时参数不正式step、outer loss给Reader/alpha梯度、pseudo-unseen不在inner、best_update=0不能过gate；正式CUB run另行由owner授权后执行。
 minimal_falsification: 若完整CUB seed7 RUN后Full H仍低于TG+GTD+S retrained H 79.768159，或V/I关闭诊断不显示同checkpoint贡献，则该类别留出V/I训练不成立。
-current_advantage: not_yet_tested
-performance_status: proof_of_path
+current_advantage: CUB Full H=80.138486，相对TUNE013 +0.192688 H，U/S更平衡（U=79.017454 > formal V7 77.606910）；但仍低formal V7 0.371946 H，未过80.510432门。
+performance_status: below_parent
 failure_boundary: 该实现是一阶近似，不是完整二阶双层优化；如果需要证明二阶meta梯度本身有效，必须新建实验并重新审查计算图和显存预算。
 paper_level_claim: none
+
+result: seed7完整28228 updates、201次official评估；best update=10152，U/S/H/ZS=79.017454/81.291783/80.138486/87.642199。同checkpoint关闭差：s_off +2.647120、v_off +1.343053、i_off +1.058027、role_shuffle +1.296172、signflip +4.626016 H。程序decision=drop_tune014_contract_failed（低formal V7 0.371946 H）。类别留出outer CE提供正的小训练信号，但不构成独立核心模块；若继续需做正式V/I/VI从头重训消融。

@@ -4,7 +4,7 @@ framework_id: FRAMEWORK-V7
 idea_id: IDEA-213
 framework_base_commit: b32a16f848c34f8e09d03b27d2f22ed445b9a295
 code_parent_commit: 35cefc52896c383e1ec75a3adc5f78d218d616a3
-status: planned
+status: completed_drop_below_formal_floor
 question: CUB一文本Full的V/I是否需要类别留出式训练信号，而不是普通seen分类CE
 comparison_scope: relative_to_V7-TUNE-013_one_text_seen_only_ce; formal_V7_b32a16f remains the accuracy floor, not the direct one-variable diff baseline
 unique_change: V/I classification gradients come from first-order class-disjoint pseudo-unseen outer CE; TG/GTD/S keep ordinary seen training; inference remains frozen 200-class one-text S/V/I
