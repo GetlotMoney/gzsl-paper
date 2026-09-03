@@ -1,2 +1,2 @@
 run_id,code_commit,config_ref,config_sha256,seed,status,U,S,H,ZS,best_update,official_test_evaluations,decision,output_uri
-RUN-CUB,pending,experiments/v7/tune/V7-TUNE-015_TEXT_RELATION_OPERATOR/configs/RUN-CUB.yaml,pending,7,planned,,,,,,201,pending,/data/lby/projects/cv_project/GZSL_Warehouse/tune/v7/V7-TUNE-015_TEXT_RELATION_OPERATOR/V7-TUNE-015-CUB-TEXT-RELATION-OPERATOR
+RUN-CUB,pending,experiments/v7/tune/V7-TUNE-015_TEXT_RELATION_OPERATOR/configs/RUN-CUB.yaml,3e3f3436f8dc10967f5c5227552241d64f1770c1e6e558cb19494ad37c6513f5,7,planned,,,,,,201,pending,/data/lby/projects/cv_project/GZSL_Warehouse/tune/v7/V7-TUNE-015_TEXT_RELATION_OPERATOR/V7-TUNE-015-CUB-TEXT-RELATION-OPERATOR
