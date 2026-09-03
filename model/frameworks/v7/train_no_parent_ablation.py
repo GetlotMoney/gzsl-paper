@@ -784,7 +784,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
                 inner_learning_rate=float(config["meta_inner_learning_rate"]),
                 outer_loss_weight=float(config["meta_outer_loss_weight"]),
             )
-            interval["vi_outer_ce"] += float(episode["outer_loss"].detach().cpu())
+            interval["vi_outer_ce"] += float(episode["outer_loss"])
         else:
             episode = None
         gradient_receipt(head)
