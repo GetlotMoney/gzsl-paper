@@ -56,6 +56,7 @@ def _write_config(tmp_path: Path, dataset: str = "CUB") -> Path:
         "relation_embedding_mode": "one_text_uniform_role_difference",
         "relation_endpoint_scale": 0.5,
         "classification_ce_scope": "seen_only_train_classes",
+        "expected_direction_skip_seen_class_ids": identity["direction_skip_seen_class_ids"],
         "best_selection_metric": "official_full_H_post_update",
         "official_test_evaluations": math.ceil(identity["total_updates"] / identity["eval_interval_steps"]),
         "required_i_off_delta_h": 0.0,
@@ -91,6 +92,7 @@ def test_config_identity_for_cub(monkeypatch, tmp_path):
     config, config_sha = tune013.load_one_text_seen_ce_config(_write_config(tmp_path, "CUB"))
     assert config["experiment_id"] == tune013.IDENTITIES["CUB"]["experiment_id"]
     assert config["classification_ce_scope"] == "seen_only_train_classes"
+    assert config["expected_direction_skip_seen_class_ids"] == [13, 76]
     assert config["formal_checkpoint_usage"] == "baseline_identity_only_not_training_initialization"
     assert config["fresh_source_initialization"] is True
     assert config["nested_official_test_selection"] is False

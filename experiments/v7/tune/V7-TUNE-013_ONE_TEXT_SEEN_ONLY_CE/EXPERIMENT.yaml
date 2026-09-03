@@ -5,10 +5,13 @@ idea_id: IDEA-212
 framework_base_commit: b32a16f848c34f8e09d03b27d2f22ed445b9a295
 status: planned
 question: CUB一文本Full下降是否来自训练分类CE把unseen类当作负类压低
-unique_change: final head classification CE is computed only over trainval seen logits; relation direction CE and 200-class inference remain unchanged
+comparison_scope: relative_to_V7-TUNE-012_one_text_Full_path; formal_V7_b32a16f remains the accuracy floor, not the direct one-variable diff baseline
+accepted_infra_commits: [d11c794, d427ed6, 30eaee6]
+unique_change: relative to the one-text Full path, final head classification CE is computed only over trainval seen logits; relation direction CE and 200-class inference remain unchanged
 formal_checkpoint_usage: baseline identity only; never training initialization
 trainable: [TG, GTD gate, S role weights, Reader, alpha]
 fixed: [eight role text embeddings, Mean8 Top3 graph, uniform role directions, compiled mapping, bias]
+expected_direction_skip_seen_class_ids: [13, 76]
 gate: CUB Full H >= formal Full V7; correct relation beats signflip/shuffle; report same-checkpoint S/V/I-off
 test_used_for_selection: true
 test_used_for_hyperparameter_selection: true

@@ -10,6 +10,8 @@ hypothesis: 保持TUNE012的一文本S/V/I结构、方向CE、训练预算、see
 
 old_solution_path: TUNE012用同一批seen训练图像计算200类head logits，然后对200类全轴做CE；true label之外的全部类，包括50个official unseen类，都会收到负类竞争梯度。
 new_solution_path: TUNE013仍输出200类logits，但训练分类CE只取`logits[:, seenclasses]`并用`global_to_seen[y]`监督；方向CE继续训练Reader，推理和U/S/H/ZS仍使用完整200类logits。
+comparison_scope: 本TRY相对V7-TUNE-012一文本Full路径只改head classification CE范围；正式V7 `b32a16f` 只作为CUB性能地板和框架身份锚点。
+direction_ce_boundary: CUB一文本图预注册跳过seen类`[13,76]`，运行时若不一致直接失败。
 principle_difference: 训练分类学习对象从“seen图像对全部200类排序”改为“seen图像只对可监督的150个seen类排序”，避免对无图像监督的unseen类施加分类负梯度。
 non_equivalence_test: 在同一batch的head CE反向中，excluded unseen logits的梯度必须严格为0；评估时Full logits形状仍为200类，且ZS仍只在50个unseen类中竞争。
 minimal_viability: CUB完整RUN可执行、best_update>0、unseen_images_used_for_gradient=false、Full H高于TUNE012 Full 77.405741，并报告相对TG+GTD+S retrained H 79.768159与formal V7 H 80.510432。

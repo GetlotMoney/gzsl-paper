@@ -59,6 +59,7 @@ IDENTITIES = {
         "total_updates": 28228,
         "eval_interval_steps": 141,
         "seen_logit_gamma": 0.91,
+        "direction_skip_seen_class_ids": [13, 76],
     },
 }
 CONFIG_KEYS = {
@@ -94,6 +95,7 @@ CONFIG_KEYS = {
     "relation_embedding_mode",
     "relation_endpoint_scale",
     "classification_ce_scope",
+    "expected_direction_skip_seen_class_ids",
     "best_selection_metric",
     "official_test_evaluations",
     "required_i_off_delta_h",
@@ -167,6 +169,7 @@ def load_one_text_seen_ce_config(path: Path) -> tuple[dict, str]:
         or config.get("relation_embedding_mode") != "one_text_uniform_role_difference"
         or float(config.get("relation_endpoint_scale", -1)) != 0.5
         or config.get("classification_ce_scope") != "seen_only_train_classes"
+        or config.get("expected_direction_skip_seen_class_ids") != identity["direction_skip_seen_class_ids"]
         or config.get("best_selection_metric") != "official_full_H_post_update"
         or int(config.get("official_test_evaluations", -1)) != _expected_eval_count(identity)
         or float(config.get("required_i_off_delta_h", -1)) != 0.0
@@ -414,6 +417,8 @@ def _training_context(config: dict, device: torch.device):
     source, tensors, source_config = load_training_source(config, device)
     head, graph = build_head(source, config, device)
     skipped = validate_training_identity(head, tensors, identity)
+    if skipped != identity["direction_skip_seen_class_ids"]:
+        raise ValueError("TUNE013 CUB direction CE覆盖边界不匹配。")
     controls = relation_controls(head, seed=7)
     labels_cpu = tensors["train_labels"].long()
     seen = torch.unique(labels_cpu, sorted=True)

@@ -30,6 +30,7 @@ initial_role_weights: [0.16, 0.0, 0.0, 0.0, 0.0, 0.0, 0.36, 0.0]
 relation_embedding_mode: one_text_uniform_role_difference
 relation_endpoint_scale: 0.5
 classification_ce_scope: seen_only_train_classes
+expected_direction_skip_seen_class_ids: [13, 76]
 best_selection_metric: official_full_H_post_update
 official_test_evaluations: 201
 required_i_off_delta_h: 0.0
