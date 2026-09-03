@@ -1,0 +1,22 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V7-TUNE-015_TEXT_RELATION_OPERATOR
+framework_id: FRAMEWORK-V7
+idea_id: IDEA-214
+framework_base_commit: 35cefc52896c383e1ec75a3adc5f78d218d616a3
+status: planned
+question: CUB一文本关系是否应由共享文本到视觉算子编译，而不是逐图Reader读取
+comparison_scope: relative_to_V7-TUNE-013_one_text_seen_only_ce; formal_V7_b32a16f remains the accuracy floor
+accepted_code_parent: 35cefc52896c383e1ec75a3adc5f78d218d616a3
+unique_change: remove per-image Reader; learn an identity-residual low-rank operator A from fixed text edge directions to trainval seen visual centroid differences; compile unit class relation residuals by ridge before inference
+formal_checkpoint_usage: baseline identity only; never training initialization
+trainable: [TG, GTD gate, S role weights, relation_operator_A, alpha]
+fixed: [eight role text embeddings, Mean8 Top3 graph, ridge graph compiler, seen calibration bias]
+operator_residual_mode: identity_residual_unit_normalized
+direction_alignment_source: trainval_seen_visual_centroids_only
+gate: CUB Full H >= formal Full V7; same-checkpoint I-off reported as compiled-relation contribution
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+nested_official_test_selection: false
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+output_root: /data/lby/projects/cv_project/GZSL_Warehouse/tune/v7/V7-TUNE-015_TEXT_RELATION_OPERATOR

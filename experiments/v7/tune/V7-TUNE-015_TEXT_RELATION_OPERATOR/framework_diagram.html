@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>V7-TUNE-015 Text Relation Operator</title>
+<style>
+body{margin:0;font-family:Arial,"Microsoft YaHei",sans-serif;background:#f7f8fa;color:#1f2933}
+main{max-width:1120px;margin:0 auto;padding:28px}
+h1{font-size:24px;margin:0 0 10px}
+.meta{font-size:13px;color:#52606d;margin-bottom:22px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.box{background:#fff;border:1px solid #d9e2ec;border-radius:6px;padding:14px;min-height:132px}
+.tag{font-size:12px;font-weight:700;color:#334e68;letter-spacing:.08em}
+.title{font-size:18px;font-weight:700;margin:8px 0}
+p{font-size:14px;line-height:1.45;margin:0 0 10px}
+.formula{font-family:Consolas,monospace;font-size:13px;background:#edf2f7;border-radius:4px;padding:8px;line-height:1.5}
+.note{margin-top:18px;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:12px;font-size:14px}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>V7-TUNE-015：一文本关系视觉化算子</h1>
+<div class="meta">code parent: 35cefc52896c383e1ec75a3adc5f78d218d616a3 · dataset: CUB · inference export: q,bias only</div>
+<section class="grid">
+<article class="box"><div class="tag">TEXT GRAPH</div><div class="title">八角色文本边</div><p>用每类八个角色句向量形成Mean8 Top3无向边，并固定方向。</p><div class="formula">D_ab = norm(mean_r(s_a-r)-mean_r(s_b-r))</div></article>
+<article class="box"><div class="tag">OPERATOR A</div><div class="title">共享低秩视觉化</div><p>只用trainval seen中心差分监督seen-seen边；unseen图像不参与梯度。</p><div class="formula">D_vis = norm(D_text + (D_text W_down^T) W_up^T)<br>W_up=0 =&gt; D_vis=D_text</div></article>
+<article class="box"><div class="tag">RIDGE COMPILE</div><div class="title">类别关系原型</div><p>同一个A作用于全部边，经固定ridge图编译成200类关系残差。</p><div class="formula">G = solve(B^T B + lambda I, B^T) D_vis / tau<br>loss = 1 - cos(D_vis, mu_a-mu_b)</div></article>
+<article class="box"><div class="tag">DEPLOYMENT</div><div class="title">单矩阵出口</div><p>推理没有Reader、没有在线图求解、没有逐图关系读取。</p><div class="formula">Q = Q_TG+S + alpha G<br>logits = norm(x) Q^T + b</div></article>
+</section>
+<div class="note">评估边界：训练分类CE只在trainval seen logits上计算；official test仍按200类GZSL竞争与50类ZS竞争记录U/S/H/ZS，并按Full H保存best。</div>
+</main>
+</body>
+</html>
