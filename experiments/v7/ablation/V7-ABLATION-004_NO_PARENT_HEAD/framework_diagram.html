@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>V7-ABLATION-004_NO_PARENT_HEAD — 去父重训消融 框架图</title>
+<style>
+  body { font-family: "Microsoft YaHei", sans-serif; max-width: 1100px; margin: 24px auto; padding: 0 16px; color: #222; }
+  h1 { font-size: 20px; } h2 { font-size: 16px; margin-top: 28px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  pre { background: #f6f8fa; padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; }
+  .box { border: 1px solid #888; border-radius: 8px; padding: 10px 12px; margin: 8px 0; background: #fcfcfc; }
+  .frozen { background: #eef; } .train { background: #fef; }
+  .note { color: #b00; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>FRAMEWORK-V7 · V7-ABLATION-004_NO_PARENT_HEAD — 去父重训消融</h1>
+
+<div class="box">
+  <b>代码身份</b>
+  <ul>
+    <li>code parent：<code>35cefc52896c383e1ec75a3adc5f78d218d616a3</code>（TUNE013 seen-only CE identity）</li>
+    <li>本分支 commit：<code>见 result.md 产物节（pre-run 提交后回填）</code></li>
+    <li>framework anchor：<code>b32a16f848c34f8e09d03b27d2f22ed445b9a295</code></li>
+    <li>config SHA：每组 RUN 独立（见 PARAMETER_MATRIX.csv）</li>
+  </ul>
+</div>
+
+<h2>一句话</h2>
+<p>冻结 TG+GTD source（不训练、无 parent loss），head 改用 <b>Mean8 纯文本原型</b>做 base，用 TUNE013 seen-only CE（S）＋ TUNE014 class-held-out outer CE（V/I）训练，五组条件从头重训，另加 B0 零训练 Mean8 基线，判定「TG+GTD 遮蔽 V/I」vs「CLS＋一文本语义路径到顶」。</p>
+
+<h2>相对 TUNE013（code parent 35cefc5）的核心变化</h2>
+<table>
+  <tr><th>维度</th><th>TUNE013（父）</th><th>本实验</th></tr>
+  <tr><td>source（TG+GTD）</td><td>训练（parent loss + parent optimizer）</td><td class="frozen"><b>全冻结</b>，不训练、无 parent loss、无 sync_source_prototypes</td></tr>
+  <tr><td>head base 原型</td><td><code>source.prototypes()</code>（TG+GTD 迁移后）</td><td><code>source.parent.tg_vpr.base_prototypes()</code>（<b>Mean8 纯文本</b>）</td></tr>
+  <tr><td>分类训练信号</td><td>seen-only CE（全模块共同）</td><td>S ← seen-only CE；V/I ← 一阶 class-held-out outer CE</td></tr>
+  <tr><td>方向 CE（relation loss）</td><td>开启（weight 1.0）</td><td>关闭（weight 0.0，同 TUNE014）</td></tr>
+  <tr><td>条件</td><td>单一 Full + inference-off 诊断</td><td>Full / S-off / V-off / I-off / V+I-off <b>五组从头重训</b> + B0 基线</td></tr>
+</table>
+
+<h2>输入与输出</h2>
+<table>
+  <tr><th>方向</th><th>内容</th></tr>
+  <tr><td>输入</td><td>CUB trainval seen 图像特征（CLIP ViT-L/14@336，frozen）；八角色文本嵌入 <code>sentence_embeds[200,8,768]</code>；seen 类集；测试 seen/unseen 特征</td></tr>
+  <tr><td>输出</td><td>每条件 <code>model_best.pth</code>（含 export 的 <code>q, bias, reader_*</code>）、<code>evaluation_history.json</code>、<code>metrics.json</code>；B0 输出 mean8 基线 metrics</td></tr>
+</table>
+
+<h2>模块与数据流</h2>
+<pre>
+CLIP image feats x[B,768] (frozen)
+        │
+        ▼
+┌───────────────────────────────────────────────────────────────┐
+│ CompiledPCLRHead（S/V/I）                                     │
+│                                                               │
+│  base_q   = normalize(mean8) * scale          (FROZEN, Mean8) │
+│  role_q   = normalize(sentence_embeds) * scale (FROZEN)       │
+│  compiled_g = ridge(edges, relations)/T        (FROZEN)       │
+│                                                               │
+│  S: raw_role_weights[8] (TRAIN) → image_q = base_q + Σ w_r·role_q_r │
+│  V: reader MLP (TRAIN) → readout = normalize(x + residual)    │
+│  I: raw_alpha (TRAIN) → relation_q = α·compiled_g             │
+│                                                               │
+│  h = cat(norm(x), readout)                                    │
+│  logits = h @ [image_q | α·compiled_g].T + seen_bias          │
+│  （semantic/visual/interaction 按条件开关）                   │
+└───────────────────────────────────────────────────────────────┘
+        │
+        ▼
+ 200 类 logits → U/S/H（200 类竞争）+ ZS（50 unseen 类竞争）
+</pre>
+<p class="note">注意：source 不参与任何梯度路径；head 的 base_q/role_q/compiled_g 全部冻结，仅 S/V/I 的可训练参数（按条件子集）有梯度。</p>
+
+<h2>Loss</h2>
+<pre>
+L = L_seen_only_classification_CE(S 部分)
+  + L_first_order_class_held_out_outer_CE(V/I 部分, 按条件过滤可训练子集)
+（无 parent loss，无方向 CE）
+
+class-held-out episode（每 update，伪 seen 两折做一步临时 inner → 剩余一折 pseudo-unseen 的 outer CE，
+outer 候选轴 = 全部 150 seen 类，outer 梯度映射回正式 V/I；一阶，不建二阶图）
+</pre>
+
+<h2>条件矩阵（各条件独立从头训练 28228 updates / 141 eval / seed7）</h2>
+<table>
+  <tr><th>条件</th><th>freeze</th><th>forward 开关</th><th>V/I 梯度来源</th></tr>
+  <tr><td>Full</td><td>—</td><td>S/V/I 全开</td><td>outer CE（reader+alpha）</td></tr>
+  <tr><td>S-off</td><td>role_weights</td><td>semantic off</td><td>outer CE（reader+alpha）</td></tr>
+  <tr><td>V-off</td><td>reader</td><td>visual off</td><td>outer CE（alpha only）</td></tr>
+  <tr><td>I-off</td><td>alpha</td><td>interaction off</td><td>outer CE（reader only）</td></tr>
+  <tr><td>V+I-off</td><td>reader+alpha</td><td>visual+interaction off</td><td>无（仅 S）</td></tr>
+</table>
+
+<h2>评估与判据</h2>
+<ul>
+  <li>best 选择：各条件按自身 official H 选 checkpoint；U/S/H 200 类联合竞争，ZS 50 unseen 类竞争</li>
+  <li>parent_metrics（B0 参考）＝ Mean8 零训练直接分类：<code>norm(x) @ normalize(mean8).T * scale_initial</code></li>
+  <li>判据：head 总量 = Full−B0；模块贡献 = Full−off（重训差值）；Full−I-off &gt; 1H ⇒ 遮蔽假说成立；B1 仍远低于 80.510432 ⇒ CLS 路径接近天花板</li>
+</ul>
+
+<h2>训练/评估边界（Chen-style 披露）</h2>
+<pre>
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+nested_official_test_selection: false
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+（不能描述为 blind test / validation-first）
+</pre>
+
+</body>
+</html>

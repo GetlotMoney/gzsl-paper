@@ -1,0 +1,45 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V7-ABLATION-004_NO_PARENT_HEAD
+framework_id: FRAMEWORK-V7
+idea_id: IDEA-215
+framework_base_commit: b32a16f848c34f8e09d03b27d2f22ed445b9a295
+code_parent_commit: 35cefc52896c383e1ec75a3adc5f78d218d616a3
+status: planned
+kind: diagnostic_retrained_ablation
+question: 去掉TG+GTD（冻结source、head改用Mean8纯文本base）后，S/V/I模块从头重训各自对CUB H的独立贡献，用于区分“TG+GTD遮蔽V/I”与“CLS+一文本语义路径已到天花板”
+comparison_scope: de-parent retrained ablation；所有条件冻结TG+GTD source、head基于Mean8纯文本base训练；对照B0零训练Mean8基线与formal V7 H=80.510432
+head_base: Mean8 pure text prototypes (source.parent.tg_vpr.base_prototypes())
+source_frozen: true
+training_signals:
+  s: ordinary_seen_batch_ce
+  v_i: class_disjoint_pseudo_unseen_outer_ce_first_order
+direction_ce: false
+relation_loss_weight: 0.0
+conditions:
+  Full: S/V/I全部可训练且启用
+  S-off: role weights冻结、semantic residual关闭；V/I仍class-held-out训练
+  V-off: Reader冻结并旁路；alpha仍class-held-out训练
+  I-off: alpha冻结、关系分支关闭；Reader仍class-held-out训练
+  V+I-off: Reader与alpha冻结并旁路；仅S训练
+baseline_b0: zero-training Mean8 direct classification（official test，U/S/H/ZS与best选择口径一致）
+shared_protocol:
+  dataset: CUB
+  train_split: trainval_loc 150 classes / 7057 images
+  random_seed: 7
+  batch_size: 50
+  nominal_epochs: 200
+  total_updates: 28228
+  eval_interval_steps: 141
+  classification_ce_scope: class_held_out_outer_for_vi_seen_only_for_s
+  evaluation: 200-class U/S/H and 50-class unseen ZS
+  best_selection_metric: official_condition_H_post_update
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+nested_official_test_selection: false
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+decision_rule:
+  head_total: delta_H = Full_H - B0_mean8_H
+  module_contrib: delta_H = Full_H - off_condition_H (retrained)
+  diagnosis: Full-I-off > 1H 且 B1仍低于formal V7 -> I有被TG+GTD遮蔽的可学内容，收益空间分配需重构；B1即使全开仍远低于80.510432 -> CLS+一文本语义路径接近天花板
+output_root: /data/lby/projects/cv_project/GZSL_Warehouse/ablation/v7/V7-ABLATION-004_NO_PARENT_HEAD

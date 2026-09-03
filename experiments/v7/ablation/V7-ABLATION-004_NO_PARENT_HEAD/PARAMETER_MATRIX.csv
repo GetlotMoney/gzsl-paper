@@ -1,0 +1,7 @@
+run_id,condition,dataset,mean8_baseline_H,formal_H,updates,eval_interval,seed,head_base,source_frozen,s_grad_source,vi_grad_source,code_commit,config_sha,status,U,S,H,ZS,best_update,delta_H_cond_minus_mean8,delta_H_vs_formal,decision,output_uri
+BASELINE-B0,B0,CUB,,80.510432,0,141,7,mean8,true,seen_only_ce,class_held_out_outer_ce,pending,,,,,,,,,,pending,/data/lby/projects/cv_project/GZSL_Warehouse/ablation/v7/V7-ABLATION-004_NO_PARENT_HEAD/BASELINE-B0
+RUN-FULL,Full,CUB,,80.510432,28228,141,7,mean8,true,seen_only_ce,class_held_out_outer_ce,pending,,,,,,,,,,pending,/data/lby/projects/cv_project/GZSL_Warehouse/ablation/v7/V7-ABLATION-004_NO_PARENT_HEAD/RUN-FULL
+RUN-S-OFF,S-off,CUB,,80.510432,28228,141,7,mean8,true,seen_only_ce,class_held_out_outer_ce,pending,,,,,,,,,,pending,/data/lby/projects/cv_project/GZSL_Warehouse/ablation/v7/V7-ABLATION-004_NO_PARENT_HEAD/RUN-S-OFF
+RUN-V-OFF,V-off,CUB,,80.510432,28228,141,7,mean8,true,seen_only_ce,class_held_out_outer_ce,pending,,,,,,,,,,pending,/data/lby/projects/cv_project/GZSL_Warehouse/ablation/v7/V7-ABLATION-004_NO_PARENT_HEAD/RUN-V-OFF
+RUN-I-OFF,I-off,CUB,,80.510432,28228,141,7,mean8,true,seen_only_ce,class_held_out_outer_ce,pending,,,,,,,,,,pending,/data/lby/projects/cv_project/GZSL_Warehouse/ablation/v7/V7-ABLATION-004_NO_PARENT_HEAD/RUN-I-OFF
+RUN-VI-OFF,V+I-off,CUB,,80.510432,28228,141,7,mean8,true,seen_only_ce,class_held_out_outer_ce,pending,,,,,,,,,,pending,/data/lby/projects/cv_project/GZSL_Warehouse/ablation/v7/V7-ABLATION-004_NO_PARENT_HEAD/RUN-VI-OFF
