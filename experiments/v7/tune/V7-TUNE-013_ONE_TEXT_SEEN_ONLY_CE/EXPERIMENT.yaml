@@ -3,7 +3,7 @@ experiment_id: V7-TUNE-013_ONE_TEXT_SEEN_ONLY_CE
 framework_id: FRAMEWORK-V7
 idea_id: IDEA-212
 framework_base_commit: b32a16f848c34f8e09d03b27d2f22ed445b9a295
-status: planned
+status: completed_drop_below_formal_floor
 question: CUB一文本Full下降是否来自训练分类CE把unseen类当作负类压低
 comparison_scope: relative_to_V7-TUNE-012_one_text_Full_path; formal_V7_b32a16f remains the accuracy floor, not the direct one-variable diff baseline
 accepted_infra_commits: [d11c794, d427ed6, 30eaee6]

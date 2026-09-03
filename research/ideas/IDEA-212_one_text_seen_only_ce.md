@@ -1,7 +1,7 @@
 # IDEA-212: One-Text Seen-Only CE
 
 idea_id: IDEA-212
-status: testing_non_innovation_tune_rescue
+status: revised_mechanism_supported_but_below_formal_floor
 problem_category: learning_generalization
 problem: TUNE012 one-text Full 在 CUB 低于 TG+GTD+S，可能是新增head的200类训练CE把50个true-unseen类在每个seen训练batch里都当作负类压低，破坏最终200类联合竞争。
 mechanism_tags: [one_text, seen_only_ce, tg_gtd, semantic, reader, interaction]
@@ -16,7 +16,9 @@ principle_difference: 训练分类学习对象从“seen图像对全部200类排
 non_equivalence_test: 在同一batch的head CE反向中，excluded unseen logits的梯度必须严格为0；评估时Full logits形状仍为200类，且ZS仍只在50个unseen类中竞争。
 minimal_viability: CUB完整RUN可执行、best_update>0、unseen_images_used_for_gradient=false、Full H高于TUNE012 Full 77.405741，并报告相对TG+GTD+S retrained H 79.768159与formal V7 H 80.510432。
 minimal_falsification: CUB seed7完整28228 updates后Full H仍低于TG+GTD+S retrained H 79.768159，或signflip/role_shuffle不低于Full。
-current_advantage: not_yet_tested
-performance_status: proof_of_path
+current_advantage: CUB H=79.945797，相对TUNE012 all-class Full提高2.540056 H，相对TG+GTD+S提高0.177638 H；同checkpoint V/I贡献恢复为正，但仍低于formal V7 0.564635 H。
+performance_status: below_parent
 failure_boundary: 如果仍下降，则问题不主要是all-class CE压制unseen，而更可能是一文本关系方向或Reader交互本身无法提供稳定迁移；不得继续把本改动包装为创新。
 paper_level_claim: none
+
+result: seed7完整28228 updates、201次official评估；best update=13818（epoch98），U/S/H/ZS=79.960012/79.931587/79.945797/87.821192。S/V/I同checkpoint关闭差为+0.685274/+1.003974/+1.193869 H；signflip与role shuffle分别低5.547975/2.002003 H。程序合同因H低于formal V7 80.510432而失败，当前条件drop；机制诊断支持“all-class head CE是TUNE012 seen偏置主因之一”，但0.564635 H剩余差距说明它不是唯一原因。
