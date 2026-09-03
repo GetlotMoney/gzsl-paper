@@ -4,7 +4,7 @@ framework_id: FRAMEWORK-V7
 idea_id: IDEA-212
 framework_base_commit: b32a16f848c34f8e09d03b27d2f22ed445b9a295
 implementation_base_commit: 35cefc52896c383e1ec75a3adc5f78d218d616a3
-status: planned
+status: completed
 question: TUNE013 seen-only CE成立后，S、V、I三条路径分别从头重训去掉时对CUB Chen-style H的独立贡献是多少
 comparison_scope: retrained ablation against accepted TUNE013 Full; same seed, data, budget, optimizer, eval cadence, and best-H selection
 full_reference:
