@@ -19,8 +19,9 @@ conditions:
   Full: S/V/I全部可训练且启用
   S-off: role weights冻结、semantic residual关闭；V/I仍class-held-out训练
   V-off: Reader冻结并旁路；alpha仍class-held-out训练
-  I-off: alpha冻结、关系分支关闭；Reader仍class-held-out训练
+  I-off: alpha冻结、关系分支关闭；架构耦合下Reader的唯一logits通道是关系分支，关系置零后Reader outer梯度为零、保持初始化（I-off与V+I-off逐值等价）
   V+I-off: Reader与alpha冻结并旁路；仅S训练
+architecture_coupling: Reader的唯一logits通道为readout @ alpha*compiled_g；I-off与V+I-off在logits与训练动态上逐值等价，Full-I-off=联合V+I贡献，不能单独归因I
 baseline_b0: zero-training Mean8 direct classification（official test，U/S/H/ZS与best选择口径一致）
 shared_protocol:
   dataset: CUB
@@ -41,5 +42,5 @@ strict_blind_claim: false
 decision_rule:
   head_total: delta_H = Full_H - B0_mean8_H
   module_contrib: delta_H = Full_H - off_condition_H (retrained)
-  diagnosis: Full-I-off > 1H 且 B1仍低于formal V7 -> I有被TG+GTD遮蔽的可学内容，收益空间分配需重构；B1即使全开仍远低于80.510432 -> CLS+一文本语义路径接近天花板
+  diagnosis: Full-I-off（=Full-V+I-off，联合V+I）> 1H 且 B1仍低于formal V7 -> V+I有被TG+GTD遮蔽的可学内容，收益空间分配需重构；B1即使全开仍远低于80.510432 -> CLS+一文本语义路径接近天花板
 output_root: /data/lby/projects/cv_project/GZSL_Warehouse/ablation/v7/V7-ABLATION-004_NO_PARENT_HEAD

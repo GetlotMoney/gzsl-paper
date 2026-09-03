@@ -89,15 +89,16 @@ outer 候选轴 = 全部 150 seen 类，outer 梯度映射回正式 V/I；一阶
   <tr><td>Full</td><td>—</td><td>S/V/I 全开</td><td>outer CE（reader+alpha）</td></tr>
   <tr><td>S-off</td><td>role_weights</td><td>semantic off</td><td>outer CE（reader+alpha）</td></tr>
   <tr><td>V-off</td><td>reader</td><td>visual off</td><td>outer CE（alpha only）</td></tr>
-  <tr><td>I-off</td><td>alpha</td><td>interaction off</td><td>outer CE（reader only）</td></tr>
+  <tr><td>I-off</td><td>alpha</td><td>interaction off</td><td>outer CE（reader only，但实际为零，见下）</td></tr>
   <tr><td>V+I-off</td><td>reader+alpha</td><td>visual+interaction off</td><td>无（仅 S）</td></tr>
 </table>
+<p class="note">架构耦合（交叉审查确认）：Reader 的唯一 logits 通道是关系分支 <code>readout @ alpha*compiled_g</code>。I-off 关系置零后 Reader outer 梯度恒为零、保持 READER_SEED 初始化；因此 I-off 与 V+I-off 在 logits 与训练动态上逐值等价，<b>Full−I-off = 联合 V+I 贡献</b>，不能单独归因 I。V-off 中 alpha 的 outer 梯度流经原始输入（Reader 已旁路），语义干净。</p>
 
 <h2>评估与判据</h2>
 <ul>
   <li>best 选择：各条件按自身 official H 选 checkpoint；U/S/H 200 类联合竞争，ZS 50 unseen 类竞争</li>
   <li>parent_metrics（B0 参考）＝ Mean8 零训练直接分类：<code>norm(x) @ normalize(mean8).T * scale_initial</code></li>
-  <li>判据：head 总量 = Full−B0；模块贡献 = Full−off（重训差值）；Full−I-off &gt; 1H ⇒ 遮蔽假说成立；B1 仍远低于 80.510432 ⇒ CLS 路径接近天花板</li>
+  <li>判据：head 总量 = Full−B0；模块贡献 = Full−off（重训差值）；Full−I-off（=Full−V+I-off，联合 V+I）&gt; 1H ⇒ V+I 被遮蔽；B1 仍远低于 80.510432 ⇒ CLS 路径接近天花板</li>
 </ul>
 
 <h2>训练/评估边界（Chen-style 披露）</h2>

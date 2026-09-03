@@ -249,6 +249,14 @@ def _condition(config: dict) -> dict:
 
 
 def meta_param_names(config: dict) -> tuple[str, ...]:
+    """可训练的 V/I 子集（按条件冻结过滤）。
+
+    架构耦合说明：Reader 的唯一 logits 通道是 interaction 关系分支
+    ``readout @ alpha*compiled_g``（compiled_pclr.py forward）。当 interaction
+    被关闭（I-off / V+I-off）时关系块置零，Reader 的 outer 梯度恒为零并停留
+    在 READER_SEED 初始化；因此 I-off 与 V+I-off 逐值等价，Full−I-off 度量的是
+    "V+I 联合贡献"，不是 I 单独贡献。本函数只负责按 freeze 过滤可训练子集。
+    """
     condition = _condition(config)
     names = []
     if not condition["freeze_reader"]:
@@ -659,6 +667,7 @@ def micro_batch(config_path: Path) -> dict:
     images = train_features[:50]
     labels = train_labels[:50]
     generator = torch.Generator(device="cpu").manual_seed(7)
+    episode_generator = torch.Generator(device="cpu").manual_seed(7 + 1_000_000)
     s_loss = tune013.seen_only_classification_loss(
         condition_logits(head, images, config),
         labels,
@@ -679,7 +688,7 @@ def micro_batch(config_path: Path) -> dict:
             outer_candidate_classes=seen_device.detach().cpu(),
             meta_param_names=meta_names,
             config=config,
-            generator=generator,
+            generator=episode_generator,
             inner_batch_size=int(config["meta_inner_batch_size"]),
             outer_batch_size=int(config["meta_outer_batch_size"]),
             inner_learning_rate=float(config["meta_inner_learning_rate"]),
@@ -722,6 +731,9 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
     train_labels = tensors["train_labels"].to(device).long()
     head_optimizer = torch.optim.Adam(_head_parameters(head), lr=float(config["learning_rate"]), weight_decay=0.0)
     generator = torch.Generator(device="cpu").manual_seed(7)
+    # 主 batch 与 class-held-out episode 采样使用独立 generator，使五组条件的主
+    # batch 随机数据流完全一致（episode 是否执行不影响主 batch 序列）。
+    episode_generator = torch.Generator(device="cpu").manual_seed(7 + 1_000_000)
     output = prepare_output_dir(output_dir)
     (output / "config.snapshot.yaml").write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
     log = (output / "training.log").open("w", encoding="utf-8", buffering=1)
@@ -766,7 +778,7 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
                 outer_candidate_classes=seen_device.detach().cpu(),
                 meta_param_names=meta_names,
                 config=config,
-                generator=generator,
+                generator=episode_generator,
                 inner_batch_size=int(config["meta_inner_batch_size"]),
                 outer_batch_size=int(config["meta_outer_batch_size"]),
                 inner_learning_rate=float(config["meta_inner_learning_rate"]),
@@ -846,6 +858,14 @@ def run(config_path: Path, output_dir: Path, expected_commit: str, expected_conf
             "meta_param_names": list(meta_names),
             "temporary_inner_optimizer_steps_only": True,
             "vi_classification_gradient_source": config["vi_classification_gradient_source"],
+        },
+        "architecture_note": {
+            "reader_logits_channel": "readout @ alpha*compiled_g only",
+            "i_off_reader_gradient": "zero (relation block zeroed -> Reader stays at READER_SEED init)",
+            "i_off_equals_v_plus_i_off": True,
+            "full_minus_i_off_interpretation": "joint V+I contribution, not I alone",
+            "main_batch_generator_seed": 7,
+            "episode_generator_seed": 1000007,
         },
         "best_zs_observation": best_zs,
         "decision": "diagnose_no_parent_ablation",
