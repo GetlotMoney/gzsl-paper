@@ -1,6 +1,6 @@
 # IDEA-232 / Class-level Residual Regression (CRR) — 专家属性主线终结性 kill-gate
 
-- status: `proposed`
+- status: `testing`（OOF Level 1 通过，待 Level 2 Chen-style 正式验证）
 - idea_id: IDEA-232
 - problem_category: `expert_attribute_candidate_verification`
 - mechanism_tags: [class_level_regression, closed_form_ridge, prototype_residual, expert_attributes]
@@ -148,7 +148,23 @@ owner 采纳对称口径为正式口径，重跑对称版完整 Gate 出正式�
 - 对照同前（乱序×5、类频率、文本PCA、oracle r_c 上限、μ_c 上限、in-sample 披露），全部改对称口径；网格披露 seed=7 单种子（同原合同）。文本PCA对照因 symmetric builder 接口限制改为全150类PCA拟合（~100维），披露口径。
 - 正式脚本：`tools/idea232_crr_gate_symmetric.py`，复用主脚本已审查的 `load_assets / build_fold_targets / ridge_fit / eval_cba / run_insample`。
 
-### 对称版正式判决（post-run回填）
+### 对称版正式判决（2026-09-03 post-run回填）
 
-待运行。
+**gate_pass = TRUE（c1-c4 全过，OOF Level 1 kill-gate 通过）**
+
+- 运行commit：`33e18da`（P2修复：空类防护/SHA补全/维度标签）；冻结commit：`36d0a65`；审查：单Agent自问自答两轮通过（P0=0/P1=0，5项P2已修3项）
+- 结果：`/data/lby/projects/cv_project/GZSL_Warehouse/tries/v5/crr/IDEA-232-GATE0/result_symmetric.json`
+
+| 判据 | 结果 |
+|---|---|
+| c1 均值≥+1pp | **+1.0859pp**（in-run基线71.13% → 72.22%），贴线过 |
+| c2 每种子≥2/3折为正 | 4种子全过 |
+| c3 bootstrap 95%CI | [0.152, 2.080]pp，下界>0 |
+| c4 最差种子 | +0.7734pp，无 instability warning |
+
+对照（对称口径，全部干净负）：乱序 −4.14~−5.71pp（5个置换种子）、类频率 −5.92pp、文本PCA(全150拟合~149d) −1.52pp。
+上限锚点：oracle r_c +9.27pp（兑现率约11.7%）、μ_c +19.15pp。in-sample披露：trainval +5.84pp / test_seen +5.33pp。
+网格稳定性：**16/45 配置 ≥+0.5pp**（seed=7）——预注册点(λ*=0.1,β*=0.1)附近区域为正，大λ区域增益缩水；与不对称口径的45/45（偏置伪象）形成对照，提示有效超参区域较窄，β=0.1 恰为峰（0.05:+0.76/0.1:+1.09/0.15:+0.91/0.2:+0.43/0.3:−1.41）。合同中网格仅披露不进判据，此处如实记录稳定性有限。
+
+**结论**：专家属性→类视觉残差方向的可泛化信号在对称竞争场下真实存在且过线（贴线），信号特定于属性配对（三对照全负），兑现率约12%。OOF Level 1 通过，按预注册两级失败边界进入 Level 2：chen_shiming_code_aligned_test_selected_gzsl 正式协议（200类U/S/H/ZS，整模型H选择，β沿用0.1不重选），若 ΔH≤0 或 ΔU<0 则专家属性主线放弃。
 
