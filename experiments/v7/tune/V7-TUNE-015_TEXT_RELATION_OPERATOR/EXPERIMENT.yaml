@@ -3,7 +3,7 @@ experiment_id: V7-TUNE-015_TEXT_RELATION_OPERATOR
 framework_id: FRAMEWORK-V7
 idea_id: IDEA-214
 framework_base_commit: 35cefc52896c383e1ec75a3adc5f78d218d616a3
-status: planned
+status: completed_drop_below_formal_floor
 question: CUB一文本关系是否应由共享文本到视觉算子编译，而不是逐图Reader读取
 comparison_scope: relative_to_V7-TUNE-013_one_text_seen_only_ce; formal_V7_b32a16f remains the accuracy floor
 accepted_code_parent: 35cefc52896c383e1ec75a3adc5f78d218d616a3
