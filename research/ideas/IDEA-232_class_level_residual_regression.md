@@ -136,3 +136,19 @@ in-sample全修正披露：trainval +5.84pp / test_seen +5.33pp；对称OOF +1.0
 - **待owner裁决**：(a) 采纳对称口径为正式口径，重跑对称版完整Gate（c1-c4全判据）作为正式判决；(b) 判原合同口径无效即gate fail，属性主线放弃；(c) 其他裁决。
 - 口径修正是评估语义变化，按项目规则不经owner确认不得自行替换主判据。
 
+### Owner 裁决（2026-09-03，方案a）
+
+owner 采纳对称口径为正式口径，重跑对称版完整 Gate 出正式判决。对称判据定义（c1-c4 语义适配）：
+
+- **对称口径**：每类用其作为折外类时该折训练的 W 修正原型，竞争场 = 150 类全修正 vs 150 类全 t_c 基线，评估 = 全部 trainval 图像 / 150 类 macro。基线（in-run）与种子无关。
+- c1：4种子整体 delta 均值 ≥ in-run 基线 +1.0pp
+- c2：每种子 3 折级中 ≥2 折为正（折级 = 该折 50 类在全修正场 vs 全基线场的 macro 差；竞争场每种子统一，折间差异来自评估类子集）
+- c3：class-level paired bootstrap（150类 × 跨4种子均值差，10000次）95% CI 下界 > 0，仅预注册点 (λ*=0.1, β*=0.1)
+- c4：最差种子披露，< +0.5pp 标 instability warning（非阻断）
+- 对照同前（乱序×5、类频率、文本PCA、oracle r_c 上限、μ_c 上限、in-sample 披露），全部改对称口径；网格披露 seed=7 单种子（同原合同）。文本PCA对照因 symmetric builder 接口限制改为全150类PCA拟合（~100维），披露口径。
+- 正式脚本：`tools/idea232_crr_gate_symmetric.py`，复用主脚本已审查的 `load_assets / build_fold_targets / ridge_fit / eval_cba / run_insample`。
+
+### 对称版正式判决（post-run回填）
+
+待运行。
+
