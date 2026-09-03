@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """IDEA-232 CRR kill-gate: 专家属性 -> 类视觉残差闭式ridge回归 OOF Gate.
 
 冻结预注册合同见 research/ideas/IDEA-232_class_level_residual_regression.md。
@@ -46,21 +46,22 @@ def load_assets():
     emb = torch.load(ASSET_DIR + 'role_sentence_embeds.pt', map_location='cpu', weights_only=True).numpy().astype(np.float64)
     assert emb.shape == (200, 8, 768), emb.shape
     # t_c: 句子直接均值 -> 行L2, 禁止句子预归一化
-    t = l2r(emb.mean(axis=1))  # [200,768]
+    t = l2r(emb.mean(axis=1))  # [200,768], 行序=资产标签空间(res101 enc, 已实测=class_names['xlsa']顺序)
 
     trf = torch.load(ASSET_DIR + 'train_features.pt', map_location='cpu', weights_only=True).numpy().astype(np.float64)
     trl = torch.load(ASSET_DIR + 'train_labels.pt', map_location='cpu', weights_only=True).numpy()
-    assert trf.shape == (7057, 768) and trl.min() == 0 and trl.max() == 149, (trf.shape, trl.min(), trl.max())
+    assert trf.shape == (7057, 768) and trl.min() >= 0 and trl.max() <= 199, (trf.shape, trl.min(), trl.max())
 
     cn = json.load(open(ASSET_DIR + 'class_names.json'))
-    asset_names = cn['xlsa']  # 前150=seen, 后50=unseen (与trainval/test_unseen loc一致)
+    asset_names = cn['xlsa']
     assert len(asset_names) == 200
 
     m = sio.loadmat(ATT_MAT)
-    att = m['att'].astype(np.float64)  # [312,200] xlsa17原始顺序
-    xlsa_names = [x[0][0] for x in m['allclasses_names']]
+    att = m['att'].astype(np.float64)  # [312,200]
+    assert att.shape == (312, 200), att.shape
+    xlsa_names = [str(x[0][0]) for x in m['allclasses_names']]
     assert len(xlsa_names) == 200
-    # 对齐: att列(xlsa顺序) -> asset顺序
+    # 对齐: att列(allclasses_names顺序) -> 资产标签空间(=同一顺序, 实测enc v==ac[v-1]全200命中)
     xlsa_idx = {n: i for i, n in enumerate(xlsa_names)}
     unmatched = [n for n in asset_names if n not in xlsa_idx]
     print(f'[align] matched {len(asset_names) - len(unmatched)}/200; unmatched: {unmatched}')
@@ -69,20 +70,33 @@ def load_assets():
     perm = [xlsa_idx[n] for n in asset_names]
     q = att[:, perm].T  # [200,312] 行序与role_sentence_embeds一致
 
-    # 类视觉中心 mu_c = L2(mean(raw train features per class)), 先均值后归一化
-    mu = np.zeros((200, 768))
-    n_per_class = np.zeros(200)
+    # seen类集合来自trainval图像标签本身(实测本split的seen/unseen划分不是"标签0-149"):
+    # 001.Black_footed_Albatross是seen(标签150), 012.Yellow_headed_Blackbird是unseen(标签6)
+    seen_cls = np.sort(np.unique(trl))
+    assert len(seen_cls) == 150, len(seen_cls)
+    remap = {int(c): i for i, c in enumerate(seen_cls)}
+    trl = np.array([remap[int(x)] for x in trl])   # 局部索引0-149
+    t_seen = t[seen_cls]                            # [150,768]
+    q_seen = q[seen_cls]                            # [150,312]
+
+    # 类视觉中心 mu_c = L2(mean(raw train features per class)), 先均值后归一化, 仅seen 150类
+    mu = np.zeros((150, 768))
+    n_per_class = np.zeros(150)
     for c in range(150):
         feats = trf[trl == c]
         n_per_class[c] = len(feats)
         mu[c] = l2r(feats.mean(axis=0))
-    assert (n_per_class[:150] > 0).all() and (n_per_class[150:] == 0).all()
+    assert (n_per_class > 0).all()
+    print(f'[seen] 150 real trainval classes, imgs per class min/max: {int(n_per_class.min())}/{int(n_per_class.max())}')
 
     tsf = torch.load(ASSET_DIR + 'test_seen_features.pt', map_location='cpu', weights_only=True).numpy().astype(np.float64)
     tsl = torch.load(ASSET_DIR + 'test_seen_labels.pt', map_location='cpu', weights_only=True).numpy()
-    assert tsf.shape[0] == 1764 and tsl.min() == 0 and tsl.max() == 149, (tsf.shape, tsl.min(), tsl.max())
+    assert tsf.shape == (1764, 768) and tsl.min() >= 0 and tsl.max() <= 199, (tsf.shape, tsl.min(), tsl.max())
+    tsl_raw = np.array([remap.get(int(x), -1) for x in tsl])
+    assert (tsl_raw >= 0).all(), 'test_seen contains non-trainval-seen classes'
+    tsl = tsl_raw
 
-    return t, q, trf, trl, mu, n_per_class, tsf, tsl, asset_names
+    return t_seen, q_seen, trf, trl, mu, n_per_class, tsf, tsl, asset_names
 
 
 def build_fold_targets(t, mu, train_cls):
@@ -142,19 +156,19 @@ def run_oof(t, q, trf, trl, mu, n_per_class, tsf, tsl, lam, beta, feature='attr'
             y = build_fold_targets(t, mu, train_cls)
             # 折内特征
             if feature == 'attr':
-                x_full = q[:n_cls].copy()
+                x_full = q.copy()
                 if shuffle_seed is not None:
                     rs = np.random.RandomState(shuffle_seed)
                     x_full = x_full[rs.permutation(n_cls)]
             elif feature == 'freq':
-                x_full = n_per_class[:n_cls, None].copy()  # 类频率单特征
+                x_full = n_per_class[:, None].copy()  # 类频率单特征
             elif feature == 'text312':
                 # t_c PCA->至多312维(折内100类秩上限99,实际~100维), 拟合只用折内类
                 tin = t[train_cls]
                 cen = tin - tin.mean(0, keepdims=True)
                 U, S, Vt = np.linalg.svd(cen, full_matrices=False)
                 V = Vt[:312].T  # [768, min(312,rank)]
-                x_full = (t[:n_cls] - tin.mean(0, keepdims=True)) @ V
+                x_full = (t - tin.mean(0, keepdims=True)) @ V
             else:
                 raise ValueError(feature)
             xm = x_full[train_cls].mean(0, keepdims=True)
@@ -163,7 +177,7 @@ def run_oof(t, q, trf, trl, mu, n_per_class, tsf, tsl, lam, beta, feature='attr'
             # 折外类预测残差
             rhat = (x_full[out_cls] - xm) @ W
             # 竞争场: 基线原型全部=t_c; CRR仅折外50类替换
-            base_proto = t[:n_cls]
+            base_proto = t.copy()
             crr_proto = apply_prototypes(t, out_cls, base_proto, beta, rhat)
             # trainval 折外类图像
             imgs, labs = [], []
@@ -216,12 +230,12 @@ def run_oracle(t, trf, trl, mu, tsf, tsl, beta, seeds=SEEDS):
             folds = np.array_split(perm, N_FOLD)
             for out_cls in folds:
                 out_cls = np.sort(out_cls)
-                base_proto = t[:150]
+                base_proto = t.copy()
                 proto = base_proto.copy()
                 if mode == 'oracle':
                     tc = t[out_cls]; muc = mu[out_cls]
                     # oracle残差: 全局中心化(150类)后的r_c, 与管线一致用类均值中心化
-                    allr = mu[:150] - (mu[:150] * t[:150]).sum(-1, keepdims=True) * t[:150]
+                    allr = mu - (mu * t).sum(-1, keepdims=True) * t
                     r = allr - allr.mean(0, keepdims=True)
                     rr = r[out_cls] / np.maximum(np.linalg.norm(r[out_cls], axis=-1, keepdims=True), 1e-12)
                     proto[out_cls] = l2r(tc + beta * rr)
@@ -242,13 +256,13 @@ def run_oracle(t, trf, trl, mu, tsf, tsl, beta, seeds=SEEDS):
 def run_insample(t, q, trf, trl, mu, tsf, tsl, lam, beta):
     """披露: 全拟合(150类训W, 全部150类修正) -> 量化记忆成分."""
     y = build_fold_targets(t, mu, np.arange(150))
-    x = q[:150] - q[:150].mean(0, keepdims=True)
+    x = q - q.mean(0, keepdims=True)
     W = ridge_fit(x, y, lam)
-    rhat = (q[:150] - q[:150].mean(0, keepdims=True)) @ W
-    proto = l2r(t[:150] + beta * l2r(rhat))
-    b_tr, _ = eval_cba(trf, trl, t[:150], list(range(150)))
+    rhat = x @ W
+    proto = l2r(t + beta * l2r(rhat))
+    b_tr, _ = eval_cba(trf, trl, t, list(range(150)))
     c_tr, _ = eval_cba(trf, trl, proto, list(range(150)))
-    b_ts, _ = eval_cba(tsf, tsl, t[:150], list(range(150)))
+    b_ts, _ = eval_cba(tsf, tsl, t, list(range(150)))
     c_ts, _ = eval_cba(tsf, tsl, proto, list(range(150)))
     return {'trainval_base': b_tr, 'trainval_insample': c_tr, 'trainval_delta': c_tr - b_tr,
             'test_seen_base': b_ts, 'test_seen_insample': c_ts, 'test_seen_delta': c_ts - b_ts}
