@@ -53,15 +53,20 @@ def eval_seed(t, proto, trf, trl, tsf, tsl, folds):
     for out_cls in folds:
         oc = np.sort(out_cls)
         fold_deltas.append(float(accs_c[oc].mean() - accs_b[oc].mean()))
-    # test_seen (secondary, 不进判据)
+    # test_seen (secondary, 不进判据; 空类跳过)
     ts_n = G.l2r(tsf)
     pred_b2 = (ts_n @ t.T).argmax(1)
     pred_c2 = (ts_n @ proto.T).argmax(1)
-    accs_b2 = np.array([(pred_b2[tsl == c] == c).mean() for c in range(n_cls)])
-    accs_c2 = np.array([(pred_c2[tsl == c] == c).mean() for c in range(n_cls)])
+    ab2, ac2 = [], []
+    for c in range(n_cls):
+        m = tsl == c
+        if m.sum() == 0:
+            continue
+        ab2.append((pred_b2[m] == c).mean())
+        ac2.append((pred_c2[m] == c).mean())
     return {'delta': delta, 'fold_deltas': fold_deltas,
             'per_class_diff': (accs_c - accs_b), 'base_macro': float(accs_b.mean()),
-            'test_seen_delta': float(accs_c2.mean() - accs_b2.mean())}
+            'test_seen_delta': float(np.mean(ac2) - np.mean(ab2))}
 
 
 def run_symmetric(t, x_full, mu, trf, trl, tsf, tsl, lam, beta, seeds=G.SEEDS):
@@ -103,7 +108,11 @@ def main():
         'asset_sha256': {'role_sentence_embeds.pt': G.sha256_of(G.ASSET_DIR + 'role_sentence_embeds.pt'),
                          'train_features.pt': G.sha256_of(G.ASSET_DIR + 'train_features.pt'),
                          'train_labels.pt': G.sha256_of(G.ASSET_DIR + 'train_labels.pt'),
-                         'att_splits.mat': G.sha256_of(G.ATT_MAT)},
+                         'att_splits.mat': G.sha256_of(G.ATT_MAT),
+                         'class_names.json': G.sha256_of(G.ASSET_DIR + 'class_names.json'),
+                         'test_seen_features.pt': G.sha256_of(G.ASSET_DIR + 'test_seen_features.pt'),
+                         'test_seen_labels.pt': G.sha256_of(G.ASSET_DIR + 'test_seen_labels.pt')},
+        'contract': {'seeds': G.SEEDS, 'n_fold': G.N_FOLD},
     }
 
     # ---- 主条件: 预注册点 ----
@@ -133,11 +142,11 @@ def main():
     ctrl['shuffled_attr'] = {'mean_deltas_pp': sh}
     x_freq = npc[:, None]
     ctrl['class_freq'] = {'mean_delta_pp': run_symmetric(t, x_freq, mu, trf, trl, tsf, tsl, G.LAMBDA_STAR, G.BETA_STAR)['mean_delta_pp']}
-    # text PCA (全150类拟合->~100维; 折内PCA无法进入symmetric builder接口, 对照披露口径)
+    # text PCA (全150类拟合->~149维; 折内PCA无法进入symmetric builder接口, 对照披露口径)
     cen = t - t.mean(0, keepdims=True)
     U, S, Vt = np.linalg.svd(cen, full_matrices=False)
     tx_full = cen @ Vt[:312].T
-    ctrl['text_pca_fullfit(~100d)'] = {'mean_delta_pp': run_symmetric(t, tx_full, mu, trf, trl, tsf, tsl, G.LAMBDA_STAR, G.BETA_STAR)['mean_delta_pp'],
+    ctrl['text_pca_fullfit(~149d)'] = {'mean_delta_pp': run_symmetric(t, tx_full, mu, trf, trl, tsf, tsl, G.LAMBDA_STAR, G.BETA_STAR)['mean_delta_pp'],
                                        'note': 'full-150 PCA fit, fold-PCA not reachable inside symmetric builder; control only'}
     # oracle上限: 真实r_c全150类注入
     allr = mu - (mu * t).sum(-1, keepdims=True) * t
