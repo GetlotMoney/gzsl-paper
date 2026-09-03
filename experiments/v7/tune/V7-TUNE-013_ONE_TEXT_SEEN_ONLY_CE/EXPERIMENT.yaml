@@ -1,0 +1,18 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V7-TUNE-013_ONE_TEXT_SEEN_ONLY_CE
+framework_id: FRAMEWORK-V7
+idea_id: IDEA-212
+framework_base_commit: b32a16f848c34f8e09d03b27d2f22ed445b9a295
+status: planned
+question: CUB一文本Full下降是否来自训练分类CE把unseen类当作负类压低
+unique_change: final head classification CE is computed only over trainval seen logits; relation direction CE and 200-class inference remain unchanged
+formal_checkpoint_usage: baseline identity only; never training initialization
+trainable: [TG, GTD gate, S role weights, Reader, alpha]
+fixed: [eight role text embeddings, Mean8 Top3 graph, uniform role directions, compiled mapping, bias]
+gate: CUB Full H >= formal Full V7; correct relation beats signflip/shuffle; report same-checkpoint S/V/I-off
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+nested_official_test_selection: false
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+output_root: /data/lby/projects/cv_project/GZSL_Warehouse/tune/v7/V7-TUNE-013_ONE_TEXT_SEEN_ONLY_CE

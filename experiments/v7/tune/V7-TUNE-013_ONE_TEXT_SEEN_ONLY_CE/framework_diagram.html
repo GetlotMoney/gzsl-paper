@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>One-Text Seen-Only CE</title><body><h1>V7-TUNE-013</h1><p>Base b32a16f848c34f8e09d03b27d2f22ed445b9a295</p><pre>
+same frozen eight roles -> TG+GTD base and trainable role semantic S
+same roles -> Mean8 Top3 -> uniform unit D -> fixed compiled G
+image -> trainable Reader -> relation match
+joint loss: Parent CE/topology/GTD gate + Full seen-only classification CE + direction CE
+seen-only classification CE: train logits[:, seenclasses] against global_to_seen[y]
+inference/evaluation: unchanged 200-class logits for U/S/H and 50-class unseen ZS
+train TG/GTD/S/Reader/alpha from seed7 initial state; Chen best Full-H
+</pre></body></html>
