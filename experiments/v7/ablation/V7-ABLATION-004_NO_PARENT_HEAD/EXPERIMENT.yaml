@@ -4,7 +4,7 @@ framework_id: FRAMEWORK-V7
 idea_id: IDEA-215
 framework_base_commit: b32a16f848c34f8e09d03b27d2f22ed445b9a295
 code_parent_commit: 35cefc52896c383e1ec75a3adc5f78d218d616a3
-status: planned
+status: completed
 kind: diagnostic_retrained_ablation
 question: 去掉TG+GTD（冻结source、head改用Mean8纯文本base）后，S/V/I模块从头重训各自对CUB H的独立贡献，用于区分“TG+GTD遮蔽V/I”与“CLS+一文本语义路径已到天花板”
 comparison_scope: de-parent retrained ablation；所有条件冻结TG+GTD source、head基于Mean8纯文本base训练；对照B0零训练Mean8基线与formal V7 H=80.510432

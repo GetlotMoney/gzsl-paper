@@ -1,7 +1,7 @@
 # IDEA-215: De-Parent S/V/I Mask Diagnostic
 
 idea_id: IDEA-215
-status: proposed_diagnostic
+status: revised_supported_tg_gtd_mask_hypothesis
 problem_category: learning_generalization
 problem: ABL002 显示完整框架下旧全局 V/I 贡献仅约 +0.25 H 且 I 与 V+I-off 逐值相同，无法区分“TG+GTD 本身很强、把收益空间占满（遮蔽）”与“V/I 确实没有独立可学内容 / CLS+一文本语义路径已到天花板”两种假说。
 mechanism_tags: [de_parent, mean8, tg_gtd_mask, class_held_out, diagnostic]
@@ -23,3 +23,5 @@ current_advantage: not_yet_tested（诊断性，不申报 accuracy/speed/general
 performance_status: proof_of_path
 failure_boundary: 弱基线上的贡献不代表完整框架下的独立增益；不得把本实验的 Full−off 差值包装成正式模块创新；Full−I-off 只按“V+I 联合”解释，不能单独归因 I。
 paper_level_claim: none
+
+result: CUB seed7 完整五组重训 + B0 基线（commit 2833174）。B0 Mean8 零训练 H=68.750566；Full H=77.777962（相对 Mean8 +9.027，相对 formal V7 -2.732）；重训差值：S-off +3.767、V-off +7.223、I-off +7.512（=V+I-off，联合 V+I）。I-off 与 V+I-off 的 201 条评估轨迹逐值一致（实证 Reader 唯一 logits 通道是关系分支）。结论：TG+GTD 遮蔽 S/V/I 假说成立（弱基线上模块可学内容远超完整框架边际贡献），但 TG+GTD 迁移本身仍提供约 2.7H 不可替代增益；弱基线上的涨幅不得当作完整框架模块增益，不据此把旧 V/I 重新堆入正式框架。
