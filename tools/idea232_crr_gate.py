@@ -62,10 +62,12 @@ def load_assets():
     assert len(xlsa_names) == 200
     # 对齐: att列(xlsa顺序) -> asset顺序
     xlsa_idx = {n: i for i, n in enumerate(xlsa_names)}
+    unmatched = [n for n in asset_names if n not in xlsa_idx]
+    print(f'[align] matched {len(asset_names) - len(unmatched)}/200; unmatched: {unmatched}')
+    if unmatched:
+        raise RuntimeError(f'class alignment failed, {len(unmatched)} unmatched: {unmatched[:5]}')
     perm = [xlsa_idx[n] for n in asset_names]
     q = att[:, perm].T  # [200,312] 行序与role_sentence_embeds一致
-    matched = sum(1 for n in asset_names if n in xlsa_idx)
-    assert matched == 200, f'class alignment failed: {matched}/200'
 
     # 类视觉中心 mu_c = L2(mean(raw train features per class)), 先均值后归一化
     mu = np.zeros((200, 768))
@@ -147,11 +149,11 @@ def run_oof(t, q, trf, trl, mu, n_per_class, tsf, tsl, lam, beta, feature='attr'
             elif feature == 'freq':
                 x_full = n_per_class[:n_cls, None].copy()  # 类频率单特征
             elif feature == 'text312':
-                # t_c PCA->312维, 拟合只用折内类
+                # t_c PCA->至多312维(折内100类秩上限99,实际~100维), 拟合只用折内类
                 tin = t[train_cls]
                 cen = tin - tin.mean(0, keepdims=True)
                 U, S, Vt = np.linalg.svd(cen, full_matrices=False)
-                V = Vt[:312].T  # [768,312]
+                V = Vt[:312].T  # [768, min(312,rank)]
                 x_full = (t[:n_cls] - tin.mean(0, keepdims=True)) @ V
             else:
                 raise ValueError(feature)
@@ -258,8 +260,6 @@ def main():
     args = ap.parse_args()
 
     t, q, trf, trl, mu, npc, tsf, tsl, names = load_assets()
-    print('[align] 200/200 classes matched; train 7057 imgs; seen labels 0-149')
-
     result = {
         'idea_id': 'IDEA-232',
         'asset_sha256': {
@@ -267,6 +267,9 @@ def main():
             'train_features.pt': sha256_of(ASSET_DIR + 'train_features.pt'),
             'train_labels.pt': sha256_of(ASSET_DIR + 'train_labels.pt'),
             'att_splits.mat': sha256_of(ATT_MAT),
+            'class_names.json': sha256_of(ASSET_DIR + 'class_names.json'),
+            'test_seen_features.pt': sha256_of(ASSET_DIR + 'test_seen_features.pt'),
+            'test_seen_labels.pt': sha256_of(ASSET_DIR + 'test_seen_labels.pt'),
         },
         'contract': {'seeds': SEEDS, 'n_fold': N_FOLD, 'lambda_star': LAMBDA_STAR,
                      'beta_star': BETA_STAR, 'gate_pp': GATE_PP, 'main_metric': 'trainval OOF macro CBA, 150-class arena, out-fold classes only'},
@@ -310,7 +313,8 @@ def main():
     fq, _ = run_oof(t, q, trf, trl, mu, npc, tsf, tsl, LAMBDA_STAR, BETA_STAR, feature='freq')
     ctrl['class_freq'] = {'mean_delta_pp': round(fq['mean_delta_trainval'] * 100, 3)}
     tx, _ = run_oof(t, q, trf, trl, mu, npc, tsf, tsl, LAMBDA_STAR, BETA_STAR, feature='text312')
-    ctrl['text_pca312'] = {'mean_delta_pp': round(tx['mean_delta_trainval'] * 100, 3)}
+    ctrl['text_pca_infold(actual_dim~100)'] = {'mean_delta_pp': round(tx['mean_delta_trainval'] * 100, 3),
+                                               'note': 'fold-PCA rank capped at 99/100, contract 312 not reachable without leakage'}
     ctrl['upper_bounds'] = run_oracle(t, trf, trl, mu, tsf, tsl, BETA_STAR)
     ctrl['insample_disclosure'] = run_insample(t, q, trf, trl, mu, tsf, tsl, LAMBDA_STAR, BETA_STAR)
     result['controls'] = ctrl
