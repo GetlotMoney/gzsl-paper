@@ -1,0 +1,25 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>V7 Seen-CE Retrained SVI Ablation</title><body><h1>V7-ABLATION-002</h1><p>Implementation base 35cefc52896c383e1ec75a3adc5f78d218d616a3; Full reference TUNE013 H=79.94579718163422; metrics SHA 08fd38f284eced2ccd4ea49e1faae1f1163ce5b3821eb7373f9acedf9201f34e; model SHA 7349e869c1ffef41c3cfe265486880a1c455feb442ff326ae8403bd9a9a39328.</p><pre>
+shared input: CUB trainval CLIP features -> TG/GTD parent update + V7 one-text head
+shared head CE: logits[:, seenclasses] vs global_to_seen[y]
+shared evaluation: unchanged 200-class U/S/H and 50-class ZS; each condition selects its own best-H checkpoint
+
+S-off:
+  semantic_enabled=false, so role residual is absent from classification logits
+  role weights frozen and therefore cannot train hidden S through nonzero initial weights
+  Reader, alpha, direction CE remain trainable/active
+
+V-off:
+  Reader parameters frozen
+  classification uses visual_enabled=false, so readout is normalize(x)
+  direction CE disabled
+
+I-off:
+  alpha frozen
+  classification uses interaction_enabled=false, so relation half contributes zero
+  Reader direction CE remains active
+
+V+I-off:
+  Reader and alpha frozen
+  classification uses visual_enabled=false and interaction_enabled=false
+  direction CE disabled; S role weights remain trainable
+</pre></body></html>

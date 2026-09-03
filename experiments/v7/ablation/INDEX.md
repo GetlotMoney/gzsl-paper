@@ -1,3 +1,3 @@
 # FRAMEWORK-V7 Ablation
 
-当前无V7新增消融。晋级时的S/V/I同checkpoint关闭结果记录在`../FRAMEWORK.yaml`和V6-TRY-006原始账本。
+`V7-ABLATION-002_SEEN_CE_RETRAINED_SVI`：TUNE013 CUB seen-only CE 的正式从头重训消融，包含 S-off、V-off、I-off、V+I-off 四组；Full 复用已接纳 TUNE013 正式 RUN H=79.94579718163422。
