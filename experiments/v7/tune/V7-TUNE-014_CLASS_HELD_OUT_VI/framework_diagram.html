@@ -1,0 +1,26 @@
+<!doctype html><html lang="zh"><meta charset="utf-8"><title>Class-Held-Out V/I Training</title><body><h1>V7-TUNE-014</h1><p>Code parent 35cefc52896c383e1ec75a3adc5f78d218d616a3; framework base b32a16f848c34f8e09d03b27d2f22ed445b9a295.</p><pre>
+Inputs:
+  trainval seen CUB image features only; no official unseen image gradient.
+
+Persistent path:
+  TG/GTD parent loss -> formal TG/GTD parameters
+  ordinary seen CE on full head logits -> formal S raw_role_weights only
+
+Class-held-out V/I path:
+  rank-modulo 3 seen-class folds
+  fold k pseudo-unseen = classes where rank % 3 == k
+  inner = other two folds
+  temporary head copy receives one inner CE step on inner classes
+  outer CE evaluates temporary state on pseudo-unseen images
+  outer candidate axis is all 150 train seen classes, including inner/meta-seen negatives
+  first-order outer gradients are copied only to formal Reader and alpha
+
+Inference:
+  unchanged one-text S/V/I 200-class frozen forward:
+  h(x) = concat(normalized image, Reader(image))
+  logits = h(x) @ Q(S, I).T + seen_bias
+
+Boundary:
+  first-order approximation, not full second-order bilevel optimization.
+  official test is used only for post-update best-H selection, never gradient.
+</pre></body></html>
