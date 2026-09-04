@@ -2,6 +2,8 @@
 
 本文件只回答“每个版本是什么、哪些 Idea 在哪里验证、现在走到哪一步”。公式、长结果和运行证据分别保存在 Idea 卡与实验账本中，不在这里复制。旧版V2长树已原样保存在 [`archive/IDEA_TREE_V2_LEGACY.md`](archive/IDEA_TREE_V2_LEGACY.md)。
 
+跨版本、跨分支的代码commit与结果位置统一从 [`LEDGER_INDEX.md`](LEDGER_INDEX.md) 查找；本文件继续只维护研究主线关系。
+
 ## 身份关系
 
 ```text
@@ -87,6 +89,13 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 | [`IDEA-172`](ideas/IDEA-172_text_difference_active_evidence_acquisition.md) | 文本差异主动高清取证 | rejected at proof gate | Oracle+14pp，但真实行动-0.2pp、净纠正-1 | `exp/v4/diagnostic/diagnostic-001-active-evidence-acquisition` |
 
 准确数字、commit、配置和输出URI见 [`experiments/v4/EXPERIMENT_QUEUE.csv`](../experiments/v4/EXPERIMENT_QUEUE.csv)。
+
+## 跨分支最新状态
+
+- `main`已经形成并冻结FRAMEWORK-V7，但当前分支从FRAMEWORK-V5独立分叉，因此本工作树不包含V6/V7完整目录。
+- IDEA-226、IDEA-227和IDEA-232分别保存在独立诊断分支；IDEA-232为专家属性诊断，不是范式创新。
+- IDEA-229～231目前没有可核实Idea卡、分支或commit，统一标记为`missing_record`，不得作为已完成实验引用。
+- 最近V7 Tune、Ablation、Confirmation与Diagnostic仍在各自实验分支，尚未进入`main`总队列；准确位置见跨分支总账。
 
 ## 三创新论文门槛
 
