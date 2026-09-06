@@ -21,9 +21,9 @@
 ## 3. Git 与代码身份
 
 - `main` 只接纳正式代码和轻量账本，禁止 force-push；未接纳候选不得混入 `main`。
-- 正式框架的 `framework/vX` 与 Tag `vX` 必须固定在同一 commit，发布后不移动。
-- 每个实验由 owner 指定准确父 commit。未接纳或失败候选不得成为下一候选的代码基线；失败结果保留，但失败代码不合入正式框架。
-- 新研究主线实验分支使用 `exp/<track_id>/<kind>/<id>-<slug>`；历史 `exp/vX/...` 与编号保留。临时实现分支使用 `codex/<slug>`。
+- 框架按具体方法名展示；新正式快照使用不可移动标签 `<method_id>/<commit前8位>`，不再续编全局 V 号或创建重复正式分支。历史 `framework/vX` 与 `vX` 保持原 commit，作为兼容身份不删除、不移动。名称与真实入口以 research/LEDGER_INDEX.md 为准。
+- 每组实验由 owner 指定准确父 commit 和适用范围；范围内持续沿用，不逐 RUN 重问。代码父起点、比较条件、初始化来源分开。未接纳或失败候选不得成为下一候选基线；失败结果保留，失败代码不合入正式框架。
+- 新研究主线实验分支使用 `exp/<track_id>/<experiment_id>-<slug>`；历史 `exp/vX/...` 与编号保留。临时实现分支使用 `codex/<slug>`。
 - 历史 `experiments/v1/` 至当前版本账本只读保留，不删除、复制、重编号或改写；跨版本证据直接引用原路径和原身份。
 - pre-run commit 只保存代码、配置和计划；结果只能在真实运行后写入 post-run 账本。Git 不保存数据、cache、checkpoint、原始大日志或密钥。
 - 只有 owner 明确接纳后，候选才能晋级为新正式框架。
@@ -41,10 +41,10 @@
 
 ## 5. 实验与交付物
 
-- 新研究主线在首次实际登记时使用 `experiments/<track_id>/EXPERIMENT_QUEUE.csv`，不为探索提前分配正式 V 版本；已有 Experiment 保留原路径。每个 TRY 一行，记录 Idea、准确 code commit、配置、唯一改动、seed、U/S/H/ZS、状态、决策和仓库外输出 URI。
+- 新实验首次有真实计划时建立 `experiments/<track_id>/<experiment_id>/EXPERIMENT.yaml` 与 `RUNS.csv`；不再创建重复 TRY 队列。每次执行只有一个完整 RUN 身份，快速与完整验证用同一记录体系；历史 TRY/原参数矩阵保留并直接引用，不复制成绩。
 - 只改已审配置、参数或 seed 时新增 RUN；修改公式、forward、loss、数据语义或评估语义时新建 Experiment。
 - 每个正式 RUN 必须绑定 code commit、完整配置、seed、数据/资产身份、U/S/H/ZS、评估历史、日志和模型 URI，失败结果也要保留。
-- 正式实验的最小文件是 `EXPERIMENT.yaml`、`configs/RUN-xxx.yaml`、`PARAMETER_MATRIX.csv` 和 `result.md`；其他文件只在能防止当前错误时增加。
+- 新实验最小记录为 `EXPERIMENT.yaml` 和 `RUNS.csv`；完整配置必须可准确取回，但不复制已有配置。需要新配置时放 configs/。结果解释写原实验或 Idea，result.md 不再强制。历史四文件与原始内容保持不变。
 - module、forward、loss、数据流或评估语义改变时，实验必须有可直接打开的 `framework_diagram.html`，标明准确 commit、输入输出、关键数据流、loss、logits/metric 出口和评估边界。纯参数或文档变化不复制框架图。
 
 ## 6. 必要的双 Agent 审查
@@ -86,7 +86,15 @@
 - 主线、问题、Idea、Experiment、RUN、框架候选、正式版本分开。关系用编号和引用表达，不要求每个对象新建目录。
 - Idea 跨主线和框架共用；同假设换条件仍用原卡并追加实验，旧失败边界不覆盖；核心机制或学习信号/假设改变才新建 Idea。
 - 工作状态、证据状态、接纳状态分开；不机械改写旧 status。supported 不等于正式接纳，暂停不等于机制否定。
-- 实验开工前明确 research_mode、owner 指定的 base_commit、reuse_scope、change_scope、comparison_ref 和唯一问题。base_commit 与 comparison_ref 分开，独立新框架允许只复用可信工程基础。
+- 实验开工前明确 research_mode、owner 指定的 base_commit、reuse_scope、change_scope、comparison_ref、init_ref、management_ref 和唯一问题。base_commit 与 comparison_ref 分开，独立新框架允许只复用可信工程基础。
 - 代码起点、实际运行 code_commit 和保存结果的 post-run commit 分开；不得用最新分支 tip 或记录快照冒充训练代码。
 - 新记录只在有实际内容时创建；历史编号与原路径不修改。新编号先查跨分支记录，不能只看当前目录。
 - 本次账本/GitHub整理授权不等于未来任意 push、发布或删除授权；公开同步只包含核对后的指定内容，不批量上传候选分支和未提交草稿。
+
+## 10. 最简长期维护（owner 本轮确认）
+
+- 日常只维护当前入口、Idea解释、原 RUN事实；其他索引只是指针。新流程唯一操作说明为 docs/EXPERIMENT_PROTOCOL.md，不叠加模板、控制器或常驻服务。
+- 新方法代码按 model/frameworks/<method_id>/ 稳定保存，候选只在实验分支，接纳后尽量不搬路径。目录名不代表接纳；集成改代码须验证受影响行为。
+- 活跃或复用 Idea 在 IDEA_TREE 指定 current_record_ref（记录 commit + 路径）。索引的首个 status、更新时间或 main 位置不能替代证据判断。
+- 管理入口以已核实的 main 为准；开工绑定 management_ref。切回旧代码仍遵守已确认当前规范，不恢复旧文档任务。
+- Git本地已提交与远端可恢复分开记录；原始产物的位置与实际可用性分开。公开仓库不意味着所有候选获准公开，未上传写 local_only，不宣称已备份。

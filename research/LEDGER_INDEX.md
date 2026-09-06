@@ -1,6 +1,32 @@
-# 跨分支总账：证据与代码位置
+# 框架与证据总账
 
 当前主线见 [README](../README.md)。本索引保存位置，不替代原始结果，不因代码分支名称判定实验成功。
+
+## 框架目录
+
+日常使用下表的具体框架名。命名标签是旧冻结 commit 的可读别名，不是重新接纳或产生新科学结果。旧 V 标签、分支与原实验路径继续存在，但不再作为日常名称；以后不续编全局 V 号。
+
+| 框架名称 | method_id | 命名快照 | 历史兼容编号 |
+|---|---|---|---|
+| GTPJ | `gtpj` | [gtpj/7d842e5c](https://github.com/GetlotMoney/gzsl-paper/tree/gtpj/7d842e5c) | V1 |
+| TG-VPR-H1 | `tg_vpr_h1` | [tg_vpr_h1/3dc078c0](https://github.com/GetlotMoney/gzsl-paper/tree/tg_vpr_h1/3dc078c0) | V2 |
+| TG+GTD | `tg_gtd` | [tg_gtd/52088f69](https://github.com/GetlotMoney/gzsl-paper/tree/tg_gtd/52088f69) | V4 |
+| TG+GTD+PCLR-RSE | `tg_gtd_pclr_rse` | [tg_gtd_pclr_rse/52b511d7](https://github.com/GetlotMoney/gzsl-paper/tree/tg_gtd_pclr_rse/52b511d7) | V5 |
+| TG+GTD+C-PCLR-SVI | `tg_gtd_c_pclr_svi` | [tg_gtd_c_pclr_svi/b32a16f8](https://github.com/GetlotMoney/gzsl-paper/tree/tg_gtd_c_pclr_svi/b32a16f8) | V7 |
+
+每份冻结代码的准确位置（不要把 main 的迁移后路径套到旧标签）：
+
+| 框架 | 冻结 commit | 该快照内真实模型入口 |
+|---|---|---|
+| GTPJ | `7d842e5c0e5554409eedb3097fea5130a848c9e4` | [model/MyModel.py](https://github.com/GetlotMoney/gzsl-paper/blob/7d842e5c0e5554409eedb3097fea5130a848c9e4/model/MyModel.py) |
+| TG-VPR-H1 | `3dc078c0d52bf358bf24a26e48346c97de9e99ca` | [model/tg_vpr_h1/module.py](https://github.com/GetlotMoney/gzsl-paper/blob/3dc078c0d52bf358bf24a26e48346c97de9e99ca/model/tg_vpr_h1/module.py) |
+| TG+GTD | `52088f69d7ac4e574e7b63c28b21ac0da7789933` | [model/innovations/gtd_tst.py](https://github.com/GetlotMoney/gzsl-paper/blob/52088f69d7ac4e574e7b63c28b21ac0da7789933/model/innovations/gtd_tst.py) |
+| TG+GTD+PCLR-RSE | `52b511d77b4ad048f35b40dc3cbd9afd092167e9` | [model/frameworks/v5/model.py](https://github.com/GetlotMoney/gzsl-paper/blob/52b511d77b4ad048f35b40dc3cbd9afd092167e9/model/frameworks/v5/model.py) |
+| TG+GTD+C-PCLR-SVI | `b32a16f848c34f8e09d03b27d2f22ed445b9a295` | [model/frameworks/v7/model.py](https://github.com/GetlotMoney/gzsl-paper/blob/b32a16f848c34f8e09d03b27d2f22ed445b9a295/model/frameworks/v7/model.py) |
+
+来源：GTPJ 的原冻结代码/README，TG-VPR-H1 的原来源清单，以及其余三个框架原 FRAMEWORK.yaml 的 method_name 与接纳记录。当前名称沿用真实方法名称，不重新包装创新。
+
+“三分支探索”是研究方向，尚无已接纳方法或正式命名。原 V3 为已关闭探索，原 V6 为开发阶段，原 V8 为工程原型；不能给这些探索补造正式框架身份。
 
 ## 本次盘点（2026-09-06，同步前快照）
 
@@ -20,20 +46,6 @@ git show <code_commit>:<代码路径>
 ```
 
 索引的 source_commit 是保存记录的快照，不一定是实际训练 code_commit；后者从原 RUN 账本读取。公开远端可达的提交可用 GitHub `/blob/<commit>/<path>` 浏览；仅本地提交必须从本地 Git 读取。`local_uncommitted` 只能从原工作目录读取。
-
-## 正式历史版本
-
-以下是已存在的正式冻结身份，不因当前转向新研究而撤销；也不自动成为新实验父条件。
-
-| 版本 | 冻结 commit | 引用 |
-|---|---|---|
-| V1 | `7d842e5c0e5554409eedb3097fea5130a848c9e4` | `framework/v1` / `v1` |
-| V2 | `3dc078c0d52bf358bf24a26e48346c97de9e99ca` | `framework/v2` / `v2` |
-| V4 | `52088f69d7ac4e574e7b63c28b21ac0da7789933` | `framework/v4` / `v4` |
-| V5 | `52b511d77b4ad048f35b40dc3cbd9afd092167e9` | `framework/v5` / `v5` |
-| V7 | `b32a16f848c34f8e09d03b27d2f22ed445b9a295` | `framework/v7` / `v7` |
-
-V3 是已关闭探索；V6 是开发阶段；现有 V8 名称仅为原型。无正式标签，不补造、不移动历史引用。
 
 ## 当前缺口与证据边界
 
