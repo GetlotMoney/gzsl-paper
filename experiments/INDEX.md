@@ -1,20 +1,10 @@
 # 实验入口
 
-当前研究阶段见 [项目入口](../README.md)；实验如何保存见 [实验规范](../docs/EXPERIMENT_PROTOCOL.md)。
+新实验统一在 `experiments/<track_id>/<experiment_id>/`，使用 EXPERIMENT.yaml 与 RUNS.csv；配置和必要框架图随真实需求保存。当前原生三分支探索尚未确认父起点或具体实验，因此不预建记录。
 
-## 当前与未来
+- 怎么开始与运行：[实验操作规范](../docs/EXPERIMENT_PROTOCOL.md)。
+- 当前验证什么：[研究问题与 Idea](../research/IDEA_TREE.md)。
+- 按具体框架名查历史：[框架与证据总账](../research/LEDGER_INDEX.md#框架目录)。
+- 跨分支找记录：[RECORD_INDEX.csv](../research/RECORD_INDEX.csv)，含新 RUNS 和旧队列/参数矩阵。
 
-原生三分支主线 `triadic-native` 尚未指定代码起点或正式 RUN，因此不预建队列或填写虚构计划。第一次实际登记后按 `experiments/<track_id>/` 保存；主线名不等于框架版本。
-
-## 历史记录
-
-| 范围 | 身份 | 读取方式 |
-|---|---|---|
-| V1 / V2 / V4 / V5 / V7 | 历史正式框架 | [冻结身份](../research/LEDGER_INDEX.md) |
-| V3 | 已关闭探索 | 保留原 `experiments/v3/` |
-| V6 | 开发阶段 | 原分支记录；不等于正式 V6 |
-| V8 命名 | 工程原型 / 探索 | 原分支记录；不等于正式 V8 |
-
-[跨分支记录索引](../research/RECORD_INDEX.csv) 按 path 查队列、Experiment、参数矩阵、结果与框架；[代码快照](../research/CODE_SNAPSHOTS.csv) 查分支 commit。某个旧分支缺目录不代表全项目没记录；旧子目录 INDEX 的“当前无实验”只描述其历史快照。
-
-原实验目录、队列、指标和失败记录未迁移、复制、重编号或改写。总索引不维护容易过时的分类计数，不把目录数量当成功实验数量。
+旧 experiments/vX 路径、TRY编号、参数矩阵和结果原地只读保留。它们是原实验身份，不再用 V 号作为新研究分类，也不转换复制成新 RUN。旧“当前无实验”只描述其历史快照。

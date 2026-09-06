@@ -1,13 +1,11 @@
-# 正式框架代码
+# 按方法保存代码
 
-这里只保存 owner 已接纳的模型身份。每个版本的模型与训练入口自包含；正式框架不得依赖 `model/candidates/`。
+具体框架名、冻结标签、准确代码入口与旧编号映射只维护在 [框架总账](../../research/LEDGER_INDEX.md#框架目录)，本页不复制一份版本表。
 
-| 版本 | 方法 | 模型入口 | 训练入口 |
-|---|---|---|---|
-| V1 | GTPJ | `model.frameworks.v1.model.GTPJ` | `python -m model.frameworks.v1.train` |
-| V2 | TG-VPR-H1 | `model.frameworks.v2.model.TGVPRH1FixedEqual` | `python -m model.frameworks.v2.train` |
-| V4 | TG+GTD | `model.frameworks.v4.gtd.GTDTSTModel` | `python -m model.frameworks.v4.train`（仅复现晋级来源RUN） |
+新独立方法按 `model/frameworks/<method_id>/` 保存稳定实现，method_id 为 Python 可导入的小写下划线名称。候选代码只在实验分支；目录名不代表接纳。接纳后保持同路径，以准确 commit 和命名标签冻结，不为“从候选变正式”再搬目录。
 
-V3 是已关闭的探索阶段，没有伪造正式 `framework/v3` 或 Tag `v3`。V4 为保持正式 checkpoint 的完整 `state_dict`，同时保留 TG、TST、CCGR 父模型结构与 GTD。当前V4训练器仍校验V3晋级RUN身份，新的V4训练配置尚未建立。
+已有框架的增量实验只修改必要实现；新的完整方法需要并存时才建立独立目录。旧 `vX` 目录继续供原代码、配置和 checkpoint 使用，不为改显示名称批量重命名。
 
-正式checkpoint均为`state_dict`或checkpoint字典；除V1的`model.MyModel.GTPJ`外，不承诺兼容旧模块路径下的完整Python对象pickle。
+特别注意：GTPJ、TG-VPR-H1、TG+GTD 的原冻结标签早于后续目录整理，其原代码入口分别位于 `model/MyModel.py`、`model/tg_vpr_h1/module.py`、`model/innovations/gtd_tst.py`。不能在旧标签下假定存在今天的 frameworks/vX 路径。复现时按总账的完整 commit 与真实入口读取。
+
+正式实现不能依赖未接纳或临时工作目录；复用已接纳部件时显式记录来源和准确依赖，不强求复制成“自包含”。代码/配置入口与初始化权重必须从实验记录确认，不能从方法名称推断。

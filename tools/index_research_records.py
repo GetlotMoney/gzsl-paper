@@ -40,7 +40,7 @@ def scan(item):
         kind = ('idea' if re.match(r'IDEA-\d+.*\.md$',name) and '/ideas/' in path else
                 'queue' if name=='EXPERIMENT_QUEUE.csv' else
                 'experiment' if name=='EXPERIMENT.yaml' else
-                'run_matrix' if name=='PARAMETER_MATRIX.csv' else
+                'run_matrix' if name in ('PARAMETER_MATRIX.csv','RUNS.csv') else
                 'result' if name.lower()=='result.md' else
                 'framework' if name=='FRAMEWORK.yaml' else
                 'proposal' if '/proposals/' in path and name!='README.md' and name.endswith('.md') else None)
