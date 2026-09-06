@@ -1,88 +1,51 @@
-# gzsl-paper
+# GZSL 论文研究
 
-面向 CUB、AWA2 和 SUN Attribute Generalized Zero-Shot Learning（GZSL）的干净研究仓库。
+> 唯一当前入口 · 2026-09-06 按 owner 确认的长期管理方式整理。历史正式版本不自动成为新研究的代码起点。
 
-## 正式框架
+## 现在做什么
 
-- `FRAMEWORK-V1`：冻结分支`framework/v1`、Tag`v1`，[HTML框架图](experiments/v1/framework_diagram.html)，确认基线H=`74.2468%`。
-- `FRAMEWORK-V2`：TG-VPR-H1独立框架，冻结分支`framework/v2`、Tag`v2`，[HTML框架图](experiments/v2/framework_diagram.html)，首个正式单seed基线H=`74.023182%`。
-- `FRAMEWORK-V4`：owner晋级的TG+GTD三数据集框架，冻结分支`framework/v4`、Tag`v4`，[HTML框架图](experiments/v4/framework_diagram.html)；CUB/SUN显示GTD正增益，AWA2保留精确no-op边界。
-- `FRAMEWORK-V5`：owner晋级的TG+GTD+PCLR-RSE框架，冻结分支`framework/v5`、Tag`v5`，[HTML框架图](experiments/v5/framework_diagram.html)；CUB正式`U/S/H/ZS=80.694/81.447/81.069/88.785`。
-- `FRAMEWORK-V7`：owner晋级的TG+GTD+C-PCLR-SVI论文框架，冻结分支`framework/v7`、Tag`v7`，[HTML框架图](experiments/v7/framework_diagram.html)；论文父基线TG+GTD `H=79.070`，完整框架`U/S/H/ZS=77.607/83.640/80.510/88.473`。
-- V1与V2是两套独立训练路径；V2不接入或静默修改V1。
-- 正式框架代码都只迁入必要实现与来源信息；旧版本实验账本保持原路径只读，不复制或重编号。
-- owner已选择`FRAMEWORK-V7 / TG+GTD+C-PCLR-SVI`作为当前论文首个正式框架；论文父框架固定为TG+GTD。`FRAMEWORK-V6-DEVELOPMENT`继续作为另一套待定开发框架保留，不与V7合并。
-- V4已索引CUB、AWA2和SUN原始RUN作为晋级证据；跨版本证据保留原路径、原commit和原输出，不复制结果。
+| 项目 | 当前事实 |
+|---|---|
+| 主线 | `triadic-native`：研究全新的原生三分支 GZSL 框架 |
+| 阶段 | 研究问题与机制探索；尚未形成正式新方法 |
+| 已确定 | 三支对等、各有不可替代的类别证据、最终 logits 前通信、同次前向与反向协同优化 |
+| 未确定 | 第三分支、通信机制、公式、准确代码起点和实验条件 |
+| 当前主攻 Idea | 尚未指定；不从最大编号或最近分支推定 |
+| 当前 RUN | 未绑定本主线的正式 RUN；本次整理未检查服务器实时作业 |
+| 下一步 | 明确三支各自提供的证据与最小可证伪机制，再由 owner 指定准确代码起点 |
+| 旧原型 | 已有 V8 命名仅为探索身份，不代表正式 V8；smoke 不等于正式实验 |
 
-## 评估协议
+## 五个入口
 
-owner选择的论文主结果使用Chen-style test-selected inductive GZSL。三数据集统一协议见[最终实验协议](docs/FINAL_THREE_DATASET_PROTOCOL.md)：
+| 要找什么 | 入口 | 事实归属 |
+|---|---|---|
+| 研究全貌、当前问题 | [Idea 树](research/IDEA_TREE.md) | 关系与导航 |
+| Idea 怎么保存和复用 | [研究记录规范](research/README.md) | 假设、演化与证据边界 |
+| 实验在哪里、准确代码是什么 | [跨分支总账](research/LEDGER_INDEX.md) | 记录位置；数字以原 RUN 为准 |
+| 怎样开始一次实验 | [实验规范](docs/EXPERIMENT_PROTOCOL.md) | 代码起点、比较条件与 RUN 合同 |
+| 历史版本与研究资产 | [实验索引](experiments/INDEX.md) | 历史入口；不默认激活旧任务 |
 
-1. 每个数据集使用全部`trainval_loc`图像；unseen图像不进入梯度。
-2. 每步独立随机抽50张，总更新数为`ntrain×200//50`。
-3. 每`niters//200`步评估official test，并根据整套模型official H保存best checkpoint。
-4. U/S/H在该数据集全部seen+unseen类联合空间计算，ZS只在unseen类空间计算。
-5. 固定披露`test_used_for_selection: true`，不描述为blind-test。
-
-现有validation-first结果继续作为更严格协议对照。CLIP-based与经典ResNet-101 GZSL分开报告，不能直接混表比较。
-
-## 运行
-
-```powershell
-conda run -n dvsr_gpu python train.py `
-  --config config/v1.yaml `
-  --output-dir D:/path/to/GZSL_Warehouse/runs/v1/RUN-001
+```mermaid
+flowchart TD
+  P[研究主线] --> Q[研究问题]
+  Q --> I[Idea：可证伪假设]
+  I --> E[Experiment：比较设计]
+  E --> R[RUN：代码、配置、真实结果]
+  R --> D[决定：继续、修订、停止]
+  D -.证据回填.-> I
+  I --> C[框架候选：机制组合]
+  D --> C
+  C --> F[owner 接纳：正式版本]
+  F --> O[论文交付]
 ```
 
-`output-dir` 必须位于 Git 仓库外且事先不存在。每个训练 RUN 至少产生：
+## 存储与代码
 
-- `training.log`
-- `metrics.json`
-- `model_best.pth`
-- `checkpoint_last.pth`
-- `data_fingerprints.json`
+- Idea 跨框架共用，卡片留在 `research/ideas/`；索引不复制公式和成绩。
+- 历史 `experiments/vX/` 原地只读保留；新主线首次真实登记时使用 `experiments/<track_id>/`，不预建空框架版本。
+- 新代码必须记录 `research_mode`、`base_commit`、`reuse_scope`、`change_scope`、`comparison_ref` 和唯一研究问题。代码起点与比较基线分开。
+- `main` 保存正式代码与已核实轻量记录；候选代码留在实验分支。Git 保存代码和配置，仓库外保存数据、缓存、模型和大日志。
+- `framework/vX` 与 `vX` 固定在同一 commit；旧正式框架依然有效，但不自动代表当前方向。
+- `论文框架仓库/` 仅在 owner 明确要求交付快照时更新。
 
-实验结构和多 RUN 规则见 [docs/EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md)。
-
-项目当前任务清单见 [docs/PROJECT_CHECKLIST.md](docs/PROJECT_CHECKLIST.md)。
-
-## 研究闭环
-
-新论文、新证据和新 idea 从本仓库重新建立，不迁移旧 GTPJ 的研究知识。统一规则见 [research/README.md](research/README.md)。
-
-## FRAMEWORK-V2 入口
-
-- 方法说明：[docs/TG_VPR_H1.md](docs/TG_VPR_H1.md)
-- 模块代码：`model/frameworks/v2/model.py`
-- 独立训练入口：`python -m model.frameworks.v2.train`
-- 冻结配置：`config/tg_vpr_h1.yaml`
-- 来源身份：`INNOVATION-MODULE-1`
-- 历史三数据集候选训练器只保留在对应实验commit的原路径`model/train_paper_v2.py`，不属于当前`main`正式入口。
-
-## FRAMEWORK-V4 入口
-
-- 正式模型代码：`model/frameworks/v4/`
-- 晋级来源复现入口：`python -m model.frameworks.v4.train`
-- 当前边界：该训练器只接受已冻结的`FRAMEWORK-V3-EXPLORATION`晋级RUN配置；仓库尚未提供新的`FRAMEWORK-V4`基础训练配置，不能把它描述成任意V4新RUN入口。
-
-## FRAMEWORK-V5 入口
-
-- 固定参数与证据：`experiments/v5/FRAMEWORK.yaml`、`config/framework_v5.yaml`。
-- 部署logits入口：`model/frameworks/v5/model.py`。
-- 正式评估入口：`python -m model.frameworks.v5.evaluate`。
-- V5复用已审R2 checkpoint并执行R3 PCLR推理与R4角色语义ensemble；不是重新训练入口。
-- 必须披露nested official-test selection、nonblind和LLM可见形态知识使用。
-
-## FRAMEWORK-V7 入口
-
-- 小白教程：[FRAMEWORK-V7代码、PyTorch与图拉普拉斯详解](docs/FRAMEWORK_V7_CODE_TUTORIAL.md)。
-- 固定参数与证据：`experiments/v7/FRAMEWORK.yaml`、`config/framework_v7.yaml`。
-- 独立无图部署入口：`model/frameworks/v7/model.py`。
-- 正式评估入口：`python -m model.frameworks.v7.evaluate`。
-- 论文方法父框架为TG+GTD；S/V/I分别是角色语义、视觉关系Reader和incidence关系编译。
-- 部署只执行Reader与`hQ^T+b`，不依赖V6实验模块、Top-K、关系边或Laplacian求解。
-- 必须披露test-selected、nonblind、LLM关系文本使用以及多数据集/成本证据尚未完成。
-
-## checkpoint兼容边界
-
-正式checkpoint保存为`state_dict`或包含`model_state_dict`的字典，目录迁移保持参数键不变。V1额外保留`model.MyModel.GTPJ`旧导入；仓库不承诺加载历史上通过`torch.save(model)`保存的V2/V4完整Python对象pickle。
+当前任务只做记录整理，没有接纳新 Idea、选择代码父条件、启动训练或发布论文。

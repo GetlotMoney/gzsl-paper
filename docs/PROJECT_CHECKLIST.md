@@ -1,3 +1,10 @@
+# 历史项目清单
+
+当前任务与下一步只维护在 [README](../README.md)。以下为旧版本执行快照，未勾选项不会自动恢复为活跃任务；旧协议与数值门不适用于新实验。
+
+<details>
+<summary>展开历史清单</summary>
+
 # FRAMEWORK-V2 简化清单
 
 ## 2026-08-23 规范纠正
@@ -98,3 +105,5 @@
 - [ ] 完成三数据集统一入口测试、正式Experiment配置和pre-run commit。
 - [ ] 按Pure CLIP→Mean8→TG-VPR→TST-NTR→CCGR顺序执行Chen-style矩阵。
 - [ ] 每个数据集完成End-to-End/Stagewise与seed 5/7/8，不混用历史未知CLIP缓存。
+
+</details>
