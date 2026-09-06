@@ -49,6 +49,8 @@ git show <code_commit>:<代码路径>
 
 ## 当前缺口与证据边界
 
+- IDEA-232 的历史分支为何含 v5：首个提交 `cc0e6ecc98499159a29af953c5f84d5b44b96756` 的直接父提交为 `52b511d77b4ad048f35b40dc3cbd9afd092167e9`（TG+GTD+PCLR-RSE）；分支创建 reflog 也指向该提交。实际 Level 2 比较基线是 `Mean8_no_gamma`，并非完整 PCLR-RSE。原记录没有给出选择该代码起点而非 TG+GTD+C-PCLR-SVI 的技术理由；不推断其必要性，也不作为新研究默认起点。
+
 - 当前扫描未找到卡片的编号：IDEA-147, IDEA-176, IDEA-177, IDEA-178, IDEA-181, IDEA-225, IDEA-228, IDEA-229, IDEA-230, IDEA-231。这里只检查本地分支 tip 与当前目录，不声称遍历已删除引用、全部历史或服务器；不补造结论。
 - 原总账曾将 IDEA-203～212 标缺失，本次已在跨分支扫描找到相关卡片；应按 RECORD_INDEX 的准确位置读取，旧“缺失”判断不再作为当前事实。
 - `main` 的 V6-TRY-002 未绑定 code_commit，V6-TRY-005 是旧计划且无 code_commit。原记录保持不变；未补到直接证据前，不猜测实际执行代码。
