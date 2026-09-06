@@ -1,0 +1,66 @@
+schema_version: gzsl-paper.framework.v1
+framework_id: FRAMEWORK-V5
+framework_ref: v5
+framework_branch: framework/v5
+framework_tag: v5
+framework_diagram: experiments/v5/framework_diagram.html
+method_name: TG+GTD+PCLR-RSE
+method_full_name: Tri-Group Geodesic GZSL with Pairwise Laplacian Reasoning and Role Semantic Ensemble
+derived_from_framework: FRAMEWORK-V4
+source_idea: IDEA-186
+source_code_commit: c80c021e25bdcef5e5a80e2f01286c9f886e3f52
+source_checkpoint_sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
+owner_promotion_decision: promote_pclr_r4_as_framework_v5_2026-08-31
+status: promoted_nested_test_selected_with_multidataset_generic_evidence
+evaluation_protocol: chen_shiming_code_aligned_test_selected_gzsl
+test_used_for_selection: true
+test_used_for_hyperparameter_selection: true
+nested_official_test_selection: true
+unseen_images_used_for_gradient: false
+strict_blind_claim: false
+human_annotations_used: false
+expert_attributes_used: false
+llm_world_knowledge_used: true
+training_entry: model/frameworks/v4/train.py
+deployment_entry: model/frameworks/v5/model.py
+evaluation_entry: model/frameworks/v5/evaluate.py
+formal_config: config/framework_v5.yaml
+modules:
+  - TG tri-group seen prototype learning
+  - GTD detached pseudo-unseen geodesic target and true-unseen transport
+  - PCLR Top-3 class relation graph with 438 directional morphology edges
+  - Parent Top-17 candidate-local both-endpoint edge selection
+  - ridge-regularized Laplacian inverse and bounded class potential
+  - inference relation temperature 0.2 and correction scale 6.95
+  - role6 overall-appearance and role0 beak class-logit ensemble
+  - seen-logit calibrated 200-class GZSL competition
+  - late unseen-axis slice for ZS
+formal_result:
+  experiment: V4-TRY-023-R4
+  metrics_sha256: efbdca19f8248b2e16c99baa7aa5a81d2279218db910a9a00e7303d45d2fc2bc
+  U: 80.69409728050232
+  S: 81.44695162773132
+  H: 81.06877662507551
+  ZS: 88.78527283668518
+  delta_H_vs_FRAMEWORK_V4_parent: 1.9987616250755167
+  delta_H_vs_R3: 0.8823572302415243
+  gap_U_S: 0.7528543472290039
+  net_joint_corrections_vs_raw: 129
+multidataset_evidence:
+  AWA2:
+    experiment: V4-CONFIRM-003-AWA2
+    text_contract: generic_class_name_directions
+    H: 96.60586739076234
+    delta_H: 0.233689982292816
+    metrics_sha256: 7df40519c7b9c770bcc76048491c2d9dfda14f8c3b28dbffd6c66894ff087000
+  SUN:
+    experiment: V4-CONFIRM-003-SUN
+    text_contract: generic_class_name_directions
+    H: 74.32513126974865
+    delta_H: 0.9833856660155789
+    metrics_sha256: 09a232c3e13dbf6fe42dc50b3f5655d54a3536c512857383580aad9586e666b9
+limitations:
+  - CUB promotion result is nested official-test selected and not a blind-test claim
+  - AWA2 and SUN use generic class-name direction assets rather than CUB LLM morphology sentences
+  - role semantic ensemble weights are fixed from official-test hyperparameter selection
+  - future V5 experiments must preserve the complete V1-V4 ledgers and use experiments/v5/EXPERIMENT_QUEUE.csv

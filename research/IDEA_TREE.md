@@ -1,3 +1,31 @@
+# 研究主线与 Idea 导航
+
+当前任务见 [README](../README.md)；记录方式见 [研究规范](README.md)。树负责“问题—假设”的关系，不是完整结果账本。
+
+## 当前主线：triadic-native
+
+| 研究问题 | 已确定 | 未确定 |
+|---|---|---|
+| 三支证据为何不可替代 | 三支应地位对等、各有类别证据 | 第三支和具体证据对象 |
+| 为什么在打分前通信 | 最终 logits 前交换信息 | 通信机制、公式与可证伪预测 |
+| 如何证明共同优化有价值 | 同次前向与反向协同 | 不可还原控制与准确实验条件 |
+
+当前未指定进入本主线的正式主攻 Idea，也未指定准确代码起点；不以最大编号、旧 V8 原型或历史 supported 状态自动激活候选。
+
+## 所有 Idea 在哪里
+
+- [跨分支记录索引](RECORD_INDEX.csv)：按 `record_id` 查找卡片。不同内容版本分别保存 blob 与准确 source commit；同卡多分支共用内容不重复导入。
+- `content_state=local_uncommitted`：本地存在未提交版本，不能用空 commit 当运行证据；本次不替这些草稿作接纳或科学结论。
+- [跨分支总账](LEDGER_INDEX.md)：代码位置、历史框架与已知缺口。
+- 每张卡归项目总库，同一假设可被多个主线引用；新主线有实际问题时在此登记，不重建整套文件层级。
+
+## 历史导航
+
+下面保留整理前的导航内容，仅表示当时的研究快照。旧文中的“当前”“active”“下一步”均不代表今日活跃任务；正式历史身份仍保留，结论以源卡与原 RUN 为准。
+
+<details>
+<summary>展开历史问题分类、版本与 Idea 关系</summary>
+
 # GZSL 研究主线索引
 
 本文件只回答“每个版本是什么、哪些 Idea 在哪里验证、现在走到哪一步”。公式、长结果和运行证据分别保存在 Idea 卡与实验账本中，不在这里复制。旧版V2长树已原样保存在 [`archive/IDEA_TREE_V2_LEGACY.md`](archive/IDEA_TREE_V2_LEGACY.md)。
@@ -21,10 +49,10 @@
 |---|---|---|
 | `semantic_representation` | 类别语义和原型如何形成更有结构的表示 | [`IDEA-001 / TG-VPR-H1`](ideas/IDEA-001_tg_vpr_h1.md) |
 | `cross_class_transfer` | seen知识如何可靠迁移到unseen原型 | [`IDEA-005 / TST`](ideas/IDEA-005_tst.md)、[`IDEA-146 / GTD-TST`](ideas/IDEA-146_gtd_tst.md) |
-| `visual_grounding` | 实例级局部视觉证据能否支持或反驳类别语义 | [`IDEA-133`](ideas/IDEA-133_visual_evidence_learning.md)、[`IDEA-158 / GAVE`](ideas/IDEA-158_gave.md)、[`IDEA-159 / RGT`](ideas/IDEA-159_rgt.md) |
-| `class_competition` | 细粒度候选和seen/unseen联合竞争如何避免错误修正 | 当前无已晋级V4 Idea；相关V2历史按需检索 |
+| `visual_grounding` | 实例级局部视觉证据能否支持或反驳类别语义 | [`IDEA-133`](ideas/IDEA-133_visual_evidence_learning.md)、[`IDEA-158 / GAVE`](ideas/IDEA-158_gave.md)、[`IDEA-159 / RGT`](ideas/IDEA-159_rgt.md)、[`IDEA-160 / full-resolution concept grounding`](ideas/IDEA-160_full_resolution_concept_grounding.md)、[`IDEA-161 / intermediate-patch concept signal`](ideas/IDEA-161_intermediate_patch_concept_signal.md)、[`IDEA-162 / learnable concept readout probe`](ideas/IDEA-162_learnable_concept_readout_probe.md)、[`IDEA-163 / tri-state evidence predicate set`](ideas/IDEA-163_tri_state_evidence_predicate_set.md)、[`IDEA-164 / observable signed evidence`](ideas/IDEA-164_observable_signed_evidence.md)、[`IDEA-165 / constrained evidence graph search`](ideas/IDEA-165_constrained_evidence_graph_search.md)、[`IDEA-167 / conditional information evidence`](ideas/IDEA-167_conditional_information_evidence.md)、[`IDEA-168 / concept-specific region interaction`](ideas/IDEA-168_concept_specific_region_interaction.md)、[`IDEA-169 / contrastive concept interaction`](ideas/IDEA-169_contrastive_concept_interaction.md)、[`IDEA-171 / hypothesis-conditioned visual completion`](ideas/IDEA-171_hypothesis_conditioned_visual_completion.md)、[`IDEA-188 / CEC`](ideas/IDEA-188_cec.md)、[`IDEA-189 / RCEG`](ideas/IDEA-189_role_contrast_evidence_gain.md)、[`IDEA-190 / OREF`](ideas/IDEA-190_observable_role_entailment_field.md)、[`IDEA-191 / CUAV`](ideas/IDEA-191_counterfactual_utility_active_view.md)、[`IDEA-192 / D-CPGU`](ideas/IDEA-192_dense_counterfactual_pairwise_glimpse_utility.md)、[`IDEA-193 / RWDG`](ideas/IDEA-193_role_window_dense_glimpse.md)、[`IDEA-194 / D-CCU`](ideas/IDEA-194_dense_counterfactual_correction_utility.md)、[`IDEA-195 / SCAA`](ideas/IDEA-195_signed_counterfactual_action_advantage.md)、[`IDEA-196 / EAAC`](ideas/IDEA-196_explicit_abstention_action_competition.md)、[`IDEA-197 / RoleTriPool`](ideas/IDEA-197_role_tripool_signed_window_utility.md) |
+| `class_competition` | 细粒度候选和seen/unseen联合竞争如何避免错误修正 | [`IDEA-201 / C-PCLR`](ideas/IDEA-201_compiled_pclr.md)，S/V/I统一方法已由owner晋级为FRAMEWORK-V7；论文父基线为TG+GTD |
 | `learning_generalization` | 训练目标与选择规则如何迁移到未见类别 | 当前无已晋级V4 Idea；相关V2历史按需检索 |
-| `reliability_robustness` | 如何识别不可靠证据并保持关闭路径 | GAVE、RGT包含该机制标签，但主类别仍为`visual_grounding` |
+| `reliability_robustness` | 如何识别不可靠证据并保持关闭路径 | [`IDEA-198 / SEAV`](ideas/IDEA-198_safe_explicit_action_verification.md)、[`IDEA-199 / SVRA`](ideas/IDEA-199_zero_crop_semantic_visual_risk_arbitration.md)、[`IDEA-200 / J-SVRA`](ideas/IDEA-200_joint_semantic_visual_risk_arbitration.md)、[`IDEA-202 / DESC`](ideas/IDEA-202_direct_evidence_conditioned_swap_competition.md)；GAVE、RGT也包含该机制标签 |
 | `evaluation_diagnostic` | 资产、缓存、评估和诊断合同是否可信 | 作为诊断证据记录，不包装为论文创新 |
 
 每张新Idea仍保存在`research/ideas/IDEA-xxx_<slug>.md`；本表只做检索入口，不复制公式、结果或状态事实。
@@ -72,9 +100,34 @@ V2的大量失败与辅助候选不在本索引逐项展开；准确状态保留
 |---|---|---|---|---|
 | [`IDEA-158`](ideas/IDEA-158_gave.md) | GAVE | weak signal only，未晋级 | V4-TRY-001 | `exp/v4/innovation/innovation-001-gave` |
 | [`IDEA-159`](ideas/IDEA-159_rgt.md) | RGT | rejected before training | V4-TRY-002 | `exp/v4/innovation/innovation-002-rgt` |
+| [`IDEA-160`](ideas/IDEA-160_full_resolution_concept_grounding.md) | 576-patch概念落地oracle | rejected before queue | 无；pre-queue最小证伪 | 无；未创建创新分支 |
+| [`IDEA-161`](ideas/IDEA-161_intermediate_patch_concept_signal.md) | 中间层576-token直接读取oracle | revised：只否定裸余弦读取 | 无；pre-queue双卡1000图诊断 | 无；未创建创新分支 |
+| [`IDEA-162`](ideas/IDEA-162_learnable_concept_readout_probe.md) | 自然prompt＋共享学习型读取探针 | supported signal only，待owner范式准入 | 无；pre-queue三步诊断 | 无；未创建创新分支 |
+| [`IDEA-163`](ideas/IDEA-163_tri_state_evidence_predicate_set.md) | 三态视觉证据谓词集 | rejected before GZSL training | 五项最小证伪门槛全部失败 | `exp/v4/innovation/innovation-003-tri-state-evidence-set` |
+| [`IDEA-164`](ideas/IDEA-164_observable_signed_evidence.md) | 候选无关可观察性＋固定参考有符号证据 | rejected at Gate 1 | `o`退化高常数、signed-d迁移与双因果删除均失败 | `exp/v4/innovation/innovation-004-observable-signed-evidence` |
+| [`IDEA-165`](ideas/IDEA-165_constrained_evidence_graph_search.md) | 共享概念证据图＋容量约束精确搜索 | rejected after two rescues | capacity1/2均-0.2pp，2×2区域0pp | `exp/v4/innovation/innovation-005-constrained-evidence-graph` |
+| [`IDEA-166`](ideas/IDEA-166_text_conditioned_visual_distribution.md) | 文本条件低秩视觉分布 | rejected after main＋2 rescues | LOO信号成立，但三条件均比Point低约2.66pp、净纠正-57 | `exp/v4/innovation/innovation-006-text-conditioned-distribution` |
+| [`IDEA-167`](ideas/IDEA-167_conditional_information_evidence.md) | 条件信息增益最小充分证据 | revised before run；未执行 | 过宽Gate被拆分，永久保留历史 | 无运行分支 |
+| [`IDEA-168`](ideas/IDEA-168_concept_specific_region_interaction.md) | 共享文本概念的跨区域非加性交互 | rejected at Gate 0 | 四项概念特异性门全失败；符号稳定但不优于对照 | `exp/v4/innovation/innovation-008-concept-region-interaction` |
+| [`IDEA-169`](ideas/IDEA-169_contrastive_concept_interaction.md) | 固定Attention的同角色概念对比交互 | rejected at Gate 0 | 仅60对/13类；覆盖与三项效应门失败 | `exp/v4/innovation/innovation-009-contrastive-concept-interaction` |
+| [`IDEA-170`](ideas/IDEA-170_content_aware_inpainted_interaction.md) | 内容感知补全的跨区域交互 | rejected at Gate 0 | 两种补全均胜随机、均不胜困难对照；方向关闭 | `exp/v4/innovation/innovation-010-content-aware-inpainted-interaction` |
+| [`IDEA-171`](ideas/IDEA-171_hypothesis_conditioned_visual_completion.md) | HCVC：候选条件视觉补全 | 双Agent范式准入通过；proof-of-path未运行 | 无；Gate 0合同已冻结 | 无；未创建实现或实验分支 |
+| [`IDEA-172`](ideas/IDEA-172_text_difference_active_evidence_acquisition.md) | 文本差异主动高清取证 | rejected at proof gate | Oracle+14pp，但真实行动-0.2pp、净纠正-1 | `exp/v4/diagnostic/diagnostic-001-active-evidence-acquisition` |
 
 准确数字、commit、配置和输出URI见 [`experiments/v4/EXPERIMENT_QUEUE.csv`](../experiments/v4/EXPERIMENT_QUEUE.csv)。
 
 ## 三创新论文门槛
 
-最终目标仍是三个围绕同一核心研究问题、各自有独立证据且能够自然串联的创新。当前正式主线只有TG+GTD；GAVE未晋级、RGT已拒绝，不能为了凑数量写成最终三创新框架。
+最终目标仍是三个围绕同一核心研究问题、各自有独立证据且能够自然串联的创新。当前首个正式论文框架为FRAMEWORK-V7；GAVE未晋级、RGT已拒绝，不能为了凑数量写成最终三创新框架。
+
+## FRAMEWORK-V7
+
+- 状态：owner正式接纳，`framework/v7`分支与`v7` Tag冻结在同一正式commit。
+- 论文方法：TG+GTD+C-PCLR-SVI。
+- 论文父框架：TG+GTD / TUNE-002-RUN-030，`H=79.070015`。
+- 正式来源：[`IDEA-201`](ideas/IDEA-201_compiled_pclr.md)与`V6-TRY-006`。
+- 正式结果：`U/S/H/ZS=77.606910/83.639657/80.510432/88.473403`，相对论文父基线
+  `+1.440417 H`；S/V/I关闭分别降低`1.350275/1.087737/1.313951 H`。
+- V6继续作为另一套待定开发框架保留；V7不继承未接纳V6候选代码作为未来实验父条件。
+
+</details>

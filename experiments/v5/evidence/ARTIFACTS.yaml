@@ -1,0 +1,24 @@
+schema_version: gzsl-paper.framework-v5-artifacts.v1
+source_checkpoint:
+  path: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/pclr/V4-TRY-023-R2/model_best.pth
+  sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
+cub_assets:
+  parent_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+  relation_manifest_sha256: 0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4
+  relation_edge_count: 438
+  relation_direction_count: 876
+  relation_embedding_shape: [438, 2, 768]
+  relation_graph: OpenAI_CLIP_class_name_template_union_top3
+awa2_assets:
+  base_manifest_sha256: 554dd677e8e3e344633d9c2aa84b3e5a9aeebd941e0716e71b0fb39ed7496594
+  relation_manifest_sha256: f93c9a690ce068614bc9792e6b60e989a4fe1fefebeb5df4a0273737e7bdadb2
+  class_count: 50
+  seen_count: 40
+  edge_count: 117
+sun_assets:
+  base_manifest_sha256: 177406ac028226aa4358d2ac2015e2aa43748107b7f98283e8a749eda3fea676
+  relation_manifest_sha256: 385744e7532ddf12862c3926878bac64422a902cdeeb87e30a9667045d4093b8
+  class_count: 717
+  seen_count: 645
+  edge_count: 1633
+environment_fingerprint_sha256: 8b3e2d5d93cdd9763843c3c5f72903f466a86f7524c9dc2b02bb1d4699c32c59

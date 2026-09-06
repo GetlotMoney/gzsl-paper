@@ -1,0 +1,56 @@
+schema_version: gzsl-paper.experiment.v1
+experiment_id: V6-INNOVATION-001
+attempt_id: V6-TRY-006
+idea_id: IDEA-201
+name: Compiled PCLR Gate B
+status: promoted_framework_v7
+base_commit: 52b511d77b4ad048f35b40dc3cbd9afd092167e9
+pre_run_code_commit: b707b0c4671051244cebf4f8404299fc016b281e
+code_review: CODE_REVIEW.md#200-epoch-matched-control最终审查
+micro_batch: MICRO_BATCH.md
+review_tree: 12a0961f4d8f59d560ab4526976a51ef2771ed1b
+formal_gpu_fingerprint_sha256: 027e187f11992788ab8b5e780ab4fd709b9935255d47d652bae7cb4335494b69
+output_uri: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v6/compiled_pclr/V6-TRY-006
+metrics_sha256: fbbd8ef520d8d6bca62cc1d860a0432a244ab99af30761a3ffd8c824f7c90879
+evaluation_history_sha256: 746e02c8dfc40d21fba1ad1c9051502d545e4cd75eb4cdc2d3dd8cbd2fcbcd96
+model_best_sha256: a551de9d182222141ab4be9db1ae2020417be3a7a7d1d4b369510d635f2207c9
+training_log_sha256: d0ba36c136beb9249ca699f25a237d0060c801522ff728f625eaf4a6820f75b7
+program_decision: drop_gate_b_contract_failed
+owner_decision: owner_override_keep_efficiency_candidate
+promotion_decision: owner_promote_svi_as_framework_v7_paper_parent_tg_gtd
+evidence_refs:
+  - research/ideas/IDEA-201_compiled_pclr.md
+  - FRAMEWORK-V5-R4 metrics SHA efbdca19f8248b2e16c99baa7aa5a81d2279218db910a9a00e7303d45d2fc2bc
+  - IDEA-201 Gate A payload SHA 96704bd3a6424aa1be8c28463df51bb485d12b2d9f19b5b068fa824cb17ece1f
+research_question: Can pairwise relation-graph supervision be internalized into an exportable hQ^T+b head while retaining a real H gain over FRAMEWORK-V5?
+unique_change: Replace per-image Top-K/edge/Laplacian/cap/std/late-role inference with frozen G=MD relation prototypes and jointly trained Reader, alpha, and eight fixed-role fusion weights.
+source_checkpoint_sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
+source_checkpoint_usage: parent_control_only_not_training_initialization
+training_initialization: same R2 source-config random initialization at seed7; TG/GTD, matched online V5 Reader/beta, and C-PCLR train in the same 28228 updates
+training_parameter_contract:
+  - TG-VPR parameters receive Parent CE and topology loss and are exported through Q_image.
+  - GTD gate parameters receive the frozen-oracle gate loss and affect Q_image through synchronized eval-mode prototypes.
+  - Reader receives final 200-class CE and incident-edge direction CE and is exported in h(x).
+  - alpha and eight role weights receive final 200-class CE and are absorbed into Q.
+  - relation text, edge graph, M/G, seen bias, CLIP features, and unseen images remain frozen or absent from gradient.
+relation_asset_manifest_sha256: 0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4
+asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+config: configs/RUN-001.yaml
+parameter_matrix: PARAMETER_MATRIX.csv
+framework_diagram: framework_diagram.html
+result: result.md
+conditions:
+  - Full
+  - Matched_online_V5_same_seed_same_28228_updates
+  - S-off_same_checkpoint_roles_zero
+  - V-off_same_checkpoint_reader_identity
+  - I-off_same_checkpoint_alpha_zero
+success_condition: Full H must exceed both formal FRAMEWORK-V5 H=81.06877662507551 and the matched online-V5 control best H; each Full-minus-off H must be at least 1.0pp with abs(U-S)<8.
+failure_condition: Drop on any failed module gate, non-finite value, Parent parity failure, data-boundary violation, or exported-head contract failure; no parameter rescue is preregistered.
+protocol:
+  name: chen_shiming_code_aligned_test_selected_gzsl
+  test_used_for_selection: true
+  test_used_for_hyperparameter_selection: true
+  nested_official_test_selection: true
+  unseen_images_used_for_gradient: false
+  strict_blind_claim: false

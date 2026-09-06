@@ -106,7 +106,8 @@ def test_source_manifest_is_clean_snapshot_not_old_experiment_tree():
     assert source["framework_v2_status"] == "baseline_completed_single_seed"
     for record in source["target_files"].values():
         assert sha256_file(ROOT / record["path"]) == record["sha256"]
-    assert not (ROOT / "experiments" / "v5").exists()
+    assert (ROOT / "experiments" / "v5" / "FRAMEWORK.yaml").is_file()
+    assert not any(ROOT.glob("**/*template-v*"))
     assert not (ROOT / "research" / "ideas" / "IDEA-0021_tg_vpr_h1").exists()
 
 

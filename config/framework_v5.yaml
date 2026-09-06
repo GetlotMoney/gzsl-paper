@@ -1,0 +1,72 @@
+schema_version: gzsl-paper.framework-v5.deploy.v1
+framework_id: FRAMEWORK-V5
+method_name: TG+GTD+PCLR-RSE
+dataset: CUB
+source_checkpoint: /data/lby/projects/cv_project/GZSL_Warehouse/tries/v4/pclr/V4-TRY-023-R2/model_best.pth
+source_checkpoint_sha256: 16b5071f21a3217e58a72315029c28b8cfd97b68f812641bd0145d3f5e0702ab
+source_code_commit: b0a756dd624e883eb50d19a2455ba06bdc73f118
+source_best_update: 13818
+asset_manifest_sha256: 3a6b261a63e2aa241d7a9cd2b3c9b0051a0ba01133ef61dc35e0d043fc119fa6
+relation_manifest_sha256: 0d94188e895fb1c2034233f6562682cf31ba04ea1f3f504fc30d7f0643e143c4
+parent_history_sha256: 10591bb35a51949a1989ae3a918b50bca37c1f465a52c6bb5df5552c1b0a4779
+training:
+  random_seed: 7
+  batch_size: 50
+  nominal_epochs: 150
+  total_updates: 21171
+  eval_interval_steps: 141
+  tg_learning_rate: 0.0001
+  tg_min_learning_rate: 0.0001
+  gate_learning_rate: 0.0001
+  gate_min_learning_rate: 0.00001
+  gate_warmup_epochs: 5
+  weight_decay: 0.001
+  topology_weight: 0.3
+  gate_loss_weight: 1.0
+  gtd_hidden_dim: 16
+  gtd_grid_points: 33
+  theta_penalty: 0.1
+  max_transport_step: 1.5
+  pclr_reader_hidden_dim: 64
+  pclr_reader_seed: 18601
+  pclr_relation_temperature: 0.07
+  pclr_ridge_lambda: 0.03
+  pclr_potential_cap: 0.5
+  pclr_max_beta: 0.25
+  pclr_initial_beta: 0.05
+  pclr_candidate_top_k: 15
+  pclr_correction_scale: 2.38
+  pclr_seen_logit_gamma: 0.525
+deployment:
+  candidate_top_k: 17
+  ridge_lambda: 0.3
+  potential_cap: 0.5
+  inference_relation_temperature: 0.2
+  correction_scale: 6.95
+  effective_beta: 0.7258594751358033
+  effective_beta_max: 1.7375
+  role0_name: beak
+  role0_weight: 0.16
+  role6_name: overall_appearance
+  role6_weight: 0.36
+  seen_logit_gamma: 0.91
+protocol:
+  name: chen_shiming_code_aligned_test_selected_gzsl
+  test_used_for_selection: true
+  test_used_for_hyperparameter_selection: true
+  nested_official_test_selection: true
+  unseen_images_used_for_gradient: false
+  strict_blind_claim: false
+  human_annotations_used: false
+  expert_attributes_used: false
+  llm_world_knowledge_used: true
+metrics:
+  U: 80.69409728050232
+  S: 81.44695162773132
+  H: 81.06877662507551
+  ZS: 88.78527283668518
+  delta_H_vs_parent: 1.9987616250755167
+  delta_H_vs_R3: 0.8823572302415243
+  net_joint_corrections_vs_raw: 129
+  gap_U_S: 0.7528543472290039
+formal_metrics_sha256: efbdca19f8248b2e16c99baa7aa5a81d2279218db910a9a00e7303d45d2fc2bc
